@@ -1,0 +1,28 @@
+.sidebar-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 10px;
+}
+
+.sidebar-search input {
+  min-width: 0;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #0f1117;
+  color: var(--text);
+  outline: none;
+}
+
+.sidebar-search input:focus {
+  border-color: #7dd3fc;
+}
+
+.sidebar-empty {
+  margin: 8px 4px;
+  color: var(--muted);
+  font-size: 12px;
+}

@@ -25,6 +25,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Mute or unmute the active tab with Chromium webview audio controls.
 - Pinned tabs per workspace for favorite pages.
 - Workspace favorites for quick access.
+- Sidebar search filters tabs, tab groups, pinned tabs, and favorites inside the active Space.
 - Address bar with search fallback.
 - Address bar suggestions for open tabs, workspace favorites, and browsing history.
 - Back, forward, reload, new tab, and close controls.

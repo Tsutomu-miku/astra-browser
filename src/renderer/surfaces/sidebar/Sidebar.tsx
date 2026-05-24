@@ -1,10 +1,11 @@
-import { useEffect, useState, type CSSProperties, type DragEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type DragEvent, type MouseEvent } from "react";
 
 import { getHostInitial, type BrowserTab } from "../../domain/browser-core";
 import { getGroupedTabs } from "../../domain/tab-groups";
 import type { BrowserController } from "../../hooks/types";
 import { TabContextMenu } from "./TabContextMenu";
 import { FavoriteButton, TabGroupSection, TabRow } from "./SidebarItems";
+import { filterSidebarItems } from "./sidebarFiltering";
 
 interface TabMenuState {
   left: number;
@@ -16,11 +17,18 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWorkspace, actions, setPanel, sidebarCollapsed, state } = controller;
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
   const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
+  const [tabQuery, setTabQuery] = useState("");
   const [tabMenu, setTabMenu] = useState<TabMenuState | null>(null);
   const pinnedTabs = activeWorkspace.tabs.filter((tab) => tab.isPinned);
   const groupedTabs = getGroupedTabs(activeWorkspace);
   const groupedTabIds = new Set(groupedTabs.flatMap((entry) => entry.tabs.map((tab) => tab.id)));
   const regularTabs = activeWorkspace.tabs.filter((tab) => !tab.isPinned && !groupedTabIds.has(tab.id));
+  const filteredItems = useMemo(() => filterSidebarItems({
+    favorites: activeWorkspace.favorites,
+    groupedTabs,
+    pinnedTabs,
+    regularTabs
+  }, tabQuery), [activeWorkspace.favorites, groupedTabs, pinnedTabs, regularTabs, tabQuery]);
 
   const handleTabDrop = (event: DragEvent<HTMLDivElement>, targetTabId: string) => {
     event.preventDefault();
@@ -63,6 +71,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       window.removeEventListener("scroll", close, true);
     };
   }, [tabMenu]);
+
+  useEffect(() => {
+    setTabQuery("");
+  }, [activeWorkspace.id]);
 
   const handleWorkspaceDrop = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
     event.preventDefault();
@@ -138,9 +150,23 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           <button className="icon-button" title="New tab" type="button" onClick={actions.newTab}>+</button>
         </header>
 
-        {pinnedTabs.length > 0 && (
+        <div className="sidebar-search">
+          <input
+            autoComplete="off"
+            spellCheck={false}
+            aria-label="Search tabs and favorites"
+            placeholder="Search tabs"
+            value={tabQuery}
+            onChange={(event) => setTabQuery(event.target.value)}
+          />
+          {tabQuery && (
+            <button className="icon-button" title="Clear tab search" type="button" onClick={() => setTabQuery("")}>×</button>
+          )}
+        </div>
+
+        {filteredItems.pinnedTabs.length > 0 && (
           <nav className="pinned-tabs" aria-label="Pinned tabs">
-            {pinnedTabs.map((tab) => (
+            {filteredItems.pinnedTabs.map((tab) => (
               <button
                 className="pinned-tab-button"
                 key={tab.id}
@@ -156,16 +182,16 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           </nav>
         )}
 
-        {activeWorkspace.favorites.length > 0 && (
+        {filteredItems.favorites.length > 0 && (
           <nav className="favorites" aria-label="Favorites">
-            {activeWorkspace.favorites.map((favorite) => (
+            {filteredItems.favorites.map((favorite) => (
               <FavoriteButton key={favorite.id} favorite={favorite} onOpen={actions.openUrlInActiveWorkspace} />
             ))}
           </nav>
         )}
 
         <nav className="tabs" aria-label="Tabs">
-          {groupedTabs.map(({ group, tabs }) => (
+          {filteredItems.groupedTabs.map(({ group, tabs }) => (
             <TabGroupSection
               key={group.id}
               activeTab={activeTab}
@@ -182,7 +208,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
               setDraggingTabId={setDraggingTabId}
             />
           ))}
-          {regularTabs.map((tab) => (
+          {filteredItems.regularTabs.map((tab) => (
             <TabRow
               key={tab.id}
               activeTabId={activeTab.id}
@@ -195,6 +221,9 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
               setDraggingTabId={setDraggingTabId}
             />
           ))}
+          {filteredItems.isFiltering && !filteredItems.hasMatches && (
+            <p className="sidebar-empty">No matching tabs</p>
+          )}
         </nav>
       </section>
 
