@@ -17,6 +17,7 @@ Electron is acceptable for this stage because it embeds Chromium and lets the pr
 - Keep address-bar suggestion ranking in reusable, tested logic rather than component-only filtering.
 - Keep tab lifecycle, tab selection/cycling, tab cleanup, grouping, duplication, mute state, pin state, ordering, and workspace-transfer behavior in reusable domain actions so command palette, shortcuts, context menus, and drag/drop sidebar controls remain consistent.
 - Keep active Space webviews mounted across tab switches so Chromium page state, scroll position, and in-page session state are not lost by ordinary tab selection.
+- Treat Electron `webview` methods as lifecycle-bound APIs: only expose a webview to controller/store code after the element has emitted `dom-ready`, and remove it when unmounted.
 - Keep sleeping-tab behavior explicit: sleeping a tab unloads its hidden webview, selecting it wakes it, and active/split/pinned tabs are protected from bulk sleep.
 - Keep sidebar filtering in reusable, tested logic so tabs, groups, pinned tabs, and favorites share one matching rule.
 - Keep workspace creation, deletion, switching, renaming, accent/homepage changes, and ordering in reusable domain actions, and never allow the state to have zero workspaces.
@@ -32,6 +33,7 @@ Electron is acceptable for this stage because it embeds Chromium and lets the pr
 - Treat 300 lines per source file as a review signal, not a hard product goal. Split files when a boundary becomes clearer; keep cohesive files together when splitting would make the code harder to follow.
 - Prefer typed interfaces over unstructured objects for browser state and bridge APIs.
 - Make new behavior testable without launching Electron whenever possible.
+- Do not add compatibility-style catch blocks that swallow runtime errors and leave unclear state behind. Prefer root-cause fixes that enforce the correct lifecycle, data invariant, or ownership boundary; let unexpected errors surface during development and diagnostics.
 
 ## Architecture Principles
 
@@ -92,6 +94,7 @@ Prefer keeping code together when:
 - Domain modules must not import React, Electron, DOM APIs, or localStorage.
 - Components must not directly mutate browser state objects.
 - Webview lifecycle logic belongs in a focused component or hook.
+- Electron webview refs must be registered only after `dom-ready`; code outside the lifecycle owner should never need to guess whether a webview is attached.
 - Main-process Chromium session callbacks must communicate with the renderer through preload IPC only.
 
 ## Verification Gates
