@@ -10,6 +10,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Workspace profiles map Spaces to separate persistent Chromium partitions.
 - Each Space has its own homepage for new tabs and startup reset.
 - Multiple tabs per workspace.
+- Current Space tabs keep their Chromium webviews mounted so tab switches preserve page state.
 - Collapsible, named, and color-coded tab groups for organizing workspace tabs.
 - Direct sidebar tab closing with recently closed recovery.
 - Sidebar tab context menu for opening, split-view targeting, duplication, pinning, muting, and closing.

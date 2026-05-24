@@ -178,6 +178,7 @@
 }
 
 .view-grid {
+  position: relative;
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -196,6 +197,14 @@
   min-height: 0;
   border: 0;
   background: white;
+}
+
+.browser-view.is-hidden {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
 }
 
 .find-bar {
