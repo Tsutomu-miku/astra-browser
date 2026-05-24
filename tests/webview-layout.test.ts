@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { openUrlInActiveWorkspace, sleepInactiveTabs, toggleSplitMode } from "../src/renderer/domain/browser-actions";
-import { createDefaultState } from "../src/renderer/domain/browser-core";
+import { createDefaultState, isInternalNewTabUrl } from "../src/renderer/domain/browser-core";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/selectors";
 import { getKeepAliveWebviewTabs } from "../src/renderer/surfaces/webview/webviewLayout";
 
@@ -14,6 +14,7 @@ describe("webview layout", () => {
 
     expect(layout.map((entry) => entry.tab.title)).toEqual(["Second", "New Tab", "First"]);
     expect(layout.map((entry) => entry.isVisible)).toEqual([true, false, false]);
+    expect(isInternalNewTabUrl(layout[1].tab.url)).toBe(true);
   });
 
   it("renders active and split webviews first while keeping the rest alive", () => {

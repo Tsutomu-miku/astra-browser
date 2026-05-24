@@ -1,5 +1,6 @@
 import { DEFAULT_URL, SEARCH_ENGINES } from "./browser-constants";
 import type { BrowserState, SearchEngineKey, Workspace } from "./browser-types";
+import { isInternalNewTabUrl } from "./internalPages";
 
 export function normalizeAddress(value: unknown, searchEngineKey: SearchEngineKey = "google"): string {
   const trimmed = String(value ?? "").trim();
@@ -17,7 +18,7 @@ export function normalizeAddress(value: unknown, searchEngineKey: SearchEngineKe
 }
 
 function hasAddressScheme(value: string): boolean {
-  return value.includes("://") || /^(about|chrome):/i.test(value);
+  return value.includes("://") || /^(about|chrome|astra):/i.test(value);
 }
 
 export function getHomepageUrl(state?: Pick<BrowserState, "settings">): string {
@@ -38,6 +39,10 @@ export function getSearchUrl(query: string, state?: Pick<BrowserState, "settings
 }
 
 export function getReadableUrlTitle(url: string | undefined): string {
+  if (isInternalNewTabUrl(url)) {
+    return "New Tab";
+  }
+
   try {
     return new URL(url ?? "").hostname;
   } catch {

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { getWorkspacePartition, type BrowserTab } from "../../domain/browser-core";
+import { getWorkspacePartition, isInternalNewTabUrl, type BrowserTab } from "../../domain/browser-core";
 import type { BrowserController } from "../../hooks/types";
 import {
   getNavigationState,
@@ -10,6 +10,7 @@ import {
   type NavigationState
 } from "../../platform/webviewLifecycle";
 import type { WebviewElement } from "../../types/browser-ui";
+import { StartPage } from "../start/StartPage";
 import { getKeepAliveWebviewTabs } from "./webviewLayout";
 
 export function WebviewGrid({ controller }: { controller: BrowserController }) {
@@ -21,19 +22,23 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
   return (
     <section className={`view-grid ${visibleCount === 2 ? "is-split" : ""}`} aria-label="Browser content">
       {layoutTabs.map(({ isVisible, tab }) => (
-        <BrowserWebview
-          key={tab.id}
-          isVisible={isVisible}
-          partition={partition}
-          tab={tab}
-          refMap={webviews.current}
-          onLoadingChange={(isLoading, navigationState) => actions.updateTab(tab.id, { isLoading, ...navigationState })}
-          onTitleChange={(title) => actions.updateTab(tab.id, { title })}
-          onNavigate={(url) => {
-            actions.updateTab(tab.id, { url });
-            actions.recordHistory(tab.id, url);
-          }}
-        />
+        isInternalNewTabUrl(tab.url)
+          ? <StartPage key={tab.id} controller={controller} isVisible={isVisible} />
+          : (
+            <BrowserWebview
+              key={tab.id}
+              isVisible={isVisible}
+              partition={partition}
+              tab={tab}
+              refMap={webviews.current}
+              onLoadingChange={(isLoading, navigationState) => actions.updateTab(tab.id, { isLoading, ...navigationState })}
+              onTitleChange={(title) => actions.updateTab(tab.id, { title })}
+              onNavigate={(url) => {
+                actions.updateTab(tab.id, { url });
+                actions.recordHistory(tab.id, url);
+              }}
+            />
+          )
       ))}
     </section>
   );

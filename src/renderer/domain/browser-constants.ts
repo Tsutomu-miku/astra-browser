@@ -1,6 +1,7 @@
 import type { SearchEngine, SearchEngineKey } from "./browser-types";
 
-export const DEFAULT_URL = "https://www.google.com";
+export const INTERNAL_NEW_TAB_URL = "astra://newtab";
+export const DEFAULT_URL = INTERNAL_NEW_TAB_URL;
 
 export const SEARCH_ENGINES: Record<SearchEngineKey, SearchEngine> = {
   google: {

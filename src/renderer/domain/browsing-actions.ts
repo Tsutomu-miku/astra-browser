@@ -5,6 +5,7 @@ import {
   getReadableUrlTitle,
   normalizeAddress
 } from "./browser-core";
+import { isInternalPageUrl } from "./internalPages";
 import { getActiveTab, getActiveWorkspace } from "./selectors";
 import { updateBrowserState } from "./action-core";
 
@@ -31,7 +32,7 @@ export function navigateActiveTab(state: BrowserState, url: string): BrowserStat
 }
 
 export function recordHistory(state: BrowserState, tabId: string, url: string): BrowserState {
-  if (!url || url === "about:blank" || url.startsWith("data:")) return state;
+  if (!url || url === "about:blank" || url.startsWith("data:") || isInternalPageUrl(url)) return state;
   return updateBrowserState(state, (draft) => {
     const workspace = draft.workspaces.find((candidate) => candidate.tabs.some((tab) => tab.id === tabId));
     const tab = workspace?.tabs.find((candidate) => candidate.id === tabId);

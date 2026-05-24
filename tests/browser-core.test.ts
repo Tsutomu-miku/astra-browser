@@ -7,6 +7,7 @@ import {
   getHostInitial,
   getNextWorkspaceAccent,
   getWorkspaceHomepageUrl,
+  isInternalNewTabUrl,
   isFavorite,
   normalizeAddress,
   normalizeState,
@@ -17,6 +18,8 @@ describe("browser-core", () => {
   it("normalizes plain domains and search queries", () => {
     expect(normalizeAddress("example.com")).toBe("https://example.com/");
     expect(normalizeAddress("zen browser", "duckduckgo")).toBe("https://duckduckgo.com/?q=zen%20browser");
+    expect(normalizeAddress("")).toBe("astra://newtab");
+    expect(isInternalNewTabUrl("astra://newtab")).toBe(true);
   });
 
   it("normalizes persisted state shape for migrations", () => {
@@ -88,6 +91,9 @@ describe("browser-core", () => {
 
   it("supports homepage, favorite, favicon, accent, and byte helpers", () => {
     const state = createDefaultState();
+    expect(getHomepageUrl(state)).toBe("astra://newtab");
+    expect(state.workspaces[0].tabs[0].url).toBe("astra://newtab");
+
     state.settings.homepage = "chromium.org";
 
     expect(getHomepageUrl(state)).toBe("https://chromium.org/");

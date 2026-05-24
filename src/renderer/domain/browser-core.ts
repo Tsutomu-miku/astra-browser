@@ -1,6 +1,7 @@
-export { DEFAULT_URL, SEARCH_ENGINES } from "./browser-constants";
+export { DEFAULT_URL, INTERNAL_NEW_TAB_URL, SEARCH_ENGINES } from "./browser-constants";
 export { createDefaultState, createFavorite, createId, createTab, getNextWorkspaceAccent } from "./browser-factory";
 export { formatBytes } from "./formatting";
+export { isInternalNewTabUrl, isInternalPageUrl } from "./internalPages";
 export {
   getHomepageUrl,
   getHostInitial,

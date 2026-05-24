@@ -2,7 +2,7 @@
 
 ## Product Goal
 
-Build a Chromium-based browser shell inspired by Zen and Arc: vertical workspaces, per-workspace Chromium profiles, per-workspace homepages, keep-alive Chromium webviews for current Space tabs, sleeping background tabs for memory control, workspace creation/deletion, drag-and-drop workspace ordering, compact tab management, sidebar tab search, sidebar tab context actions, named and color-coded collapsible tab groups, direct tab closing, keyboard tab cycling, close-other-tabs and close-left/right cleanup, tab duplication, per-tab mute, per-tab navigation state, drag-and-drop tab ordering, drag-and-drop cross-workspace tab moves, collapsible focus mode, page identity feedback, site information, per-origin permissions, profile storage inspection, global and per-profile browsing-data clearing, configurable startup/session restore, state backup import/export, find in page, per-tab zoom, favorites, explicit split-view tab targeting, keyboard-first navigation, omnibox suggestions, command palette with direct search/navigation, per-workspace recently closed tab recovery, searchable and editable history, downloads, and user settings.
+Build a Chromium-based browser shell inspired by Zen and Arc: vertical workspaces, per-workspace Chromium profiles, internal new tab page, per-workspace homepages, keep-alive Chromium webviews for current Space tabs, sleeping background tabs for memory control, workspace creation/deletion, drag-and-drop workspace ordering, compact tab management, sidebar tab search, sidebar tab context actions, named and color-coded collapsible tab groups, direct tab closing, keyboard tab cycling, close-other-tabs and close-left/right cleanup, tab duplication, per-tab mute, per-tab navigation state, drag-and-drop tab ordering, drag-and-drop cross-workspace tab moves, collapsible focus mode, page identity feedback, site information, per-origin permissions, profile storage inspection, global and per-profile browsing-data clearing, configurable startup/session restore, state backup import/export, find in page, per-tab zoom, favorites, explicit split-view tab targeting, keyboard-first navigation, omnibox suggestions, command palette with direct search/navigation, per-workspace recently closed tab recovery, searchable and editable history, downloads, and user settings.
 
 Electron is acceptable for this stage because it embeds Chromium and lets the product shell iterate quickly. If the project later needs native Chromium UI integration, keep this shell architecture as the product prototype and migrate features behind stable domain contracts.
 
@@ -18,6 +18,7 @@ Electron is acceptable for this stage because it embeds Chromium and lets the pr
 - Keep tab lifecycle, tab selection/cycling, tab cleanup, grouping, duplication, mute state, pin state, ordering, and workspace-transfer behavior in reusable domain actions so command palette, shortcuts, context menus, and drag/drop sidebar controls remain consistent.
 - Keep active Space webviews mounted across tab switches so Chromium page state, scroll position, and in-page session state are not lost by ordinary tab selection.
 - Treat Electron `webview` methods as lifecycle-bound APIs: only expose a webview to controller/store code after the element has emitted `dom-ready`, and remove it when unmounted.
+- Render internal browser pages such as `astra://newtab` in React surfaces instead of loading them into Chromium webviews.
 - Keep sleeping-tab behavior explicit: sleeping a tab unloads its hidden webview, selecting it wakes it, and active/split/pinned tabs are protected from bulk sleep.
 - Keep sidebar filtering in reusable, tested logic so tabs, groups, pinned tabs, and favorites share one matching rule.
 - Keep workspace creation, deletion, switching, renaming, accent/homepage changes, and ordering in reusable domain actions, and never allow the state to have zero workspaces.
@@ -63,6 +64,7 @@ The project should follow the broad layering used by mature Electron/React proje
 - `src/renderer/stores`: Zustand stores and typed renderer state actions.
 - `src/renderer/hooks`: stateful React orchestration, side effects, keyboard/command/omnibox builders, and view-model glue.
 - `src/renderer/surfaces`: UI grouped by browser surface such as sidebar, topbar, panels, command palette, permissions, find, and webview.
+- `src/renderer/surfaces/start`: internal browser start/new-tab surfaces rendered by React.
 - `src/renderer/styles`: global CSS split by layout and surface.
 - `src/renderer/types`: ambient Electron/webview declarations.
 - `tests`: unit tests for domain logic and future hook/component behavior.
