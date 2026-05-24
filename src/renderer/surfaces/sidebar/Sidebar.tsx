@@ -228,11 +228,11 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       </section>
 
       <footer className="sidebar-footer">
-        <button className="toolbar-button" type="button" onClick={actions.toggleSidebar}>Focus</button>
-        <button className="toolbar-button" type="button" aria-pressed={state.splitMode} onClick={actions.toggleSplitMode}>Split</button>
-        <button className="toolbar-button" type="button" onClick={() => setPanel("history")}>History</button>
-        <button className="toolbar-button" type="button" onClick={() => setPanel("downloads")}>Downloads</button>
-        <button className="toolbar-button" type="button" onClick={() => setPanel("settings")}>Settings</button>
+        <button className="icon-button" title="Focus sidebar" type="button" onClick={actions.toggleSidebar}>◐</button>
+        <button className="icon-button" title="Split view" type="button" aria-pressed={state.splitMode} onClick={actions.toggleSplitMode}>◫</button>
+        <button className="icon-button" title="History" type="button" onClick={() => setPanel("history")}>↺</button>
+        <button className="icon-button" title="Downloads" type="button" onClick={() => setPanel("downloads")}>↓</button>
+        <button className="icon-button" title="Settings" type="button" onClick={() => setPanel("settings")}>⚙</button>
       </footer>
       {tabMenu && (
         <TabContextMenu

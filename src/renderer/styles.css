@@ -4,6 +4,7 @@
 @import "./styles/sidebar-groups.css";
 @import "./styles/sidebar-context-menu.css";
 @import "./styles/browser.css";
+@import "./styles/topbar.css";
 @import "./styles/panels.css";
 @import "./styles/panels-history.css";
 @import "./styles/panels-settings.css";

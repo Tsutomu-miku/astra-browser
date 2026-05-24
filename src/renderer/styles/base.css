@@ -1,14 +1,18 @@
 :root {
   color-scheme: dark;
-  --bg: #111318;
-  --panel: #171a21;
-  --panel-soft: #20242d;
-  --text: #f5f7fb;
-  --muted: #8f98a8;
-  --line: rgba(255, 255, 255, 0.1);
-  --control: #2a303b;
-  --control-hover: #37404d;
-  --green: #86efac;
+  --bg: #0e0f11;
+  --chrome: #171819;
+  --panel: #1c1d20;
+  --panel-soft: #26282c;
+  --panel-raised: #303237;
+  --text: #f2f3f4;
+  --muted: #9ba1aa;
+  --line: rgba(255, 255, 255, 0.09);
+  --control: #26282c;
+  --control-hover: #34373d;
+  --accent: #8bd3a7;
+  --danger: #ff8a8a;
+  --secure: #8bd3a7;
 }
 
 * {
@@ -53,7 +57,7 @@ button {
 .icon-button,
 .toolbar-button {
   border: 0;
-  border-radius: 8px;
+  border-radius: 7px;
   background: var(--control);
   cursor: pointer;
 }
@@ -77,15 +81,16 @@ button {
   background: var(--control-hover);
 }
 
+.icon-button[aria-pressed="true"],
+.toolbar-button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 26%, var(--control));
+  color: #f6fff8;
+}
+
 .icon-button:disabled,
 .toolbar-button:disabled {
   opacity: 0.45;
   cursor: default;
-}
-
-.toolbar-button[aria-pressed="true"] {
-  background: #315c49;
-  color: #ddfbe7;
 }
 
 @media (max-width: 1080px) {

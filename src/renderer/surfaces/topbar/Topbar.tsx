@@ -114,23 +114,47 @@ export function Topbar({ controller }: { controller: BrowserController }) {
           </div>
         )}
       </div>
-      <button className="toolbar-button" type="button" onClick={actions.toggleActiveTabFavorite}>
-        {isFavorite(activeWorkspace, activeTab.url) ? "Unfavorite" : "Favorite"}
+      <button className="toolbar-button" title="Workspace settings" type="button" onClick={() => setPanel("settings")}>
+        <span className="topbar-workspace-dot" style={{ background: activeWorkspace.accent }} />
+        <span className="topbar-workspace-name">{activeWorkspace.name}</span>
       </button>
-      <button className="toolbar-button" type="button" onClick={actions.toggleActiveTabPinned}>
-        {activeTab.isPinned ? "Unpin" : "Pin"}
-      </button>
-      <button className="toolbar-button" type="button" onClick={actions.toggleActiveTabMuted}>
-        {activeTab.isMuted ? "Unmute" : "Mute"}
-      </button>
-      <div className="zoom-controls" aria-label="Page zoom">
-        <button className="icon-button" title="Zoom out" type="button" onClick={actions.zoomOut}>−</button>
-        <button className="zoom-value" title="Reset zoom" type="button" onClick={actions.resetActiveTabZoom}>
-          {formatZoomPercent(activeTab.zoomFactor)}
+      <div className="page-actions" aria-label="Page actions">
+        <button
+          className="icon-button"
+          title={isFavorite(activeWorkspace, activeTab.url) ? "Remove favorite" : "Add favorite"}
+          type="button"
+          aria-pressed={isFavorite(activeWorkspace, activeTab.url)}
+          onClick={actions.toggleActiveTabFavorite}
+        >
+          {isFavorite(activeWorkspace, activeTab.url) ? "★" : "☆"}
         </button>
-        <button className="icon-button" title="Zoom in" type="button" onClick={actions.zoomIn}>+</button>
+        <button
+          className="icon-button"
+          title={activeTab.isPinned ? "Unpin tab" : "Pin tab"}
+          type="button"
+          aria-pressed={activeTab.isPinned}
+          onClick={actions.toggleActiveTabPinned}
+        >
+          {activeTab.isPinned ? "⌖" : "⌑"}
+        </button>
+        <button
+          className="icon-button"
+          title={activeTab.isMuted ? "Unmute tab" : "Mute tab"}
+          type="button"
+          aria-pressed={activeTab.isMuted}
+          onClick={actions.toggleActiveTabMuted}
+        >
+          {activeTab.isMuted ? "◼" : "♪"}
+        </button>
+        <div className="zoom-controls" aria-label="Page zoom">
+          <button className="icon-button" title="Zoom out" type="button" onClick={actions.zoomOut}>−</button>
+          <button className="zoom-value" title="Reset zoom" type="button" onClick={actions.resetActiveTabZoom}>
+            {formatZoomPercent(activeTab.zoomFactor)}
+          </button>
+          <button className="icon-button" title="Zoom in" type="button" onClick={actions.zoomIn}>+</button>
+        </div>
+        <button className="icon-button close-tab-button" title="Close tab" type="button" onClick={actions.closeActiveTab}>×</button>
       </div>
-      <button className="toolbar-button" type="button" onClick={actions.closeActiveTab}>Close</button>
     </header>
   );
 }
