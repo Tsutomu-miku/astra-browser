@@ -64,6 +64,7 @@ GitHub Actions runs `pnpm check` on pushes and pull requests to `main`, then upl
 
 - `astra-browser-renderer`: the compiled Vite renderer bundle from `dist/renderer`.
 - `astra-browser-runtime`: renderer output plus Electron main/preload files and package metadata.
+- `astra-browser-windows-x64`: a Windows x64 portable `.exe` produced by Electron Builder on `windows-latest`.
 
 On minimal Linux environments, Electron also requires native desktop libraries such as GTK, ATK, NSS, and X11/Wayland support. If `pnpm start` fails before opening a window with a missing shared library, install the corresponding system package and rerun the command.
 

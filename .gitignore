@@ -1,6 +1,7 @@
 node_modules/
 dist/
 out/
+release/
 .git-local/
 .DS_Store
 *.log
