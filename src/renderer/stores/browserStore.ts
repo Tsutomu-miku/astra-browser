@@ -65,6 +65,7 @@ import { getPermissionRule } from "../domain/sitePermissions";
 import { loadBrowserState, saveBrowserState } from "../hooks/browserStorage";
 import type { PermissionRequestEvent } from "../types/electron";
 import type { WebviewAction, WebviewElement } from "../types/browser-ui";
+import { getActiveProfileId, getActiveUrl } from "./browserStoreSelectors";
 
 export type Panel = "history" | "downloads" | "settings" | "site" | null;
 
@@ -234,7 +235,11 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   sleepInactiveTabs: () => update(set, sleepInactiveTabs),
   sleepTab: (tabId) => update(set, (state) => sleepTab(state, tabId)),
   setActiveTabZoom: (zoomFactor, webview) => update(set, (state) => syncZoom(setActiveTabZoom(state, zoomFactor), webview)),
-  setAddressValue: (addressValue) => set({ addressValue }),
+  setAddressValue: (addressValue) => {
+    if (useBrowserStore.getState().addressValue !== addressValue) {
+      set({ addressValue });
+    }
+  },
   setCommandOpen: (commandOpen) => set({ commandOpen }),
   setCommandQuery: (commandQuery) => set({ commandQuery }),
   setFindOpen: (findOpen) => set({ findOpen }),
@@ -268,16 +273,6 @@ function update(
   saveBrowserState(next);
   set({ state: next, addressValue: getActiveUrl(next) });
   return next;
-}
-
-function getActiveUrl(state: BrowserState): string {
-  const workspace = state.workspaces.find((candidate) => candidate.id === state.activeWorkspaceId) ?? state.workspaces[0];
-  return workspace.tabs.find((tab) => tab.id === workspace.activeTabId)?.url ?? workspace.tabs[0].url;
-}
-
-function getActiveProfileId(state: BrowserState): string {
-  const workspace = state.workspaces.find((candidate) => candidate.id === state.activeWorkspaceId) ?? state.workspaces[0];
-  return workspace?.profileId ?? "default";
 }
 
 function syncZoom(state: BrowserState, webview?: WebviewElement): BrowserState {
