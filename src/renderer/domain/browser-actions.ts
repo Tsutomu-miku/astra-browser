@@ -1,0 +1,57 @@
+export { updateBrowserState } from "./action-core";
+export {
+  clearHistory,
+  clearBrowsingData,
+  clearWorkspaceBrowsingData,
+  navigateActiveTab,
+  openUrlInActiveWorkspace,
+  recordHistory,
+  removeHistoryEntry,
+  upsertDownload
+} from "./browsing-actions";
+export {
+  clearSitePermissionRule,
+  setSitePermission,
+  updateSettings
+} from "./settings-actions";
+export {
+  addTab,
+  assignTabToGroup,
+  closeActiveTab,
+  closeOtherTabs,
+  closeTabsToLeft,
+  closeTabsToRight,
+  closeTab,
+  duplicateActiveTab,
+  duplicateTab,
+  groupActiveTab,
+  moveTabToWorkspace,
+  openTabInSplit,
+  reorderTab,
+  resetActiveTabZoom,
+  restoreClosedTab,
+  restoreLastClosedTab,
+  selectAdjacentTab,
+  selectTab,
+  setActiveTabZoom,
+  stepActiveTabZoom,
+  toggleActiveTabFavorite,
+  toggleActiveTabMuted,
+  toggleActiveTabPinned,
+  toggleTabGroupCollapsed,
+  toggleTabMuted,
+  toggleTabPinned,
+  toggleSplitMode,
+  ungroupActiveTab,
+  updateTabGroup,
+  updateTab,
+  type TabDropPlacement
+} from "./tab-actions";
+export {
+  addWorkspace,
+  deleteWorkspace,
+  reorderWorkspace,
+  switchWorkspace,
+  updateWorkspace,
+  type WorkspaceDropPlacement
+} from "./workspace-actions";

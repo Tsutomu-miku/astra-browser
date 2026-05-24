@@ -1,0 +1,53 @@
+.settings-section.is-stacked {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.settings-section.is-stacked .profile-storage-list {
+  grid-column: 1 / -1;
+}
+
+.profile-storage-list {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-storage-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #11151d;
+}
+
+.profile-storage-main,
+.profile-storage-metrics {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.profile-storage-name {
+  font-weight: 650;
+}
+
+.profile-storage-profile,
+.profile-storage-metrics span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-storage-metrics {
+  justify-items: end;
+}
+
+.hidden-file-input {
+  display: none;
+}

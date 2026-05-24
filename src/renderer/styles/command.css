@@ -1,0 +1,78 @@
+.command-palette {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: start center;
+  padding-top: 12vh;
+  background: rgba(8, 10, 14, 0.58);
+}
+
+.command-dialog {
+  width: min(680px, calc(100vw - 48px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171b23;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.44);
+}
+
+.command-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.command-header input {
+  width: 100%;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #0f1117;
+  color: var(--text);
+  outline: none;
+}
+
+.command-list {
+  max-height: min(520px, 58vh);
+  overflow: auto;
+  padding: 8px;
+}
+
+.command-item {
+  width: 100%;
+  display: grid;
+  gap: 3px;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.command-item:hover {
+  background: var(--panel-soft);
+}
+
+.command-title,
+.command-subtitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-title {
+  font-weight: 680;
+}
+
+.command-subtitle {
+  color: var(--muted);
+  font-size: 12px;
+}

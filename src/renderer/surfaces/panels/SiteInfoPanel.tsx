@@ -1,0 +1,66 @@
+import { getUrlIdentity } from "../../domain/urlIdentity";
+import {
+  COMMON_SITE_PERMISSIONS,
+  getOriginFromUrl,
+  getPermissionLabel,
+  getPermissionRule
+} from "../../domain/sitePermissions";
+import type { SitePermissionDecision } from "../../domain/browser-types";
+import type { BrowserController } from "../../hooks/types";
+
+export function SiteInfoPanel({ controller }: { controller: BrowserController }) {
+  const { actions, activeTab, activeWorkspace, setPanel, state } = controller;
+  const identity = getUrlIdentity(activeTab.url);
+  const origin = getOriginFromUrl(activeTab.url);
+
+  return (
+    <aside className="site-panel">
+      <header className="panel-header">
+        <h2>Site</h2>
+        <button className="icon-button" title="Close site info" type="button" onClick={() => setPanel(null)}>×</button>
+      </header>
+      <section className="site-summary">
+        <span className={`site-security is-${identity.security}`}>{identity.label}</span>
+        <span className="site-origin">{origin ?? activeTab.url}</span>
+      </section>
+      {origin ? (
+        <section className="permission-list" aria-label="Site permissions">
+          {COMMON_SITE_PERMISSIONS.map((permission) => (
+            <PermissionRow
+              key={permission}
+              decision={getPermissionRule(state.sitePermissions, activeWorkspace.profileId, origin, permission)?.decision}
+              label={getPermissionLabel(permission)}
+              onClear={() => actions.clearSitePermission(activeWorkspace.profileId, origin, permission)}
+              onSet={(decision) => actions.setSitePermission(activeWorkspace.profileId, origin, permission, decision)}
+            />
+          ))}
+        </section>
+      ) : (
+        <p className="empty-state">Permissions are available for http and https pages.</p>
+      )}
+    </aside>
+  );
+}
+
+function PermissionRow({
+  decision,
+  label,
+  onClear,
+  onSet
+}: {
+  decision?: SitePermissionDecision;
+  label: string;
+  onClear: () => void;
+  onSet: (decision: SitePermissionDecision) => void;
+}) {
+  return (
+    <article className="permission-row">
+      <span className="permission-name">{label}</span>
+      <div className="permission-choice">
+        <button type="button" aria-pressed={!decision} onClick={onClear}>Ask</button>
+        <button type="button" aria-pressed={decision === "allow"} onClick={() => onSet("allow")}>Allow</button>
+        <button type="button" aria-pressed={decision === "block"} onClick={() => onSet("block")}>Block</button>
+      </div>
+    </article>
+  );
+}

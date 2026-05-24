@@ -1,0 +1,43 @@
+export {
+  closeOtherTabs,
+  closeTabsToLeft,
+  closeTabsToRight
+} from "./tab-cleanup-actions";
+export {
+  addTab,
+  closeActiveTab,
+  closeTab,
+  duplicateActiveTab,
+  duplicateTab,
+  restoreClosedTab,
+  restoreLastClosedTab
+} from "./tab-lifecycle-actions";
+export {
+  assignTabToGroup,
+  groupActiveTab,
+  toggleTabGroupCollapsed,
+  ungroupActiveTab,
+  updateTabGroup
+} from "./tab-group-actions";
+export {
+  moveTabToWorkspace,
+  openTabInSplit,
+  reorderTab,
+  toggleSplitMode
+} from "./tab-layout-actions";
+export {
+  selectAdjacentTab,
+  selectTab
+} from "./tab-selection-actions";
+export {
+  resetActiveTabZoom,
+  setActiveTabZoom,
+  stepActiveTabZoom,
+  toggleActiveTabFavorite,
+  toggleActiveTabMuted,
+  toggleActiveTabPinned,
+  toggleTabMuted,
+  toggleTabPinned,
+  updateTab
+} from "./tab-state-actions";
+export type { TabDropPlacement } from "./tab-utils";

@@ -1,0 +1,75 @@
+.tab-group {
+  display: grid;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.tab-group-header {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto 24px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 0 8px;
+  background: color-mix(in srgb, var(--group-color) 16%, transparent);
+  color: var(--text);
+}
+
+.tab-group-header:hover {
+  background: color-mix(in srgb, var(--group-color) 24%, transparent);
+}
+
+.tab-group-toggle {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tab-group-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--group-color);
+}
+
+.tab-group-title-input {
+  min-width: 0;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+}
+
+.tab-group-title-input:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 0 6px;
+}
+
+.tab-group-count {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.tab-group-color {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
