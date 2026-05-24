@@ -86,6 +86,16 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
           <input type="color" value={activeWorkspace.accent} onChange={(event) => actions.updateWorkspace({ accent: event.target.value })} />
         </label>
         <label className="field">
+          <span>Workspace homepage</span>
+          <input
+            autoComplete="off"
+            spellCheck={false}
+            value={activeWorkspace.homepage}
+            onChange={(event) => actions.updateWorkspace({ homepage: event.target.value })}
+            onBlur={(event) => actions.updateWorkspace({ homepage: normalizeAddress(event.target.value, state.settings.searchEngine) })}
+          />
+        </label>
+        <label className="field">
           <span>Workspace profile</span>
           <input value={activeWorkspace.profileName} onChange={(event) => actions.updateWorkspace({ profileName: event.target.value })} />
         </label>

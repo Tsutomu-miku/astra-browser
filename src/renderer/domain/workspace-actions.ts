@@ -2,6 +2,7 @@ import {
   BrowserState,
   createTab,
   getHomepageUrl,
+  getWorkspaceHomepageUrl,
   getNextWorkspaceAccent,
   Workspace
 } from "./browser-core";
@@ -29,6 +30,7 @@ export function addWorkspace(state: BrowserState): BrowserState {
       id,
       name,
       accent: getNextWorkspaceAccent(index),
+      homepage: getHomepageUrl(draft),
       ...normalizeWorkspaceProfile({ id, name }),
       closedTabs: [],
       favorites: [],
@@ -79,7 +81,13 @@ export function reorderWorkspace(
 
 export function updateWorkspace(
   state: BrowserState,
-  patch: Partial<Pick<Workspace, "name" | "accent" | "profileName">>
+  patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>
 ): BrowserState {
-  return updateBrowserState(state, (draft) => Object.assign(getActiveWorkspace(draft), patch));
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    Object.assign(workspace, patch);
+    if (patch.homepage !== undefined) {
+      workspace.homepage = getWorkspaceHomepageUrl(draft, workspace);
+    }
+  });
 }

@@ -6,6 +6,7 @@ import {
   getHomepageUrl,
   getHostInitial,
   getNextWorkspaceAccent,
+  getWorkspaceHomepageUrl,
   isFavorite,
   normalizeAddress,
   normalizeState,
@@ -42,9 +43,11 @@ describe("browser-core", () => {
     expect(state.settings.searchEngine).toBe("google");
     expect(state.settings.startupBehavior).toBe("restore");
     expect(state.workspaces[0].name).toBe("Space");
+    expect(state.workspaces[0].homepage).toBe("about:blank");
     expect(state.workspaces[0].favorites[0].url).toBe("https://github.com/");
     expect(state.workspaces[0].closedTabs[0].url).toBe("https://closed.example/");
     expect(state.workspaces[0].tabs).toHaveLength(1);
+    expect(state.workspaces[0].tabs[0].url).toBe("about:blank");
     expect(state.workspaces[0].tabs[0].canGoBack).toBe(false);
     expect(state.workspaces[0].tabs[0].canGoForward).toBe(false);
     expect(state.workspaces[0].tabs[0].isMuted).toBe(false);
@@ -64,6 +67,7 @@ describe("browser-core", () => {
         {
           id: "space",
           name: "Space",
+          homepage: "space.example",
           tabGroups: [{ id: "group", name: "Docs", color: "#123456", isCollapsed: false }],
           tabs: [
             { id: "first", title: "First", url: "first.example", groupId: "group" },
@@ -78,7 +82,7 @@ describe("browser-core", () => {
     expect(started.splitMode).toBe(false);
     expect(started.splitTabId).toBeNull();
     expect(started.workspaces[0].tabs).toHaveLength(1);
-    expect(started.workspaces[0].tabs[0].url).toBe("https://start.example/");
+    expect(started.workspaces[0].tabs[0].url).toBe("https://space.example/");
     expect(started.workspaces[0].tabGroups).toHaveLength(0);
   });
 
@@ -87,6 +91,7 @@ describe("browser-core", () => {
     state.settings.homepage = "chromium.org";
 
     expect(getHomepageUrl(state)).toBe("https://chromium.org/");
+    expect(getWorkspaceHomepageUrl(state, { homepage: "space.example" })).toBe("https://space.example/");
     expect(getHostInitial("https://developer.mozilla.org")).toBe("D");
     expect(isFavorite(state.workspaces[0], "https://www.chromium.org")).toBe(true);
     expect(getNextWorkspaceAccent(2)).toBe("#86efac");

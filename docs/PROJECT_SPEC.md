@@ -2,7 +2,7 @@
 
 ## Product Goal
 
-Build a Chromium-based browser shell inspired by Zen and Arc: vertical workspaces, per-workspace Chromium profiles, workspace creation/deletion, drag-and-drop workspace ordering, compact tab management, sidebar tab context actions, named and color-coded collapsible tab groups, direct tab closing, keyboard tab cycling, close-other-tabs and close-left/right cleanup, tab duplication, per-tab mute, per-tab navigation state, drag-and-drop tab ordering, drag-and-drop cross-workspace tab moves, collapsible focus mode, page identity feedback, site information, per-origin permissions, profile storage inspection, global and per-profile browsing-data clearing, configurable startup/session restore, state backup import/export, find in page, per-tab zoom, favorites, explicit split-view tab targeting, keyboard-first navigation, omnibox suggestions, command palette with direct search/navigation, per-workspace recently closed tab recovery, searchable and editable history, downloads, and user settings.
+Build a Chromium-based browser shell inspired by Zen and Arc: vertical workspaces, per-workspace Chromium profiles, per-workspace homepages, workspace creation/deletion, drag-and-drop workspace ordering, compact tab management, sidebar tab context actions, named and color-coded collapsible tab groups, direct tab closing, keyboard tab cycling, close-other-tabs and close-left/right cleanup, tab duplication, per-tab mute, per-tab navigation state, drag-and-drop tab ordering, drag-and-drop cross-workspace tab moves, collapsible focus mode, page identity feedback, site information, per-origin permissions, profile storage inspection, global and per-profile browsing-data clearing, configurable startup/session restore, state backup import/export, find in page, per-tab zoom, favorites, explicit split-view tab targeting, keyboard-first navigation, omnibox suggestions, command palette with direct search/navigation, per-workspace recently closed tab recovery, searchable and editable history, downloads, and user settings.
 
 Electron is acceptable for this stage because it embeds Chromium and lets the product shell iterate quickly. If the project later needs native Chromium UI integration, keep this shell architecture as the product prototype and migrate features behind stable domain contracts.
 
@@ -16,10 +16,10 @@ Electron is acceptable for this stage because it embeds Chromium and lets the pr
 - Keep state transitions in typed store actions and domain actions, not scattered across component markup.
 - Keep address-bar suggestion ranking in reusable, tested logic rather than component-only filtering.
 - Keep tab lifecycle, tab selection/cycling, tab cleanup, grouping, duplication, mute state, pin state, ordering, and workspace-transfer behavior in reusable domain actions so command palette, shortcuts, context menus, and drag/drop sidebar controls remain consistent.
-- Keep workspace creation, deletion, switching, renaming, accent changes, and ordering in reusable domain actions, and never allow the state to have zero workspaces.
+- Keep workspace creation, deletion, switching, renaming, accent/homepage changes, and ordering in reusable domain actions, and never allow the state to have zero workspaces.
 - Keep workspace profile identity stable so Electron webviews can use persistent Chromium partitions per Space.
 - Inspect Chromium session cache and storage usage through the main process so profile diagnostics use the real browser runtime.
-- Keep startup behavior explicit: restore previous tabs by default, or reset each Space to the configured homepage when requested.
+- Keep startup behavior explicit: restore previous tabs by default, or reset each Space to its own configured homepage when requested.
 - Export browser state as normalized JSON and import backups through the same migration path used for local persistence.
 - Split large domain action files by responsibility and keep `browser-actions.ts` / `tab-actions.ts` as stable import barrels for store/tests.
 - Route Chromium permission requests through the isolated preload bridge and persist origin-level decisions in typed renderer state scoped by workspace profile.

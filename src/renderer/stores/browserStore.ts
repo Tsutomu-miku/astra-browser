@@ -133,7 +133,7 @@ interface BrowserStore {
   updateSettings: (patch: Partial<BrowserState["settings"]>) => void;
   updateTabGroup: (groupId: string, patch: Partial<Pick<Workspace["tabGroups"][number], "name" | "color">>) => void;
   updateTab: (tabId: string, patch: Partial<BrowserTab>) => void;
-  updateWorkspace: (patch: Partial<Pick<Workspace, "name" | "accent" | "profileName">>) => void;
+  updateWorkspace: (patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>) => void;
 }
 
 const initialState = loadBrowserState();

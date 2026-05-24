@@ -12,7 +12,7 @@ import type {
   StartupBehavior,
   TabGroup
 } from "./browser-types";
-import { getHomepageUrl, getReadableUrlTitle, normalizeAddress } from "./navigation";
+import { getHomepageUrl, getReadableUrlTitle, getWorkspaceHomepageUrl, normalizeAddress } from "./navigation";
 import { normalizeSitePermissions } from "./sitePermissions";
 import { normalizeTabGroups } from "./tab-groups";
 import { normalizeWorkspaceProfile } from "./workspaceProfiles";
@@ -46,6 +46,7 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
     workspace.id = workspace.id ?? createId();
     workspace.name = workspace.name || "Space";
     workspace.accent = isHexColor(workspace.accent) ? workspace.accent : getNextWorkspaceAccent(0);
+    workspace.homepage = getWorkspaceHomepageUrl(state, workspace);
     Object.assign(workspace, normalizeWorkspaceProfile(workspace));
     workspace.closedTabs = normalizeClosedTabs(workspace.closedTabs);
     workspace.favorites = normalizeFavorites(workspace.favorites, state.settings.searchEngine);
@@ -53,7 +54,7 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
     workspace.tabs = Array.isArray(workspace.tabs) ? workspace.tabs.filter(Boolean) as BrowserTab[] : [];
 
     if (workspace.tabs.length === 0) {
-      workspace.tabs.push(createTab("New Tab", getHomepageUrl(state)));
+      workspace.tabs.push(createTab("New Tab", workspace.homepage));
     }
 
     for (const tab of workspace.tabs) {
@@ -91,7 +92,7 @@ export function applyStartupBehavior(state: BrowserState): BrowserState {
     splitMode: false,
     splitTabId: null,
     workspaces: state.workspaces.map((workspace) => {
-      const tab = createTab("New Tab", getHomepageUrl(state));
+      const tab = createTab("New Tab", getWorkspaceHomepageUrl(state, workspace));
       return {
         ...workspace,
         tabs: [tab],

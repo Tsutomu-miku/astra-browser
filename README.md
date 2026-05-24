@@ -8,6 +8,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Drag and drop workspace buttons to reorder Spaces.
 - Create and delete workspaces from settings or the command palette.
 - Workspace profiles map Spaces to separate persistent Chromium partitions.
+- Each Space has its own homepage for new tabs and startup reset.
 - Multiple tabs per workspace.
 - Collapsible, named, and color-coded tab groups for organizing workspace tabs.
 - Direct sidebar tab closing with recently closed recovery.
@@ -43,7 +44,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Per-tab page zoom controls using Chromium webview zoom.
 - Searchable browsing history drawer with single-entry removal, clearing, and per-workspace closed-tab restore.
 - Chromium download tracking with a downloads drawer.
-- Settings panel for homepage, search engine, workspace name, workspace accent, and profile display name.
+- Settings panel for global homepage, search engine, workspace homepage, workspace name, workspace accent, and profile display name.
 - Startup behavior can restore the previous session or open the homepage in each Space.
 - Settings can export and import a JSON backup of Spaces, tabs, favorites, history, permissions, and settings.
 - Local tab state persisted in `localStorage`.

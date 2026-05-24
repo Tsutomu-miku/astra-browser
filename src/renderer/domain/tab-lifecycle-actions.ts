@@ -2,7 +2,7 @@ import {
   BrowserState,
   createId,
   createTab,
-  getHomepageUrl
+  getWorkspaceHomepageUrl
 } from "./browser-core";
 import { getActiveTab, getActiveWorkspace } from "./selectors";
 import { updateBrowserState } from "./action-core";
@@ -12,7 +12,7 @@ import { prependClosedTabs } from "./tab-utils";
 export function addTab(state: BrowserState): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
-    const tab = createTab("New Tab", getHomepageUrl(draft));
+    const tab = createTab("New Tab", getWorkspaceHomepageUrl(draft, workspace));
     workspace.tabs.push(tab);
     workspace.activeTabId = tab.id;
     draft.splitTabId = null;
@@ -32,7 +32,7 @@ export function closeTab(state: BrowserState, tabId: string): BrowserState {
     prependClosedTabs(workspace, [tab]);
 
     if (workspace.tabs.length === 1) {
-      workspace.tabs[0] = createTab("New Tab", getHomepageUrl(draft));
+      workspace.tabs[0] = createTab("New Tab", getWorkspaceHomepageUrl(draft, workspace));
       workspace.activeTabId = workspace.tabs[0].id;
       pruneEmptyTabGroups(workspace);
       return;

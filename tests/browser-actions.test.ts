@@ -54,6 +54,22 @@ describe("browser-actions", () => {
     expect(initial.workspaces[0].tabs).toHaveLength(1);
   });
 
+  it("opens new and replacement tabs at the active workspace homepage", () => {
+    const base = createDefaultState();
+    const initial = {
+      ...base,
+      workspaces: base.workspaces.map((workspace) => workspace.id === "personal"
+        ? { ...workspace, homepage: "https://space.example/" }
+        : workspace)
+    };
+    const withTab = addTab(initial);
+    const closed = closeActiveTab(withTab);
+    const closedAgain = closeActiveTab(closed);
+
+    expect(getActiveTab(getActiveWorkspace(withTab)).url).toBe("https://space.example/");
+    expect(getActiveTab(getActiveWorkspace(closedAgain)).url).toBe("https://space.example/");
+  });
+
   it("restores the most recently closed tab", () => {
     const opened = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
     const closed = closeActiveTab(opened);

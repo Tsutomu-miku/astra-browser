@@ -77,6 +77,7 @@ export interface Workspace {
   id: string;
   name: string;
   accent: string;
+  homepage: string;
   profileId: string;
   profileName: string;
   closedTabs: ClosedTab[];

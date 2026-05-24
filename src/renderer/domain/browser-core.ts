@@ -6,6 +6,7 @@ export {
   getHostInitial,
   getReadableUrlTitle,
   getSearchUrl,
+  getWorkspaceHomepageUrl,
   isFavorite,
   normalizeAddress
 } from "./navigation";

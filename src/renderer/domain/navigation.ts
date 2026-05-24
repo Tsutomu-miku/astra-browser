@@ -8,7 +8,7 @@ export function normalizeAddress(value: unknown, searchEngineKey: SearchEngineKe
   }
 
   try {
-    const url = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
+    const url = new URL(hasAddressScheme(trimmed) ? trimmed : `https://${trimmed}`);
     return url.href;
   } catch {
     const engine = SEARCH_ENGINES[searchEngineKey] ?? SEARCH_ENGINES.google;
@@ -16,8 +16,19 @@ export function normalizeAddress(value: unknown, searchEngineKey: SearchEngineKe
   }
 }
 
+function hasAddressScheme(value: string): boolean {
+  return value.includes("://") || /^(about|chrome):/i.test(value);
+}
+
 export function getHomepageUrl(state?: Pick<BrowserState, "settings">): string {
   return normalizeAddress(state?.settings?.homepage || DEFAULT_URL, state?.settings?.searchEngine);
+}
+
+export function getWorkspaceHomepageUrl(
+  state: Pick<BrowserState, "settings">,
+  workspace: Pick<Workspace, "homepage"> | undefined
+): string {
+  return normalizeAddress(workspace?.homepage || getHomepageUrl(state), state.settings.searchEngine);
 }
 
 export function getSearchUrl(query: string, state?: Pick<BrowserState, "settings">): string {
