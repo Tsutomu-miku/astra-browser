@@ -7,6 +7,7 @@ interface TabContextMenuProps {
   onDuplicate: (tabId: string) => void;
   onOpenInSplit: (tabId: string) => void;
   onSelect: (tabId: string) => void;
+  onSleepTab: (tabId: string) => void;
   onToggleMuted: (tabId: string) => void;
   onTogglePinned: (tabId: string) => void;
   tab: BrowserTab;
@@ -20,6 +21,7 @@ export function TabContextMenu({
   onDuplicate,
   onOpenInSplit,
   onSelect,
+  onSleepTab,
   onToggleMuted,
   onTogglePinned,
   tab,
@@ -40,6 +42,7 @@ export function TabContextMenu({
       <button type="button" role="menuitem" onClick={() => run(() => onSelect(tab.id))}>Open</button>
       <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</button>
       <button type="button" role="menuitem" onClick={() => run(() => onDuplicate(tab.id))}>Duplicate</button>
+      <button type="button" role="menuitem" onClick={() => run(() => onSleepTab(tab.id))}>Sleep tab</button>
       <button type="button" role="menuitem" onClick={() => run(() => onTogglePinned(tab.id))}>
         {tab.isPinned ? "Unpin" : "Pin"}
       </button>

@@ -17,6 +17,7 @@ export function createTab(title: string, url: string): BrowserTab {
     isMuted: false,
     isPinned: false,
     isLoading: false,
+    isSleeping: false,
     zoomFactor: DEFAULT_ZOOM_FACTOR
   };
 }

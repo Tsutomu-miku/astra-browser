@@ -67,6 +67,7 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
       tab.isMuted = Boolean(tab.isMuted);
       tab.isPinned = Boolean(tab.isPinned);
       tab.isLoading = Boolean(tab.isLoading);
+      tab.isSleeping = Boolean(tab.isSleeping);
       tab.zoomFactor = normalizeZoomFactor(tab.zoomFactor);
     }
 

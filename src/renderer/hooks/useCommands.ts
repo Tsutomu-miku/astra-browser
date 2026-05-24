@@ -30,6 +30,7 @@ interface CommandActions {
   selectAdjacentTab: (direction: 1 | -1) => void;
   selectTab: (tabId: string) => void;
   resetActiveTabZoom: () => void;
+  sleepInactiveTabs: () => void;
   switchWorkspace: (workspaceId: string) => void;
   toggleActiveTabFavorite: () => void;
   toggleActiveTabMuted: () => void;
@@ -133,6 +134,7 @@ export function buildCommands(
     { title: "Zoom in", subtitle: "Increase page zoom", run: actions.zoomIn },
     { title: "Zoom out", subtitle: "Decrease page zoom", run: actions.zoomOut },
     { title: "Reset zoom", subtitle: "Return page zoom to 100%", run: actions.resetActiveTabZoom },
+    { title: "Sleep inactive tabs", subtitle: "Unload hidden tabs in this Space", run: actions.sleepInactiveTabs },
     {
       title: "Toggle sidebar",
       subtitle: "Enter or leave focus mode",

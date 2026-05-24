@@ -25,7 +25,10 @@ import {
   restoreClosedTab,
   restoreLastClosedTab,
   selectAdjacentTab,
+  selectTab,
   setActiveTabZoom,
+  sleepInactiveTabs,
+  sleepTab,
   stepActiveTabZoom,
   switchWorkspace,
   toggleActiveTabFavorite,
@@ -403,5 +406,32 @@ describe("browser-actions", () => {
 
     expect(getActiveTab(getActiveWorkspace(muted)).isMuted).toBe(true);
     expect(getActiveTab(getActiveWorkspace(unmuted)).isMuted).toBe(false);
+  });
+
+  it("sleeps inactive tabs and wakes them when selected", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const slept = sleepInactiveTabs(second);
+    const workspace = getActiveWorkspace(slept);
+    const firstTab = workspace.tabs.find((tab) => tab.title === "First")!;
+    const selected = selectTab(slept, firstTab.id);
+
+    expect(getActiveTab(workspace).title).toBe("Second");
+    expect(firstTab.isSleeping).toBe(true);
+    expect(getActiveTab(getActiveWorkspace(selected)).title).toBe("First");
+    expect(getActiveTab(getActiveWorkspace(selected)).isSleeping).toBe(false);
+  });
+
+  it("sleeps a selected tab by moving focus to a neighbor", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const active = getActiveTab(getActiveWorkspace(second));
+    const slept = sleepTab(second, active.id);
+    const workspace = getActiveWorkspace(slept);
+    const sleepingTab = workspace.tabs.find((tab) => tab.id === active.id)!;
+
+    expect(sleepingTab.isSleeping).toBe(true);
+    expect(getActiveTab(workspace).id).not.toBe(active.id);
+    expect(slept.splitMode).toBe(false);
   });
 });

@@ -33,6 +33,8 @@ import {
   selectAdjacentTab,
   selectTab,
   setActiveTabZoom,
+  sleepInactiveTabs,
+  sleepTab,
   setSitePermission,
   stepActiveTabZoom,
   switchWorkspace,
@@ -106,6 +108,8 @@ interface BrowserStore {
   runWebviewAction: (action: WebviewAction, webview?: WebviewElement) => void;
   selectAdjacentTab: (direction: 1 | -1) => void;
   selectTab: (tabId: string) => void;
+  sleepInactiveTabs: () => void;
+  sleepTab: (tabId: string) => void;
   resetActiveTabZoom: (webview?: WebviewElement) => void;
   resolvePermissionRequest: (decision: "allow" | "block") => void;
   restoreClosedTab: (closedIndex: number) => void;
@@ -227,6 +231,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   runWebviewAction: (action, webview) => webview?.[action]?.(),
   selectAdjacentTab: (direction) => update(set, (state) => selectAdjacentTab(state, direction)),
   selectTab: (tabId) => update(set, (state) => selectTab(state, tabId)),
+  sleepInactiveTabs: () => update(set, sleepInactiveTabs),
+  sleepTab: (tabId) => update(set, (state) => sleepTab(state, tabId)),
   setActiveTabZoom: (zoomFactor, webview) => update(set, (state) => syncZoom(setActiveTabZoom(state, zoomFactor), webview)),
   setAddressValue: (addressValue) => set({ addressValue }),
   setCommandOpen: (commandOpen) => set({ commandOpen }),

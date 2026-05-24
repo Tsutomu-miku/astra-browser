@@ -40,6 +40,7 @@ describe("buildCommands", () => {
       selectAdjacentTab: vi.fn(),
       resetActiveTabZoom: vi.fn(),
       selectTab: vi.fn(),
+      sleepInactiveTabs: vi.fn(),
       switchWorkspace: vi.fn(),
       toggleActiveTabFavorite: vi.fn(),
       toggleActiveTabMuted: vi.fn(),
@@ -58,6 +59,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.subtitle.startsWith("History"))).toBe(true);
     expect(commands.some((command) => command.title === "Toggle sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Reset zoom")).toBe(true);
+    expect(commands.some((command) => command.title === "Sleep inactive tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Duplicate tab")).toBe(true);
     expect(commands.some((command) => command.title === "Group tab")).toBe(true);
     expect(commands.some((command) => command.title === "Next tab")).toBe(true);

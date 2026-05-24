@@ -11,6 +11,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Each Space has its own homepage for new tabs and startup reset.
 - Multiple tabs per workspace.
 - Current Space tabs keep their Chromium webviews mounted so tab switches preserve page state.
+- Background tabs can be put to sleep to unload hidden Chromium webviews and reduce memory pressure.
 - Collapsible, named, and color-coded tab groups for organizing workspace tabs.
 - Direct sidebar tab closing with recently closed recovery.
 - Sidebar tab context menu for opening, split-view targeting, duplication, pinning, muting, and closing.
@@ -29,7 +30,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Back, forward, reload, new tab, and close controls.
 - Back and forward availability is tracked per tab from Chromium webview navigation state.
 - Split view mode with two webviews side by side and explicit tab-to-split commands.
-- Command palette with workspace switching, tab cycling, tab grouping, duplicate tabs, mute controls, tab cleanup actions, cross-workspace tab moves, tab actions, data clearing, split view, and history search.
+- Command palette with workspace switching, tab cycling, tab grouping, duplicate tabs, sleeping tabs, mute controls, tab cleanup actions, cross-workspace tab moves, tab actions, data clearing, split view, and history search.
 - Command palette entries for open tabs, favorites, history, and reopening recently closed tabs.
 - Command palette can directly open URLs or search typed queries.
 - Browser keyboard shortcuts for tabs, workspace switching, split view, command palette, and closed-tab restore.

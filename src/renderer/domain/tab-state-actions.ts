@@ -40,6 +40,45 @@ export function toggleTabMuted(state: BrowserState, tabId: string): BrowserState
   });
 }
 
+export function sleepTab(state: BrowserState, tabId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = draft.workspaces.find((candidate) => candidate.tabs.some((tab) => tab.id === tabId));
+    const tab = workspace?.tabs.find((candidate) => candidate.id === tabId);
+    if (!workspace || !tab || workspace.tabs.length <= 1) return;
+
+    if (workspace.activeTabId === tab.id) {
+      const index = workspace.tabs.findIndex((candidate) => candidate.id === tab.id);
+      workspace.activeTabId = workspace.tabs[Math.max(0, index - 1)].id;
+    }
+
+    if (draft.splitTabId === tab.id) {
+      draft.splitMode = false;
+      draft.splitTabId = null;
+    }
+
+    tab.isSleeping = true;
+    tab.isLoading = false;
+    tab.canGoBack = false;
+    tab.canGoForward = false;
+  });
+}
+
+export function sleepInactiveTabs(state: BrowserState): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const visibleTabIds = new Set([workspace.activeTabId, draft.splitTabId].filter(Boolean));
+
+    for (const tab of workspace.tabs) {
+      if (!visibleTabIds.has(tab.id) && !tab.isPinned) {
+        tab.isSleeping = true;
+        tab.isLoading = false;
+        tab.canGoBack = false;
+        tab.canGoForward = false;
+      }
+    }
+  });
+}
+
 export function toggleActiveTabFavorite(state: BrowserState): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
@@ -54,7 +93,12 @@ export function toggleActiveTabFavorite(state: BrowserState): BrowserState {
 export function updateTab(state: BrowserState, tabId: string, patch: Partial<BrowserTab>): BrowserState {
   return updateBrowserState(state, (draft) => {
     const tab = draft.workspaces.flatMap((workspace) => workspace.tabs).find((candidate) => candidate.id === tabId);
-    if (tab) Object.assign(tab, patch);
+    if (tab) {
+      Object.assign(tab, patch);
+      if (patch.url || patch.isLoading) {
+        tab.isSleeping = false;
+      }
+    }
   });
 }
 

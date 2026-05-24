@@ -19,7 +19,7 @@ export function getKeepAliveWebviewTabs(
   return [
     ...visibleTabs.map((tab) => ({ isVisible: true, tab })),
     ...workspace.tabs
-      .filter((tab) => !visibleTabIds.has(tab.id))
+      .filter((tab) => !visibleTabIds.has(tab.id) && !tab.isSleeping)
       .map((tab) => ({ isVisible: false, tab }))
   ];
 }

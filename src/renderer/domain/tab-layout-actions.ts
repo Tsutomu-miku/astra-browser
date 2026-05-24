@@ -2,7 +2,7 @@ import {
   BrowserState,
   BrowserTab,
   createTab,
-  getHomepageUrl,
+  getWorkspaceHomepageUrl,
   Workspace
 } from "./browser-core";
 import { getActiveTab, getActiveWorkspace } from "./selectors";
@@ -42,7 +42,7 @@ export function moveTabToWorkspace(state: BrowserState, tabId: string, workspace
     tab.groupId = null;
     pruneEmptyTabGroups(source);
     if (source.tabs.length === 0) {
-      const replacement = createTab("New Tab", getHomepageUrl(draft));
+      const replacement = createTab("New Tab", getWorkspaceHomepageUrl(draft, source));
       source.tabs.push(replacement);
       source.activeTabId = replacement.id;
     } else if (source.activeTabId === tabId) {
@@ -63,6 +63,7 @@ export function openTabInSplit(state: BrowserState, tabId: string): BrowserState
     const tab = workspace.tabs.find((candidate) => candidate.id === tabId);
     if (!tab || tab.id === workspace.activeTabId) return;
 
+    tab.isSleeping = false;
     draft.splitMode = true;
     draft.splitTabId = tab.id;
   });
@@ -74,7 +75,9 @@ export function toggleSplitMode(state: BrowserState): BrowserState {
     const active = getActiveTab(workspace);
     const inactiveTabs = workspace.tabs.filter((tab) => tab.id !== active.id);
     draft.splitMode = !draft.splitMode;
-    draft.splitTabId = draft.splitMode ? inactiveTabs[0]?.id ?? createSplitTab(workspace).id : null;
+    const splitTab = inactiveTabs[0] ?? createSplitTab(workspace);
+    splitTab.isSleeping = false;
+    draft.splitTabId = draft.splitMode ? splitTab.id : null;
   });
 }
 

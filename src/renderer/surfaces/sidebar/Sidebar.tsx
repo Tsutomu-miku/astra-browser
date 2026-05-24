@@ -215,6 +215,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onDuplicate={actions.duplicateTab}
           onOpenInSplit={actions.openTabInSplit}
           onSelect={actions.selectTab}
+          onSleepTab={actions.sleepTab}
           onToggleMuted={actions.toggleTabMuted}
           onTogglePinned={actions.toggleTabPinned}
         />

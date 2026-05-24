@@ -34,6 +34,8 @@ export {
   selectAdjacentTab,
   selectTab,
   setActiveTabZoom,
+  sleepInactiveTabs,
+  sleepTab,
   stepActiveTabZoom,
   toggleActiveTabFavorite,
   toggleActiveTabMuted,

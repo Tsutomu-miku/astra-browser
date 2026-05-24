@@ -108,7 +108,7 @@ export function TabRow({
 }) {
   return (
     <div
-      className="tab-row"
+      className={`tab-row ${tab.isSleeping ? "is-sleeping" : ""}`}
       aria-current={tab.id === activeTabId}
       draggable
       data-dragging={draggingTabId === tab.id}
@@ -125,7 +125,7 @@ export function TabRow({
       onContextMenu={(event) => onContextMenu(event, tab)}
     >
       <button className="tab-button" type="button" onClick={() => onSelect(tab.id)}>
-        <span className="tab-favicon">{tab.isLoading ? "." : getHostInitial(tab.url)}</span>
+        <span className="tab-favicon">{tab.isSleeping ? "z" : tab.isLoading ? "." : getHostInitial(tab.url)}</span>
         <span className="tab-title">{tab.title || tab.url}</span>
       </button>
       <button

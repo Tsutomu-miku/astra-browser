@@ -66,6 +66,8 @@ export function useBrowserController() {
     runWebviewAction: (action: Parameters<typeof store.runWebviewAction>[0]) => store.runWebviewAction(action, activeWebview),
     selectAdjacentTab: store.selectAdjacentTab,
     selectTab: store.selectTab,
+    sleepInactiveTabs: store.sleepInactiveTabs,
+    sleepTab: store.sleepTab,
     setActiveTabZoom: (zoomFactor: number) => store.setActiveTabZoom(zoomFactor, activeWebview),
     setSitePermission: store.setSitePermission,
     switchWorkspace: store.switchWorkspace,

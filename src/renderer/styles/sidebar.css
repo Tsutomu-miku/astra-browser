@@ -159,6 +159,14 @@ h1 {
   background: #2c3440;
 }
 
+.tab-row.is-sleeping {
+  opacity: 0.62;
+}
+
+.tab-row.is-sleeping .tab-favicon {
+  color: var(--muted);
+}
+
 .tab-button {
   cursor: pointer;
 }

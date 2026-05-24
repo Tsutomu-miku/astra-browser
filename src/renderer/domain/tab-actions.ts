@@ -32,6 +32,8 @@ export {
 export {
   resetActiveTabZoom,
   setActiveTabZoom,
+  sleepInactiveTabs,
+  sleepTab,
   stepActiveTabZoom,
   toggleActiveTabFavorite,
   toggleActiveTabMuted,

@@ -24,7 +24,8 @@ export function navigateActiveTab(state: BrowserState, url: string): BrowserStat
     const normalizedUrl = normalizeAddress(url, draft.settings.searchEngine);
     Object.assign(getActiveTab(getActiveWorkspace(draft)), {
       url: normalizedUrl,
-      title: normalizedUrl
+      title: normalizedUrl,
+      isSleeping: false
     });
   });
 }

@@ -16,6 +16,7 @@ export interface BrowserTab {
   isMuted: boolean;
   isPinned: boolean;
   isLoading: boolean;
+  isSleeping: boolean;
   zoomFactor: number;
 }
 
