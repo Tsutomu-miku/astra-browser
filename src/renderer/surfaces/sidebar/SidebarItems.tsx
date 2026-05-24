@@ -1,4 +1,5 @@
 import type { CSSProperties, DragEvent, MouseEvent } from "react";
+import { FiLoader, FiMoon, FiX } from "react-icons/fi";
 
 import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../domain/browser-core";
 
@@ -125,7 +126,7 @@ export function TabRow({
       onContextMenu={(event) => onContextMenu(event, tab)}
     >
       <button className="tab-button" type="button" onClick={() => onSelect(tab.id)}>
-        <span className="tab-favicon">{tab.isSleeping ? "z" : tab.isLoading ? "." : getHostInitial(tab.url)}</span>
+        <span className="tab-favicon">{tab.isSleeping ? <FiMoon /> : tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}</span>
         <span className="tab-title">{tab.title || tab.url}</span>
       </button>
       <button
@@ -135,7 +136,7 @@ export function TabRow({
         aria-label={`Close ${tab.title || tab.url}`}
         onClick={() => onClose(tab.id)}
       >
-        x
+        <FiX />
       </button>
     </div>
   );

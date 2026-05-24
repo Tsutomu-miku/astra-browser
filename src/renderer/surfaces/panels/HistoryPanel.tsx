@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { FiX } from "react-icons/fi";
 
 import type { ClosedTab, HistoryEntry } from "../../domain/browser-core";
 import type { BrowserController } from "../../hooks/types";
@@ -12,7 +13,7 @@ export function HistoryPanel({ controller }: { controller: BrowserController }) 
     <aside className="history-panel">
       <header className="panel-header">
         <h2>History</h2>
-        <button className="icon-button" title="Close history" type="button" onClick={() => setPanel(null)}>×</button>
+        <button className="icon-button" title="Close history" type="button" onClick={() => setPanel(null)}><FiX /></button>
       </header>
       <div className="panel-scroll">
         <ClosedTabList closedTabs={activeWorkspace.closedTabs} onRestore={actions.restoreClosedTab} />
@@ -78,7 +79,7 @@ function HistoryItem({
         <span className="history-url">{entry.url}</span>
       </button>
       <span className="history-time">{formatTime(entry.visitedAt)}</span>
-      <button className="history-remove" type="button" title="Remove history entry" onClick={() => onRemove(entry.id)}>×</button>
+      <button className="history-remove" type="button" title="Remove history entry" onClick={() => onRemove(entry.id)}><FiX /></button>
     </article>
   );
 }

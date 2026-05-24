@@ -71,6 +71,15 @@ button {
   line-height: 1;
 }
 
+.icon-button svg,
+.toolbar-button svg,
+.zoom-value svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  stroke-width: 2;
+}
+
 .toolbar-button {
   height: 34px;
   padding: 0 14px;

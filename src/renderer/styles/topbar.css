@@ -162,6 +162,11 @@
   font-weight: 800;
 }
 
+.identity-glyph svg {
+  width: 12px;
+  height: 12px;
+}
+
 .identity-label {
   min-width: 0;
   overflow: hidden;
@@ -208,6 +213,10 @@
 
 .close-tab-button {
   color: var(--danger);
+}
+
+.page-actions .icon-button[aria-pressed="true"] svg {
+  fill: currentColor;
 }
 
 @media (max-width: 1080px) {

@@ -1,4 +1,5 @@
 import { type ChangeEvent, useRef, useState } from "react";
+import { FiX } from "react-icons/fi";
 
 import {
   formatBytes,
@@ -43,7 +44,7 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
     <aside className="settings-panel">
       <header className="panel-header">
         <h2>Settings</h2>
-        <button className="icon-button" title="Close settings" type="button" onClick={() => setPanel(null)}>×</button>
+        <button className="icon-button" title="Close settings" type="button" onClick={() => setPanel(null)}><FiX /></button>
       </header>
       <form className="settings-form" onSubmit={(event) => event.preventDefault()}>
         <label className="field">

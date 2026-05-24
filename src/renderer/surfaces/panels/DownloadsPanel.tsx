@@ -1,3 +1,5 @@
+import { FiX } from "react-icons/fi";
+
 import { formatBytes, type DownloadEntry } from "../../domain/browser-core";
 import type { BrowserController } from "../../hooks/types";
 
@@ -8,7 +10,7 @@ export function DownloadsPanel({ controller }: { controller: BrowserController }
     <aside className="downloads-panel">
       <header className="panel-header">
         <h2>Downloads</h2>
-        <button className="icon-button" title="Close downloads" type="button" onClick={() => setPanel(null)}>×</button>
+        <button className="icon-button" title="Close downloads" type="button" onClick={() => setPanel(null)}><FiX /></button>
       </header>
       <div className="downloads-list">
         {state.downloads.length === 0

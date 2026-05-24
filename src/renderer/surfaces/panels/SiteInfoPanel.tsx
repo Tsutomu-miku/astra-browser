@@ -1,3 +1,5 @@
+import { FiX } from "react-icons/fi";
+
 import { getUrlIdentity } from "../../domain/urlIdentity";
 import {
   COMMON_SITE_PERMISSIONS,
@@ -17,7 +19,7 @@ export function SiteInfoPanel({ controller }: { controller: BrowserController })
     <aside className="site-panel">
       <header className="panel-header">
         <h2>Site</h2>
-        <button className="icon-button" title="Close site info" type="button" onClick={() => setPanel(null)}>×</button>
+        <button className="icon-button" title="Close site info" type="button" onClick={() => setPanel(null)}><FiX /></button>
       </header>
       <section className="site-summary">
         <span className={`site-security is-${identity.security}`}>{identity.label}</span>

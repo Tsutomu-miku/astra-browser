@@ -1,7 +1,22 @@
 import { FormEvent, KeyboardEvent, MouseEvent, useMemo, useState } from "react";
+import {
+  FiAlertTriangle,
+  FiArrowLeft,
+  FiArrowRight,
+  FiBookmark,
+  FiInfo,
+  FiLock,
+  FiMinus,
+  FiPlus,
+  FiRefreshCw,
+  FiStar,
+  FiVolume2,
+  FiVolumeX,
+  FiX
+} from "react-icons/fi";
 
 import { isFavorite } from "../../domain/browser-core";
-import { getSecurityGlyph, getUrlIdentity } from "../../domain/urlIdentity";
+import { getUrlIdentity } from "../../domain/urlIdentity";
 import { formatZoomPercent } from "../../domain/zoom";
 import type { BrowserController } from "../../hooks/types";
 import { buildOmniboxSuggestions, type OmniboxSuggestion } from "../../hooks/omniboxSuggestions";
@@ -63,9 +78,9 @@ export function Topbar({ controller }: { controller: BrowserController }) {
   return (
     <header className="topbar">
       <nav className="nav-controls" aria-label="Navigation">
-        <button className="icon-button" title="Back" type="button" disabled={!activeTab.canGoBack} onClick={() => actions.runWebviewAction("goBack")}>‹</button>
-        <button className="icon-button" title="Forward" type="button" disabled={!activeTab.canGoForward} onClick={() => actions.runWebviewAction("goForward")}>›</button>
-        <button className="icon-button" title="Reload" type="button" onClick={() => actions.runWebviewAction("reload")}>↻</button>
+        <button className="icon-button" title="Back" type="button" disabled={!activeTab.canGoBack} onClick={() => actions.runWebviewAction("goBack")}><FiArrowLeft /></button>
+        <button className="icon-button" title="Forward" type="button" disabled={!activeTab.canGoForward} onClick={() => actions.runWebviewAction("goForward")}><FiArrowRight /></button>
+        <button className="icon-button" title="Reload" type="button" onClick={() => actions.runWebviewAction("reload")}><FiRefreshCw /></button>
       </nav>
       <div className="address-area">
         <form className="address-form" onSubmit={submitAddress}>
@@ -75,7 +90,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
             type="button"
             onClick={() => setPanel("site")}
           >
-            <span className="identity-glyph">{activeTab.isLoading ? "…" : getSecurityGlyph(identity.security)}</span>
+            <span className="identity-glyph"><SecurityIcon security={identity.security} /></span>
             <span className="identity-label">{activeTab.isLoading ? "Loading" : identity.label}</span>
           </button>
           <input
@@ -126,7 +141,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
           aria-pressed={isFavorite(activeWorkspace, activeTab.url)}
           onClick={actions.toggleActiveTabFavorite}
         >
-          {isFavorite(activeWorkspace, activeTab.url) ? "★" : "☆"}
+          <FiStar />
         </button>
         <button
           className="icon-button"
@@ -135,7 +150,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
           aria-pressed={activeTab.isPinned}
           onClick={actions.toggleActiveTabPinned}
         >
-          {activeTab.isPinned ? "⌖" : "⌑"}
+          <FiBookmark />
         </button>
         <button
           className="icon-button"
@@ -144,17 +159,23 @@ export function Topbar({ controller }: { controller: BrowserController }) {
           aria-pressed={activeTab.isMuted}
           onClick={actions.toggleActiveTabMuted}
         >
-          {activeTab.isMuted ? "◼" : "♪"}
+          {activeTab.isMuted ? <FiVolumeX /> : <FiVolume2 />}
         </button>
         <div className="zoom-controls" aria-label="Page zoom">
-          <button className="icon-button" title="Zoom out" type="button" onClick={actions.zoomOut}>−</button>
+          <button className="icon-button" title="Zoom out" type="button" onClick={actions.zoomOut}><FiMinus /></button>
           <button className="zoom-value" title="Reset zoom" type="button" onClick={actions.resetActiveTabZoom}>
             {formatZoomPercent(activeTab.zoomFactor)}
           </button>
-          <button className="icon-button" title="Zoom in" type="button" onClick={actions.zoomIn}>+</button>
+          <button className="icon-button" title="Zoom in" type="button" onClick={actions.zoomIn}><FiPlus /></button>
         </div>
-        <button className="icon-button close-tab-button" title="Close tab" type="button" onClick={actions.closeActiveTab}>×</button>
+        <button className="icon-button close-tab-button" title="Close tab" type="button" onClick={actions.closeActiveTab}><FiX /></button>
       </div>
     </header>
   );
+}
+
+function SecurityIcon({ security }: { security: ReturnType<typeof getUrlIdentity>["security"] }) {
+  if (security === "secure") return <FiLock />;
+  if (security === "insecure") return <FiAlertTriangle />;
+  return <FiInfo />;
 }

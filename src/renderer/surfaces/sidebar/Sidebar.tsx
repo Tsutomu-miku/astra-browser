@@ -1,4 +1,16 @@
 import { useEffect, useMemo, useState, type CSSProperties, type DragEvent, type MouseEvent } from "react";
+import {
+  FiChevronLeft,
+  FiChevronRight,
+  FiClock,
+  FiColumns,
+  FiDownload,
+  FiLoader,
+  FiPlus,
+  FiSettings,
+  FiSidebar,
+  FiX
+} from "react-icons/fi";
 
 import { getHostInitial, type BrowserTab } from "../../domain/browser-core";
 import { getGroupedTabs } from "../../domain/tab-groups";
@@ -137,7 +149,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           type="button"
           onClick={actions.toggleSidebar}
         >
-          {sidebarCollapsed ? "›" : "‹"}
+          {sidebarCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
         </button>
       </section>
 
@@ -147,7 +159,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             <p className="eyebrow">Workspace</p>
             <h1>{activeWorkspace.name}</h1>
           </div>
-          <button className="icon-button" title="New tab" type="button" onClick={actions.newTab}>+</button>
+          <button className="icon-button" title="New tab" type="button" onClick={actions.newTab}><FiPlus /></button>
         </header>
 
         <div className="sidebar-search">
@@ -160,7 +172,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             onChange={(event) => setTabQuery(event.target.value)}
           />
           {tabQuery && (
-            <button className="icon-button" title="Clear tab search" type="button" onClick={() => setTabQuery("")}>×</button>
+            <button className="icon-button" title="Clear tab search" type="button" onClick={() => setTabQuery("")}><FiX /></button>
           )}
         </div>
 
@@ -176,7 +188,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
                 onClick={() => actions.selectTab(tab.id)}
                 onContextMenu={(event) => openTabMenu(event, tab)}
               >
-                {tab.isLoading ? "·" : getHostInitial(tab.url)}
+                {tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}
               </button>
             ))}
           </nav>
@@ -228,11 +240,11 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       </section>
 
       <footer className="sidebar-footer">
-        <button className="icon-button" title="Focus sidebar" type="button" onClick={actions.toggleSidebar}>◐</button>
-        <button className="icon-button" title="Split view" type="button" aria-pressed={state.splitMode} onClick={actions.toggleSplitMode}>◫</button>
-        <button className="icon-button" title="History" type="button" onClick={() => setPanel("history")}>↺</button>
-        <button className="icon-button" title="Downloads" type="button" onClick={() => setPanel("downloads")}>↓</button>
-        <button className="icon-button" title="Settings" type="button" onClick={() => setPanel("settings")}>⚙</button>
+        <button className="icon-button" title="Focus sidebar" type="button" onClick={actions.toggleSidebar}><FiSidebar /></button>
+        <button className="icon-button" title="Split view" type="button" aria-pressed={state.splitMode} onClick={actions.toggleSplitMode}><FiColumns /></button>
+        <button className="icon-button" title="History" type="button" onClick={() => setPanel("history")}><FiClock /></button>
+        <button className="icon-button" title="Downloads" type="button" onClick={() => setPanel("downloads")}><FiDownload /></button>
+        <button className="icon-button" title="Settings" type="button" onClick={() => setPanel("settings")}><FiSettings /></button>
       </footer>
       {tabMenu && (
         <TabContextMenu

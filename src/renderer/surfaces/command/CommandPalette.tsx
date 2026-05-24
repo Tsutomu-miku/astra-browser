@@ -1,4 +1,5 @@
 import { KeyboardEvent } from "react";
+import { FiX } from "react-icons/fi";
 
 import type { BrowserController } from "../../hooks/types";
 import { getVisibleCommands } from "../../hooks/commandSearch";
@@ -31,7 +32,7 @@ export function CommandPalette({ controller }: { controller: BrowserController }
             onChange={(event) => setCommandQuery(event.target.value)}
             onKeyDown={onKeyDown}
           />
-          <button className="icon-button" title="Close command palette" type="button" onClick={() => setCommandOpen(false)}>×</button>
+          <button className="icon-button" title="Close command palette" type="button" onClick={() => setCommandOpen(false)}><FiX /></button>
         </header>
         <div className="command-list">
           {visibleCommands.slice(0, 12).map((command) => (

@@ -198,6 +198,14 @@ h1 {
   font-weight: 800;
 }
 
+.favorite-icon svg,
+.tab-favicon svg,
+.pinned-tab-button svg,
+.workspace-button svg {
+  width: 15px;
+  height: 15px;
+}
+
 .favorite-icon {
   width: 22px;
   height: 22px;

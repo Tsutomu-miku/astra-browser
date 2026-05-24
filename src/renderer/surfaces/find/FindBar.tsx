@@ -1,4 +1,5 @@
 import { KeyboardEvent } from "react";
+import { FiChevronDown, FiChevronUp, FiX } from "react-icons/fi";
 
 import type { BrowserController } from "../../hooks/types";
 
@@ -34,9 +35,9 @@ export function FindBar({ controller }: { controller: BrowserController }) {
         onChange={(event) => search(event.target.value)}
         onKeyDown={onKeyDown}
       />
-      <button className="icon-button" title="Previous match" type="button" onClick={() => search(findQuery, false)}>↑</button>
-      <button className="icon-button" title="Next match" type="button" onClick={() => search(findQuery, true)}>↓</button>
-      <button className="icon-button" title="Close find" type="button" onClick={close}>×</button>
+      <button className="icon-button" title="Previous match" type="button" onClick={() => search(findQuery, false)}><FiChevronUp /></button>
+      <button className="icon-button" title="Next match" type="button" onClick={() => search(findQuery, true)}><FiChevronDown /></button>
+      <button className="icon-button" title="Close find" type="button" onClick={close}><FiX /></button>
     </aside>
   );
 }
