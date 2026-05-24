@@ -1,5 +1,3 @@
-import type React from "react";
-
 export type DownloadState = "progressing" | "completed" | "cancelled" | "interrupted" | string;
 
 export interface DownloadEvent {
@@ -51,15 +49,5 @@ export interface AstraShellApi {
 declare global {
   interface Window {
     astraShell?: AstraShellApi;
-  }
-
-  namespace JSX {
-    interface IntrinsicElements {
-      webview: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        src?: string;
-        partition?: string;
-        allowpopups?: string;
-      };
-    }
   }
 }

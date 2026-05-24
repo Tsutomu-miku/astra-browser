@@ -73,6 +73,7 @@ function BrowserWebview({
     const webview = ref.current;
     if (!webview) return;
 
+    webview.setAttribute("allowpopups", "true");
     const fallbackNavigationState = () => ({ canGoBack: false, canGoForward: false });
     const readNavigationState = () => readyRef.current ? getNavigationState(webview) : fallbackNavigationState();
     const onStart = () => latestRef.current.onLoadingChange(true, readNavigationState());
@@ -123,7 +124,6 @@ function BrowserWebview({
       className={`browser-view ${isVisible ? "is-visible" : "is-hidden"}`}
       src={tab.url}
       partition={partition}
-      allowpopups
       aria-hidden={!isVisible}
     />
   );

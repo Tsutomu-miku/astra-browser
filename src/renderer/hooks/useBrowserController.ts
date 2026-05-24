@@ -121,8 +121,8 @@ export function useBrowserController() {
   }, [activeWorkspace.tabs, focusAddressBar, store]);
 
   useEffect(() => {
-    store.setAddressValue(activeTab.url);
-  }, [activeTab.url, store]);
+    useBrowserStore.getState().setAddressValue(activeTab.url);
+  }, [activeTab.url]);
 
   useBrowserEffects({
     ingestDownload: store.ingestDownload,
