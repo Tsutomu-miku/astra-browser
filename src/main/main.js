@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, shell } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { installWindowDiagnostics } = require("./diagnostics");
 
 const APP_ORIGIN = "astra://app";
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
@@ -29,6 +30,8 @@ function createWindow() {
   });
 
   windows.add(win);
+  installWindowDiagnostics(win);
+
   win.on("closed", () => {
     windows.delete(win);
   });

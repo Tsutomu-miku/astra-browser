@@ -35,6 +35,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Command palette entries for open tabs, favorites, history, and reopening recently closed tabs.
 - Command palette can directly open URLs or search typed queries.
 - Browser keyboard shortcuts for tabs, workspace switching, split view, command palette, and closed-tab restore.
+- Diagnostics shortcuts: F12 and Ctrl+Shift+I toggle the application DevTools in development and packaged builds.
 - Collapsible sidebar focus mode.
 - Address identity indicator for loading, host, and basic security state.
 - Site information panel with per-origin permission controls.
@@ -61,6 +62,10 @@ pnpm dev
 ```
 
 `pnpm dev` starts Vite for the React/TypeScript renderer and launches Electron against that dev server. `pnpm start` builds the renderer first and then launches Electron against `dist/renderer`.
+
+## Troubleshooting
+
+If a packaged build opens to a blank window, press `F12` or `Ctrl+Shift+I` while the Astra window is focused to open the application DevTools. Renderer load failures, renderer crashes, and page console messages are also forwarded to the Electron process log.
 
 ## CI Artifacts
 
