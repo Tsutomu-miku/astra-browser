@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Typecheck, test, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run quality gate
+        run: pnpm check
+
+      - name: Stage runtime artifact
+        run: |
+          mkdir -p artifacts/astra-browser-runtime
+          cp -R dist artifacts/astra-browser-runtime/dist
+          cp -R src/main artifacts/astra-browser-runtime/main
+          cp package.json pnpm-lock.yaml README.md artifacts/astra-browser-runtime/
+
+      - name: Upload renderer bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-browser-renderer
+          path: dist/renderer
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload runtime bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-browser-runtime
+          path: artifacts/astra-browser-runtime
+          if-no-files-found: error
+          retention-days: 14

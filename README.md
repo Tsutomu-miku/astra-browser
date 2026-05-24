@@ -58,6 +58,13 @@ pnpm dev
 
 `pnpm dev` starts Vite for the React/TypeScript renderer and launches Electron against that dev server. `pnpm start` builds the renderer first and then launches Electron against `dist/renderer`.
 
+## CI Artifacts
+
+GitHub Actions runs `pnpm check` on pushes and pull requests to `main`, then uploads:
+
+- `astra-browser-renderer`: the compiled Vite renderer bundle from `dist/renderer`.
+- `astra-browser-runtime`: renderer output plus Electron main/preload files and package metadata.
+
 On minimal Linux environments, Electron also requires native desktop libraries such as GTK, ATK, NSS, and X11/Wayland support. If `pnpm start` fails before opening a window with a missing shared library, install the corresponding system package and rerun the command.
 
 For Debian/Ubuntu-style environments, the common packages are:
