@@ -108,6 +108,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The internal new tab page must be rendered by the React shell instead of a Chromium webview.
 - The new tab page must support Space-aware search.
 - The new tab page must show global Essentials plus favorites and recent history for the active Space.
+- The new tab search must use the shared omnibox suggestion model so Essentials, favorites, open tabs, and history can be opened directly from the start surface.
 
 ### Site Identity, Permissions, And Data
 

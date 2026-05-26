@@ -1,8 +1,10 @@
-import { FormEvent, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
-import { FiClock, FiSearch, FiStar, FiZap } from "react-icons/fi";
+import { useMemo, type CSSProperties, type MouseEvent } from "react";
+import { FiClock, FiStar, FiZap } from "react-icons/fi";
 
-import { getReadableUrlTitle, type Favorite } from "../../domain/browser-core";
+import { getReadableUrlTitle } from "../../domain/browser-core";
 import type { BrowserController } from "../../hooks/types";
+import { StartSearch } from "./components/StartSearch";
+import { StartTileGrid } from "./components/StartTileGrid";
 import { getStartPageContent } from "./startPageContent";
 
 export function StartPage({
@@ -13,16 +15,8 @@ export function StartPage({
   isVisible: boolean;
 }) {
   const { actions, activeWorkspace, state } = controller;
-  const [query, setQuery] = useState("");
   const content = useMemo(() => getStartPageContent(state, activeWorkspace), [activeWorkspace, state]);
   const accentStyle = { "--start-accent": activeWorkspace.accent } as CSSProperties;
-
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    if (query.trim()) {
-      actions.navigateActiveTab(query);
-    }
-  }
 
   function openOrPreview(event: MouseEvent, url: string, title?: string) {
     event.altKey ? actions.openGlance(url, title) : actions.navigateActiveTab(url);
@@ -41,19 +35,7 @@ export function StartPage({
           <h2>New Tab</h2>
         </header>
 
-        <form className="start-search" onSubmit={submit}>
-          <FiSearch />
-          <input
-            autoFocus={isVisible}
-            autoComplete="off"
-            inputMode="url"
-            spellCheck={false}
-            aria-label="Search or enter address"
-            placeholder="Search or enter address"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </form>
+        <StartSearch controller={controller} isVisible={isVisible} />
 
         <section className="start-section" aria-label="Essentials">
           <div className="start-section-header">
@@ -103,34 +85,5 @@ export function StartPage({
         </section>
       </div>
     </section>
-  );
-}
-
-function StartTileGrid({
-  emptyText,
-  items,
-  onOpen
-}: {
-  emptyText: string;
-  items: Favorite[];
-  onOpen: (event: MouseEvent, url: string, title?: string) => void;
-}) {
-  return (
-    <div className="start-tile-grid">
-      {items.length === 0 ? (
-        <p className="start-empty">{emptyText}</p>
-      ) : items.map((item) => (
-        <button
-          className="start-tile"
-          key={item.id}
-          type="button"
-          title={item.url}
-          onClick={(event) => onOpen(event, item.url, item.title)}
-        >
-          <span className="start-tile-icon">{getReadableUrlTitle(item.url).slice(0, 1).toUpperCase()}</span>
-          <span className="start-tile-title">{item.title}</span>
-        </button>
-      ))}
-    </div>
   );
 }

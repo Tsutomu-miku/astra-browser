@@ -23,12 +23,12 @@ export function buildOmniboxSuggestions(state: BrowserState, query: string): Omn
   }
 
   const entries: OmniboxSuggestion[] = [
-    ...workspace.tabs.map((tab) => ({
-      type: "tab" as const,
-      id: `tab-${tab.id}`,
-      title: tab.title || tab.url,
-      subtitle: `Open tab · ${tab.url}`,
-      tabId: tab.id
+    ...state.essentials.map((essential) => ({
+      type: "essential" as const,
+      id: `essential-${essential.id}`,
+      title: essential.title,
+      subtitle: `Essential · ${essential.url}`,
+      url: essential.url
     })),
     ...workspace.favorites.map((favorite) => ({
       type: "favorite" as const,
@@ -37,12 +37,12 @@ export function buildOmniboxSuggestions(state: BrowserState, query: string): Omn
       subtitle: `Favorite · ${favorite.url}`,
       url: favorite.url
     })),
-    ...state.essentials.map((essential) => ({
-      type: "essential" as const,
-      id: `essential-${essential.id}`,
-      title: essential.title,
-      subtitle: `Essential · ${essential.url}`,
-      url: essential.url
+    ...workspace.tabs.map((tab) => ({
+      type: "tab" as const,
+      id: `tab-${tab.id}`,
+      title: tab.title || tab.url,
+      subtitle: `Open tab · ${tab.url}`,
+      tabId: tab.id
     })),
     ...state.history.slice(0, 20).map((entry) => ({
       type: "history" as const,

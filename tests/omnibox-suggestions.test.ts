@@ -37,6 +37,21 @@ describe("buildOmniboxSuggestions", () => {
     expect(suggestions.some((suggestion) => suggestion.type === "history" && suggestion.title === "Docs")).toBe(true);
   });
 
+  it("prioritizes essentials for empty-start suggestions", () => {
+    const state = createDefaultState();
+    const workspace = getActiveWorkspace(state);
+    state.essentials.push(createFavorite("Mail", "https://mail.example"));
+    workspace.favorites.push(createFavorite("Docs", "https://docs.example"));
+
+    const suggestionTypes = buildOmniboxSuggestions(state, "").map((suggestion) => suggestion.type);
+    const firstFavoriteIndex = suggestionTypes.indexOf("favorite");
+    const firstTabIndex = suggestionTypes.indexOf("tab");
+    const lastEssentialIndex = suggestionTypes.lastIndexOf("essential");
+
+    expect(firstFavoriteIndex).toBeGreaterThan(lastEssentialIndex);
+    expect(firstTabIndex).toBeGreaterThan(lastEssentialIndex);
+  });
+
   it("limits suggestion count for compact topbar rendering", () => {
     const state = createDefaultState();
     for (let index = 0; index < 20; index += 1) {
