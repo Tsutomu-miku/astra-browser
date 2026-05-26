@@ -38,6 +38,7 @@ export function SidebarSections({
               id={`sidebar-search-essential-${essential.id}`}
               isSearchSelected={activeSearchTarget?.type === "essential" && activeSearchTarget.id === essential.id}
               onOpen={actions.openUrlInActiveWorkspace}
+              onOpenInSplit={actions.openUrlInSplit}
               onPreview={actions.openGlance}
             />
           ))}
@@ -56,7 +57,13 @@ export function SidebarSections({
               aria-current={tab.id === activeTab.id}
               aria-selected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
               onClick={(event) => {
-                event.altKey ? actions.openGlance(tab.url, tab.title) : actions.selectTab(tab.id);
+                if (event.altKey) {
+                  actions.openGlance(tab.url, tab.title);
+                } else if (event.shiftKey) {
+                  actions.openTabInSplit(tab.id);
+                } else {
+                  actions.selectTab(tab.id);
+                }
               }}
               onContextMenu={(event) => onTabContextMenu(event, tab)}
             >
@@ -75,6 +82,7 @@ export function SidebarSections({
               id={`sidebar-search-favorite-${favorite.id}`}
               isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
               onOpen={actions.openUrlInActiveWorkspace}
+              onOpenInSplit={actions.openUrlInSplit}
               onPreview={actions.openGlance}
             />
           ))}
@@ -97,6 +105,7 @@ export function SidebarSections({
             onDrop={onTabDrop}
             onPreview={actions.openGlance}
             onSelect={actions.selectTab}
+            onSplit={actions.openTabInSplit}
             onToggle={() => actions.toggleTabGroupCollapsed(group.id)}
             onUpdate={actions.updateTabGroup}
             setDraggingTabId={setDraggingTabId}
@@ -115,6 +124,7 @@ export function SidebarSections({
             onDrop={onTabDrop}
             onPreview={actions.openGlance}
             onSelect={actions.selectTab}
+            onSplit={actions.openTabInSplit}
             setDraggingTabId={setDraggingTabId}
           />
         ))}

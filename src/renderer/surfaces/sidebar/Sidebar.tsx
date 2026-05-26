@@ -25,6 +25,7 @@ import {
   getSidebarSearchTargets,
   type SidebarSearchTarget
 } from "./sidebarFiltering";
+import { getSidebarSearchOpenIntent, type SidebarOpenIntent } from "./sidebarOpenIntent";
 
 interface TabMenuState {
   left: number;
@@ -113,7 +114,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       setActiveSearchIndex((index) => getNextSidebarSearchIndex(index, searchTargets.length, key));
     } else if (event.key === "Enter") {
       event.preventDefault();
-      if (activeSearchTarget) runSearchTarget(activeSearchTarget, event.altKey);
+      if (activeSearchTarget) runSearchTarget(activeSearchTarget, {
+        altKey: event.altKey,
+        shiftKey: event.shiftKey
+      });
     } else if (event.key === "Escape" && tabQuery) {
       event.preventDefault();
       setTabQuery("");
@@ -121,13 +125,21 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     }
   }
 
-  function runSearchTarget(target: SidebarSearchTarget, preview: boolean) {
-    if (preview) {
-      actions.openGlance(target.url, target.title);
-    } else if (target.type === "tab") {
-      actions.selectTab(target.id);
+  function runSearchTarget(target: SidebarSearchTarget, modifiers: { altKey: boolean; shiftKey: boolean }) {
+    runSidebarIntent(getSidebarSearchOpenIntent(target, modifiers));
+  }
+
+  function runSidebarIntent(intent: SidebarOpenIntent) {
+    if (intent.type === "preview") {
+      actions.openGlance(intent.url, intent.title);
+    } else if (intent.type === "splitTab") {
+      actions.openTabInSplit(intent.tabId);
+    } else if (intent.type === "splitUrl") {
+      actions.openUrlInSplit(intent.url, intent.title);
+    } else if (intent.type === "selectTab") {
+      actions.selectTab(intent.tabId);
     } else {
-      actions.openUrlInActiveWorkspace(target.url, target.title);
+      actions.openUrlInActiveWorkspace(intent.url, intent.title);
     }
   }
 

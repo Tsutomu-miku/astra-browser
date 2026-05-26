@@ -47,7 +47,8 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must have Space-local favorites for quick access.
 - Users must be able to toggle the current page as a favorite with `Ctrl+D`, `Cmd+D`, `Ctrl+Shift+D`, or `Cmd+Shift+D`.
 - Sidebar search must filter global Essentials plus tabs, tab groups, pinned tabs, and favorites inside the active Space.
-- Sidebar search must support Arrow, Home, End, Enter, and Alt+Enter preview/open flows.
+- Sidebar search must support Arrow, Home, End, Enter, Alt+Enter preview, and Shift+Enter split-open flows.
+- Sidebar items must support Alt-click Glance preview and Shift-click split opening.
 
 ### Navigation, Address Bar, And Omnibox
 

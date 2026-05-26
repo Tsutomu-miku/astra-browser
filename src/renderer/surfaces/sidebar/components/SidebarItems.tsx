@@ -13,6 +13,7 @@ export function TabGroupSection({
   onDrop,
   onPreview,
   onSelect,
+  onSplit,
   onToggle,
   onUpdate,
   searchSelectedTabId,
@@ -29,6 +30,7 @@ export function TabGroupSection({
   onDrop: (event: DragEvent<HTMLDivElement>, targetTabId: string) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
+  onSplit: (tabId: string) => void;
   onToggle: () => void;
   onUpdate: (groupId: string, patch: Partial<Pick<TabGroup, "name" | "color">>) => void;
   searchSelectedTabId?: string;
@@ -90,6 +92,7 @@ export function TabGroupSection({
           onDrop={onDrop}
           onPreview={onPreview}
           onSelect={onSelect}
+          onSplit={onSplit}
           setDraggingTabId={setDraggingTabId}
         />
       ))}
@@ -105,6 +108,7 @@ export function TabRow({
   onDrop,
   onPreview,
   onSelect,
+  onSplit,
   setDraggingTabId,
   isSearchSelected = false,
   splitTabIds,
@@ -117,6 +121,7 @@ export function TabRow({
   onDrop: (event: DragEvent<HTMLDivElement>, targetTabId: string) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
+  onSplit: (tabId: string) => void;
   setDraggingTabId: (tabId: string | null) => void;
   isSearchSelected?: boolean;
   splitTabIds: string[];
@@ -145,7 +150,13 @@ export function TabRow({
         className="tab-button"
         type="button"
         onClick={(event) => {
-          event.altKey ? onPreview(tab.url, tab.title) : onSelect(tab.id);
+          if (event.altKey) {
+            onPreview(tab.url, tab.title);
+          } else if (event.shiftKey) {
+            onSplit(tab.id);
+          } else {
+            onSelect(tab.id);
+          }
         }}
       >
         <span className="tab-favicon">{tab.isSleeping ? <FiMoon /> : tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}</span>
@@ -169,12 +180,14 @@ export function FavoriteButton({
   id,
   isSearchSelected = false,
   onOpen,
+  onOpenInSplit,
   onPreview
 }: {
   favorite: Favorite;
   id?: string;
   isSearchSelected?: boolean;
   onOpen: (url: string, title?: string) => void;
+  onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
 }) {
   return (
@@ -185,7 +198,13 @@ export function FavoriteButton({
       title={favorite.url}
       aria-selected={isSearchSelected}
       onClick={(event) => {
-        event.altKey ? onPreview(favorite.url, favorite.title) : onOpen(favorite.url, favorite.title);
+        if (event.altKey) {
+          onPreview(favorite.url, favorite.title);
+        } else if (event.shiftKey) {
+          onOpenInSplit(favorite.url, favorite.title);
+        } else {
+          onOpen(favorite.url, favorite.title);
+        }
       }}
     >
       <span className="favorite-icon">{getHostInitial(favorite.url)}</span>
