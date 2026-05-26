@@ -62,6 +62,7 @@ describe("buildCommands", () => {
 
     expect(commands.some((command) => command.title === "Reopen closed tab")).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("Open tab"))).toBe(true);
+    expect(commands.some((command) => command.subtitle.startsWith("Essential"))).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("Favorite"))).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("History"))).toBe(true);
     expect(commands.some((command) => command.title === "Toggle sidebar")).toBe(true);

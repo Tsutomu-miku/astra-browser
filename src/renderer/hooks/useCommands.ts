@@ -1,54 +1,8 @@
 import { BrowserState, isEssential, isFavorite } from "../domain/browser-core";
 import { getActiveTab, getActiveWorkspace } from "../domain/selectors";
-import type { Panel, SplitLayout } from "../stores/browserStore";
-
-export interface Command {
-  title: string;
-  subtitle: string;
-  run: () => void;
-}
-
-interface CommandActions {
-  addWorkspace: () => void;
-  clearBrowsingData: () => void;
-  clearHistory: () => void;
-  clearWorkspaceBrowsingData: (workspaceId: string) => void;
-  assignTabToGroup: (tabId: string, groupId: string) => void;
-  closeActiveTab: () => void;
-  closeOtherTabs: () => void;
-  closeTabsToLeft: () => void;
-  closeTabsToRight: () => void;
-  deleteWorkspace: (workspaceId: string) => void;
-  duplicateActiveTab: () => void;
-  fillSplitView: () => void;
-  focusAddressBar: () => void;
-  groupActiveTab: () => void;
-  moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
-  openGlance: (url: string, title?: string) => void;
-  openTabInSplit: (tabId: string) => void;
-  newTab: () => void;
-  openUrlInActiveWorkspace: (url: string, title?: string) => void;
-  restoreLastClosedTab: () => void;
-  selectAdjacentTab: (direction: 1 | -1) => void;
-  selectTab: (tabId: string) => void;
-  setSplitLayout: (layout: SplitLayout) => void;
-  resetActiveTabZoom: () => void;
-  sleepInactiveTabs: () => void;
-  switchWorkspace: (workspaceId: string) => void;
-  toggleActiveTabFavorite: () => void;
-  toggleActiveTabEssential: () => void;
-  toggleActiveTabMuted: () => void;
-  toggleActiveTabPinned: () => void;
-  toggleCompactMode: () => void;
-  toggleFloatingSidebar: () => void;
-  toggleFloatingToolbar: () => void;
-  toggleTabGroupCollapsed: (groupId: string) => void;
-  toggleSidebar: () => void;
-  toggleSplitMode: () => void;
-  ungroupActiveTab: () => void;
-  zoomIn: () => void;
-  zoomOut: () => void;
-}
+import type { Panel } from "../stores/browserStore";
+import { buildContentCommands } from "./commandContentEntries";
+import type { Command, CommandActions } from "./commandTypes";
 
 export function buildCommands(
   state: BrowserState,
@@ -69,16 +23,6 @@ export function buildCommands(
       subtitle: activeTab.title || activeTab.url,
       run: () => actions.moveTabToWorkspace(activeTab.id, candidate.id)
     }));
-  const historyCommands = state.history.slice(0, 10).map((entry) => ({
-    title: entry.title,
-    subtitle: `History · ${entry.url}`,
-    run: () => actions.openUrlInActiveWorkspace(entry.url, entry.title)
-  }));
-  const tabCommands = workspace.tabs.map((tab) => ({
-    title: tab.title || tab.url,
-    subtitle: `Open tab · ${tab.url}`,
-    run: () => actions.selectTab(tab.id)
-  }));
   const splitTabCommands = workspace.tabs
     .filter((tab) => tab.id !== activeTab.id)
     .map((tab) => ({
@@ -86,11 +30,7 @@ export function buildCommands(
       subtitle: tab.url,
       run: () => actions.openTabInSplit(tab.id)
     }));
-  const favoriteCommands = workspace.favorites.map((favorite) => ({
-    title: favorite.title,
-    subtitle: `Favorite · ${favorite.url}`,
-    run: () => actions.openUrlInActiveWorkspace(favorite.url, favorite.title)
-  }));
+  const contentCommands = buildContentCommands(state, workspace, actions);
   const tabGroupCommands = workspace.tabGroups.map((group) => ({
     title: group.isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`,
     subtitle: "Tab group",
@@ -222,9 +162,7 @@ export function buildCommands(
     ...tabGroupCommands,
     ...moveToGroupCommands,
     ...splitTabCommands,
-    ...tabCommands,
-    ...favoriteCommands,
-    ...workspaceCommands,
-    ...historyCommands
+    ...contentCommands,
+    ...workspaceCommands
   ];
 }

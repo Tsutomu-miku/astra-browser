@@ -1,0 +1,31 @@
+import type { BrowserState, Workspace } from "../domain/browser-core";
+import type { Command, CommandActions } from "./commandTypes";
+
+export function buildContentCommands(
+  state: BrowserState,
+  workspace: Workspace,
+  actions: CommandActions
+): Command[] {
+  return [
+    ...state.essentials.map((essential) => ({
+      title: essential.title,
+      subtitle: `Essential · ${essential.url}`,
+      run: () => actions.openUrlInActiveWorkspace(essential.url, essential.title)
+    })),
+    ...workspace.favorites.map((favorite) => ({
+      title: favorite.title,
+      subtitle: `Favorite · ${favorite.url}`,
+      run: () => actions.openUrlInActiveWorkspace(favorite.url, favorite.title)
+    })),
+    ...workspace.tabs.map((tab) => ({
+      title: tab.title || tab.url,
+      subtitle: `Open tab · ${tab.url}`,
+      run: () => actions.selectTab(tab.id)
+    })),
+    ...state.history.slice(0, 10).map((entry) => ({
+      title: entry.title,
+      subtitle: `History · ${entry.url}`,
+      run: () => actions.openUrlInActiveWorkspace(entry.url, entry.title)
+    }))
+  ];
+}

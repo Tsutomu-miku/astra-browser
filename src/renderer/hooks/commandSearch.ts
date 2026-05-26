@@ -1,4 +1,4 @@
-import type { Command } from "./useCommands";
+import type { Command } from "./commandTypes";
 
 export function getVisibleCommands(
   commands: Command[],
