@@ -62,7 +62,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 
 ### Keyboard Shortcuts
 
-- The browser must support keyboard-first tab, Space, command, split, navigation, zoom, history, favorite, mute, and address workflows.
+- The browser must support keyboard-first tab, Space, command, split, navigation, zoom, history, downloads, favorite, mute, and address workflows.
 - Direct tab selection must support Zen-style `Alt+1` through `Alt+8`.
 - Last-tab selection must support `Alt+9`.
 - Space cycling must support `Ctrl+Alt+Q` and `Ctrl+Alt+E`.
@@ -71,6 +71,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Recently closed tab restore must be available by keyboard.
 - Current-tab mute must be available with `Ctrl+M` or `Cmd+M`.
 - History must be available with `Ctrl+H` or `Cmd+H`.
+- Downloads must be available with `Ctrl+Shift+Y` or `Cmd+Shift+Y`.
 - Diagnostics shortcuts must include `F12` and `Ctrl+Shift+I` for application DevTools in development and packaged builds.
 
 ### Compact Mode And Chrome
@@ -122,7 +123,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Browsing history must be searchable.
 - History entries must support single-entry removal and full clearing.
 - History must include per-workspace recently closed tab restore.
-- Chromium downloads must be tracked in a downloads drawer.
+- Chromium downloads must be tracked in a downloads drawer that can be opened with `Ctrl+Shift+Y` or `Cmd+Shift+Y`.
 
 ### Settings
 

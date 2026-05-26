@@ -4,6 +4,7 @@ export type ShortcutIntent =
   | { type: "focusAddress" }
   | { type: "fillSplitGrid" }
   | { type: "newTab" }
+  | { type: "openDownloads" }
   | { type: "openFind" }
   | { type: "openCommand" }
   | { type: "openHistory" }
@@ -76,6 +77,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (event.shiftKey && key === "t") {
     return { type: "restoreClosedTab" };
+  }
+
+  if (event.shiftKey && key === "y") {
+    return { type: "openDownloads" };
   }
 
   if (key === "tab") {

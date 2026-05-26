@@ -24,6 +24,8 @@ describe("resolveShortcut", () => {
     expect(resolveShortcut(event({ ctrlKey: true, key: "m" }))).toEqual({ type: "toggleMute" });
     expect(resolveShortcut(event({ metaKey: true, key: "m" }))).toEqual({ type: "toggleMute" });
     expect(resolveShortcut(event({ ctrlKey: true, shiftKey: true, key: "T" }))).toEqual({ type: "restoreClosedTab" });
+    expect(resolveShortcut(event({ ctrlKey: true, shiftKey: true, key: "Y" }))).toEqual({ type: "openDownloads" });
+    expect(resolveShortcut(event({ metaKey: true, shiftKey: true, key: "Y" }))).toEqual({ type: "openDownloads" });
   });
 
   it("handles zoom shortcuts", () => {
@@ -74,5 +76,6 @@ describe("resolveShortcut", () => {
   it("ignores unrelated shortcuts", () => {
     expect(resolveShortcut(event({ key: "a" }))).toBeNull();
     expect(resolveShortcut(event({ ctrlKey: true, key: "ArrowLeft" }))).toBeNull();
+    expect(resolveShortcut(event({ ctrlKey: true, key: "y" }))).toBeNull();
   });
 });

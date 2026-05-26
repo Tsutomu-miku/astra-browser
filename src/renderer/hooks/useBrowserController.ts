@@ -169,6 +169,8 @@ export function useBrowserController() {
     if (intent.type === "openCommand") {
       store.setCommandOpen(true);
       store.setCommandQuery("");
+    } else if (intent.type === "openDownloads") {
+      store.setPanel("downloads");
     } else if (intent.type === "openFind") {
       store.setFindOpen(true);
     } else if (intent.type === "openHistory") {
