@@ -73,6 +73,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
     return { type: "focusAddress" };
   }
 
+  if (!commandModifier && event.altKey && !event.shiftKey && key === "b") {
+    return { type: "toggleSidebar" };
+  }
+
   if (!commandModifier) {
     return null;
   }

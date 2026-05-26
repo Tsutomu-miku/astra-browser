@@ -55,6 +55,7 @@ describe("resolveShortcut", () => {
     expect(resolveShortcut(event({ ctrlKey: true, key: "[" }))).toEqual({ type: "navigateHistory", direction: -1 });
     expect(resolveShortcut(event({ ctrlKey: true, key: "]" }))).toEqual({ type: "navigateHistory", direction: 1 });
     expect(resolveShortcut(event({ ctrlKey: true, key: "b" }))).toEqual({ type: "toggleSidebar" });
+    expect(resolveShortcut(event({ altKey: true, key: "b" }))).toEqual({ type: "toggleSidebar" });
     expect(resolveShortcut(event({ ctrlKey: true, key: "s" }))).toEqual({ type: "toggleCompactMode" });
     expect(resolveShortcut(event({ metaKey: true, key: "\\" }))).toEqual({ type: "toggleSplit" });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "g" }))).toEqual({ type: "toggleSplitGrid" });
