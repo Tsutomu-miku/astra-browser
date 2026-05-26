@@ -16,6 +16,7 @@ export type ShortcutIntent =
   | { type: "selectWorkspaceIndex"; index: number }
   | { type: "resetZoom" }
   | { type: "toggleFavorite" }
+  | { type: "toggleMute" }
   | { type: "toggleCompactMode" }
   | { type: "toggleFloatingSidebar" }
   | { type: "toggleFloatingToolbar" }
@@ -82,6 +83,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (!event.shiftKey && key === "d") {
     return { type: "toggleFavorite" };
+  }
+
+  if (!event.shiftKey && key === "m") {
+    return { type: "toggleMute" };
   }
 
   if (key === "[") {

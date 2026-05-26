@@ -22,7 +22,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Duplicate the active tab from the command palette.
 - Cycle tabs with Ctrl+Tab, Ctrl+Shift+Tab, or the command palette.
 - Move tabs between workspaces from the command palette or by dragging onto workspace buttons.
-- Mute or unmute the active tab with Chromium webview audio controls.
+- Mute or unmute the active tab with Chromium webview audio controls and Ctrl+M or Cmd+M.
 - Pinned tabs per workspace for favorite pages.
 - Global Essentials visible across Spaces for core pages.
 - Workspace favorites for quick access, including Ctrl+D or Cmd+D to favorite the current page.
