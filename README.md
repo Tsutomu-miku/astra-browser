@@ -29,8 +29,8 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Sidebar search filters tabs, tab groups, pinned tabs, and favorites inside the active Space with Arrow/Home/End selection, Enter open, and Alt+Enter Glance preview.
 - Internal new tab page with Space-aware search, favorites, and recent history.
 - Address bar with search fallback.
-- Address bar suggestions for open tabs, Essentials, workspace favorites, and browsing history, with Arrow/Home/End keyboard selection.
-- Compact mode sidebar address field with the same tab, favorite, history, navigation suggestions, and keyboard selection as the top bar.
+- Address bar suggestions for open tabs, Essentials, workspace favorites, and browsing history, with Arrow/Home/End keyboard selection and Alt+Enter split opening.
+- Compact mode sidebar address field with the same tab, favorite, history, navigation suggestions, keyboard selection, and Alt+Enter split opening as the top bar.
 - Back, forward, reload, new tab, and close controls.
 - Back and forward availability is tracked per tab from Chromium webview navigation state.
 - Split view mode with up to four webviews, drag-to-split from the sidebar, and explicit tab-to-split commands.

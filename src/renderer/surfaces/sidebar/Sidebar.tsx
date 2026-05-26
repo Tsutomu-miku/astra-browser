@@ -393,7 +393,7 @@ function SidebarAddress({ controller }: { controller: BrowserController }) {
       setActiveSuggestionIndex((index) => getNextOmniboxIndex(index, suggestions.length, key));
     } else if (event.key === "Enter") {
       event.preventDefault();
-      runSuggestion(suggestionsOpen ? suggestions[activeIndex] : undefined);
+      runSuggestion(suggestionsOpen ? suggestions[activeIndex] : undefined, event.altKey);
     } else if (event.key === "Escape") {
       setSuggestionsOpen(false);
     }
@@ -401,24 +401,24 @@ function SidebarAddress({ controller }: { controller: BrowserController }) {
 
   function onSuggestionPointerDown(event: MouseEvent, suggestion: OmniboxSuggestion) {
     event.preventDefault();
-    runSuggestion(suggestion);
+    runSuggestion(suggestion, event.altKey);
   }
 
-  function runSuggestion(suggestion: OmniboxSuggestion | undefined) {
+  function runSuggestion(suggestion: OmniboxSuggestion | undefined, openInSplit = false) {
     switch (suggestion?.type) {
       case "tab":
-        actions.selectTab(suggestion.tabId);
+        openInSplit ? actions.openTabInSplit(suggestion.tabId) : actions.selectTab(suggestion.tabId);
         break;
       case "essential":
       case "favorite":
       case "history":
-        actions.navigateActiveTab(suggestion.url);
+        openInSplit ? actions.openUrlInSplit(suggestion.url, suggestion.title) : actions.navigateActiveTab(suggestion.url);
         break;
       case "navigate":
-        actions.navigateActiveTab(suggestion.value);
+        openInSplit ? actions.openUrlInSplit(suggestion.value, suggestion.title) : actions.navigateActiveTab(suggestion.value);
         break;
       default:
-        actions.navigateActiveTab(addressValue);
+        openInSplit ? actions.openUrlInSplit(addressValue) : actions.navigateActiveTab(addressValue);
     }
     setSuggestionsOpen(false);
   }
