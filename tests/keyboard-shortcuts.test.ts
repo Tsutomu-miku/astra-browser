@@ -35,6 +35,7 @@ describe("resolveShortcut", () => {
   it("handles command, address, split, and escape shortcuts", () => {
     expect(resolveShortcut(event({ ctrlKey: true, key: "k" }))).toEqual({ type: "openCommand" });
     expect(resolveShortcut(event({ ctrlKey: true, key: "l" }))).toEqual({ type: "focusAddress" });
+    expect(resolveShortcut(event({ altKey: true, key: "d" }))).toEqual({ type: "focusAddress" });
     expect(resolveShortcut(event({ ctrlKey: true, key: "f" }))).toEqual({ type: "openFind" });
     expect(resolveShortcut(event({ altKey: true, key: "ArrowLeft" }))).toEqual({ type: "navigateHistory", direction: -1 });
     expect(resolveShortcut(event({ altKey: true, key: "ArrowRight" }))).toEqual({ type: "navigateHistory", direction: 1 });

@@ -61,6 +61,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
     return { type: "navigateHistory", direction: 1 };
   }
 
+  if (!commandModifier && event.altKey && !event.shiftKey && key === "d") {
+    return { type: "focusAddress" };
+  }
+
   if (!commandModifier) {
     return null;
   }
