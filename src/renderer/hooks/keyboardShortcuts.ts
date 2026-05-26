@@ -8,6 +8,7 @@ export type ShortcutIntent =
   | { type: "openCommand" }
   | { type: "restoreClosedTab" }
   | { type: "selectAdjacentTab"; direction: 1 | -1 }
+  | { type: "selectLastTab" }
   | { type: "selectTabIndex"; index: number }
   | { type: "selectWorkspaceIndex"; index: number }
   | { type: "resetZoom" }
@@ -40,6 +41,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
   }
 
   if (!commandModifier && event.altKey && isDigitKey(key)) {
+    if (key === "9") {
+      return { type: "selectLastTab" };
+    }
+
     return { type: "selectTabIndex", index: Number(key) - 1 };
   }
 

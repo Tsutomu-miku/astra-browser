@@ -41,7 +41,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Command palette entries for open tabs, Essentials, favorites, history, and reopening recently closed tabs.
 - Command palette can directly open URLs or search typed queries, while exact command-name matches execute ahead of search fallback.
 - Keyboard-first command palette selection with Arrow keys, Home/End, Enter, and Escape.
-- Browser keyboard shortcuts for tabs, workspace switching, split view, command palette, and closed-tab restore.
+- Browser keyboard shortcuts for tabs, including Zen-style Alt+1-8 direct tab selection and Alt+9 last-tab selection, workspace switching, split view, command palette, and closed-tab restore.
 - Diagnostics shortcuts: F12 and Ctrl+Shift+I toggle the application DevTools in development and packaged builds.
 - Collapsible sidebar focus mode and Zen-style compact mode that hides browser chrome until hover, briefly peeks chrome after tab changes, and supports persistent floating sidebar and toolbar shortcuts.
 - Address identity indicator for loading, host, and basic security state.

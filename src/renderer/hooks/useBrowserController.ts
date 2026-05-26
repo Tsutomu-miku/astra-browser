@@ -184,6 +184,9 @@ export function useBrowserController() {
     } else if (intent.type === "selectTabIndex") {
       const tab = activeWorkspace.tabs[intent.index];
       if (tab) actions.selectTab(tab.id);
+    } else if (intent.type === "selectLastTab") {
+      const tab = activeWorkspace.tabs.at(-1);
+      if (tab) actions.selectTab(tab.id);
     } else if (intent.type === "selectAdjacentTab") {
       actions.selectAdjacentTab(intent.direction);
     } else if (intent.type === "newTab") {

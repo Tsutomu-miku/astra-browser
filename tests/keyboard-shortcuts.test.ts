@@ -45,6 +45,8 @@ describe("resolveShortcut", () => {
   it("maps number shortcuts to workspaces and tabs", () => {
     expect(resolveShortcut(event({ ctrlKey: true, key: "3" }))).toEqual({ type: "selectWorkspaceIndex", index: 2 });
     expect(resolveShortcut(event({ altKey: true, key: "2" }))).toEqual({ type: "selectTabIndex", index: 1 });
+    expect(resolveShortcut(event({ altKey: true, key: "8" }))).toEqual({ type: "selectTabIndex", index: 7 });
+    expect(resolveShortcut(event({ altKey: true, key: "9" }))).toEqual({ type: "selectLastTab" });
   });
 
   it("handles tab cycling shortcuts", () => {
