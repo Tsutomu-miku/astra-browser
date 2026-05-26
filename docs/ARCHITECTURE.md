@@ -34,7 +34,7 @@ Split layout mode is also renderer-owned UI state. Keyboard shortcuts and comman
 
 `src/renderer/surfaces/glance` owns temporary page previews. Glance uses the current workspace Chromium partition but is not part of persisted tab state until the user opens it as a tab or adds it to split view.
 
-`src/renderer/surfaces/start` renders internal browser pages such as `astra://newtab`. These pages are part of the product shell and do not use Electron webviews, so startup search, favorites, and recent Space history remain responsive even before any external page is loaded.
+`src/renderer/surfaces/start` renders internal browser pages such as `astra://newtab`. These pages are part of the product shell and do not use Electron webviews, so startup search, global Essentials, favorites, and recent Space history remain responsive even before any external page is loaded.
 
 `src/renderer/platform/webviewLifecycle.ts` owns the renderer-side contract for Electron webview readiness. A webview is registered with the controller only after `dom-ready`, so store and controller actions never call Chromium webview methods on a detached or not-yet-ready element. Lifecycle bugs should be fixed at this boundary rather than hidden by catch-and-ignore compatibility code.
 

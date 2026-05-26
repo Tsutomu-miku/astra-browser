@@ -1,8 +1,9 @@
 import { FormEvent, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
-import { FiClock, FiSearch, FiStar } from "react-icons/fi";
+import { FiClock, FiSearch, FiStar, FiZap } from "react-icons/fi";
 
-import { getReadableUrlTitle, type BrowserState, type Workspace } from "../../domain/browser-core";
+import { getReadableUrlTitle, type Favorite } from "../../domain/browser-core";
 import type { BrowserController } from "../../hooks/types";
+import { getStartPageContent } from "./startPageContent";
 
 export function StartPage({
   controller,
@@ -13,7 +14,7 @@ export function StartPage({
 }) {
   const { actions, activeWorkspace, state } = controller;
   const [query, setQuery] = useState("");
-  const recentHistory = useMemo(() => getRecentWorkspaceHistory(state, activeWorkspace.id), [activeWorkspace.id, state]);
+  const content = useMemo(() => getStartPageContent(state, activeWorkspace), [activeWorkspace, state]);
   const accentStyle = { "--start-accent": activeWorkspace.accent } as CSSProperties;
 
   function submit(event: FormEvent) {
@@ -54,27 +55,28 @@ export function StartPage({
           />
         </form>
 
+        <section className="start-section" aria-label="Essentials">
+          <div className="start-section-header">
+            <FiZap />
+            <h3>Essentials</h3>
+          </div>
+          <StartTileGrid
+            emptyText="Essentials will appear across every Space."
+            items={content.essentials}
+            onOpen={openOrPreview}
+          />
+        </section>
+
         <section className="start-section" aria-label="Favorites">
           <div className="start-section-header">
             <FiStar />
             <h3>Favorites</h3>
           </div>
-          <div className="start-tile-grid">
-            {activeWorkspace.favorites.length === 0 ? (
-              <p className="start-empty">Favorites in this Space will appear here.</p>
-            ) : activeWorkspace.favorites.slice(0, 8).map((favorite) => (
-              <button
-                className="start-tile"
-                key={favorite.id}
-                type="button"
-                title={favorite.url}
-                onClick={(event) => openOrPreview(event, favorite.url, favorite.title)}
-              >
-                <span className="start-tile-icon">{getReadableUrlTitle(favorite.url).slice(0, 1).toUpperCase()}</span>
-                <span className="start-tile-title">{favorite.title}</span>
-              </button>
-            ))}
-          </div>
+          <StartTileGrid
+            emptyText="Favorites in this Space will appear here."
+            items={content.favorites}
+            onOpen={openOrPreview}
+          />
         </section>
 
         <section className="start-section" aria-label="Recent history">
@@ -83,9 +85,9 @@ export function StartPage({
             <h3>Recent</h3>
           </div>
           <div className="start-history-list">
-            {recentHistory.length === 0 ? (
+            {content.recentHistory.length === 0 ? (
               <p className="start-empty">Recently visited pages in this Space will appear here.</p>
-            ) : recentHistory.map((entry) => (
+            ) : content.recentHistory.map((entry) => (
               <button
                 className="start-history-item"
                 key={entry.id}
@@ -104,8 +106,31 @@ export function StartPage({
   );
 }
 
-function getRecentWorkspaceHistory(state: BrowserState, workspaceId: Workspace["id"]) {
-  return state.history
-    .filter((entry) => entry.workspaceId === workspaceId)
-    .slice(0, 5);
+function StartTileGrid({
+  emptyText,
+  items,
+  onOpen
+}: {
+  emptyText: string;
+  items: Favorite[];
+  onOpen: (event: MouseEvent, url: string, title?: string) => void;
+}) {
+  return (
+    <div className="start-tile-grid">
+      {items.length === 0 ? (
+        <p className="start-empty">{emptyText}</p>
+      ) : items.map((item) => (
+        <button
+          className="start-tile"
+          key={item.id}
+          type="button"
+          title={item.url}
+          onClick={(event) => onOpen(event, item.url, item.title)}
+        >
+          <span className="start-tile-icon">{getReadableUrlTitle(item.url).slice(0, 1).toUpperCase()}</span>
+          <span className="start-tile-title">{item.title}</span>
+        </button>
+      ))}
+    </div>
+  );
 }
