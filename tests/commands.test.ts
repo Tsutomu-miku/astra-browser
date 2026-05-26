@@ -1,8 +1,53 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { closeActiveTab, openUrlInActiveWorkspace, toggleActiveTabFavorite } from "../src/renderer/domain/browser-actions";
+import { closeActiveTab, openUrlInActiveWorkspace, toggleActiveTabFavorite, toggleSplitMode } from "../src/renderer/domain/browser-actions";
 import { createDefaultState } from "../src/renderer/domain/browser-core";
 import { buildCommands } from "../src/renderer/hooks/useCommands";
+
+function commandActions() {
+  return {
+    addWorkspace: vi.fn(),
+    clearBrowsingData: vi.fn(),
+    clearHistory: vi.fn(),
+    clearWorkspaceBrowsingData: vi.fn(),
+    assignTabToGroup: vi.fn(),
+    closeActiveTab: vi.fn(),
+    closeOtherTabs: vi.fn(),
+    closeTabsToLeft: vi.fn(),
+    closeTabsToRight: vi.fn(),
+    deleteWorkspace: vi.fn(),
+    duplicateActiveTab: vi.fn(),
+    fillSplitView: vi.fn(),
+    focusAddressBar: vi.fn(),
+    groupActiveTab: vi.fn(),
+    moveTabToWorkspace: vi.fn(),
+    openGlance: vi.fn(),
+    openTabInSplit: vi.fn(),
+    newTab: vi.fn(),
+    openUrlInActiveWorkspace: vi.fn(),
+    restoreClosedTab: vi.fn(),
+    restoreLastClosedTab: vi.fn(),
+    selectAdjacentTab: vi.fn(),
+    resetActiveTabZoom: vi.fn(),
+    selectTab: vi.fn(),
+    setSplitLayout: vi.fn(),
+    sleepInactiveTabs: vi.fn(),
+    switchWorkspace: vi.fn(),
+    toggleActiveTabFavorite: vi.fn(),
+    toggleActiveTabEssential: vi.fn(),
+    toggleActiveTabMuted: vi.fn(),
+    toggleActiveTabPinned: vi.fn(),
+    toggleCompactMode: vi.fn(),
+    toggleFloatingSidebar: vi.fn(),
+    toggleFloatingToolbar: vi.fn(),
+    toggleTabGroupCollapsed: vi.fn(),
+    toggleSidebar: vi.fn(),
+    toggleSplitMode: vi.fn(),
+    ungroupActiveTab: vi.fn(),
+    zoomIn: vi.fn(),
+    zoomOut: vi.fn()
+  };
+}
 
 describe("buildCommands", () => {
   it("includes tabs, favorites, recently closed tabs, and history", () => {
@@ -18,48 +63,7 @@ describe("buildCommands", () => {
       visitedAt: Date.now()
     });
 
-    const commands = buildCommands(withSplitCandidate, {
-      addWorkspace: vi.fn(),
-      clearBrowsingData: vi.fn(),
-      clearHistory: vi.fn(),
-      clearWorkspaceBrowsingData: vi.fn(),
-      assignTabToGroup: vi.fn(),
-      closeActiveTab: vi.fn(),
-      closeOtherTabs: vi.fn(),
-      closeTabsToLeft: vi.fn(),
-      closeTabsToRight: vi.fn(),
-      deleteWorkspace: vi.fn(),
-      duplicateActiveTab: vi.fn(),
-      fillSplitView: vi.fn(),
-      focusAddressBar: vi.fn(),
-      groupActiveTab: vi.fn(),
-      moveTabToWorkspace: vi.fn(),
-      openGlance: vi.fn(),
-      openTabInSplit: vi.fn(),
-      newTab: vi.fn(),
-      openUrlInActiveWorkspace: vi.fn(),
-      restoreClosedTab: vi.fn(),
-      restoreLastClosedTab: vi.fn(),
-      selectAdjacentTab: vi.fn(),
-      resetActiveTabZoom: vi.fn(),
-      selectTab: vi.fn(),
-      setSplitLayout: vi.fn(),
-      sleepInactiveTabs: vi.fn(),
-      switchWorkspace: vi.fn(),
-      toggleActiveTabFavorite: vi.fn(),
-      toggleActiveTabEssential: vi.fn(),
-      toggleActiveTabMuted: vi.fn(),
-      toggleActiveTabPinned: vi.fn(),
-      toggleCompactMode: vi.fn(),
-      toggleFloatingSidebar: vi.fn(),
-      toggleFloatingToolbar: vi.fn(),
-      toggleTabGroupCollapsed: vi.fn(),
-      toggleSidebar: vi.fn(),
-      toggleSplitMode: vi.fn(),
-      ungroupActiveTab: vi.fn(),
-      zoomIn: vi.fn(),
-      zoomOut: vi.fn()
-    }, vi.fn());
+    const commands = buildCommands(withSplitCandidate, commandActions(), vi.fn());
 
     expect(commands.some((command) => command.title === "Reopen closed tab")).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("Open tab"))).toBe(true);
@@ -79,7 +83,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title.startsWith("Move tab to"))).toBe(true);
     expect(commands.some((command) => command.title.includes("in split view"))).toBe(true);
     expect(commands.some((command) => command.title === "Fill split grid")).toBe(true);
-    expect(commands.some((command) => command.title === "Unsplit all tabs")).toBe(true);
+    expect(commands.some((command) => command.title === "Unsplit all tabs")).toBe(false);
     expect(commands.some((command) => command.title === "Split layout horizontal")).toBe(true);
     expect(commands.some((command) => command.title === "Split layout vertical")).toBe(true);
     expect(commands.some((command) => command.title === "Split layout grid")).toBe(true);
@@ -95,5 +99,14 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Close other tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Close tabs to the left")).toBe(true);
     expect(commands.some((command) => command.title === "Close tabs to the right")).toBe(true);
+  });
+
+  it("only shows unsplit all when split view is active", () => {
+    const withSecondTab = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const splitState = toggleSplitMode(withSecondTab);
+    const commands = buildCommands(splitState, commandActions(), vi.fn());
+
+    expect(commands.some((command) => command.title === "Close split view")).toBe(true);
+    expect(commands.some((command) => command.title === "Unsplit all tabs")).toBe(true);
   });
 });

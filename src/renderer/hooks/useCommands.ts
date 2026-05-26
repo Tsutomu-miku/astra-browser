@@ -2,6 +2,7 @@ import { BrowserState, isEssential, isFavorite } from "../domain/browser-core";
 import { getActiveTab, getActiveWorkspace } from "../domain/selectors";
 import type { Panel } from "../stores/browserStore";
 import { buildContentCommands } from "./commandContentEntries";
+import { buildSplitCommands } from "./commandSplitEntries";
 import type { Command, CommandActions } from "./commandTypes";
 
 export function buildCommands(
@@ -23,14 +24,8 @@ export function buildCommands(
       subtitle: activeTab.title || activeTab.url,
       run: () => actions.moveTabToWorkspace(activeTab.id, candidate.id)
     }));
-  const splitTabCommands = workspace.tabs
-    .filter((tab) => tab.id !== activeTab.id)
-    .map((tab) => ({
-      title: `Open ${tab.title || tab.url} in split view`,
-      subtitle: tab.url,
-      run: () => actions.openTabInSplit(tab.id)
-    }));
   const contentCommands = buildContentCommands(state, workspace, actions);
+  const splitCommands = buildSplitCommands(state, workspace, activeTab, actions);
   const tabGroupCommands = workspace.tabGroups.map((group) => ({
     title: group.isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`,
     subtitle: "Tab group",
@@ -83,36 +78,7 @@ export function buildCommands(
       subtitle: activeTab.url,
       run: () => actions.openGlance(activeTab.url, activeTab.title)
     },
-    {
-      title: state.splitMode ? "Close split view" : "Open split view",
-      subtitle: state.splitMode ? `${state.splitTabIds.length + 1} panes open` : "Show Chromium webviews side by side",
-      run: actions.toggleSplitMode
-    },
-    {
-      title: "Unsplit all tabs",
-      subtitle: "Close the current split view",
-      run: actions.toggleSplitMode
-    },
-    {
-      title: "Fill split grid",
-      subtitle: "Open up to four tabs in Zen-style split view",
-      run: actions.fillSplitView
-    },
-    {
-      title: "Split layout horizontal",
-      subtitle: "Arrange split tabs side by side",
-      run: () => actions.setSplitLayout("horizontal")
-    },
-    {
-      title: "Split layout vertical",
-      subtitle: "Stack split tabs top to bottom",
-      run: () => actions.setSplitLayout("vertical")
-    },
-    {
-      title: "Split layout grid",
-      subtitle: "Arrange split tabs in a grid",
-      run: () => actions.setSplitLayout("grid")
-    },
+    ...splitCommands,
     { title: "Zoom in", subtitle: "Increase page zoom", run: actions.zoomIn },
     { title: "Zoom out", subtitle: "Decrease page zoom", run: actions.zoomOut },
     { title: "Reset zoom", subtitle: "Return page zoom to 100%", run: actions.resetActiveTabZoom },
@@ -161,7 +127,6 @@ export function buildCommands(
     ...moveTabCommands,
     ...tabGroupCommands,
     ...moveToGroupCommands,
-    ...splitTabCommands,
     ...contentCommands,
     ...workspaceCommands
   ];
