@@ -1,3 +1,8 @@
+import {
+  clampListIndex,
+  getNextListIndex,
+  type ListNavigationKey
+} from "../../common/navigation/listNavigation";
 import type { BrowserTab, Favorite, TabGroup } from "../../domain/browser-core";
 
 export interface SidebarGroupEntry {
@@ -20,6 +25,8 @@ export interface SidebarFilterResult extends SidebarFilterInput {
 export type SidebarSearchTarget =
   | { type: "favorite"; id: string; title: string; url: string }
   | { type: "tab"; id: string; title: string; url: string };
+
+export type SidebarSearchNavigationKey = ListNavigationKey;
 
 export function filterSidebarItems(input: SidebarFilterInput, query: string): SidebarFilterResult {
   const normalizedQuery = query.trim().toLowerCase();
@@ -66,29 +73,15 @@ export function getSidebarSearchTargets(input: SidebarFilterResult): SidebarSear
 }
 
 export function clampSidebarSearchIndex(index: number, targetCount: number): number {
-  if (targetCount <= 0) return 0;
-  if (!Number.isFinite(index)) return 0;
-  return Math.min(targetCount - 1, Math.max(0, index));
+  return clampListIndex(index, targetCount);
 }
 
 export function getNextSidebarSearchIndex(
   currentIndex: number,
   targetCount: number,
-  key: "ArrowDown" | "ArrowUp" | "End" | "Home"
+  key: SidebarSearchNavigationKey
 ): number {
-  if (targetCount <= 0) return 0;
-  const current = clampSidebarSearchIndex(currentIndex, targetCount);
-
-  switch (key) {
-    case "ArrowDown":
-      return (current + 1) % targetCount;
-    case "ArrowUp":
-      return (current - 1 + targetCount) % targetCount;
-    case "End":
-      return targetCount - 1;
-    case "Home":
-      return 0;
-  }
+  return getNextListIndex(currentIndex, targetCount, key);
 }
 
 function hasAnyItems(input: SidebarFilterInput): boolean {

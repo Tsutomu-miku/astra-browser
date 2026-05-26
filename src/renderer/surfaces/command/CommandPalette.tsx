@@ -1,12 +1,12 @@
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 
+import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import type { BrowserController } from "../../hooks/types";
 import { getVisibleCommands } from "../../hooks/commandSearch";
 import {
   clampCommandIndex,
-  getNextCommandIndex,
-  type CommandPaletteNavigationKey
+  getNextCommandIndex
 } from "../../hooks/commandPaletteSelection";
 
 export function CommandPalette({ controller }: { controller: BrowserController }) {
@@ -28,7 +28,7 @@ export function CommandPalette({ controller }: { controller: BrowserController }
   }, [activeIndex, displayedCommands.length]);
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (isNavigationKey(event.key)) {
+    if (isListNavigationKey(event.key)) {
       event.preventDefault();
       const key = event.key;
       setActiveCommandIndex((index) => getNextCommandIndex(index, displayedCommands.length, key));
@@ -85,8 +85,4 @@ export function CommandPalette({ controller }: { controller: BrowserController }
       </div>
     </section>
   );
-}
-
-function isNavigationKey(key: string): key is CommandPaletteNavigationKey {
-  return key === "ArrowDown" || key === "ArrowUp" || key === "End" || key === "Home";
 }

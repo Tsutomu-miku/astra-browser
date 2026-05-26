@@ -16,6 +16,8 @@ The project is split around runtime boundaries rather than feature folders.
 
 `src/renderer/hooks` is UI orchestration. It derives active workspace/tab view models, builds command and omnibox suggestions, connects webview refs, handles keyboard shortcuts, imports/exports browser state backups, and subscribes to Electron bridge events. It should stay thin enough that browser rules can be tested outside Electron.
 
+`src/renderer/common` contains reusable renderer interaction helpers that are not browser state rules and are not owned by one surface. List navigation, shared shortcut target ordering, and similar cross-surface UI utilities belong here so command palette, omnibox, sidebar, and future panels do not duplicate the same behavior.
+
 `src/renderer/surfaces` contains React browser surfaces such as the sidebar, topbar, command palette, panels, permission prompts, find bar, and webview grid. Surface-level subcomponents live beside the parent surface when that improves readability, but extraction should clarify ownership rather than chase a line count.
 
 Compact mode is renderer-owned UI state. It does not alter persisted browser data; it composes the existing collapsible sidebar with a floating topbar and compact sidebar address field so the content grid can reclaim the full viewport while browser chrome remains available on hover or focus.

@@ -16,6 +16,7 @@ import {
   FiZap
 } from "react-icons/fi";
 
+import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { isEssential, isFavorite } from "../../domain/browser-core";
 import { getUrlIdentity } from "../../domain/urlIdentity";
 import { formatZoomPercent } from "../../domain/zoom";
@@ -23,8 +24,7 @@ import type { BrowserController } from "../../hooks/types";
 import { buildOmniboxSuggestions, type OmniboxSuggestion } from "../../hooks/omniboxSuggestions";
 import {
   clampOmniboxIndex,
-  getNextOmniboxIndex,
-  type OmniboxNavigationKey
+  getNextOmniboxIndex
 } from "../../hooks/omniboxSelection";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
@@ -45,11 +45,11 @@ export function Topbar({ controller }: { controller: BrowserController }) {
   }
 
   function onAddressKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (!suggestionsOpen && isNavigationKey(event.key)) {
+    if (!suggestionsOpen && isListNavigationKey(event.key)) {
       setSuggestionsOpen(true);
     }
 
-    if (isNavigationKey(event.key)) {
+    if (isListNavigationKey(event.key)) {
       event.preventDefault();
       const key = event.key;
       setActiveSuggestionIndex((index) => getNextOmniboxIndex(index, suggestions.length, key));
@@ -199,8 +199,4 @@ function SecurityIcon({ security }: { security: ReturnType<typeof getUrlIdentity
   if (security === "secure") return <FiLock />;
   if (security === "insecure") return <FiAlertTriangle />;
   return <FiInfo />;
-}
-
-function isNavigationKey(key: string): key is OmniboxNavigationKey {
-  return key === "ArrowDown" || key === "ArrowUp" || key === "End" || key === "Home";
 }

@@ -14,6 +14,7 @@ Electron is acceptable for this stage because it embeds Chromium and lets the pr
 - Keep Electron main/preload code separate from renderer UI.
 - Keep browser-product rules in framework-independent domain modules.
 - Keep React components presentational where possible.
+- Keep cross-surface UI interaction helpers in `src/renderer/common` instead of tying them to a single hook or surface.
 - Use Zustand for renderer state management.
 - Keep state transitions in typed store actions and domain actions, not scattered across component markup.
 - Keep address-bar suggestion ranking in reusable, tested logic rather than component-only filtering.
@@ -62,6 +63,7 @@ The project should follow the broad layering used by mature Electron/React proje
 
 - `src/main`: Electron host process, native window lifecycle, Chromium/session integrations.
 - `src/main/preload.js`: narrow isolated bridge from Electron to renderer.
+- `src/renderer/common`: reusable renderer helpers shared across surfaces and hooks, such as list navigation and shortcut target ordering.
 - `src/renderer/domain`: pure browser state, migration, URL, search, history, permissions, focused action modules, selectors, and formatting rules.
 - `src/renderer/stores`: Zustand stores and typed renderer state actions.
 - `src/renderer/hooks`: stateful React orchestration, side effects, keyboard/command/omnibox builders, and view-model glue.
