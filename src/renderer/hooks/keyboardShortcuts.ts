@@ -15,6 +15,7 @@ export type ShortcutIntent =
   | { type: "selectTabIndex"; index: number }
   | { type: "selectWorkspaceIndex"; index: number }
   | { type: "resetZoom" }
+  | { type: "toggleFavorite" }
   | { type: "toggleCompactMode" }
   | { type: "toggleFloatingSidebar" }
   | { type: "toggleFloatingToolbar" }
@@ -77,6 +78,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (key === "r") {
     return { type: "reloadPage", hard: event.shiftKey };
+  }
+
+  if (!event.shiftKey && key === "d") {
+    return { type: "toggleFavorite" };
   }
 
   if (key === "[") {
