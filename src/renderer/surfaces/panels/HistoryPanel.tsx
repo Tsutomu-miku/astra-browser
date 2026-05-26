@@ -37,6 +37,7 @@ export function HistoryPanel({ controller }: { controller: BrowserController }) 
               entry={entry}
               key={entry.id}
               onOpen={actions.openUrlInActiveWorkspace}
+              onPreview={actions.openGlance}
               onRemove={actions.removeHistoryEntry}
             />
           ))}
@@ -66,15 +67,23 @@ function ClosedTabList({ closedTabs, onRestore }: { closedTabs: ClosedTab[]; onR
 function HistoryItem({
   entry,
   onOpen,
+  onPreview,
   onRemove
 }: {
   entry: HistoryEntry;
   onOpen: (url: string, title?: string) => void;
+  onPreview: (url: string, title?: string) => void;
   onRemove: (historyId: string) => void;
 }) {
   return (
     <article className="history-item">
-      <button className="history-open" type="button" onClick={() => onOpen(entry.url, entry.title)}>
+      <button
+        className="history-open"
+        type="button"
+        onClick={(event) => {
+          event.altKey ? onPreview(entry.url, entry.title) : onOpen(entry.url, entry.title);
+        }}
+      >
         <span className="history-title">{entry.title}</span>
         <span className="history-url">{entry.url}</span>
       </button>

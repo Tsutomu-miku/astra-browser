@@ -28,10 +28,12 @@ describe("buildOmniboxSuggestions", () => {
     const active = getActiveTab(getActiveWorkspace(opened));
     const withHistory = recordHistory(opened, active.id, active.url);
     getActiveWorkspace(withHistory).favorites.push(createFavorite("Docs Favorite", "https://docs.example/guide"));
+    withHistory.essentials.push(createFavorite("Docs Essential", "https://docs.example/essential"));
     const suggestions = buildOmniboxSuggestions(withHistory, "docs");
 
     expect(suggestions.some((suggestion) => suggestion.type === "tab" && suggestion.title === "Docs")).toBe(true);
     expect(suggestions.some((suggestion) => suggestion.type === "favorite" && suggestion.title === "Docs Favorite")).toBe(true);
+    expect(suggestions.some((suggestion) => suggestion.type === "essential" && suggestion.title === "Docs Essential")).toBe(true);
     expect(suggestions.some((suggestion) => suggestion.type === "history" && suggestion.title === "Docs")).toBe(true);
   });
 

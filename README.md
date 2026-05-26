@@ -24,20 +24,26 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Move tabs between workspaces from the command palette or by dragging onto workspace buttons.
 - Mute or unmute the active tab with Chromium webview audio controls.
 - Pinned tabs per workspace for favorite pages.
+- Global Essentials visible across Spaces for core pages.
 - Workspace favorites for quick access.
 - Sidebar search filters tabs, tab groups, pinned tabs, and favorites inside the active Space.
 - Internal new tab page with Space-aware search, favorites, and recent history.
 - Address bar with search fallback.
-- Address bar suggestions for open tabs, workspace favorites, and browsing history.
+- Address bar suggestions for open tabs, Essentials, workspace favorites, and browsing history, with Arrow/Home/End keyboard selection.
+- Compact mode sidebar address field with the same tab, favorite, history, navigation suggestions, and keyboard selection as the top bar.
 - Back, forward, reload, new tab, and close controls.
 - Back and forward availability is tracked per tab from Chromium webview navigation state.
-- Split view mode with two webviews side by side and explicit tab-to-split commands.
+- Split view mode with up to four webviews, drag-to-split from the sidebar, and explicit tab-to-split commands.
+- Resizable two-pane split view for horizontal and vertical layouts with pointer and keyboard controls.
+- Zen-style split layout shortcuts for horizontal, vertical, grid, and unsplit-all flows.
+- Glance preview overlay for quickly checking tabs, favorites, and history without replacing the active tab, tracking preview navigation with open, split, backdrop-close, and Escape-close actions.
 - Command palette with workspace switching, tab cycling, tab grouping, duplicate tabs, sleeping tabs, mute controls, tab cleanup actions, cross-workspace tab moves, tab actions, data clearing, split view, and history search.
-- Command palette entries for open tabs, favorites, history, and reopening recently closed tabs.
-- Command palette can directly open URLs or search typed queries.
+- Command palette entries for open tabs, Essentials, favorites, history, and reopening recently closed tabs.
+- Command palette can directly open URLs or search typed queries, while exact command-name matches execute ahead of search fallback.
+- Keyboard-first command palette selection with Arrow keys, Home/End, Enter, and Escape.
 - Browser keyboard shortcuts for tabs, workspace switching, split view, command palette, and closed-tab restore.
 - Diagnostics shortcuts: F12 and Ctrl+Shift+I toggle the application DevTools in development and packaged builds.
-- Collapsible sidebar focus mode.
+- Collapsible sidebar focus mode and Zen-style compact mode that hides the toolbar until hover.
 - Address identity indicator for loading, host, and basic security state.
 - Site information panel with per-origin permission controls.
 - Site permission decisions are scoped to the current workspace Chromium profile.
@@ -51,7 +57,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Chromium download tracking with a downloads drawer.
 - Settings panel for global homepage, search engine, workspace homepage, workspace name, workspace accent, and profile display name.
 - Startup behavior can restore the previous session or open the homepage in each Space.
-- Settings can export and import a JSON backup of Spaces, tabs, favorites, history, permissions, and settings.
+- Settings can export and import a JSON backup of Spaces, tabs, Essentials, favorites, history, permissions, and settings.
 - Local tab state persisted in `localStorage`.
 
 ## Run

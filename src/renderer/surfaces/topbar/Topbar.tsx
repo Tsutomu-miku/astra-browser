@@ -1,4 +1,4 @@
-import { FormEvent, KeyboardEvent, MouseEvent, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import {
   FiAlertTriangle,
   FiArrowLeft,
@@ -12,14 +12,20 @@ import {
   FiStar,
   FiVolume2,
   FiVolumeX,
-  FiX
+  FiX,
+  FiZap
 } from "react-icons/fi";
 
-import { isFavorite } from "../../domain/browser-core";
+import { isEssential, isFavorite } from "../../domain/browser-core";
 import { getUrlIdentity } from "../../domain/urlIdentity";
 import { formatZoomPercent } from "../../domain/zoom";
 import type { BrowserController } from "../../hooks/types";
 import { buildOmniboxSuggestions, type OmniboxSuggestion } from "../../hooks/omniboxSuggestions";
+import {
+  clampOmniboxIndex,
+  getNextOmniboxIndex,
+  type OmniboxNavigationKey
+} from "../../hooks/omniboxSelection";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWebview, activeWorkspace, actions, addressValue, setAddressValue, setPanel, state } = controller;
@@ -27,26 +33,29 @@ export function Topbar({ controller }: { controller: BrowserController }) {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const suggestions = useMemo(() => buildOmniboxSuggestions(state, addressValue), [addressValue, state]);
+  const activeIndex = clampOmniboxIndex(activeSuggestionIndex, suggestions.length);
+
+  useEffect(() => {
+    setActiveSuggestionIndex((index) => clampOmniboxIndex(index, suggestions.length));
+  }, [suggestions.length]);
 
   function submitAddress(event: FormEvent) {
     event.preventDefault();
-    runSuggestion(suggestionsOpen ? suggestions[activeSuggestionIndex] : undefined);
+    runSuggestion(suggestionsOpen ? suggestions[activeIndex] : undefined);
   }
 
   function onAddressKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (!suggestionsOpen && ["ArrowDown", "ArrowUp"].includes(event.key)) {
+    if (!suggestionsOpen && isNavigationKey(event.key)) {
       setSuggestionsOpen(true);
     }
 
-    if (event.key === "ArrowDown") {
+    if (isNavigationKey(event.key)) {
       event.preventDefault();
-      setActiveSuggestionIndex((index) => Math.min(index + 1, suggestions.length - 1));
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveSuggestionIndex((index) => Math.max(index - 1, 0));
+      const key = event.key;
+      setActiveSuggestionIndex((index) => getNextOmniboxIndex(index, suggestions.length, key));
     } else if (event.key === "Enter") {
       event.preventDefault();
-      runSuggestion(suggestionsOpen ? suggestions[activeSuggestionIndex] : undefined);
+      runSuggestion(suggestionsOpen ? suggestions[activeIndex] : undefined);
     } else if (event.key === "Escape") {
       setSuggestionsOpen(false);
     }
@@ -62,6 +71,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
       case "tab":
         actions.selectTab(suggestion.tabId);
         break;
+      case "essential":
       case "favorite":
       case "history":
         actions.navigateActiveTab(suggestion.url);
@@ -109,6 +119,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
             onFocus={() => setSuggestionsOpen(true)}
             onBlur={() => setSuggestionsOpen(false)}
             onKeyDown={onAddressKeyDown}
+            aria-activedescendant={suggestionsOpen && suggestions.length > 0 ? `address-suggestion-${activeIndex}` : undefined}
           />
         </form>
         {suggestionsOpen && suggestions.length > 0 && (
@@ -116,9 +127,10 @@ export function Topbar({ controller }: { controller: BrowserController }) {
             {suggestions.map((suggestion, index) => (
               <button
                 className="omnibox-suggestion"
+                id={`address-suggestion-${index}`}
                 key={suggestion.id}
                 type="button"
-                aria-selected={index === activeSuggestionIndex}
+                aria-selected={index === activeIndex}
                 onMouseDown={(event) => onSuggestionPointerDown(event, suggestion)}
                 onMouseEnter={() => setActiveSuggestionIndex(index)}
               >
@@ -142,6 +154,15 @@ export function Topbar({ controller }: { controller: BrowserController }) {
           onClick={actions.toggleActiveTabFavorite}
         >
           <FiStar />
+        </button>
+        <button
+          className="icon-button"
+          title={isEssential(state, activeTab.url) ? "Remove essential" : "Add essential"}
+          type="button"
+          aria-pressed={isEssential(state, activeTab.url)}
+          onClick={actions.toggleActiveTabEssential}
+        >
+          <FiZap />
         </button>
         <button
           className="icon-button"
@@ -178,4 +199,8 @@ function SecurityIcon({ security }: { security: ReturnType<typeof getUrlIdentity
   if (security === "secure") return <FiLock />;
   if (security === "insecure") return <FiAlertTriangle />;
   return <FiInfo />;
+}
+
+function isNavigationKey(key: string): key is OmniboxNavigationKey {
+  return key === "ArrowDown" || key === "ArrowUp" || key === "End" || key === "Home";
 }

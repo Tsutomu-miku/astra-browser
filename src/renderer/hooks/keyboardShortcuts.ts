@@ -2,6 +2,7 @@ export type ShortcutIntent =
   | { type: "closePanels" }
   | { type: "closeTab" }
   | { type: "focusAddress" }
+  | { type: "fillSplitGrid" }
   | { type: "newTab" }
   | { type: "openFind" }
   | { type: "openCommand" }
@@ -10,8 +11,13 @@ export type ShortcutIntent =
   | { type: "selectTabIndex"; index: number }
   | { type: "selectWorkspaceIndex"; index: number }
   | { type: "resetZoom" }
+  | { type: "toggleCompactMode" }
   | { type: "toggleSidebar" }
   | { type: "toggleSplit" }
+  | { type: "toggleSplitGrid" }
+  | { type: "toggleSplitHorizontal" }
+  | { type: "toggleSplitVertical" }
+  | { type: "unsplitAll" }
   | { type: "zoomIn" }
   | { type: "zoomOut" };
 
@@ -51,6 +57,22 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
     return { type: "selectAdjacentTab", direction: event.shiftKey ? -1 : 1 };
   }
 
+  if (event.altKey && key === "g") {
+    return { type: "toggleSplitGrid" };
+  }
+
+  if (event.altKey && key === "h") {
+    return { type: "toggleSplitHorizontal" };
+  }
+
+  if (event.altKey && key === "v") {
+    return { type: "toggleSplitVertical" };
+  }
+
+  if (event.altKey && key === "u") {
+    return { type: "unsplitAll" };
+  }
+
   if (key === "0") {
     return { type: "resetZoom" };
   }
@@ -69,6 +91,7 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
     f: { type: "openFind" },
     k: { type: "openCommand" },
     l: { type: "focusAddress" },
+    s: { type: "toggleCompactMode" },
     t: { type: "newTab" },
     w: { type: "closeTab" }
   };

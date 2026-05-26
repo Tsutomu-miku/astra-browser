@@ -13,11 +13,14 @@ import {
   deleteWorkspace,
   duplicateActiveTab,
   duplicateTab,
+  fillSplitView,
   groupActiveTab,
   moveTabToWorkspace,
   openTabInSplit,
+  openUrlInSplit,
   openUrlInActiveWorkspace,
   recordHistory,
+  removeTabFromSplit,
   removeHistoryEntry,
   reorderWorkspace,
   reorderTab,
@@ -31,6 +34,7 @@ import {
   sleepTab,
   stepActiveTabZoom,
   switchWorkspace,
+  toggleActiveTabEssential,
   toggleActiveTabFavorite,
   toggleActiveTabMuted,
   toggleActiveTabPinned,
@@ -129,6 +133,7 @@ describe("browser-actions", () => {
     expect(workspace.closedTabs.map((tab) => tab.title)).toContain("First");
     expect(closed.splitMode).toBe(false);
     expect(closed.splitTabId).toBeNull();
+    expect(closed.splitTabIds).toEqual([]);
   });
 
   it("closes tabs to the right and keeps left tabs", () => {
@@ -285,6 +290,60 @@ describe("browser-actions", () => {
     expect(getActiveTab(getActiveWorkspace(split)).title).toBe("Second");
     expect(split.splitMode).toBe(true);
     expect(split.splitTabId).toBe(firstTab.id);
+    expect(split.splitTabIds).toEqual([firstTab.id]);
+  });
+
+  it("fills split view with up to four visible tabs", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const third = openUrlInActiveWorkspace(second, "third.test", "Third");
+    const filled = fillSplitView(third);
+    const workspace = getActiveWorkspace(filled);
+
+    expect(filled.splitMode).toBe(true);
+    expect(filled.splitTabIds).toHaveLength(3);
+    expect(new Set([workspace.activeTabId, ...filled.splitTabIds]).size).toBe(4);
+  });
+
+  it("opens a url directly into split view without changing the active tab", () => {
+    const initial = createDefaultState();
+    const activeTab = getActiveTab(getActiveWorkspace(initial));
+    const split = openUrlInSplit(initial, "preview.example", "Preview");
+    const workspace = getActiveWorkspace(split);
+    const preview = workspace.tabs.find((tab) => tab.title === "Preview")!;
+
+    expect(getActiveTab(workspace).id).toBe(activeTab.id);
+    expect(preview.url).toBe("https://preview.example/");
+    expect(split.splitTabIds).toEqual([preview.id]);
+  });
+
+  it("removes an individual background split pane and clears split from the active pane", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const third = openUrlInActiveWorkspace(second, "third.test", "Third");
+    const filled = fillSplitView(third);
+    const workspace = getActiveWorkspace(filled);
+    const firstSplitId = filled.splitTabIds[0]!;
+    const secondSplitId = filled.splitTabIds[1]!;
+    const withoutOnePane = removeTabFromSplit(filled, firstSplitId);
+    const clearedFromActive = removeTabFromSplit(filled, workspace.activeTabId!);
+
+    expect(withoutOnePane.splitMode).toBe(true);
+    expect(withoutOnePane.splitTabIds).not.toContain(firstSplitId);
+    expect(withoutOnePane.splitTabIds).toContain(secondSplitId);
+    expect(getActiveWorkspace(withoutOnePane).tabs.some((tab) => tab.id === firstSplitId)).toBe(true);
+    expect(clearedFromActive.splitMode).toBe(false);
+    expect(clearedFromActive.splitTabId).toBeNull();
+    expect(clearedFromActive.splitTabIds).toEqual([]);
+  });
+
+  it("toggles the active tab as a global essential", () => {
+    const opened = openUrlInActiveWorkspace(createDefaultState(), "mail.example", "Mail");
+    const added = toggleActiveTabEssential(opened);
+    const removed = toggleActiveTabEssential(added);
+
+    expect(added.essentials.some((essential) => essential.url === "https://mail.example/")).toBe(true);
+    expect(removed.essentials.some((essential) => essential.url === "https://mail.example/")).toBe(false);
   });
 
   it("moves an active tab into another workspace and keeps a source tab", () => {

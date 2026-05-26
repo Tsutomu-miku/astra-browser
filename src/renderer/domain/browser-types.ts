@@ -92,6 +92,8 @@ export interface BrowserState {
   activeWorkspaceId: string;
   splitMode: boolean;
   splitTabId: string | null;
+  splitTabIds: string[];
+  essentials: Favorite[];
   history: HistoryEntry[];
   downloads: DownloadEntry[];
   sitePermissions: SitePermissionRule[];
@@ -107,6 +109,7 @@ export type PartialWorkspace = Partial<Omit<Workspace, "closedTabs" | "favorites
 };
 
 export type PartialBrowserState = Partial<Omit<BrowserState, "settings" | "workspaces">> & {
+  essentials?: Array<Partial<Favorite> | null>;
   settings?: Partial<BrowserSettings>;
   sitePermissions?: Array<Partial<SitePermissionRule> | null>;
   workspaces?: PartialWorkspace[];

@@ -35,6 +35,11 @@ export function createDefaultState(): BrowserState {
     activeWorkspaceId: "personal",
     splitMode: false,
     splitTabId: null,
+    splitTabIds: [],
+    essentials: [
+      createFavorite("GitHub", "https://github.com"),
+      createFavorite("MDN", "https://developer.mozilla.org")
+    ],
     history: [],
     downloads: [],
     sitePermissions: [],

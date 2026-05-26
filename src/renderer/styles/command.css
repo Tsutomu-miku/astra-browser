@@ -56,8 +56,15 @@
   text-align: left;
 }
 
-.command-item:hover {
+.command-item:hover,
+.command-item[aria-selected="true"] {
   background: var(--panel-soft);
+}
+
+.command-item[aria-selected="true"] {
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .command-title,

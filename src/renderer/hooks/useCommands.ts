@@ -1,6 +1,6 @@
-import { BrowserState, isFavorite } from "../domain/browser-core";
+import { BrowserState, isEssential, isFavorite } from "../domain/browser-core";
 import { getActiveTab, getActiveWorkspace } from "../domain/selectors";
-import type { Panel } from "../stores/browserStore";
+import type { Panel, SplitLayout } from "../stores/browserStore";
 
 export interface Command {
   title: string;
@@ -20,21 +20,26 @@ interface CommandActions {
   closeTabsToRight: () => void;
   deleteWorkspace: (workspaceId: string) => void;
   duplicateActiveTab: () => void;
+  fillSplitView: () => void;
   focusAddressBar: () => void;
   groupActiveTab: () => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
+  openGlance: (url: string, title?: string) => void;
   openTabInSplit: (tabId: string) => void;
   newTab: () => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
   restoreLastClosedTab: () => void;
   selectAdjacentTab: (direction: 1 | -1) => void;
   selectTab: (tabId: string) => void;
+  setSplitLayout: (layout: SplitLayout) => void;
   resetActiveTabZoom: () => void;
   sleepInactiveTabs: () => void;
   switchWorkspace: (workspaceId: string) => void;
   toggleActiveTabFavorite: () => void;
+  toggleActiveTabEssential: () => void;
   toggleActiveTabMuted: () => void;
   toggleActiveTabPinned: () => void;
+  toggleCompactMode: () => void;
   toggleTabGroupCollapsed: (groupId: string) => void;
   toggleSidebar: () => void;
   toggleSplitMode: () => void;
@@ -112,6 +117,11 @@ export function buildCommands(
       run: actions.toggleActiveTabFavorite
     },
     {
+      title: isEssential(state, activeTab.url) ? "Remove essential" : "Add essential",
+      subtitle: "Show this page across Spaces",
+      run: actions.toggleActiveTabEssential
+    },
+    {
       title: "Reopen closed tab",
       subtitle: workspace.closedTabs[0]?.title ?? "No closed tabs in this workspace",
       run: actions.restoreLastClosedTab
@@ -127,9 +137,39 @@ export function buildCommands(
       run: actions.toggleActiveTabMuted
     },
     {
+      title: "Preview tab in Glance",
+      subtitle: activeTab.url,
+      run: () => actions.openGlance(activeTab.url, activeTab.title)
+    },
+    {
       title: state.splitMode ? "Close split view" : "Open split view",
-      subtitle: "Show two Chromium webviews side by side",
+      subtitle: state.splitMode ? `${state.splitTabIds.length + 1} panes open` : "Show Chromium webviews side by side",
       run: actions.toggleSplitMode
+    },
+    {
+      title: "Unsplit all tabs",
+      subtitle: "Close the current split view",
+      run: actions.toggleSplitMode
+    },
+    {
+      title: "Fill split grid",
+      subtitle: "Open up to four tabs in Zen-style split view",
+      run: actions.fillSplitView
+    },
+    {
+      title: "Split layout horizontal",
+      subtitle: "Arrange split tabs side by side",
+      run: () => actions.setSplitLayout("horizontal")
+    },
+    {
+      title: "Split layout vertical",
+      subtitle: "Stack split tabs top to bottom",
+      run: () => actions.setSplitLayout("vertical")
+    },
+    {
+      title: "Split layout grid",
+      subtitle: "Arrange split tabs in a grid",
+      run: () => actions.setSplitLayout("grid")
     },
     { title: "Zoom in", subtitle: "Increase page zoom", run: actions.zoomIn },
     { title: "Zoom out", subtitle: "Decrease page zoom", run: actions.zoomOut },
@@ -139,6 +179,11 @@ export function buildCommands(
       title: "Toggle sidebar",
       subtitle: "Enter or leave focus mode",
       run: actions.toggleSidebar
+    },
+    {
+      title: "Toggle compact mode",
+      subtitle: "Hide toolbar and float browser chrome on hover",
+      run: actions.toggleCompactMode
     },
     { title: "Focus address bar", subtitle: "Search or navigate", run: actions.focusAddressBar },
     { title: "Next tab", subtitle: "Select the next tab", run: () => actions.selectAdjacentTab(1) },

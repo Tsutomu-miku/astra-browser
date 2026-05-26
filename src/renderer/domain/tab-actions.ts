@@ -20,8 +20,11 @@ export {
   updateTabGroup
 } from "./tab-group-actions";
 export {
+  fillSplitView,
   moveTabToWorkspace,
   openTabInSplit,
+  openUrlInSplit,
+  removeTabFromSplit,
   reorderTab,
   toggleSplitMode
 } from "./tab-layout-actions";
@@ -36,6 +39,7 @@ export {
   sleepTab,
   stepActiveTabZoom,
   toggleActiveTabFavorite,
+  toggleActiveTabEssential,
   toggleActiveTabMuted,
   toggleActiveTabPinned,
   toggleTabMuted,

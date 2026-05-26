@@ -1,5 +1,5 @@
 import { DEFAULT_URL, SEARCH_ENGINES } from "./browser-constants";
-import type { BrowserState, SearchEngineKey, Workspace } from "./browser-types";
+import type { BrowserState, Favorite, SearchEngineKey, Workspace } from "./browser-types";
 import { isInternalNewTabUrl } from "./internalPages";
 
 export function normalizeAddress(value: unknown, searchEngineKey: SearchEngineKey = "google"): string {
@@ -60,4 +60,8 @@ export function getHostInitial(url: string): string {
 
 export function isFavorite(workspace: Pick<Workspace, "favorites"> | undefined, url: string): boolean {
   return Boolean(workspace?.favorites?.some((favorite) => favorite.url === url));
+}
+
+export function isEssential(state: Pick<BrowserState, "essentials"> | undefined, url: string): boolean {
+  return Boolean(state?.essentials?.some((essential: Favorite) => essential.url === url));
 }

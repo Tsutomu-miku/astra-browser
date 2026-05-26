@@ -4,7 +4,7 @@ import { getActiveWorkspace } from "../domain/selectors";
 export type OmniboxSuggestion =
   | { type: "navigate"; id: string; title: string; subtitle: string; value: string }
   | { type: "tab"; id: string; title: string; subtitle: string; tabId: string }
-  | { type: "favorite" | "history"; id: string; title: string; subtitle: string; url: string };
+  | { type: "essential" | "favorite" | "history"; id: string; title: string; subtitle: string; url: string };
 
 export function buildOmniboxSuggestions(state: BrowserState, query: string): OmniboxSuggestion[] {
   const workspace = getActiveWorkspace(state);
@@ -36,6 +36,13 @@ export function buildOmniboxSuggestions(state: BrowserState, query: string): Omn
       title: favorite.title,
       subtitle: `Favorite · ${favorite.url}`,
       url: favorite.url
+    })),
+    ...state.essentials.map((essential) => ({
+      type: "essential" as const,
+      id: `essential-${essential.id}`,
+      title: essential.title,
+      subtitle: `Essential · ${essential.url}`,
+      url: essential.url
     })),
     ...state.history.slice(0, 20).map((entry) => ({
       type: "history" as const,

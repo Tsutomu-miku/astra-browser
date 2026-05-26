@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useState, type CSSProperties, type DragEvent, type MouseEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent
+} from "react";
 import {
   FiChevronLeft,
   FiChevronRight,
@@ -6,7 +15,9 @@ import {
   FiColumns,
   FiDownload,
   FiLoader,
+  FiMinimize2,
   FiPlus,
+  FiSearch,
   FiSettings,
   FiSidebar,
   FiX
@@ -15,6 +26,12 @@ import {
 import { getHostInitial, type BrowserTab } from "../../domain/browser-core";
 import { getGroupedTabs } from "../../domain/tab-groups";
 import type { BrowserController } from "../../hooks/types";
+import { buildOmniboxSuggestions, type OmniboxSuggestion } from "../../hooks/omniboxSuggestions";
+import {
+  clampOmniboxIndex,
+  getNextOmniboxIndex,
+  type OmniboxNavigationKey
+} from "../../hooks/omniboxSelection";
 import { TabContextMenu } from "./TabContextMenu";
 import { FavoriteButton, TabGroupSection, TabRow } from "./SidebarItems";
 import { filterSidebarItems } from "./sidebarFiltering";
@@ -26,7 +43,7 @@ interface TabMenuState {
 }
 
 export function Sidebar({ controller }: { controller: BrowserController }) {
-  const { activeTab, activeWorkspace, actions, setPanel, sidebarCollapsed, state } = controller;
+  const { activeTab, activeWorkspace, actions, compactMode, setPanel, sidebarCollapsed, state } = controller;
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
   const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
   const [tabQuery, setTabQuery] = useState("");
@@ -106,7 +123,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   };
 
   return (
-    <aside className={`sidebar ${sidebarCollapsed ? "is-collapsed" : ""}`}>
+    <aside className={`sidebar ${sidebarCollapsed || compactMode ? "is-collapsed" : ""} ${compactMode ? "is-compact-mode" : ""}`}>
       <section className="traffic-space" aria-hidden="true" />
       <section className="workspace-strip" aria-label="Workspaces">
         {state.workspaces.map((workspace) => (
@@ -162,6 +179,21 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           <button className="icon-button" title="New tab" type="button" onClick={actions.newTab}><FiPlus /></button>
         </header>
 
+        <SidebarAddress controller={controller} />
+
+        {state.essentials.length > 0 && (
+          <nav className="essentials" aria-label="Essentials">
+            {state.essentials.map((essential) => (
+              <FavoriteButton
+                key={essential.id}
+                favorite={essential}
+                onOpen={actions.openUrlInActiveWorkspace}
+                onPreview={actions.openGlance}
+              />
+            ))}
+          </nav>
+        )}
+
         <div className="sidebar-search">
           <input
             autoComplete="off"
@@ -185,7 +217,9 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
                 title={tab.title || tab.url}
                 type="button"
                 aria-current={tab.id === activeTab.id}
-                onClick={() => actions.selectTab(tab.id)}
+                onClick={(event) => {
+                  event.altKey ? actions.openGlance(tab.url, tab.title) : actions.selectTab(tab.id);
+                }}
                 onContextMenu={(event) => openTabMenu(event, tab)}
               >
                 {tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}
@@ -197,7 +231,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         {filteredItems.favorites.length > 0 && (
           <nav className="favorites" aria-label="Favorites">
             {filteredItems.favorites.map((favorite) => (
-              <FavoriteButton key={favorite.id} favorite={favorite} onOpen={actions.openUrlInActiveWorkspace} />
+              <FavoriteButton
+                key={favorite.id}
+                favorite={favorite}
+                onOpen={actions.openUrlInActiveWorkspace}
+                onPreview={actions.openGlance}
+              />
             ))}
           </nav>
         )}
@@ -208,12 +247,14 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
               key={group.id}
               activeTab={activeTab}
               group={group}
+              splitTabIds={state.splitTabIds}
               tabs={tabs}
               draggingTabId={draggingTabId}
               onAssignTab={actions.assignTabToGroup}
               onClose={actions.closeTab}
               onContextMenu={openTabMenu}
               onDrop={handleTabDrop}
+              onPreview={actions.openGlance}
               onSelect={actions.selectTab}
               onToggle={() => actions.toggleTabGroupCollapsed(group.id)}
               onUpdate={actions.updateTabGroup}
@@ -225,10 +266,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
               key={tab.id}
               activeTabId={activeTab.id}
               draggingTabId={draggingTabId}
+              splitTabIds={state.splitTabIds}
               tab={tab}
               onClose={actions.closeTab}
               onContextMenu={openTabMenu}
               onDrop={handleTabDrop}
+              onPreview={actions.openGlance}
               onSelect={actions.selectTab}
               setDraggingTabId={setDraggingTabId}
             />
@@ -241,6 +284,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
 
       <footer className="sidebar-footer">
         <button className="icon-button" title="Focus sidebar" type="button" onClick={actions.toggleSidebar}><FiSidebar /></button>
+        <button className="icon-button" title="Compact mode" type="button" aria-pressed={compactMode} onClick={actions.toggleCompactMode}><FiMinimize2 /></button>
         <button className="icon-button" title="Split view" type="button" aria-pressed={state.splitMode} onClick={actions.toggleSplitMode}><FiColumns /></button>
         <button className="icon-button" title="History" type="button" onClick={() => setPanel("history")}><FiClock /></button>
         <button className="icon-button" title="Downloads" type="button" onClick={() => setPanel("downloads")}><FiDownload /></button>
@@ -254,6 +298,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onClose={() => setTabMenu(null)}
           onCloseTab={actions.closeTab}
           onDuplicate={actions.duplicateTab}
+          onOpenGlance={actions.openGlance}
           onOpenInSplit={actions.openTabInSplit}
           onSelect={actions.selectTab}
           onSleepTab={actions.sleepTab}
@@ -263,4 +308,110 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       )}
     </aside>
   );
+}
+
+function SidebarAddress({ controller }: { controller: BrowserController }) {
+  const { actions, addressValue, compactMode, setAddressValue, state } = controller;
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const suggestions = useMemo(() => buildOmniboxSuggestions(state, addressValue), [addressValue, state]);
+  const activeIndex = clampOmniboxIndex(activeSuggestionIndex, suggestions.length);
+
+  useEffect(() => {
+    setActiveSuggestionIndex((index) => clampOmniboxIndex(index, suggestions.length));
+  }, [suggestions.length]);
+
+  function submitAddress(event: FormEvent) {
+    event.preventDefault();
+    runSuggestion(suggestionsOpen ? suggestions[activeIndex] : undefined);
+  }
+
+  function onAddressKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (!suggestionsOpen && isOmniboxNavigationKey(event.key)) {
+      setSuggestionsOpen(true);
+    }
+
+    if (isOmniboxNavigationKey(event.key)) {
+      event.preventDefault();
+      const key = event.key;
+      setActiveSuggestionIndex((index) => getNextOmniboxIndex(index, suggestions.length, key));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      runSuggestion(suggestionsOpen ? suggestions[activeIndex] : undefined);
+    } else if (event.key === "Escape") {
+      setSuggestionsOpen(false);
+    }
+  }
+
+  function onSuggestionPointerDown(event: MouseEvent, suggestion: OmniboxSuggestion) {
+    event.preventDefault();
+    runSuggestion(suggestion);
+  }
+
+  function runSuggestion(suggestion: OmniboxSuggestion | undefined) {
+    switch (suggestion?.type) {
+      case "tab":
+        actions.selectTab(suggestion.tabId);
+        break;
+      case "essential":
+      case "favorite":
+      case "history":
+        actions.navigateActiveTab(suggestion.url);
+        break;
+      case "navigate":
+        actions.navigateActiveTab(suggestion.value);
+        break;
+      default:
+        actions.navigateActiveTab(addressValue);
+    }
+    setSuggestionsOpen(false);
+  }
+
+  return (
+    <div className="sidebar-address" data-compact={compactMode}>
+      <form className="sidebar-address-form" onSubmit={submitAddress}>
+        <FiSearch />
+        <input
+          id="sidebarAddressInput"
+          autoComplete="off"
+          inputMode="url"
+          spellCheck={false}
+          aria-label="Sidebar address"
+          placeholder="Search or enter address"
+          value={addressValue}
+          onBlur={() => setSuggestionsOpen(false)}
+          onChange={(event) => {
+            setAddressValue(event.target.value);
+            setSuggestionsOpen(true);
+            setActiveSuggestionIndex(0);
+          }}
+          onFocus={() => setSuggestionsOpen(true)}
+          onKeyDown={onAddressKeyDown}
+          aria-activedescendant={suggestionsOpen && suggestions.length > 0 ? `sidebar-address-suggestion-${activeIndex}` : undefined}
+        />
+      </form>
+      {suggestionsOpen && suggestions.length > 0 && (
+        <div className="sidebar-omnibox-suggestions" role="listbox" aria-label="Sidebar address suggestions">
+          {suggestions.map((suggestion, index) => (
+            <button
+              className="sidebar-omnibox-suggestion"
+              id={`sidebar-address-suggestion-${index}`}
+              key={suggestion.id}
+              type="button"
+              aria-selected={index === activeIndex}
+              onMouseDown={(event) => onSuggestionPointerDown(event, suggestion)}
+              onMouseEnter={() => setActiveSuggestionIndex(index)}
+            >
+              <span>{suggestion.title}</span>
+              <small>{suggestion.subtitle}</small>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function isOmniboxNavigationKey(key: string): key is OmniboxNavigationKey {
+  return key === "ArrowDown" || key === "ArrowUp" || key === "End" || key === "Home";
 }

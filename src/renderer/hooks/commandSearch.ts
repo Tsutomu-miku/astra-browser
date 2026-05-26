@@ -14,14 +14,17 @@ export function getVisibleCommands(
     return filteredCommands;
   }
 
-  return [
-    {
-      title: getQueryTitle(query),
-      subtitle: isLikelyUrl(query) ? "Open address" : "Search with selected engine",
-      run: () => openQuery(query.trim())
-    },
-    ...filteredCommands
-  ];
+  const queryCommand = {
+    title: getQueryTitle(query),
+    subtitle: isLikelyUrl(query) ? "Open address" : "Search with selected engine",
+    run: () => openQuery(query.trim())
+  };
+
+  if (isLikelyUrl(query) || !hasStrongCommandMatch(filteredCommands, normalizedQuery)) {
+    return [queryCommand, ...filteredCommands];
+  }
+
+  return [...filteredCommands, queryCommand];
 }
 
 function commandMatches(command: Command, normalizedQuery: string): boolean {
@@ -31,6 +34,10 @@ function commandMatches(command: Command, normalizedQuery: string): boolean {
 function getQueryTitle(query: string): string {
   const trimmed = query.trim();
   return isLikelyUrl(trimmed) ? `Open ${trimmed}` : `Search ${trimmed}`;
+}
+
+function hasStrongCommandMatch(commands: Command[], normalizedQuery: string): boolean {
+  return commands.some((command) => command.title.toLowerCase() === normalizedQuery);
 }
 
 function isLikelyUrl(query: string): boolean {

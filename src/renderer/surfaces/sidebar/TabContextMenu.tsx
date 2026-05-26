@@ -5,6 +5,7 @@ interface TabContextMenuProps {
   onClose: () => void;
   onCloseTab: (tabId: string) => void;
   onDuplicate: (tabId: string) => void;
+  onOpenGlance: (url: string, title?: string) => void;
   onOpenInSplit: (tabId: string) => void;
   onSelect: (tabId: string) => void;
   onSleepTab: (tabId: string) => void;
@@ -19,6 +20,7 @@ export function TabContextMenu({
   onClose,
   onCloseTab,
   onDuplicate,
+  onOpenGlance,
   onOpenInSplit,
   onSelect,
   onSleepTab,
@@ -40,6 +42,7 @@ export function TabContextMenu({
       onContextMenu={(event) => event.preventDefault()}
     >
       <button type="button" role="menuitem" onClick={() => run(() => onSelect(tab.id))}>Open</button>
+      <button type="button" role="menuitem" onClick={() => run(() => onOpenGlance(tab.url, tab.title))}>Preview in Glance</button>
       <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</button>
       <button type="button" role="menuitem" onClick={() => run(() => onDuplicate(tab.id))}>Duplicate</button>
       <button type="button" role="menuitem" onClick={() => run(() => onSleepTab(tab.id))}>Sleep tab</button>

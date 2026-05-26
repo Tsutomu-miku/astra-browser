@@ -2,6 +2,7 @@ import { BrowserState } from "./browser-core";
 import { getActiveTab, getActiveWorkspace } from "./selectors";
 import { updateBrowserState } from "./action-core";
 import { pruneEmptyTabGroups } from "./tab-groups";
+import { clearSplitView, pruneSplitTabIds } from "./split-view";
 import { prependClosedTabs } from "./tab-utils";
 
 export function closeOtherTabs(state: BrowserState): BrowserState {
@@ -15,8 +16,7 @@ export function closeOtherTabs(state: BrowserState): BrowserState {
     workspace.tabs = [active];
     workspace.activeTabId = active.id;
     pruneEmptyTabGroups(workspace);
-    draft.splitMode = false;
-    draft.splitTabId = null;
+    clearSplitView(draft);
   });
 }
 
@@ -32,10 +32,7 @@ export function closeTabsToLeft(state: BrowserState): BrowserState {
     workspace.tabs = workspace.tabs.slice(index);
     workspace.activeTabId = active.id;
     pruneEmptyTabGroups(workspace);
-    if (draft.splitTabId && !workspace.tabs.some((tab) => tab.id === draft.splitTabId)) {
-      draft.splitMode = false;
-      draft.splitTabId = null;
-    }
+    pruneSplitTabIds(draft, workspace);
   });
 }
 
@@ -51,9 +48,6 @@ export function closeTabsToRight(state: BrowserState): BrowserState {
     workspace.tabs = workspace.tabs.slice(0, index + 1);
     workspace.activeTabId = active.id;
     pruneEmptyTabGroups(workspace);
-    if (draft.splitTabId && !workspace.tabs.some((tab) => tab.id === draft.splitTabId)) {
-      draft.splitMode = false;
-      draft.splitTabId = null;
-    }
+    pruneSplitTabIds(draft, workspace);
   });
 }

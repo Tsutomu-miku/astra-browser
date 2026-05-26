@@ -12,6 +12,7 @@ import {
   clearSitePermissionRule,
   duplicateActiveTab,
   duplicateTab,
+  fillSplitView,
   groupActiveTab,
   closeOtherTabs,
   closeTabsToLeft,
@@ -19,6 +20,8 @@ import {
   deleteWorkspace,
   moveTabToWorkspace,
   openTabInSplit,
+  openUrlInSplit,
+  removeTabFromSplit,
   navigateActiveTab,
   openUrlInActiveWorkspace,
   recordHistory,
@@ -39,6 +42,7 @@ import {
   stepActiveTabZoom,
   switchWorkspace,
   toggleActiveTabFavorite,
+  toggleActiveTabEssential,
   toggleActiveTabMuted,
   toggleActiveTabPinned,
   toggleTabGroupCollapsed,
@@ -68,17 +72,21 @@ import type { WebviewAction, WebviewElement } from "../types/browser-ui";
 import { getActiveProfileId, getActiveUrl } from "./browserStoreSelectors";
 
 export type Panel = "history" | "downloads" | "settings" | "site" | null;
+export type SplitLayout = "grid" | "horizontal" | "vertical";
 
 interface BrowserStore {
   addressValue: string;
   commandOpen: boolean;
   commandQuery: string;
+  compactMode: boolean;
   findOpen: boolean;
   findQuery: string;
   panel: Panel;
   permissionRequest: PermissionRequestEvent | null;
   sidebarCollapsed: boolean;
+  splitLayout: SplitLayout;
   state: BrowserState;
+  glance: { title: string; url: string } | null;
   addWorkspace: () => void;
   assignTabToGroup: (tabId: string, groupId: string) => void;
   clearBrowsingData: () => void;
@@ -93,16 +101,22 @@ interface BrowserStore {
   deleteWorkspace: (workspaceId: string) => void;
   duplicateActiveTab: () => void;
   duplicateTab: (tabId: string) => void;
+  fillSplitView: () => void;
   groupActiveTab: () => void;
   ingestDownload: (download: DownloadEntry) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
+  closeGlance: () => void;
+  openGlance: (url: string, title?: string) => void;
+  openGlanceInSplit: () => void;
   openTabInSplit: (tabId: string) => void;
+  openUrlInSplit: (url: string, title?: string) => void;
   navigateActiveTab: (url: string, webview?: WebviewElement) => void;
   newTab: () => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
   recordHistory: (tabId: string, url: string) => void;
   removeHistoryEntry: (historyId: string) => void;
+  removeTabFromSplit: (tabId: string) => void;
   replaceBrowserState: (state: BrowserState) => void;
   reorderTab: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   reorderWorkspace: (workspaceId: string, targetWorkspaceId: string, placement: WorkspaceDropPlacement) => void;
@@ -122,11 +136,14 @@ interface BrowserStore {
   setFindOpen: (open: boolean) => void;
   setFindQuery: (query: string) => void;
   setPanel: (panel: Panel) => void;
+  setSplitLayout: (layout: SplitLayout) => void;
   setSitePermission: (profileId: string, origin: string, permission: string, decision: "allow" | "block") => void;
   switchWorkspace: (workspaceId: string) => void;
   toggleActiveTabFavorite: () => void;
+  toggleActiveTabEssential: () => void;
   toggleActiveTabMuted: (webview?: WebviewElement) => void;
   toggleActiveTabPinned: () => void;
+  toggleCompactMode: () => void;
   toggleTabGroupCollapsed: (groupId: string) => void;
   toggleTabMuted: (tabId: string, webview?: WebviewElement) => void;
   toggleTabPinned: (tabId: string) => void;
@@ -147,12 +164,15 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   addressValue: "",
   commandOpen: false,
   commandQuery: "",
+  compactMode: false,
   findOpen: false,
   findQuery: "",
   panel: null,
   permissionRequest: null,
   sidebarCollapsed: false,
+  splitLayout: "horizontal",
   state: initialState,
+  glance: null,
   addWorkspace: () => update(set, addWorkspace),
   assignTabToGroup: (tabId, groupId) => update(set, (state) => assignTabToGroup(state, tabId, groupId)),
   clearBrowsingData: () => {
@@ -181,6 +201,10 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   deleteWorkspace: (workspaceId) => update(set, (state) => deleteWorkspace(state, workspaceId)),
   duplicateActiveTab: () => update(set, duplicateActiveTab),
   duplicateTab: (tabId) => update(set, (state) => duplicateTab(state, tabId)),
+  fillSplitView: () => {
+    update(set, fillSplitView);
+    set({ splitLayout: "grid" });
+  },
   groupActiveTab: () => update(set, groupActiveTab),
   ingestDownload: (download) => {
     update(set, (state) => upsertDownload(state, download));
@@ -197,7 +221,16 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     set({ permissionRequest: { ...request, profileId } });
   },
   moveTabToWorkspace: (tabId, workspaceId) => update(set, (state) => moveTabToWorkspace(state, tabId, workspaceId)),
+  closeGlance: () => set({ glance: null }),
+  openGlance: (url, title) => set({ glance: { title: title || url, url } }),
+  openGlanceInSplit: () => {
+    const glance = useBrowserStore.getState().glance;
+    if (!glance) return;
+    update(set, (state) => openUrlInSplit(state, glance.url, glance.title));
+    set({ glance: null });
+  },
   openTabInSplit: (tabId) => update(set, (state) => openTabInSplit(state, tabId)),
+  openUrlInSplit: (url, title) => update(set, (state) => openUrlInSplit(state, url, title)),
   navigateActiveTab: (url, webview) => update(set, (state) => {
     const next = navigateActiveTab(state, url);
     webview?.loadURL?.(getActiveUrl(next));
@@ -207,6 +240,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   openUrlInActiveWorkspace: (url, title) => update(set, (state) => openUrlInActiveWorkspace(state, url, title)),
   recordHistory: (tabId, url) => update(set, (state) => recordHistory(state, tabId, url)),
   removeHistoryEntry: (historyId) => update(set, (state) => removeHistoryEntry(state, historyId)),
+  removeTabFromSplit: (tabId) => update(set, (state) => removeTabFromSplit(state, tabId)),
   replaceBrowserState: (state) => {
     saveBrowserState(state);
     set({ state, addressValue: getActiveUrl(state), permissionRequest: null });
@@ -245,12 +279,18 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   setFindOpen: (findOpen) => set({ findOpen }),
   setFindQuery: (findQuery) => set({ findQuery }),
   setPanel: (panel) => set({ panel }),
+  setSplitLayout: (splitLayout) => set({ splitLayout }),
   setSitePermission: (profileId, origin, permission, decision) =>
     update(set, (state) => setSitePermission(state, { profileId, origin, permission, decision })),
   switchWorkspace: (workspaceId) => update(set, (state) => switchWorkspace(state, workspaceId)),
   toggleActiveTabFavorite: () => update(set, toggleActiveTabFavorite),
+  toggleActiveTabEssential: () => update(set, toggleActiveTabEssential),
   toggleActiveTabMuted: (webview) => update(set, (state) => syncMuted(toggleActiveTabMuted(state), webview)),
   toggleActiveTabPinned: () => update(set, toggleActiveTabPinned),
+  toggleCompactMode: () => set((state) => ({
+    compactMode: !state.compactMode,
+    sidebarCollapsed: !state.compactMode ? true : state.sidebarCollapsed
+  })),
   toggleTabGroupCollapsed: (groupId) => update(set, (state) => toggleTabGroupCollapsed(state, groupId)),
   toggleTabMuted: (tabId, webview) => update(set, (state) => syncMuted(toggleTabMuted(state, tabId), webview, tabId)),
   toggleTabPinned: (tabId) => update(set, (state) => toggleTabPinned(state, tabId)),

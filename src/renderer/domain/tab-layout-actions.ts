@@ -2,11 +2,14 @@ import {
   BrowserState,
   BrowserTab,
   createTab,
+  getReadableUrlTitle,
   getWorkspaceHomepageUrl,
+  normalizeAddress,
   Workspace
 } from "./browser-core";
 import { getActiveTab, getActiveWorkspace } from "./selectors";
 import { updateBrowserState } from "./action-core";
+import { clearSplitView, getSplitTabIds, MAX_SPLIT_VIEW_TABS, setSplitTabIds } from "./split-view";
 import { pruneEmptyTabGroups } from "./tab-groups";
 import type { TabDropPlacement } from "./tab-utils";
 
@@ -52,8 +55,7 @@ export function moveTabToWorkspace(state: BrowserState, tabId: string, workspace
     target.tabs.push(tab);
     target.activeTabId = tab.id;
     draft.activeWorkspaceId = target.id;
-    draft.splitMode = false;
-    draft.splitTabId = null;
+    clearSplitView(draft);
   });
 }
 
@@ -64,8 +66,30 @@ export function openTabInSplit(state: BrowserState, tabId: string): BrowserState
     if (!tab || tab.id === workspace.activeTabId) return;
 
     tab.isSleeping = false;
-    draft.splitMode = true;
-    draft.splitTabId = tab.id;
+    const splitTabIds = getSplitTabIds(draft).filter((candidateId) => candidateId !== tab.id);
+    setSplitTabIds(draft, [...splitTabIds, tab.id]);
+  });
+}
+
+export function openUrlInSplit(state: BrowserState, url: string, title?: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const normalizedUrl = normalizeAddress(url, draft.settings.searchEngine);
+    const tab = createTab(title || getReadableUrlTitle(normalizedUrl), normalizedUrl);
+    workspace.tabs.push(tab);
+    setSplitTabIds(draft, [...getSplitTabIds(draft), tab.id]);
+  });
+}
+
+export function removeTabFromSplit(state: BrowserState, tabId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    if (workspace.activeTabId === tabId) {
+      clearSplitView(draft);
+      return;
+    }
+
+    setSplitTabIds(draft, getSplitTabIds(draft).filter((candidateId) => candidateId !== tabId));
   });
 }
 
@@ -74,10 +98,39 @@ export function toggleSplitMode(state: BrowserState): BrowserState {
     const workspace = getActiveWorkspace(draft);
     const active = getActiveTab(workspace);
     const inactiveTabs = workspace.tabs.filter((tab) => tab.id !== active.id);
-    draft.splitMode = !draft.splitMode;
+    if (draft.splitMode) {
+      clearSplitView(draft);
+      return;
+    }
+
     const splitTab = inactiveTabs[0] ?? createSplitTab(workspace);
     splitTab.isSleeping = false;
-    draft.splitTabId = draft.splitMode ? splitTab.id : null;
+    setSplitTabIds(draft, [splitTab.id]);
+  });
+}
+
+export function fillSplitView(state: BrowserState): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const active = getActiveTab(workspace);
+    const selectedIds = getSplitTabIds(draft);
+    const selected = new Set([active.id, ...selectedIds]);
+    const nextIds = [...selectedIds];
+
+    for (const tab of workspace.tabs) {
+      if (nextIds.length >= MAX_SPLIT_VIEW_TABS - 1) break;
+      if (selected.has(tab.id)) continue;
+      tab.isSleeping = false;
+      nextIds.push(tab.id);
+      selected.add(tab.id);
+    }
+
+    while (nextIds.length < MAX_SPLIT_VIEW_TABS - 1) {
+      const tab = createSplitTab(workspace);
+      nextIds.push(tab.id);
+    }
+
+    setSplitTabIds(draft, nextIds);
   });
 }
 

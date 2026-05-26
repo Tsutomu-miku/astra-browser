@@ -11,10 +11,12 @@ export function TabGroupSection({
   onClose,
   onContextMenu,
   onDrop,
+  onPreview,
   onSelect,
   onToggle,
   onUpdate,
   setDraggingTabId,
+  splitTabIds,
   tabs
 }: {
   activeTab: BrowserTab;
@@ -24,10 +26,12 @@ export function TabGroupSection({
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onDrop: (event: DragEvent<HTMLDivElement>, targetTabId: string) => void;
+  onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   onToggle: () => void;
   onUpdate: (groupId: string, patch: Partial<Pick<TabGroup, "name" | "color">>) => void;
   setDraggingTabId: (tabId: string | null) => void;
+  splitTabIds: string[];
   tabs: BrowserTab[];
 }) {
   const hasActiveTab = tabs.some((tab) => tab.id === activeTab.id);
@@ -76,10 +80,12 @@ export function TabGroupSection({
           key={tab.id}
           activeTabId={activeTab.id}
           draggingTabId={draggingTabId}
+          splitTabIds={splitTabIds}
           tab={tab}
           onClose={onClose}
           onContextMenu={onContextMenu}
           onDrop={onDrop}
+          onPreview={onPreview}
           onSelect={onSelect}
           setDraggingTabId={setDraggingTabId}
         />
@@ -94,8 +100,10 @@ export function TabRow({
   onClose,
   onContextMenu,
   onDrop,
+  onPreview,
   onSelect,
   setDraggingTabId,
+  splitTabIds,
   tab
 }: {
   activeTabId: string;
@@ -103,13 +111,15 @@ export function TabRow({
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onDrop: (event: DragEvent<HTMLDivElement>, targetTabId: string) => void;
+  onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   setDraggingTabId: (tabId: string | null) => void;
+  splitTabIds: string[];
   tab: BrowserTab;
 }) {
   return (
     <div
-      className={`tab-row ${tab.isSleeping ? "is-sleeping" : ""}`}
+      className={`tab-row ${tab.isSleeping ? "is-sleeping" : ""} ${splitTabIds.includes(tab.id) ? "is-split-tab" : ""}`}
       aria-current={tab.id === activeTabId}
       draggable
       data-dragging={draggingTabId === tab.id}
@@ -125,7 +135,13 @@ export function TabRow({
       onDrop={(event) => onDrop(event, tab.id)}
       onContextMenu={(event) => onContextMenu(event, tab)}
     >
-      <button className="tab-button" type="button" onClick={() => onSelect(tab.id)}>
+      <button
+        className="tab-button"
+        type="button"
+        onClick={(event) => {
+          event.altKey ? onPreview(tab.url, tab.title) : onSelect(tab.id);
+        }}
+      >
         <span className="tab-favicon">{tab.isSleeping ? <FiMoon /> : tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}</span>
         <span className="tab-title">{tab.title || tab.url}</span>
       </button>
@@ -142,9 +158,24 @@ export function TabRow({
   );
 }
 
-export function FavoriteButton({ favorite, onOpen }: { favorite: Favorite; onOpen: (url: string, title?: string) => void }) {
+export function FavoriteButton({
+  favorite,
+  onOpen,
+  onPreview
+}: {
+  favorite: Favorite;
+  onOpen: (url: string, title?: string) => void;
+  onPreview: (url: string, title?: string) => void;
+}) {
   return (
-    <button className="favorite-button" type="button" title={favorite.url} onClick={() => onOpen(favorite.url, favorite.title)}>
+    <button
+      className="favorite-button"
+      type="button"
+      title={favorite.url}
+      onClick={(event) => {
+        event.altKey ? onPreview(favorite.url, favorite.title) : onOpen(favorite.url, favorite.title);
+      }}
+    >
       <span className="favorite-icon">{getHostInitial(favorite.url)}</span>
       <span className="favorite-title">{favorite.title}</span>
     </button>

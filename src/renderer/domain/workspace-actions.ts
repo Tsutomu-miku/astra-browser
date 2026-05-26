@@ -7,6 +7,7 @@ import {
   Workspace
 } from "./browser-core";
 import { getActiveWorkspace } from "./selectors";
+import { clearSplitView } from "./split-view";
 import { updateBrowserState } from "./action-core";
 import { normalizeWorkspaceProfile } from "./workspaceProfiles";
 
@@ -15,8 +16,7 @@ export type WorkspaceDropPlacement = "before" | "after";
 export function switchWorkspace(state: BrowserState, workspaceId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     draft.activeWorkspaceId = workspaceId;
-    draft.splitMode = false;
-    draft.splitTabId = null;
+    clearSplitView(draft);
   });
 }
 
@@ -53,8 +53,7 @@ export function deleteWorkspace(state: BrowserState, workspaceId: string): Brows
     draft.workspaces.splice(index, 1);
     if (deletingActive) {
       draft.activeWorkspaceId = draft.workspaces[Math.max(0, index - 1)].id;
-      draft.splitMode = false;
-      draft.splitTabId = null;
+      clearSplitView(draft);
     }
   });
 }

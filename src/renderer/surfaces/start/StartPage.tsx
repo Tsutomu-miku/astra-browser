@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState, type CSSProperties } from "react";
+import { FormEvent, useMemo, useState, type CSSProperties, type MouseEvent } from "react";
 import { FiClock, FiSearch, FiStar } from "react-icons/fi";
 
 import { getReadableUrlTitle, type BrowserState, type Workspace } from "../../domain/browser-core";
@@ -21,6 +21,10 @@ export function StartPage({
     if (query.trim()) {
       actions.navigateActiveTab(query);
     }
+  }
+
+  function openOrPreview(event: MouseEvent, url: string, title?: string) {
+    event.altKey ? actions.openGlance(url, title) : actions.navigateActiveTab(url);
   }
 
   return (
@@ -64,7 +68,7 @@ export function StartPage({
                 key={favorite.id}
                 type="button"
                 title={favorite.url}
-                onClick={() => actions.navigateActiveTab(favorite.url)}
+                onClick={(event) => openOrPreview(event, favorite.url, favorite.title)}
               >
                 <span className="start-tile-icon">{getReadableUrlTitle(favorite.url).slice(0, 1).toUpperCase()}</span>
                 <span className="start-tile-title">{favorite.title}</span>
@@ -87,7 +91,7 @@ export function StartPage({
                 key={entry.id}
                 type="button"
                 title={entry.url}
-                onClick={() => actions.navigateActiveTab(entry.url)}
+                onClick={(event) => openOrPreview(event, entry.url, entry.title)}
               >
                 <span>{entry.title}</span>
                 <small>{getReadableUrlTitle(entry.url)}</small>

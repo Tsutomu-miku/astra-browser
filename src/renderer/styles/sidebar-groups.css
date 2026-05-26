@@ -1,7 +1,7 @@
 .tab-group {
   display: grid;
   gap: 4px;
-  padding: 4px 0;
+  padding: 5px 0;
 }
 
 .tab-group-header {
@@ -12,14 +12,19 @@
   grid-template-columns: 22px minmax(0, 1fr) auto 24px;
   align-items: center;
   gap: 8px;
-  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--group-color) 18%, transparent);
+  border-radius: var(--radius-sm);
   padding: 0 8px;
-  background: color-mix(in srgb, var(--group-color) 16%, transparent);
+  background: color-mix(in srgb, var(--group-color) 13%, transparent);
   color: var(--text);
+  transition:
+    background 130ms ease,
+    border-color 130ms ease;
 }
 
 .tab-group-header:hover {
-  background: color-mix(in srgb, var(--group-color) 24%, transparent);
+  border-color: color-mix(in srgb, var(--group-color) 34%, transparent);
+  background: color-mix(in srgb, var(--group-color) 22%, transparent);
 }
 
 .tab-group-toggle {
@@ -28,7 +33,7 @@
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: transparent;
   cursor: pointer;
 }

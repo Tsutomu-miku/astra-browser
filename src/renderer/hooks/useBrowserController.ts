@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { getActiveTab, getActiveWorkspace } from "../domain/selectors";
-import { useBrowserStore } from "../stores/browserStore";
+import { useBrowserStore, type SplitLayout } from "../stores/browserStore";
 import type { WebviewElement } from "../types/browser-ui";
 import { useBrowserEffects } from "./useBrowserEffects";
 import { buildCommands } from "./useCommands";
@@ -16,7 +16,9 @@ export function useBrowserController() {
 
   const focusAddressBar = useCallback(() => {
     store.setCommandOpen(false);
-    const input = document.getElementById("addressInput") as HTMLInputElement | null;
+    const sidebarInput = document.getElementById("sidebarAddressInput") as HTMLInputElement | null;
+    const topbarInput = document.getElementById("addressInput") as HTMLInputElement | null;
+    const input = store.compactMode && sidebarInput?.offsetParent ? sidebarInput : topbarInput;
     input?.focus();
     input?.select();
   }, [store]);
@@ -31,6 +33,7 @@ export function useBrowserController() {
     closeTab: store.closeTab,
     clearSitePermission: store.clearSitePermission,
     duplicateActiveTab: store.duplicateActiveTab,
+    fillSplitView: store.fillSplitView,
     groupActiveTab: store.groupActiveTab,
     closeOtherTabs: store.closeOtherTabs,
     closeTabsToLeft: store.closeTabsToLeft,
@@ -50,12 +53,17 @@ export function useBrowserController() {
       }
     },
     moveTabToWorkspace: store.moveTabToWorkspace,
+    closeGlance: store.closeGlance,
+    openGlance: store.openGlance,
+    openGlanceInSplit: store.openGlanceInSplit,
     openTabInSplit: store.openTabInSplit,
+    openUrlInSplit: store.openUrlInSplit,
     navigateActiveTab: (url: string) => store.navigateActiveTab(url, activeWebview),
     newTab: store.newTab,
     openUrlInActiveWorkspace: store.openUrlInActiveWorkspace,
     recordHistory: store.recordHistory,
     removeHistoryEntry: store.removeHistoryEntry,
+    removeTabFromSplit: store.removeTabFromSplit,
     replaceBrowserState: store.replaceBrowserState,
     reorderWorkspace: store.reorderWorkspace,
     reorderTab: store.reorderTab,
@@ -69,11 +77,14 @@ export function useBrowserController() {
     sleepInactiveTabs: store.sleepInactiveTabs,
     sleepTab: store.sleepTab,
     setActiveTabZoom: (zoomFactor: number) => store.setActiveTabZoom(zoomFactor, activeWebview),
+    setSplitLayout: store.setSplitLayout,
     setSitePermission: store.setSitePermission,
     switchWorkspace: store.switchWorkspace,
     toggleActiveTabFavorite: store.toggleActiveTabFavorite,
+    toggleActiveTabEssential: store.toggleActiveTabEssential,
     toggleActiveTabMuted: () => store.toggleActiveTabMuted(activeWebview),
     toggleActiveTabPinned: store.toggleActiveTabPinned,
+    toggleCompactMode: store.toggleCompactMode,
     toggleTabGroupCollapsed: store.toggleTabGroupCollapsed,
     toggleTabMuted: (tabId: string) => store.toggleTabMuted(tabId, webviews.current.get(tabId)),
     toggleTabPinned: store.toggleTabPinned,
@@ -98,6 +109,7 @@ export function useBrowserController() {
     } else if (intent.type === "focusAddress") {
       focusAddressBar();
     } else if (intent.type === "closePanels") {
+      store.closeGlance();
       store.setCommandOpen(false);
       store.setFindOpen(false);
       store.setPanel(null);
@@ -115,10 +127,26 @@ export function useBrowserController() {
       store.zoomOut(activeWebview);
     } else if (intent.type === "resetZoom") {
       store.resetActiveTabZoom(activeWebview);
+    } else if (intent.type === "toggleSplitGrid") {
+      store.setSplitLayout("grid");
+      store.fillSplitView();
+    } else if (intent.type === "toggleSplitHorizontal") {
+      activateSplitLayout("horizontal");
+    } else if (intent.type === "toggleSplitVertical") {
+      activateSplitLayout("vertical");
+    } else if (intent.type === "unsplitAll") {
+      if (store.state.splitMode) store.toggleSplitMode();
     } else {
       shortcutActions[intent.type]?.();
     }
-  }, [activeWorkspace.tabs, focusAddressBar, store]);
+  }, [activeWebview, activeWorkspace.tabs, focusAddressBar, store]);
+
+  function activateSplitLayout(layout: SplitLayout) {
+    store.setSplitLayout(layout);
+    if (!store.state.splitMode) {
+      store.toggleSplitMode();
+    }
+  }
 
   useEffect(() => {
     useBrowserStore.getState().setAddressValue(activeTab.url);
@@ -141,8 +169,10 @@ export function useBrowserController() {
     commands,
     commandOpen: store.commandOpen,
     commandQuery: store.commandQuery,
+    compactMode: store.compactMode,
     findOpen: store.findOpen,
     findQuery: store.findQuery,
+    glance: store.glance,
     panel: store.panel,
     permissionRequest: store.permissionRequest,
     setAddressValue: store.setAddressValue,
@@ -152,6 +182,7 @@ export function useBrowserController() {
     setFindQuery: store.setFindQuery,
     setPanel: store.setPanel,
     sidebarCollapsed: store.sidebarCollapsed,
+    splitLayout: store.splitLayout,
     state: store.state,
     webviews
   };
@@ -159,7 +190,12 @@ export function useBrowserController() {
 
 const shortcutActions: Partial<Record<ShortcutIntent["type"], () => void>> = {
   closeTab: () => useBrowserStore.getState().closeActiveTab(),
+  closePanels: () => {
+    useBrowserStore.getState().closeGlance();
+  },
+  toggleCompactMode: () => useBrowserStore.getState().toggleCompactMode(),
   newTab: () => useBrowserStore.getState().newTab(),
+  fillSplitGrid: () => useBrowserStore.getState().fillSplitView(),
   restoreClosedTab: () => useBrowserStore.getState().restoreLastClosedTab(),
   toggleSidebar: () => useBrowserStore.getState().toggleSidebar(),
   toggleSplit: () => useBrowserStore.getState().toggleSplitMode()

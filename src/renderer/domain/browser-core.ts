@@ -5,6 +5,7 @@ export { isInternalNewTabUrl, isInternalPageUrl } from "./internalPages";
 export {
   getHomepageUrl,
   getHostInitial,
+  isEssential,
   getReadableUrlTitle,
   getSearchUrl,
   getWorkspaceHomepageUrl,
@@ -18,6 +19,7 @@ export {
   normalizeState
 } from "./state-normalization";
 export { getBrowserPartitions, getProfileIdForPartition, getWorkspacePartition } from "./workspaceProfiles";
+export { getSplitTabIds, MAX_SPLIT_VIEW_TABS } from "./split-view";
 
 export type {
   BrowserState,

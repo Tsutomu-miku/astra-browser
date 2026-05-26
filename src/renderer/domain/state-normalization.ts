@@ -14,6 +14,7 @@ import type {
 } from "./browser-types";
 import { getHomepageUrl, getReadableUrlTitle, getWorkspaceHomepageUrl, normalizeAddress } from "./navigation";
 import { normalizeSitePermissions } from "./sitePermissions";
+import { getSplitTabIds, pruneSplitTabIds } from "./split-view";
 import { normalizeTabGroups } from "./tab-groups";
 import { normalizeWorkspaceProfile } from "./workspaceProfiles";
 import { normalizeZoomFactor } from "./zoom";
@@ -26,6 +27,7 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
 
   state.history = Array.isArray(state.history) ? state.history as HistoryEntry[] : [];
   state.downloads = Array.isArray(state.downloads) ? state.downloads as DownloadEntry[] : [];
+  state.essentials = normalizeFavorites(state.essentials, state.settings?.searchEngine);
   state.sitePermissions = normalizeSitePermissions(state.sitePermissions);
   state.settings = {
     ...fallback.settings,
@@ -80,6 +82,15 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
     state.activeWorkspaceId = state.workspaces[0].id;
   }
 
+  state.splitMode = Boolean(state.splitMode);
+  state.splitTabIds = getSplitTabIds({
+    splitMode: state.splitMode,
+    splitTabId: state.splitTabId,
+    splitTabIds: Array.isArray(state.splitTabIds) ? state.splitTabIds : []
+  });
+  state.splitTabId = state.splitTabIds[0] ?? null;
+  pruneSplitTabIds(state, state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) ?? state.workspaces[0]);
+
   return state;
 }
 
@@ -92,6 +103,7 @@ export function applyStartupBehavior(state: BrowserState): BrowserState {
     ...state,
     splitMode: false,
     splitTabId: null,
+    splitTabIds: [],
     workspaces: state.workspaces.map((workspace) => {
       const tab = createTab("New Tab", getWorkspaceHomepageUrl(state, workspace));
       return {

@@ -8,6 +8,7 @@ import {
   getNextWorkspaceAccent,
   getWorkspaceHomepageUrl,
   isInternalNewTabUrl,
+  isEssential,
   isFavorite,
   normalizeAddress,
   normalizeState,
@@ -49,6 +50,7 @@ describe("browser-core", () => {
     expect(state.workspaces[0].homepage).toBe("about:blank");
     expect(state.workspaces[0].favorites[0].url).toBe("https://github.com/");
     expect(state.workspaces[0].closedTabs[0].url).toBe("https://closed.example/");
+    expect(state.essentials).toEqual([]);
     expect(state.workspaces[0].tabs).toHaveLength(1);
     expect(state.workspaces[0].tabs[0].url).toBe("about:blank");
     expect(state.workspaces[0].tabs[0].canGoBack).toBe(false);
@@ -84,6 +86,7 @@ describe("browser-core", () => {
 
     expect(started.splitMode).toBe(false);
     expect(started.splitTabId).toBeNull();
+    expect(started.splitTabIds).toEqual([]);
     expect(started.workspaces[0].tabs).toHaveLength(1);
     expect(started.workspaces[0].tabs[0].url).toBe("https://space.example/");
     expect(started.workspaces[0].tabGroups).toHaveLength(0);
@@ -100,6 +103,7 @@ describe("browser-core", () => {
     expect(getWorkspaceHomepageUrl(state, { homepage: "space.example" })).toBe("https://space.example/");
     expect(getHostInitial("https://developer.mozilla.org")).toBe("D");
     expect(isFavorite(state.workspaces[0], "https://www.chromium.org")).toBe(true);
+    expect(isEssential(state, "https://github.com")).toBe(true);
     expect(getNextWorkspaceAccent(2)).toBe("#86efac");
     expect(formatBytes(1536)).toBe("1.5 KB");
   });

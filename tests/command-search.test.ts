@@ -39,10 +39,17 @@ describe("getVisibleCommands", () => {
     expect(openQuery).toHaveBeenCalledWith("example.com");
   });
 
-  it("keeps matching app commands after the query command", () => {
+  it("keeps fuzzy app command matches after the query command", () => {
     const visible = getVisibleCommands(commands, "history", vi.fn());
 
     expect(visible[0].title).toBe("Search history");
     expect(visible[1].title).toBe("History Example");
+  });
+
+  it("prioritizes exact app command matches over text search", () => {
+    const visible = getVisibleCommands(commands, "History Example", vi.fn());
+
+    expect(visible[0].title).toBe("History Example");
+    expect(visible[1].title).toBe("Search History Example");
   });
 });

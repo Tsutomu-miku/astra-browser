@@ -30,9 +30,11 @@ describe("buildCommands", () => {
       closeTabsToRight: vi.fn(),
       deleteWorkspace: vi.fn(),
       duplicateActiveTab: vi.fn(),
+      fillSplitView: vi.fn(),
       focusAddressBar: vi.fn(),
       groupActiveTab: vi.fn(),
       moveTabToWorkspace: vi.fn(),
+      openGlance: vi.fn(),
       openTabInSplit: vi.fn(),
       newTab: vi.fn(),
       openUrlInActiveWorkspace: vi.fn(),
@@ -40,11 +42,14 @@ describe("buildCommands", () => {
       selectAdjacentTab: vi.fn(),
       resetActiveTabZoom: vi.fn(),
       selectTab: vi.fn(),
+      setSplitLayout: vi.fn(),
       sleepInactiveTabs: vi.fn(),
       switchWorkspace: vi.fn(),
       toggleActiveTabFavorite: vi.fn(),
+      toggleActiveTabEssential: vi.fn(),
       toggleActiveTabMuted: vi.fn(),
       toggleActiveTabPinned: vi.fn(),
+      toggleCompactMode: vi.fn(),
       toggleTabGroupCollapsed: vi.fn(),
       toggleSidebar: vi.fn(),
       toggleSplitMode: vi.fn(),
@@ -65,13 +70,21 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Next tab")).toBe(true);
     expect(commands.some((command) => command.title === "Previous tab")).toBe(true);
     expect(commands.some((command) => command.title === "Mute tab")).toBe(true);
+    expect(commands.some((command) => command.title === "Preview tab in Glance")).toBe(true);
     expect(commands.some((command) => command.title.startsWith("Move tab to"))).toBe(true);
     expect(commands.some((command) => command.title.includes("in split view"))).toBe(true);
+    expect(commands.some((command) => command.title === "Fill split grid")).toBe(true);
+    expect(commands.some((command) => command.title === "Unsplit all tabs")).toBe(true);
+    expect(commands.some((command) => command.title === "Split layout horizontal")).toBe(true);
+    expect(commands.some((command) => command.title === "Split layout vertical")).toBe(true);
+    expect(commands.some((command) => command.title === "Split layout grid")).toBe(true);
     expect(commands.some((command) => command.title === "Clear browsing data")).toBe(true);
     expect(commands.some((command) => command.title === "Clear current profile data")).toBe(true);
     expect(commands.some((command) => command.title === "Clear history")).toBe(true);
     expect(commands.some((command) => command.title === "Delete workspace")).toBe(true);
     expect(commands.some((command) => command.title === "New workspace")).toBe(true);
+    expect(commands.some((command) => command.title === "Toggle compact mode")).toBe(true);
+    expect(commands.some((command) => command.title === "Add essential")).toBe(true);
     expect(commands.some((command) => command.title === "Close other tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Close tabs to the left")).toBe(true);
     expect(commands.some((command) => command.title === "Close tabs to the right")).toBe(true);

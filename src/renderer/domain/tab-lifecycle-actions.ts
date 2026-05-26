@@ -7,6 +7,7 @@ import {
 import { getActiveTab, getActiveWorkspace } from "./selectors";
 import { updateBrowserState } from "./action-core";
 import { pruneEmptyTabGroups } from "./tab-groups";
+import { clearSplitView, pruneSplitTabIds } from "./split-view";
 import { prependClosedTabs } from "./tab-utils";
 
 export function addTab(state: BrowserState): BrowserState {
@@ -15,7 +16,7 @@ export function addTab(state: BrowserState): BrowserState {
     const tab = createTab("New Tab", getWorkspaceHomepageUrl(draft, workspace));
     workspace.tabs.push(tab);
     workspace.activeTabId = tab.id;
-    draft.splitTabId = null;
+    clearSplitView(draft);
   });
 }
 
@@ -45,10 +46,7 @@ export function closeTab(state: BrowserState, tabId: string): BrowserState {
       workspace.activeTabId = workspace.tabs[Math.max(0, index - 1)].id;
     }
 
-    if (draft.splitTabId && !workspace.tabs.some((tab) => tab.id === draft.splitTabId)) {
-      draft.splitTabId = null;
-      draft.splitMode = false;
-    }
+    pruneSplitTabIds(draft, workspace);
   });
 }
 
@@ -67,7 +65,7 @@ export function restoreClosedTab(state: BrowserState, closedIndex: number): Brow
     const tab = createTab(closed.title, closed.url);
     workspace.tabs.push(tab);
     workspace.activeTabId = tab.id;
-    draft.splitTabId = null;
+    clearSplitView(draft);
   });
 }
 
@@ -94,6 +92,6 @@ export function duplicateTab(state: BrowserState, tabId: string): BrowserState {
     workspace.tabs.splice(index + 1, 0, tab);
     draft.activeWorkspaceId = workspace.id;
     workspace.activeTabId = tab.id;
-    draft.splitTabId = null;
+    clearSplitView(draft);
   });
 }

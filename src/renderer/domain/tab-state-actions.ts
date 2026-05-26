@@ -5,6 +5,7 @@ import {
   getReadableUrlTitle
 } from "./browser-core";
 import { getActiveTab, getActiveWorkspace } from "./selectors";
+import { getSplitTabIds, setSplitTabIds } from "./split-view";
 import { pruneEmptyTabGroups } from "./tab-groups";
 import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "./zoom";
 import { updateBrowserState } from "./action-core";
@@ -51,10 +52,7 @@ export function sleepTab(state: BrowserState, tabId: string): BrowserState {
       workspace.activeTabId = workspace.tabs[Math.max(0, index - 1)].id;
     }
 
-    if (draft.splitTabId === tab.id) {
-      draft.splitMode = false;
-      draft.splitTabId = null;
-    }
+    setSplitTabIds(draft, getSplitTabIds(draft).filter((tabId) => tabId !== tab.id));
 
     tab.isSleeping = true;
     tab.isLoading = false;
@@ -66,7 +64,7 @@ export function sleepTab(state: BrowserState, tabId: string): BrowserState {
 export function sleepInactiveTabs(state: BrowserState): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
-    const visibleTabIds = new Set([workspace.activeTabId, draft.splitTabId].filter(Boolean));
+    const visibleTabIds = new Set([workspace.activeTabId, ...getSplitTabIds(draft)].filter(Boolean));
 
     for (const tab of workspace.tabs) {
       if (!visibleTabIds.has(tab.id) && !tab.isPinned) {
@@ -87,6 +85,16 @@ export function toggleActiveTabFavorite(state: BrowserState): BrowserState {
     index >= 0
       ? workspace.favorites.splice(index, 1)
       : workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url));
+  });
+}
+
+export function toggleActiveTabEssential(state: BrowserState): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const tab = getActiveTab(getActiveWorkspace(draft));
+    const index = draft.essentials.findIndex((essential) => essential.url === tab.url);
+    index >= 0
+      ? draft.essentials.splice(index, 1)
+      : draft.essentials.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url));
   });
 }
 

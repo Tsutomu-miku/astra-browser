@@ -31,7 +31,12 @@ describe("resolveShortcut", () => {
     expect(resolveShortcut(event({ ctrlKey: true, key: "l" }))).toEqual({ type: "focusAddress" });
     expect(resolveShortcut(event({ ctrlKey: true, key: "f" }))).toEqual({ type: "openFind" });
     expect(resolveShortcut(event({ ctrlKey: true, key: "b" }))).toEqual({ type: "toggleSidebar" });
+    expect(resolveShortcut(event({ ctrlKey: true, key: "s" }))).toEqual({ type: "toggleCompactMode" });
     expect(resolveShortcut(event({ metaKey: true, key: "\\" }))).toEqual({ type: "toggleSplit" });
+    expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "g" }))).toEqual({ type: "toggleSplitGrid" });
+    expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "h" }))).toEqual({ type: "toggleSplitHorizontal" });
+    expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "v" }))).toEqual({ type: "toggleSplitVertical" });
+    expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "u" }))).toEqual({ type: "unsplitAll" });
     expect(resolveShortcut(event({ key: "Escape" }))).toEqual({ type: "closePanels" });
   });
 
