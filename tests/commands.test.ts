@@ -38,6 +38,7 @@ describe("buildCommands", () => {
       openTabInSplit: vi.fn(),
       newTab: vi.fn(),
       openUrlInActiveWorkspace: vi.fn(),
+      restoreClosedTab: vi.fn(),
       restoreLastClosedTab: vi.fn(),
       selectAdjacentTab: vi.fn(),
       resetActiveTabZoom: vi.fn(),
@@ -64,6 +65,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.subtitle.startsWith("Open tab"))).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("Essential"))).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("Favorite"))).toBe(true);
+    expect(commands.some((command) => command.subtitle.startsWith("Recently closed"))).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("History"))).toBe(true);
     expect(commands.some((command) => command.title === "Toggle sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Reset zoom")).toBe(true);

@@ -26,6 +26,7 @@ export interface CommandActions {
   openTabInSplit: (tabId: string) => void;
   newTab: () => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
+  restoreClosedTab: (closedIndex: number) => void;
   restoreLastClosedTab: () => void;
   selectAdjacentTab: (direction: 1 | -1) => void;
   selectTab: (tabId: string) => void;

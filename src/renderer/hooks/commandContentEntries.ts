@@ -22,6 +22,11 @@ export function buildContentCommands(
       subtitle: `Open tab · ${tab.url}`,
       run: () => actions.selectTab(tab.id)
     })),
+    ...workspace.closedTabs.slice(0, 10).map((tab, index) => ({
+      title: `Reopen ${tab.title || tab.url}`,
+      subtitle: `Recently closed · ${tab.url}`,
+      run: () => actions.restoreClosedTab(index)
+    })),
     ...state.history.slice(0, 10).map((entry) => ({
       title: entry.title,
       subtitle: `History · ${entry.url}`,
