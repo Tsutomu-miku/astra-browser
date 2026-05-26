@@ -28,7 +28,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Workspace favorites for quick access, including Ctrl+D or Cmd+D to favorite the current page.
 - Sidebar search filters tabs, tab groups, pinned tabs, and favorites inside the active Space with Arrow/Home/End selection, Enter open, and Alt+Enter Glance preview.
 - Internal new tab page with Space-aware search, favorites, and recent history.
-- Address bar with search fallback and Ctrl+L, Cmd+L, or Alt+D focus shortcuts.
+- Address bar with search fallback and Ctrl+L, Cmd+L, Ctrl+J, Cmd+J, or Alt+D focus shortcuts.
 - Address bar suggestions for open tabs, Essentials, workspace favorites, and browsing history, with Arrow/Home/End keyboard selection and Alt+Enter split opening.
 - Compact mode sidebar address field with the same tab, favorite, history, navigation suggestions, keyboard selection, and Alt+Enter split opening as the top bar.
 - Back, forward, reload, hard reload, new tab, and close controls, with Zen-style Alt+Left/Right, Ctrl+[/], Ctrl+R, and Ctrl+Shift+R navigation shortcuts.

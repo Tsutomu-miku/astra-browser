@@ -149,6 +149,7 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
     "\\": { type: "toggleSplit" },
     b: { type: "toggleSidebar" },
     f: { type: "openFind" },
+    j: { type: "focusAddress" },
     k: { type: "openCommand" },
     l: { type: "focusAddress" },
     s: { type: "toggleCompactMode" },
