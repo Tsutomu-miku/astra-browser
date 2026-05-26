@@ -173,6 +173,12 @@ export function useBrowserController() {
       store.setPanel("downloads");
     } else if (intent.type === "openFind") {
       store.setFindOpen(true);
+    } else if (intent.type === "findMatch") {
+      if (store.findQuery.trim()) {
+        actions.findInPage(store.findQuery, intent.direction > 0);
+      } else {
+        store.setFindOpen(true);
+      }
     } else if (intent.type === "openHistory") {
       store.setPanel("history");
     } else if (intent.type === "focusAddress") {

@@ -1,6 +1,7 @@
 export type ShortcutIntent =
   | { type: "closePanels" }
   | { type: "closeTab" }
+  | { type: "findMatch"; direction: 1 | -1 }
   | { type: "focusAddress" }
   | { type: "fillSplitGrid" }
   | { type: "newTab" }
@@ -137,6 +138,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (event.altKey && key === "t") {
     return { type: "toggleFloatingToolbar" };
+  }
+
+  if (key === "g") {
+    return { type: "findMatch", direction: event.shiftKey ? -1 : 1 };
   }
 
   if (key === "0") {
