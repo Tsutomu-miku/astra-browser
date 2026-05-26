@@ -6,6 +6,7 @@ export type ShortcutIntent =
   | { type: "newTab" }
   | { type: "openFind" }
   | { type: "openCommand" }
+  | { type: "navigateHistory"; direction: 1 | -1 }
   | { type: "restoreClosedTab" }
   | { type: "selectAdjacentWorkspace"; direction: 1 | -1 }
   | { type: "selectAdjacentTab"; direction: 1 | -1 }
@@ -49,6 +50,14 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
     return { type: "selectTabIndex", index: Number(key) - 1 };
   }
 
+  if (!commandModifier && event.altKey && event.key === "ArrowLeft") {
+    return { type: "navigateHistory", direction: -1 };
+  }
+
+  if (!commandModifier && event.altKey && event.key === "ArrowRight") {
+    return { type: "navigateHistory", direction: 1 };
+  }
+
   if (!commandModifier) {
     return null;
   }
@@ -63,6 +72,14 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (key === "tab") {
     return { type: "selectAdjacentTab", direction: event.shiftKey ? -1 : 1 };
+  }
+
+  if (key === "[") {
+    return { type: "navigateHistory", direction: -1 };
+  }
+
+  if (key === "]") {
+    return { type: "navigateHistory", direction: 1 };
   }
 
   if (event.altKey && key === "g") {

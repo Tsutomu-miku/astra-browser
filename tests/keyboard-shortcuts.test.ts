@@ -30,6 +30,10 @@ describe("resolveShortcut", () => {
     expect(resolveShortcut(event({ ctrlKey: true, key: "k" }))).toEqual({ type: "openCommand" });
     expect(resolveShortcut(event({ ctrlKey: true, key: "l" }))).toEqual({ type: "focusAddress" });
     expect(resolveShortcut(event({ ctrlKey: true, key: "f" }))).toEqual({ type: "openFind" });
+    expect(resolveShortcut(event({ altKey: true, key: "ArrowLeft" }))).toEqual({ type: "navigateHistory", direction: -1 });
+    expect(resolveShortcut(event({ altKey: true, key: "ArrowRight" }))).toEqual({ type: "navigateHistory", direction: 1 });
+    expect(resolveShortcut(event({ ctrlKey: true, key: "[" }))).toEqual({ type: "navigateHistory", direction: -1 });
+    expect(resolveShortcut(event({ ctrlKey: true, key: "]" }))).toEqual({ type: "navigateHistory", direction: 1 });
     expect(resolveShortcut(event({ ctrlKey: true, key: "b" }))).toEqual({ type: "toggleSidebar" });
     expect(resolveShortcut(event({ ctrlKey: true, key: "s" }))).toEqual({ type: "toggleCompactMode" });
     expect(resolveShortcut(event({ metaKey: true, key: "\\" }))).toEqual({ type: "toggleSplit" });
