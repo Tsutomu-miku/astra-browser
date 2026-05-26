@@ -1,0 +1,127 @@
+import type { DragEvent, MouseEvent } from "react";
+import { FiLoader } from "react-icons/fi";
+
+import { getHostInitial, type BrowserTab } from "../../../domain/browser-core";
+import type { BrowserController } from "../../../hooks/types";
+import type { SidebarFilterResult, SidebarSearchTarget } from "../sidebarFiltering";
+import { FavoriteButton, TabGroupSection, TabRow } from "./SidebarItems";
+
+export function SidebarSections({
+  actions,
+  activeSearchTarget,
+  activeTab,
+  draggingTabId,
+  filteredItems,
+  onTabContextMenu,
+  onTabDrop,
+  setDraggingTabId,
+  splitTabIds
+}: {
+  actions: BrowserController["actions"];
+  activeSearchTarget?: SidebarSearchTarget;
+  activeTab: BrowserTab;
+  draggingTabId: string | null;
+  filteredItems: SidebarFilterResult;
+  onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
+  onTabDrop: (event: DragEvent<HTMLDivElement>, targetTabId: string) => void;
+  setDraggingTabId: (tabId: string | null) => void;
+  splitTabIds: string[];
+}) {
+  return (
+    <>
+      {filteredItems.essentials.length > 0 && (
+        <nav className="essentials" aria-label="Essentials">
+          {filteredItems.essentials.map((essential) => (
+            <FavoriteButton
+              key={essential.id}
+              favorite={essential}
+              id={`sidebar-search-essential-${essential.id}`}
+              isSearchSelected={activeSearchTarget?.type === "essential" && activeSearchTarget.id === essential.id}
+              onOpen={actions.openUrlInActiveWorkspace}
+              onPreview={actions.openGlance}
+            />
+          ))}
+        </nav>
+      )}
+
+      {filteredItems.pinnedTabs.length > 0 && (
+        <nav className="pinned-tabs" aria-label="Pinned tabs">
+          {filteredItems.pinnedTabs.map((tab) => (
+            <button
+              className="pinned-tab-button"
+              key={tab.id}
+              id={`sidebar-search-tab-${tab.id}`}
+              title={tab.title || tab.url}
+              type="button"
+              aria-current={tab.id === activeTab.id}
+              aria-selected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
+              onClick={(event) => {
+                event.altKey ? actions.openGlance(tab.url, tab.title) : actions.selectTab(tab.id);
+              }}
+              onContextMenu={(event) => onTabContextMenu(event, tab)}
+            >
+              {tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {filteredItems.favorites.length > 0 && (
+        <nav className="favorites" aria-label="Favorites">
+          {filteredItems.favorites.map((favorite) => (
+            <FavoriteButton
+              key={favorite.id}
+              favorite={favorite}
+              id={`sidebar-search-favorite-${favorite.id}`}
+              isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
+              onOpen={actions.openUrlInActiveWorkspace}
+              onPreview={actions.openGlance}
+            />
+          ))}
+        </nav>
+      )}
+
+      <nav className="tabs" aria-label="Tabs">
+        {filteredItems.groupedTabs.map(({ group, tabs }) => (
+          <TabGroupSection
+            key={group.id}
+            activeTab={activeTab}
+            group={group}
+            searchSelectedTabId={activeSearchTarget?.type === "tab" ? activeSearchTarget.id : undefined}
+            splitTabIds={splitTabIds}
+            tabs={tabs}
+            draggingTabId={draggingTabId}
+            onAssignTab={actions.assignTabToGroup}
+            onClose={actions.closeTab}
+            onContextMenu={onTabContextMenu}
+            onDrop={onTabDrop}
+            onPreview={actions.openGlance}
+            onSelect={actions.selectTab}
+            onToggle={() => actions.toggleTabGroupCollapsed(group.id)}
+            onUpdate={actions.updateTabGroup}
+            setDraggingTabId={setDraggingTabId}
+          />
+        ))}
+        {filteredItems.regularTabs.map((tab) => (
+          <TabRow
+            key={tab.id}
+            activeTabId={activeTab.id}
+            draggingTabId={draggingTabId}
+            splitTabIds={splitTabIds}
+            isSearchSelected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
+            tab={tab}
+            onClose={actions.closeTab}
+            onContextMenu={onTabContextMenu}
+            onDrop={onTabDrop}
+            onPreview={actions.openGlance}
+            onSelect={actions.selectTab}
+            setDraggingTabId={setDraggingTabId}
+          />
+        ))}
+        {filteredItems.isFiltering && !filteredItems.hasMatches && (
+          <p className="sidebar-empty">No matching tabs</p>
+        )}
+      </nav>
+    </>
+  );
+}

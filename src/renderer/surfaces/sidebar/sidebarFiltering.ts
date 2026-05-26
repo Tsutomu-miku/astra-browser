@@ -11,6 +11,7 @@ export interface SidebarGroupEntry {
 }
 
 export interface SidebarFilterInput {
+  essentials: Favorite[];
   favorites: Favorite[];
   groupedTabs: SidebarGroupEntry[];
   pinnedTabs: BrowserTab[];
@@ -23,6 +24,7 @@ export interface SidebarFilterResult extends SidebarFilterInput {
 }
 
 export type SidebarSearchTarget =
+  | { type: "essential"; id: string; title: string; url: string }
   | { type: "favorite"; id: string; title: string; url: string }
   | { type: "tab"; id: string; title: string; url: string };
 
@@ -39,6 +41,7 @@ export function filterSidebarItems(input: SidebarFilterInput, query: string): Si
   }
 
   const pinnedTabs = input.pinnedTabs.filter((tab) => matchesTab(tab, normalizedQuery));
+  const essentials = input.essentials.filter((essential) => matchesFavorite(essential, normalizedQuery));
   const favorites = input.favorites.filter((favorite) => matchesFavorite(favorite, normalizedQuery));
   const groupedTabs = input.groupedTabs
     .map(({ group, tabs }) => ({
@@ -49,7 +52,7 @@ export function filterSidebarItems(input: SidebarFilterInput, query: string): Si
     }))
     .filter((entry) => entry.tabs.length > 0);
   const regularTabs = input.regularTabs.filter((tab) => matchesTab(tab, normalizedQuery));
-  const filtered = { favorites, groupedTabs, pinnedTabs, regularTabs };
+  const filtered = { essentials, favorites, groupedTabs, pinnedTabs, regularTabs };
 
   return {
     ...filtered,
@@ -60,6 +63,12 @@ export function filterSidebarItems(input: SidebarFilterInput, query: string): Si
 
 export function getSidebarSearchTargets(input: SidebarFilterResult): SidebarSearchTarget[] {
   return [
+    ...input.essentials.map((essential) => ({
+      type: "essential" as const,
+      id: essential.id,
+      title: essential.title,
+      url: essential.url
+    })),
     ...input.pinnedTabs.map(toTabTarget),
     ...input.favorites.map((favorite) => ({
       type: "favorite" as const,
@@ -86,6 +95,7 @@ export function getNextSidebarSearchIndex(
 
 function hasAnyItems(input: SidebarFilterInput): boolean {
   return (
+    input.essentials.length > 0 ||
     input.pinnedTabs.length > 0 ||
     input.favorites.length > 0 ||
     input.groupedTabs.some((entry) => entry.tabs.length > 0) ||

@@ -2,32 +2,22 @@ import {
   useEffect,
   useMemo,
   useState,
-  type CSSProperties,
   type DragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent
 } from "react";
-import {
-  FiChevronLeft,
-  FiChevronRight,
-  FiClock,
-  FiColumns,
-  FiDownload,
-  FiLoader,
-  FiMinimize2,
-  FiPlus,
-  FiSettings,
-  FiSidebar,
-  FiX
-} from "react-icons/fi";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
-import { getHostInitial, type BrowserTab } from "../../domain/browser-core";
+import type { BrowserTab } from "../../domain/browser-core";
 import { getGroupedTabs } from "../../domain/tab-groups";
 import type { BrowserController } from "../../hooks/types";
 import { SidebarAddress } from "./components/SidebarAddress";
+import { SidebarFooter } from "./components/SidebarFooter";
+import { SidebarHeader } from "./components/SidebarHeader";
+import { SidebarSearchBox } from "./components/SidebarSearchBox";
+import { SidebarSections } from "./components/SidebarSections";
 import { TabContextMenu } from "./components/TabContextMenu";
-import { FavoriteButton, TabGroupSection, TabRow } from "./components/SidebarItems";
+import { WorkspaceStrip } from "./components/WorkspaceStrip";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -54,11 +44,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const groupedTabIds = new Set(groupedTabs.flatMap((entry) => entry.tabs.map((tab) => tab.id)));
   const regularTabs = activeWorkspace.tabs.filter((tab) => !tab.isPinned && !groupedTabIds.has(tab.id));
   const filteredItems = useMemo(() => filterSidebarItems({
+    essentials: state.essentials,
     favorites: activeWorkspace.favorites,
     groupedTabs,
     pinnedTabs,
     regularTabs
-  }, tabQuery), [activeWorkspace.favorites, groupedTabs, pinnedTabs, regularTabs, tabQuery]);
+  }, tabQuery), [activeWorkspace.favorites, groupedTabs, pinnedTabs, regularTabs, state.essentials, tabQuery]);
   const searchTargets = useMemo(() => getSidebarSearchTargets(filteredItems), [filteredItems]);
   const activeSearchTarget = filteredItems.isFiltering
     ? searchTargets[clampSidebarSearchIndex(activeSearchIndex, searchTargets.length)]
@@ -140,6 +131,21 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     }
   }
 
+  const handleWorkspaceDragStart = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    setDraggingWorkspaceId(workspaceId);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/workspace-id", workspaceId);
+  };
+
+  const handleWorkspaceDragOver = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    const isTabTarget = draggingTabId && workspaceId !== activeWorkspace.id;
+    const isWorkspaceTarget = draggingWorkspaceId && workspaceId !== draggingWorkspaceId;
+    if (isTabTarget || isWorkspaceTarget) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    }
+  };
+
   const handleWorkspaceDrop = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
     event.preventDefault();
     if (draggingWorkspaceId && draggingWorkspaceId !== workspaceId) {
@@ -160,182 +166,50 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   return (
     <aside className={`sidebar ${sidebarCollapsed || compactMode ? "is-collapsed" : ""} ${compactMode ? "is-compact-mode" : ""} ${floatingSidebarOpen ? "is-floating-open" : ""} ${compactChromePeeking ? "is-peeking-chrome" : ""}`}>
       <section className="traffic-space" aria-hidden="true" />
-      <section className="workspace-strip" aria-label="Workspaces">
-        {state.workspaces.map((workspace) => (
-          <button
-            className="workspace-button"
-            key={workspace.id}
-            style={{ "--accent": workspace.accent } as CSSProperties}
-            title={workspace.name}
-            type="button"
-            draggable
-            aria-current={workspace.id === state.activeWorkspaceId}
-            data-dragging={draggingWorkspaceId === workspace.id}
-            data-drop-target={Boolean(
-              (draggingTabId && workspace.id !== activeWorkspace.id) ||
-              (draggingWorkspaceId && workspace.id !== draggingWorkspaceId)
-            )}
-            onDragStart={(event) => {
-              setDraggingWorkspaceId(workspace.id);
-              event.dataTransfer.effectAllowed = "move";
-              event.dataTransfer.setData("text/workspace-id", workspace.id);
-            }}
-            onDragEnd={() => setDraggingWorkspaceId(null)}
-            onDragOver={(event) => {
-              const isTabTarget = draggingTabId && workspace.id !== activeWorkspace.id;
-              const isWorkspaceTarget = draggingWorkspaceId && workspace.id !== draggingWorkspaceId;
-              if (isTabTarget || isWorkspaceTarget) {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-              }
-            }}
-            onDrop={(event) => handleWorkspaceDrop(event, workspace.id)}
-            onClick={() => actions.switchWorkspace(workspace.id)}
-          >
-            {workspace.name.slice(0, 1)}
-          </button>
-        ))}
-        <button
-          className="workspace-button sidebar-toggle"
-          title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          type="button"
-          onClick={actions.toggleSidebar}
-        >
-          {sidebarCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
-        </button>
-      </section>
+      <WorkspaceStrip
+        activeWorkspaceId={activeWorkspace.id}
+        draggingTabId={draggingTabId}
+        draggingWorkspaceId={draggingWorkspaceId}
+        sidebarCollapsed={sidebarCollapsed}
+        workspaces={state.workspaces}
+        onDragEnd={() => setDraggingWorkspaceId(null)}
+        onDragOver={handleWorkspaceDragOver}
+        onDragStart={handleWorkspaceDragStart}
+        onDrop={handleWorkspaceDrop}
+        onSelect={actions.switchWorkspace}
+        onToggleSidebar={actions.toggleSidebar}
+      />
 
       <section className="tab-stack">
-        <header className="sidebar-header">
-          <div>
-            <p className="eyebrow">Workspace</p>
-            <h1>{activeWorkspace.name}</h1>
-          </div>
-          <button className="icon-button" title="New tab" type="button" onClick={actions.newTab}><FiPlus /></button>
-        </header>
-
+        <SidebarHeader workspaceName={activeWorkspace.name} onNewTab={actions.newTab} />
         <SidebarAddress controller={controller} />
-
-        {state.essentials.length > 0 && (
-          <nav className="essentials" aria-label="Essentials">
-            {state.essentials.map((essential) => (
-              <FavoriteButton
-                key={essential.id}
-                favorite={essential}
-                onOpen={actions.openUrlInActiveWorkspace}
-                onPreview={actions.openGlance}
-              />
-            ))}
-          </nav>
-        )}
-
-        <div className="sidebar-search">
-          <input
-            autoComplete="off"
-            spellCheck={false}
-            aria-label="Search tabs and favorites"
-            placeholder="Search tabs"
-            value={tabQuery}
-            aria-activedescendant={activeSearchTarget ? `sidebar-search-${activeSearchTarget.type}-${activeSearchTarget.id}` : undefined}
-            onChange={(event) => {
-              setTabQuery(event.target.value);
-              setActiveSearchIndex(0);
-            }}
-            onKeyDown={onSearchKeyDown}
-          />
-          {tabQuery && (
-            <button className="icon-button" title="Clear tab search" type="button" onClick={() => setTabQuery("")}><FiX /></button>
-          )}
-        </div>
-
-        {filteredItems.pinnedTabs.length > 0 && (
-          <nav className="pinned-tabs" aria-label="Pinned tabs">
-            {filteredItems.pinnedTabs.map((tab) => (
-              <button
-                className="pinned-tab-button"
-                key={tab.id}
-                id={`sidebar-search-tab-${tab.id}`}
-                title={tab.title || tab.url}
-                type="button"
-                aria-current={tab.id === activeTab.id}
-                aria-selected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
-                onClick={(event) => {
-                  event.altKey ? actions.openGlance(tab.url, tab.title) : actions.selectTab(tab.id);
-                }}
-                onContextMenu={(event) => openTabMenu(event, tab)}
-              >
-                {tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}
-              </button>
-            ))}
-          </nav>
-        )}
-
-        {filteredItems.favorites.length > 0 && (
-          <nav className="favorites" aria-label="Favorites">
-            {filteredItems.favorites.map((favorite) => (
-              <FavoriteButton
-                key={favorite.id}
-                favorite={favorite}
-                id={`sidebar-search-favorite-${favorite.id}`}
-                isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
-                onOpen={actions.openUrlInActiveWorkspace}
-                onPreview={actions.openGlance}
-              />
-            ))}
-          </nav>
-        )}
-
-        <nav className="tabs" aria-label="Tabs">
-          {filteredItems.groupedTabs.map(({ group, tabs }) => (
-            <TabGroupSection
-              key={group.id}
-              activeTab={activeTab}
-              group={group}
-              searchSelectedTabId={activeSearchTarget?.type === "tab" ? activeSearchTarget.id : undefined}
-              splitTabIds={state.splitTabIds}
-              tabs={tabs}
-              draggingTabId={draggingTabId}
-              onAssignTab={actions.assignTabToGroup}
-              onClose={actions.closeTab}
-              onContextMenu={openTabMenu}
-              onDrop={handleTabDrop}
-              onPreview={actions.openGlance}
-              onSelect={actions.selectTab}
-              onToggle={() => actions.toggleTabGroupCollapsed(group.id)}
-              onUpdate={actions.updateTabGroup}
-              setDraggingTabId={setDraggingTabId}
-            />
-          ))}
-          {filteredItems.regularTabs.map((tab) => (
-            <TabRow
-              key={tab.id}
-              activeTabId={activeTab.id}
-              draggingTabId={draggingTabId}
-              splitTabIds={state.splitTabIds}
-              isSearchSelected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
-              tab={tab}
-              onClose={actions.closeTab}
-              onContextMenu={openTabMenu}
-              onDrop={handleTabDrop}
-              onPreview={actions.openGlance}
-              onSelect={actions.selectTab}
-              setDraggingTabId={setDraggingTabId}
-            />
-          ))}
-          {filteredItems.isFiltering && !filteredItems.hasMatches && (
-            <p className="sidebar-empty">No matching tabs</p>
-          )}
-        </nav>
+        <SidebarSearchBox
+          activeSearchTarget={activeSearchTarget}
+          query={tabQuery}
+          onClear={() => {
+            setTabQuery("");
+            setActiveSearchIndex(0);
+          }}
+          onKeyDown={onSearchKeyDown}
+          onQueryChange={(query) => {
+            setTabQuery(query);
+            setActiveSearchIndex(0);
+          }}
+        />
+        <SidebarSections
+          actions={actions}
+          activeSearchTarget={activeSearchTarget}
+          activeTab={activeTab}
+          draggingTabId={draggingTabId}
+          filteredItems={filteredItems}
+          splitTabIds={state.splitTabIds}
+          onTabContextMenu={openTabMenu}
+          onTabDrop={handleTabDrop}
+          setDraggingTabId={setDraggingTabId}
+        />
       </section>
 
-      <footer className="sidebar-footer">
-        <button className="icon-button" title="Focus sidebar" type="button" onClick={actions.toggleSidebar}><FiSidebar /></button>
-        <button className="icon-button" title="Compact mode" type="button" aria-pressed={compactMode} onClick={actions.toggleCompactMode}><FiMinimize2 /></button>
-        <button className="icon-button" title="Split view" type="button" aria-pressed={state.splitMode} onClick={actions.toggleSplitMode}><FiColumns /></button>
-        <button className="icon-button" title="History" type="button" onClick={() => setPanel("history")}><FiClock /></button>
-        <button className="icon-button" title="Downloads" type="button" onClick={() => setPanel("downloads")}><FiDownload /></button>
-        <button className="icon-button" title="Settings" type="button" onClick={() => setPanel("settings")}><FiSettings /></button>
-      </footer>
+      <SidebarFooter actions={actions} compactMode={compactMode} setPanel={setPanel} splitMode={state.splitMode} />
       {tabMenu && (
         <TabContextMenu
           left={tabMenu.left}

@@ -10,10 +10,14 @@ import {
 } from "../src/renderer/surfaces/sidebar/sidebarFiltering";
 
 describe("sidebar filtering", () => {
-  it("filters pinned, favorite, grouped, and regular sidebar items", () => {
+  it("filters essentials, pinned, favorite, grouped, and regular sidebar items", () => {
     const group = createTabGroup("Research");
     const groupedTab = { ...createTab("Chromium Docs", "https://chromium.org"), groupId: group.id };
     const result = filterSidebarItems({
+      essentials: [
+        createFavorite("Chromium", "https://www.chromium.org"),
+        createFavorite("Docs", "https://docs.example")
+      ],
       favorites: [
         createFavorite("MDN", "https://developer.mozilla.org"),
         createFavorite("GitHub", "https://github.com")
@@ -25,6 +29,7 @@ describe("sidebar filtering", () => {
 
     expect(result.isFiltering).toBe(true);
     expect(result.hasMatches).toBe(true);
+    expect(result.essentials.map((essential) => essential.title)).toEqual(["Chromium"]);
     expect(result.groupedTabs).toHaveLength(1);
     expect(result.groupedTabs[0].tabs.map((tab) => tab.title)).toEqual(["Chromium Docs"]);
     expect(result.favorites).toHaveLength(0);
@@ -35,6 +40,7 @@ describe("sidebar filtering", () => {
   it("keeps all tabs in a group when the group name matches", () => {
     const group = createTabGroup("Research");
     const result = filterSidebarItems({
+      essentials: [],
       favorites: [],
       groupedTabs: [{ group, tabs: [createTab("A", "https://a.example"), createTab("B", "https://b.example")] }],
       pinnedTabs: [],
@@ -46,6 +52,7 @@ describe("sidebar filtering", () => {
 
   it("reports empty filtered results", () => {
     const result = filterSidebarItems({
+      essentials: [],
       favorites: [],
       groupedTabs: [],
       pinnedTabs: [],
@@ -58,11 +65,13 @@ describe("sidebar filtering", () => {
 
   it("flattens search targets in rendered sidebar order", () => {
     const group = createTabGroup("Research");
+    const essential = createFavorite("Inbox", "https://mail.example");
     const pinned = createTab("Mail", "https://mail.example");
     const favorite = createFavorite("Docs", "https://docs.example");
     const grouped = createTab("Chromium", "https://chromium.example");
     const regular = createTab("News", "https://news.example");
     const result = filterSidebarItems({
+      essentials: [essential],
       favorites: [favorite],
       groupedTabs: [{ group, tabs: [grouped] }],
       pinnedTabs: [pinned],
@@ -70,6 +79,7 @@ describe("sidebar filtering", () => {
     }, "");
 
     expect(getSidebarSearchTargets(result).map((target) => `${target.type}:${target.title}`)).toEqual([
+      "essential:Inbox",
       "tab:Mail",
       "favorite:Docs",
       "tab:Chromium",
