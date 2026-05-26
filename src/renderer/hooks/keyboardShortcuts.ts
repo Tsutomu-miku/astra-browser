@@ -12,6 +12,7 @@ export type ShortcutIntent =
   | { type: "selectWorkspaceIndex"; index: number }
   | { type: "resetZoom" }
   | { type: "toggleCompactMode" }
+  | { type: "toggleFloatingSidebar" }
   | { type: "toggleSidebar" }
   | { type: "toggleSplit" }
   | { type: "toggleSplitGrid" }
@@ -71,6 +72,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (event.altKey && key === "u") {
     return { type: "unsplitAll" };
+  }
+
+  if (event.altKey && key === "s") {
+    return { type: "toggleFloatingSidebar" };
   }
 
   if (key === "0") {

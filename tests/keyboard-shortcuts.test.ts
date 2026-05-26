@@ -37,6 +37,7 @@ describe("resolveShortcut", () => {
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "h" }))).toEqual({ type: "toggleSplitHorizontal" });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "v" }))).toEqual({ type: "toggleSplitVertical" });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "u" }))).toEqual({ type: "unsplitAll" });
+    expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "s" }))).toEqual({ type: "toggleFloatingSidebar" });
     expect(resolveShortcut(event({ key: "Escape" }))).toEqual({ type: "closePanels" });
   });
 

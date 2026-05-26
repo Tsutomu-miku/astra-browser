@@ -81,6 +81,7 @@ interface BrowserStore {
   compactMode: boolean;
   findOpen: boolean;
   findQuery: string;
+  floatingSidebarOpen: boolean;
   panel: Panel;
   permissionRequest: PermissionRequestEvent | null;
   sidebarCollapsed: boolean;
@@ -144,6 +145,7 @@ interface BrowserStore {
   toggleActiveTabMuted: (webview?: WebviewElement) => void;
   toggleActiveTabPinned: () => void;
   toggleCompactMode: () => void;
+  toggleFloatingSidebar: () => void;
   toggleTabGroupCollapsed: (groupId: string) => void;
   toggleTabMuted: (tabId: string, webview?: WebviewElement) => void;
   toggleTabPinned: (tabId: string) => void;
@@ -167,6 +169,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   compactMode: false,
   findOpen: false,
   findQuery: "",
+  floatingSidebarOpen: false,
   panel: null,
   permissionRequest: null,
   sidebarCollapsed: false,
@@ -289,12 +292,20 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   toggleActiveTabPinned: () => update(set, toggleActiveTabPinned),
   toggleCompactMode: () => set((state) => ({
     compactMode: !state.compactMode,
+    floatingSidebarOpen: false,
     sidebarCollapsed: !state.compactMode ? true : state.sidebarCollapsed
+  })),
+  toggleFloatingSidebar: () => set((state) => ({
+    compactMode: true,
+    floatingSidebarOpen: state.compactMode ? !state.floatingSidebarOpen : true,
+    sidebarCollapsed: true
   })),
   toggleTabGroupCollapsed: (groupId) => update(set, (state) => toggleTabGroupCollapsed(state, groupId)),
   toggleTabMuted: (tabId, webview) => update(set, (state) => syncMuted(toggleTabMuted(state, tabId), webview, tabId)),
   toggleTabPinned: (tabId) => update(set, (state) => toggleTabPinned(state, tabId)),
-  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  toggleSidebar: () => set((state) => state.compactMode
+    ? { floatingSidebarOpen: !state.floatingSidebarOpen, sidebarCollapsed: true }
+    : { sidebarCollapsed: !state.sidebarCollapsed }),
   toggleSplitMode: () => update(set, toggleSplitMode),
   ungroupActiveTab: () => update(set, ungroupActiveTab),
   updateSettings: (patch) => update(set, (state) => updateSettings(state, patch)),

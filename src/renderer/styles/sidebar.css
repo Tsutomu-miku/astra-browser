@@ -117,6 +117,23 @@
   animation: sidebar-panel-in 150ms ease both;
 }
 
+.sidebar.is-compact-mode.is-floating-open {
+  width: 292px;
+  grid-template-columns: 56px minmax(0, 1fr);
+  border-right-color: var(--line);
+  box-shadow: var(--shadow-floating);
+}
+
+.sidebar.is-compact-mode.is-floating-open .tab-stack {
+  display: grid;
+  animation: sidebar-panel-in 150ms ease both;
+}
+
+.sidebar.is-compact-mode.is-floating-open .sidebar-footer {
+  display: grid;
+  animation: sidebar-panel-in 150ms ease both;
+}
+
 @keyframes sidebar-panel-in {
   from {
     opacity: 0;

@@ -43,7 +43,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Keyboard-first command palette selection with Arrow keys, Home/End, Enter, and Escape.
 - Browser keyboard shortcuts for tabs, workspace switching, split view, command palette, and closed-tab restore.
 - Diagnostics shortcuts: F12 and Ctrl+Shift+I toggle the application DevTools in development and packaged builds.
-- Collapsible sidebar focus mode and Zen-style compact mode that hides the toolbar until hover.
+- Collapsible sidebar focus mode and Zen-style compact mode that hides browser chrome until hover, with a persistent floating sidebar shortcut.
 - Address identity indicator for loading, host, and basic security state.
 - Site information panel with per-origin permission controls.
 - Site permission decisions are scoped to the current workspace Chromium profile.

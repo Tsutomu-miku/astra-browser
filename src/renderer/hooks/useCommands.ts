@@ -40,6 +40,7 @@ interface CommandActions {
   toggleActiveTabMuted: () => void;
   toggleActiveTabPinned: () => void;
   toggleCompactMode: () => void;
+  toggleFloatingSidebar: () => void;
   toggleTabGroupCollapsed: (groupId: string) => void;
   toggleSidebar: () => void;
   toggleSplitMode: () => void;
@@ -184,6 +185,11 @@ export function buildCommands(
       title: "Toggle compact mode",
       subtitle: "Hide toolbar and float browser chrome on hover",
       run: actions.toggleCompactMode
+    },
+    {
+      title: "Toggle floating sidebar",
+      subtitle: "Keep the compact sidebar open until toggled again",
+      run: actions.toggleFloatingSidebar
     },
     { title: "Focus address bar", subtitle: "Search or navigate", run: actions.focusAddressBar },
     { title: "Next tab", subtitle: "Select the next tab", run: () => actions.selectAdjacentTab(1) },

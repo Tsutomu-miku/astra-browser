@@ -85,6 +85,7 @@ export function useBrowserController() {
     toggleActiveTabMuted: () => store.toggleActiveTabMuted(activeWebview),
     toggleActiveTabPinned: store.toggleActiveTabPinned,
     toggleCompactMode: store.toggleCompactMode,
+    toggleFloatingSidebar: store.toggleFloatingSidebar,
     toggleTabGroupCollapsed: store.toggleTabGroupCollapsed,
     toggleTabMuted: (tabId: string) => store.toggleTabMuted(tabId, webviews.current.get(tabId)),
     toggleTabPinned: store.toggleTabPinned,
@@ -172,6 +173,7 @@ export function useBrowserController() {
     compactMode: store.compactMode,
     findOpen: store.findOpen,
     findQuery: store.findQuery,
+    floatingSidebarOpen: store.floatingSidebarOpen,
     glance: store.glance,
     panel: store.panel,
     permissionRequest: store.permissionRequest,
@@ -194,6 +196,7 @@ const shortcutActions: Partial<Record<ShortcutIntent["type"], () => void>> = {
     useBrowserStore.getState().closeGlance();
   },
   toggleCompactMode: () => useBrowserStore.getState().toggleCompactMode(),
+  toggleFloatingSidebar: () => useBrowserStore.getState().toggleFloatingSidebar(),
   newTab: () => useBrowserStore.getState().newTab(),
   fillSplitGrid: () => useBrowserStore.getState().fillSplitView(),
   restoreClosedTab: () => useBrowserStore.getState().restoreLastClosedTab(),
