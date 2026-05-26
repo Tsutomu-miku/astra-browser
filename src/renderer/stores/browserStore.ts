@@ -13,6 +13,7 @@ import {
   duplicateActiveTab,
   duplicateTab,
   fillSplitView,
+  focusSplitPane,
   groupActiveTab,
   closeOtherTabs,
   closeTabsToLeft,
@@ -104,6 +105,7 @@ interface BrowserStore {
   duplicateActiveTab: () => void;
   duplicateTab: (tabId: string) => void;
   fillSplitView: () => void;
+  focusSplitPane: (tabId: string) => void;
   groupActiveTab: () => void;
   ingestDownload: (download: DownloadEntry) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
@@ -227,6 +229,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     set({ permissionRequest: { ...request, profileId } });
   },
   moveTabToWorkspace: (tabId, workspaceId) => update(set, (state) => moveTabToWorkspace(state, tabId, workspaceId)),
+  focusSplitPane: (tabId) => update(set, (state) => focusSplitPane(state, tabId)),
   closeGlance: () => set({ glance: null }),
   openGlance: (url, title) => set({ glance: { title: title || url, url } }),
   openGlanceInSplit: () => {

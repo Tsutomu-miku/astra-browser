@@ -93,6 +93,23 @@ export function removeTabFromSplit(state: BrowserState, tabId: string): BrowserS
   });
 }
 
+export function focusSplitPane(state: BrowserState, tabId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const activeTabId = workspace.activeTabId;
+    const splitTabIds = getSplitTabIds(draft);
+    const focusedTab = workspace.tabs.find((tab) => tab.id === tabId);
+
+    if (!draft.splitMode || !activeTabId || !focusedTab || !splitTabIds.includes(tabId)) return;
+
+    focusedTab.isSleeping = false;
+    workspace.activeTabId = focusedTab.id;
+    setSplitTabIds(draft, splitTabIds.map((candidateId) => (
+      candidateId === focusedTab.id ? activeTabId : candidateId
+    )));
+  });
+}
+
 export function toggleSplitMode(state: BrowserState): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);

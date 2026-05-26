@@ -25,6 +25,7 @@ export {
   duplicateActiveTab,
   duplicateTab,
   fillSplitView,
+  focusSplitPane,
   groupActiveTab,
   moveTabToWorkspace,
   openTabInSplit,

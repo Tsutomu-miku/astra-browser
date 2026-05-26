@@ -14,6 +14,7 @@ import {
   duplicateActiveTab,
   duplicateTab,
   fillSplitView,
+  focusSplitPane,
   groupActiveTab,
   moveTabToWorkspace,
   openTabInSplit,
@@ -315,6 +316,21 @@ describe("browser-actions", () => {
     expect(getActiveTab(workspace).id).toBe(activeTab.id);
     expect(preview.url).toBe("https://preview.example/");
     expect(split.splitTabIds).toEqual([preview.id]);
+  });
+
+  it("focuses a split pane while keeping the previous active tab in the split", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const third = openUrlInActiveWorkspace(second, "third.test", "Third");
+    const filled = fillSplitView(third);
+    const previousActiveId = getActiveWorkspace(filled).activeTabId!;
+    const splitTargetId = filled.splitTabIds[1]!;
+    const focused = focusSplitPane(filled, splitTargetId);
+
+    expect(getActiveWorkspace(focused).activeTabId).toBe(splitTargetId);
+    expect(focused.splitTabIds).toContain(previousActiveId);
+    expect(focused.splitTabIds).not.toContain(splitTargetId);
+    expect(focused.splitTabIds).toHaveLength(filled.splitTabIds.length);
   });
 
   it("removes an individual background split pane and clears split from the active pane", () => {

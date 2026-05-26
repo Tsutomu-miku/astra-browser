@@ -21,6 +21,7 @@ export {
 } from "./tab-group-actions";
 export {
   fillSplitView,
+  focusSplitPane,
   moveTabToWorkspace,
   openTabInSplit,
   openUrlInSplit,

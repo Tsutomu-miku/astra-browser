@@ -90,6 +90,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Split view must support up to four visible webviews.
 - Users must be able to drag tabs to split view from the sidebar.
 - Users must be able to send explicit tabs or URLs into split view.
+- Users must be able to make a secondary split pane active without closing split view.
 - Horizontal and vertical two-pane split views must be resizable by pointer and keyboard.
 - Split layout mode must support horizontal, vertical, and grid layouts.
 - Glance must preview tabs, favorites, and history without replacing the active tab.

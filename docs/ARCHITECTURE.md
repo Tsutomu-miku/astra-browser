@@ -30,7 +30,7 @@ Essentials are global quick entries stored on `BrowserState`, while favorites re
 
 Two-pane split view keeps its resize ratio as local renderer UI state. The ratio is intentionally not persisted with browser tabs, while the clamp helper is pure and tested so keyboard and pointer resizing share the same pane bounds.
 
-Split layout mode is also renderer-owned UI state. Keyboard shortcuts and commands can switch visible split tabs between horizontal, vertical, and grid arrangements without changing the underlying tab or workspace model.
+Split layout mode is also renderer-owned UI state. Keyboard shortcuts and commands can switch visible split tabs between horizontal, vertical, and grid arrangements without changing the underlying tab or workspace model. Split panes can be promoted to the active tab through a domain action, while `surfaces/webview/components` owns the webview lifecycle and split-pane controls.
 
 `src/renderer/surfaces/glance` owns temporary page previews. Glance uses the current workspace Chromium partition but is not part of persisted tab state until the user opens it as a tab or adds it to split view.
 

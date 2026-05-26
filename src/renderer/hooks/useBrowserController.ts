@@ -90,6 +90,10 @@ export function useBrowserController() {
       }
     },
     moveTabToWorkspace: store.moveTabToWorkspace,
+    focusSplitPane: (tabId: string) => {
+      store.focusSplitPane(tabId);
+      peekCompactChrome();
+    },
     closeGlance: store.closeGlance,
     openGlance: store.openGlance,
     openGlanceInSplit: store.openGlanceInSplit,
