@@ -21,6 +21,8 @@ describe("resolveShortcut", () => {
     expect(resolveShortcut(event({ ctrlKey: true, shiftKey: true, key: "R" }))).toEqual({ type: "reloadPage", hard: true });
     expect(resolveShortcut(event({ ctrlKey: true, key: "d" }))).toEqual({ type: "toggleFavorite" });
     expect(resolveShortcut(event({ metaKey: true, key: "d" }))).toEqual({ type: "toggleFavorite" });
+    expect(resolveShortcut(event({ ctrlKey: true, shiftKey: true, key: "D" }))).toEqual({ type: "toggleFavorite" });
+    expect(resolveShortcut(event({ metaKey: true, shiftKey: true, key: "D" }))).toEqual({ type: "toggleFavorite" });
     expect(resolveShortcut(event({ ctrlKey: true, key: "m" }))).toEqual({ type: "toggleMute" });
     expect(resolveShortcut(event({ metaKey: true, key: "m" }))).toEqual({ type: "toggleMute" });
     expect(resolveShortcut(event({ ctrlKey: true, shiftKey: true, key: "T" }))).toEqual({ type: "restoreClosedTab" });

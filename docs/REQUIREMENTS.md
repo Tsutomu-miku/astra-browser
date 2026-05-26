@@ -45,7 +45,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to pin tabs per Space.
 - Users must have global Essentials visible across Spaces for core pages.
 - Users must have Space-local favorites for quick access.
-- Users must be able to toggle the current page as a favorite with `Ctrl+D` or `Cmd+D`.
+- Users must be able to toggle the current page as a favorite with `Ctrl+D`, `Cmd+D`, `Ctrl+Shift+D`, or `Cmd+Shift+D`.
 - Sidebar search must filter tabs, tab groups, pinned tabs, and favorites inside the active Space.
 - Sidebar search must support Arrow, Home, End, Enter, and Alt+Enter preview/open flows.
 

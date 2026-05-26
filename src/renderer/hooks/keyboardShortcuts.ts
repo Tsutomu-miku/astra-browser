@@ -91,7 +91,7 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
     return { type: "reloadPage", hard: event.shiftKey };
   }
 
-  if (!event.shiftKey && key === "d") {
+  if (key === "d") {
     return { type: "toggleFavorite" };
   }
 
