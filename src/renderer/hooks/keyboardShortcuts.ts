@@ -6,6 +6,7 @@ export type ShortcutIntent =
   | { type: "newTab" }
   | { type: "openFind" }
   | { type: "openCommand" }
+  | { type: "openHistory" }
   | { type: "navigateHistory"; direction: 1 | -1 }
   | { type: "reloadPage"; hard: boolean }
   | { type: "restoreClosedTab" }
@@ -149,6 +150,7 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
     "\\": { type: "toggleSplit" },
     b: { type: "toggleSidebar" },
     f: { type: "openFind" },
+    h: { type: "openHistory" },
     j: { type: "focusAddress" },
     k: { type: "openCommand" },
     l: { type: "focusAddress" },

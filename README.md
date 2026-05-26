@@ -53,7 +53,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Clear browsing data from settings or the command palette across workspace Chromium profiles.
 - Find in page via Chromium webview search.
 - Per-tab page zoom controls using Chromium webview zoom.
-- Searchable browsing history drawer with single-entry removal, clearing, and per-workspace closed-tab restore.
+- Searchable browsing history drawer with Ctrl+H or Cmd+H access, single-entry removal, clearing, and per-workspace closed-tab restore.
 - Chromium download tracking with a downloads drawer.
 - Settings panel for global homepage, search engine, workspace homepage, workspace name, workspace accent, and profile display name.
 - Startup behavior can restore the previous session or open the homepage in each Space.

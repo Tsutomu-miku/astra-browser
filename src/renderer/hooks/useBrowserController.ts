@@ -171,6 +171,8 @@ export function useBrowserController() {
       store.setCommandQuery("");
     } else if (intent.type === "openFind") {
       store.setFindOpen(true);
+    } else if (intent.type === "openHistory") {
+      store.setPanel("history");
     } else if (intent.type === "focusAddress") {
       focusAddressBar();
     } else if (intent.type === "closePanels") {
