@@ -1,7 +1,7 @@
 import type { CSSProperties, DragEvent, MouseEvent } from "react";
 import { FiLoader, FiMoon, FiX } from "react-icons/fi";
 
-import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../domain/browser-core";
+import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../../domain/browser-core";
 
 export function TabGroupSection({
   activeTab,

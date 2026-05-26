@@ -32,8 +32,8 @@ import {
   getNextOmniboxIndex,
   type OmniboxNavigationKey
 } from "../../hooks/omniboxSelection";
-import { TabContextMenu } from "./TabContextMenu";
-import { FavoriteButton, TabGroupSection, TabRow } from "./SidebarItems";
+import { TabContextMenu } from "./components/TabContextMenu";
+import { FavoriteButton, TabGroupSection, TabRow } from "./components/SidebarItems";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,

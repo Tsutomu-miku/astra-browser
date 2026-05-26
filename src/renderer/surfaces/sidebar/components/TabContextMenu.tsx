@@ -1,4 +1,4 @@
-import type { BrowserTab } from "../../domain/browser-core";
+import type { BrowserTab } from "../../../domain/browser-core";
 
 interface TabContextMenuProps {
   left: number;

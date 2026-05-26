@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { getNumberShortcutTarget } from "../common/shortcuts/numberShortcutTargets";
 import { getActiveTab, getActiveWorkspace } from "../domain/selectors";
 import { useBrowserStore, type SplitLayout } from "../stores/browserStore";
 import type { WebviewElement } from "../types/browser-ui";
@@ -196,8 +197,9 @@ export function useBrowserController() {
       const workspace = store.state.workspaces[getWrappedIndex(currentIndex, store.state.workspaces.length, intent.direction)];
       if (workspace) actions.switchWorkspace(workspace.id);
     } else if (intent.type === "selectTabIndex") {
-      const tab = activeWorkspace.tabs[intent.index];
-      if (tab) actions.selectTab(tab.id);
+      const target = getNumberShortcutTarget(store.state.essentials, activeWorkspace, intent.index);
+      if (target?.type === "essential") actions.openUrlInActiveWorkspace(target.url, target.title);
+      if (target?.type === "tab") actions.selectTab(target.tabId);
     } else if (intent.type === "selectLastTab") {
       const tab = activeWorkspace.tabs.at(-1);
       if (tab) actions.selectTab(tab.id);

@@ -63,7 +63,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 ### Keyboard Shortcuts
 
 - The browser must support keyboard-first tab, Space, command, split, navigation, zoom, find, history, downloads, favorite, mute, and address workflows.
-- Direct tab selection must support Zen-style `Alt+1` through `Alt+8`.
+- Direct tab selection must support Zen-style `Alt+1` through `Alt+8`, ordered by Essentials, pinned tabs, then regular tabs.
 - Last-tab selection must support `Alt+9`.
 - Space cycling must support `Ctrl+Alt+Q` and `Ctrl+Alt+E`.
 - Split layout shortcuts must support horizontal, vertical, grid, and unsplit-all flows.
