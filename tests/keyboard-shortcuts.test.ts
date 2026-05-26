@@ -49,6 +49,7 @@ describe("resolveShortcut", () => {
     expect(resolveShortcut(event({ metaKey: true, shiftKey: true, key: "G" }))).toEqual({ type: "findMatch", direction: -1 });
     expect(resolveShortcut(event({ ctrlKey: true, key: "h" }))).toEqual({ type: "openHistory" });
     expect(resolveShortcut(event({ metaKey: true, key: "h" }))).toEqual({ type: "openHistory" });
+    expect(resolveShortcut(event({ altKey: true, key: "Home" }))).toEqual({ type: "goHome" });
     expect(resolveShortcut(event({ altKey: true, key: "ArrowLeft" }))).toEqual({ type: "navigateHistory", direction: -1 });
     expect(resolveShortcut(event({ altKey: true, key: "ArrowRight" }))).toEqual({ type: "navigateHistory", direction: 1 });
     expect(resolveShortcut(event({ ctrlKey: true, key: "[" }))).toEqual({ type: "navigateHistory", direction: -1 });

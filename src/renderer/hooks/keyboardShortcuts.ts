@@ -4,6 +4,7 @@ export type ShortcutIntent =
   | { type: "findMatch"; direction: 1 | -1 }
   | { type: "focusAddress" }
   | { type: "fillSplitGrid" }
+  | { type: "goHome" }
   | { type: "newTab" }
   | { type: "openDownloads" }
   | { type: "openFind" }
@@ -62,6 +63,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (!commandModifier && event.altKey && event.key === "ArrowRight") {
     return { type: "navigateHistory", direction: 1 };
+  }
+
+  if (!commandModifier && event.altKey && event.key === "Home") {
+    return { type: "goHome" };
   }
 
   if (!commandModifier && event.altKey && !event.shiftKey && key === "d") {

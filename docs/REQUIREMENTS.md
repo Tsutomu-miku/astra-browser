@@ -58,7 +58,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Compact mode must expose a sidebar address field with the same suggestion and keyboard behavior as the top bar.
 - Back and forward availability must be tracked per tab from Chromium webview navigation state.
 - Back, forward, reload, and hard reload must be available through controls and keyboard shortcuts.
-- Navigation shortcuts must include `Alt+Left`, `Alt+Right`, `Ctrl+[`, `Cmd+[`, `Ctrl+]`, `Cmd+]`, `Ctrl+R`, `Cmd+R`, `Ctrl+Shift+R`, and `Cmd+Shift+R`.
+- Navigation shortcuts must include `Alt+Left`, `Alt+Right`, `Alt+Home`, `Ctrl+[`, `Cmd+[`, `Ctrl+]`, `Cmd+]`, `Ctrl+R`, `Cmd+R`, `Ctrl+Shift+R`, and `Cmd+Shift+R`.
 
 ### Keyboard Shortcuts
 

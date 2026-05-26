@@ -209,6 +209,8 @@ export function useBrowserController() {
       actions.restoreLastClosedTab();
     } else if (intent.type === "closeTab") {
       actions.closeActiveTab();
+    } else if (intent.type === "goHome") {
+      actions.navigateActiveTab(activeWorkspace.homepage);
     } else if (intent.type === "navigateHistory") {
       actions.runWebviewAction(intent.direction < 0 ? "goBack" : "goForward");
     } else if (intent.type === "reloadPage") {
