@@ -49,7 +49,7 @@ interface TabMenuState {
 }
 
 export function Sidebar({ controller }: { controller: BrowserController }) {
-  const { activeTab, activeWorkspace, actions, compactMode, floatingSidebarOpen, setPanel, sidebarCollapsed, state } = controller;
+  const { activeTab, activeWorkspace, actions, compactChromePeeking, compactMode, floatingSidebarOpen, setPanel, sidebarCollapsed, state } = controller;
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
   const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
   const [tabQuery, setTabQuery] = useState("");
@@ -164,7 +164,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   };
 
   return (
-    <aside className={`sidebar ${sidebarCollapsed || compactMode ? "is-collapsed" : ""} ${compactMode ? "is-compact-mode" : ""} ${floatingSidebarOpen ? "is-floating-open" : ""}`}>
+    <aside className={`sidebar ${sidebarCollapsed || compactMode ? "is-collapsed" : ""} ${compactMode ? "is-compact-mode" : ""} ${floatingSidebarOpen ? "is-floating-open" : ""} ${compactChromePeeking ? "is-peeking-chrome" : ""}`}>
       <section className="traffic-space" aria-hidden="true" />
       <section className="workspace-strip" aria-label="Workspaces">
         {state.workspaces.map((workspace) => (
