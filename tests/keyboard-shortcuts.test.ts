@@ -17,6 +17,8 @@ describe("resolveShortcut", () => {
   it("handles core browser command shortcuts", () => {
     expect(resolveShortcut(event({ ctrlKey: true, key: "t" }))).toEqual({ type: "newTab" });
     expect(resolveShortcut(event({ metaKey: true, key: "w" }))).toEqual({ type: "closeTab" });
+    expect(resolveShortcut(event({ ctrlKey: true, key: "r" }))).toEqual({ type: "reloadPage", hard: false });
+    expect(resolveShortcut(event({ ctrlKey: true, shiftKey: true, key: "R" }))).toEqual({ type: "reloadPage", hard: true });
     expect(resolveShortcut(event({ ctrlKey: true, shiftKey: true, key: "T" }))).toEqual({ type: "restoreClosedTab" });
   });
 

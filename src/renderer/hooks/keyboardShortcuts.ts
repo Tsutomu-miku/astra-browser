@@ -7,6 +7,7 @@ export type ShortcutIntent =
   | { type: "openFind" }
   | { type: "openCommand" }
   | { type: "navigateHistory"; direction: 1 | -1 }
+  | { type: "reloadPage"; hard: boolean }
   | { type: "restoreClosedTab" }
   | { type: "selectAdjacentWorkspace"; direction: 1 | -1 }
   | { type: "selectAdjacentTab"; direction: 1 | -1 }
@@ -72,6 +73,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (key === "tab") {
     return { type: "selectAdjacentTab", direction: event.shiftKey ? -1 : 1 };
+  }
+
+  if (key === "r") {
+    return { type: "reloadPage", hard: event.shiftKey };
   }
 
   if (key === "[") {

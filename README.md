@@ -31,7 +31,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Address bar with search fallback.
 - Address bar suggestions for open tabs, Essentials, workspace favorites, and browsing history, with Arrow/Home/End keyboard selection and Alt+Enter split opening.
 - Compact mode sidebar address field with the same tab, favorite, history, navigation suggestions, keyboard selection, and Alt+Enter split opening as the top bar.
-- Back, forward, reload, new tab, and close controls, with Zen-style Alt+Left/Right and Ctrl+[/] navigation shortcuts.
+- Back, forward, reload, hard reload, new tab, and close controls, with Zen-style Alt+Left/Right, Ctrl+[/], Ctrl+R, and Ctrl+Shift+R navigation shortcuts.
 - Back and forward availability is tracked per tab from Chromium webview navigation state.
 - Split view mode with up to four webviews, drag-to-split from the sidebar, and explicit tab-to-split commands.
 - Resizable two-pane split view for horizontal and vertical layouts with pointer and keyboard controls.

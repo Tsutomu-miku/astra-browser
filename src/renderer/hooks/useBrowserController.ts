@@ -201,6 +201,8 @@ export function useBrowserController() {
       actions.closeActiveTab();
     } else if (intent.type === "navigateHistory") {
       actions.runWebviewAction(intent.direction < 0 ? "goBack" : "goForward");
+    } else if (intent.type === "reloadPage") {
+      actions.runWebviewAction(intent.hard ? "reloadIgnoringCache" : "reload");
     } else if (intent.type === "zoomIn") {
       store.zoomIn(activeWebview);
     } else if (intent.type === "zoomOut") {

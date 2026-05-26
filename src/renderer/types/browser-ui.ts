@@ -1,4 +1,4 @@
-export type WebviewAction = "goBack" | "goForward" | "reload";
+export type WebviewAction = "goBack" | "goForward" | "reload" | "reloadIgnoringCache";
 
 export type WebviewElement = HTMLElement & {
   canGoBack?: () => boolean;
@@ -7,6 +7,7 @@ export type WebviewElement = HTMLElement & {
   goBack?: () => void;
   goForward?: () => void;
   reload?: () => void;
+  reloadIgnoringCache?: () => void;
   loadURL?: (url: string) => void;
   setAudioMuted?: (muted: boolean) => void;
   setZoomFactor?: (factor: number) => void;
