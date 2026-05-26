@@ -35,6 +35,8 @@ describe("resolveShortcut", () => {
     expect(resolveShortcut(event({ metaKey: true, key: "\\" }))).toEqual({ type: "toggleSplit" });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "g" }))).toEqual({ type: "toggleSplitGrid" });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "h" }))).toEqual({ type: "toggleSplitHorizontal" });
+    expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "q" }))).toEqual({ type: "selectAdjacentWorkspace", direction: -1 });
+    expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "e" }))).toEqual({ type: "selectAdjacentWorkspace", direction: 1 });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "v" }))).toEqual({ type: "toggleSplitVertical" });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "u" }))).toEqual({ type: "unsplitAll" });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "s" }))).toEqual({ type: "toggleFloatingSidebar" });

@@ -181,6 +181,10 @@ export function useBrowserController() {
     } else if (intent.type === "selectWorkspaceIndex") {
       const workspace = store.state.workspaces[intent.index];
       if (workspace) actions.switchWorkspace(workspace.id);
+    } else if (intent.type === "selectAdjacentWorkspace") {
+      const currentIndex = store.state.workspaces.findIndex((workspace) => workspace.id === store.state.activeWorkspaceId);
+      const workspace = store.state.workspaces[getWrappedIndex(currentIndex, store.state.workspaces.length, intent.direction)];
+      if (workspace) actions.switchWorkspace(workspace.id);
     } else if (intent.type === "selectTabIndex") {
       const tab = activeWorkspace.tabs[intent.index];
       if (tab) actions.selectTab(tab.id);
@@ -263,6 +267,12 @@ export function useBrowserController() {
     state: store.state,
     webviews
   };
+}
+
+function getWrappedIndex(index: number, length: number, direction: 1 | -1): number {
+  if (length <= 0) return 0;
+  const currentIndex = index < 0 ? 0 : index;
+  return (currentIndex + direction + length) % length;
 }
 
 const shortcutActions: Partial<Record<ShortcutIntent["type"], () => void>> = {

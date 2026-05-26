@@ -7,6 +7,7 @@ export type ShortcutIntent =
   | { type: "openFind" }
   | { type: "openCommand" }
   | { type: "restoreClosedTab" }
+  | { type: "selectAdjacentWorkspace"; direction: 1 | -1 }
   | { type: "selectAdjacentTab"; direction: 1 | -1 }
   | { type: "selectLastTab" }
   | { type: "selectTabIndex"; index: number }
@@ -70,6 +71,14 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (event.altKey && key === "h") {
     return { type: "toggleSplitHorizontal" };
+  }
+
+  if (event.altKey && key === "q") {
+    return { type: "selectAdjacentWorkspace", direction: -1 };
+  }
+
+  if (event.altKey && key === "e") {
+    return { type: "selectAdjacentWorkspace", direction: 1 };
   }
 
   if (event.altKey && key === "v") {
