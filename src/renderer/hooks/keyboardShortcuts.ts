@@ -140,6 +140,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
     return { type: "toggleFloatingToolbar" };
   }
 
+  if (event.altKey && key === "c") {
+    return { type: "toggleCompactMode" };
+  }
+
   if (key === "g") {
     return { type: "findMatch", direction: event.shiftKey ? -1 : 1 };
   }

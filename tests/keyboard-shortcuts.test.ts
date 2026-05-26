@@ -64,6 +64,8 @@ describe("resolveShortcut", () => {
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "u" }))).toEqual({ type: "unsplitAll" });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "s" }))).toEqual({ type: "toggleFloatingSidebar" });
     expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "t" }))).toEqual({ type: "toggleFloatingToolbar" });
+    expect(resolveShortcut(event({ ctrlKey: true, altKey: true, key: "c" }))).toEqual({ type: "toggleCompactMode" });
+    expect(resolveShortcut(event({ metaKey: true, altKey: true, key: "c" }))).toEqual({ type: "toggleCompactMode" });
     expect(resolveShortcut(event({ key: "Escape" }))).toEqual({ type: "closePanels" });
   });
 
