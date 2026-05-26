@@ -34,7 +34,13 @@ import {
 } from "../../hooks/omniboxSelection";
 import { TabContextMenu } from "./TabContextMenu";
 import { FavoriteButton, TabGroupSection, TabRow } from "./SidebarItems";
-import { filterSidebarItems } from "./sidebarFiltering";
+import {
+  clampSidebarSearchIndex,
+  filterSidebarItems,
+  getNextSidebarSearchIndex,
+  getSidebarSearchTargets,
+  type SidebarSearchTarget
+} from "./sidebarFiltering";
 
 interface TabMenuState {
   left: number;
@@ -47,6 +53,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
   const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
   const [tabQuery, setTabQuery] = useState("");
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const [tabMenu, setTabMenu] = useState<TabMenuState | null>(null);
   const pinnedTabs = activeWorkspace.tabs.filter((tab) => tab.isPinned);
   const groupedTabs = getGroupedTabs(activeWorkspace);
@@ -58,6 +65,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     pinnedTabs,
     regularTabs
   }, tabQuery), [activeWorkspace.favorites, groupedTabs, pinnedTabs, regularTabs, tabQuery]);
+  const searchTargets = useMemo(() => getSidebarSearchTargets(filteredItems), [filteredItems]);
+  const activeSearchTarget = filteredItems.isFiltering
+    ? searchTargets[clampSidebarSearchIndex(activeSearchIndex, searchTargets.length)]
+    : undefined;
 
   const handleTabDrop = (event: DragEvent<HTMLDivElement>, targetTabId: string) => {
     event.preventDefault();
@@ -103,7 +114,37 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
 
   useEffect(() => {
     setTabQuery("");
+    setActiveSearchIndex(0);
   }, [activeWorkspace.id]);
+
+  useEffect(() => {
+    setActiveSearchIndex((index) => clampSidebarSearchIndex(index, searchTargets.length));
+  }, [searchTargets.length]);
+
+  function onSearchKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (isSidebarSearchNavigationKey(event.key)) {
+      event.preventDefault();
+      const key = event.key;
+      setActiveSearchIndex((index) => getNextSidebarSearchIndex(index, searchTargets.length, key));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      if (activeSearchTarget) runSearchTarget(activeSearchTarget, event.altKey);
+    } else if (event.key === "Escape" && tabQuery) {
+      event.preventDefault();
+      setTabQuery("");
+      setActiveSearchIndex(0);
+    }
+  }
+
+  function runSearchTarget(target: SidebarSearchTarget, preview: boolean) {
+    if (preview) {
+      actions.openGlance(target.url, target.title);
+    } else if (target.type === "tab") {
+      actions.selectTab(target.id);
+    } else {
+      actions.openUrlInActiveWorkspace(target.url, target.title);
+    }
+  }
 
   const handleWorkspaceDrop = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
     event.preventDefault();
@@ -201,7 +242,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             aria-label="Search tabs and favorites"
             placeholder="Search tabs"
             value={tabQuery}
-            onChange={(event) => setTabQuery(event.target.value)}
+            aria-activedescendant={activeSearchTarget ? `sidebar-search-${activeSearchTarget.type}-${activeSearchTarget.id}` : undefined}
+            onChange={(event) => {
+              setTabQuery(event.target.value);
+              setActiveSearchIndex(0);
+            }}
+            onKeyDown={onSearchKeyDown}
           />
           {tabQuery && (
             <button className="icon-button" title="Clear tab search" type="button" onClick={() => setTabQuery("")}><FiX /></button>
@@ -214,9 +260,11 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
               <button
                 className="pinned-tab-button"
                 key={tab.id}
+                id={`sidebar-search-tab-${tab.id}`}
                 title={tab.title || tab.url}
                 type="button"
                 aria-current={tab.id === activeTab.id}
+                aria-selected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
                 onClick={(event) => {
                   event.altKey ? actions.openGlance(tab.url, tab.title) : actions.selectTab(tab.id);
                 }}
@@ -234,6 +282,8 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
               <FavoriteButton
                 key={favorite.id}
                 favorite={favorite}
+                id={`sidebar-search-favorite-${favorite.id}`}
+                isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
                 onOpen={actions.openUrlInActiveWorkspace}
                 onPreview={actions.openGlance}
               />
@@ -247,6 +297,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
               key={group.id}
               activeTab={activeTab}
               group={group}
+              searchSelectedTabId={activeSearchTarget?.type === "tab" ? activeSearchTarget.id : undefined}
               splitTabIds={state.splitTabIds}
               tabs={tabs}
               draggingTabId={draggingTabId}
@@ -267,6 +318,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
               activeTabId={activeTab.id}
               draggingTabId={draggingTabId}
               splitTabIds={state.splitTabIds}
+              isSearchSelected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
               tab={tab}
               onClose={actions.closeTab}
               onContextMenu={openTabMenu}
@@ -308,6 +360,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       )}
     </aside>
   );
+}
+
+function isSidebarSearchNavigationKey(key: string): key is "ArrowDown" | "ArrowUp" | "End" | "Home" {
+  return key === "ArrowDown" || key === "ArrowUp" || key === "End" || key === "Home";
 }
 
 function SidebarAddress({ controller }: { controller: BrowserController }) {

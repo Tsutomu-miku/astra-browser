@@ -15,6 +15,7 @@ export function TabGroupSection({
   onSelect,
   onToggle,
   onUpdate,
+  searchSelectedTabId,
   setDraggingTabId,
   splitTabIds,
   tabs
@@ -30,6 +31,7 @@ export function TabGroupSection({
   onSelect: (tabId: string) => void;
   onToggle: () => void;
   onUpdate: (groupId: string, patch: Partial<Pick<TabGroup, "name" | "color">>) => void;
+  searchSelectedTabId?: string;
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
   tabs: BrowserTab[];
@@ -80,6 +82,7 @@ export function TabGroupSection({
           key={tab.id}
           activeTabId={activeTab.id}
           draggingTabId={draggingTabId}
+          isSearchSelected={searchSelectedTabId === tab.id}
           splitTabIds={splitTabIds}
           tab={tab}
           onClose={onClose}
@@ -103,6 +106,7 @@ export function TabRow({
   onPreview,
   onSelect,
   setDraggingTabId,
+  isSearchSelected = false,
   splitTabIds,
   tab
 }: {
@@ -114,6 +118,7 @@ export function TabRow({
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   setDraggingTabId: (tabId: string | null) => void;
+  isSearchSelected?: boolean;
   splitTabIds: string[];
   tab: BrowserTab;
 }) {
@@ -121,6 +126,7 @@ export function TabRow({
     <div
       className={`tab-row ${tab.isSleeping ? "is-sleeping" : ""} ${splitTabIds.includes(tab.id) ? "is-split-tab" : ""}`}
       aria-current={tab.id === activeTabId}
+      aria-selected={isSearchSelected}
       draggable
       data-dragging={draggingTabId === tab.id}
       onDragStart={(event) => {
@@ -160,18 +166,24 @@ export function TabRow({
 
 export function FavoriteButton({
   favorite,
+  id,
+  isSearchSelected = false,
   onOpen,
   onPreview
 }: {
   favorite: Favorite;
+  id?: string;
+  isSearchSelected?: boolean;
   onOpen: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
 }) {
   return (
     <button
       className="favorite-button"
+      id={id}
       type="button"
       title={favorite.url}
+      aria-selected={isSearchSelected}
       onClick={(event) => {
         event.altKey ? onPreview(favorite.url, favorite.title) : onOpen(favorite.url, favorite.title);
       }}

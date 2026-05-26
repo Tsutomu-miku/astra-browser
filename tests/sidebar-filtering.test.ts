@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { createFavorite, createTab } from "../src/renderer/domain/browser-core";
 import { createTabGroup } from "../src/renderer/domain/tab-groups";
-import { filterSidebarItems } from "../src/renderer/surfaces/sidebar/sidebarFiltering";
+import {
+  clampSidebarSearchIndex,
+  filterSidebarItems,
+  getNextSidebarSearchIndex,
+  getSidebarSearchTargets
+} from "../src/renderer/surfaces/sidebar/sidebarFiltering";
 
 describe("sidebar filtering", () => {
   it("filters pinned, favorite, grouped, and regular sidebar items", () => {
@@ -49,5 +54,37 @@ describe("sidebar filtering", () => {
 
     expect(result.isFiltering).toBe(true);
     expect(result.hasMatches).toBe(false);
+  });
+
+  it("flattens search targets in rendered sidebar order", () => {
+    const group = createTabGroup("Research");
+    const pinned = createTab("Mail", "https://mail.example");
+    const favorite = createFavorite("Docs", "https://docs.example");
+    const grouped = createTab("Chromium", "https://chromium.example");
+    const regular = createTab("News", "https://news.example");
+    const result = filterSidebarItems({
+      favorites: [favorite],
+      groupedTabs: [{ group, tabs: [grouped] }],
+      pinnedTabs: [pinned],
+      regularTabs: [regular]
+    }, "");
+
+    expect(getSidebarSearchTargets(result).map((target) => `${target.type}:${target.title}`)).toEqual([
+      "tab:Mail",
+      "favorite:Docs",
+      "tab:Chromium",
+      "tab:News"
+    ]);
+  });
+
+  it("clamps and wraps keyboard search selection", () => {
+    expect(clampSidebarSearchIndex(-1, 3)).toBe(0);
+    expect(clampSidebarSearchIndex(5, 3)).toBe(2);
+    expect(clampSidebarSearchIndex(Number.NaN, 3)).toBe(0);
+    expect(clampSidebarSearchIndex(1, 0)).toBe(0);
+    expect(getNextSidebarSearchIndex(2, 3, "ArrowDown")).toBe(0);
+    expect(getNextSidebarSearchIndex(0, 3, "ArrowUp")).toBe(2);
+    expect(getNextSidebarSearchIndex(1, 3, "Home")).toBe(0);
+    expect(getNextSidebarSearchIndex(1, 3, "End")).toBe(2);
   });
 });

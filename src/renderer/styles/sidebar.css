@@ -280,7 +280,8 @@ h1 {
 }
 
 .pinned-tab-button:hover,
-.pinned-tab-button[aria-current="true"] {
+.pinned-tab-button[aria-current="true"],
+.pinned-tab-button[aria-selected="true"] {
   border-color: color-mix(in srgb, var(--accent) 36%, transparent);
   background: color-mix(in srgb, var(--accent) 20%, rgba(255, 255, 255, 0.11));
 }
@@ -363,6 +364,15 @@ h1 {
 .tab-row[aria-current="true"] {
   border-color: color-mix(in srgb, var(--accent) 34%, transparent);
   background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.08));
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.tab-row[aria-selected="true"],
+.favorite-button[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.08));
   box-shadow:
     inset 3px 0 0 var(--accent),
     inset 0 0 0 1px rgba(255, 255, 255, 0.035);

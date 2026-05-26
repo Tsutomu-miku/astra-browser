@@ -26,7 +26,7 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 - Pinned tabs per workspace for favorite pages.
 - Global Essentials visible across Spaces for core pages.
 - Workspace favorites for quick access.
-- Sidebar search filters tabs, tab groups, pinned tabs, and favorites inside the active Space.
+- Sidebar search filters tabs, tab groups, pinned tabs, and favorites inside the active Space with Arrow/Home/End selection, Enter open, and Alt+Enter Glance preview.
 - Internal new tab page with Space-aware search, favorites, and recent history.
 - Address bar with search fallback.
 - Address bar suggestions for open tabs, Essentials, workspace favorites, and browsing history, with Arrow/Home/End keyboard selection.
