@@ -15,10 +15,10 @@ permissions:
   contents: write
 
 jobs:
-  release-windows:
-    name: Release Windows executable
-    runs-on: windows-latest
-    timeout-minutes: 30
+  quality:
+    name: Run quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -41,13 +41,142 @@ jobs:
       - name: Run quality gate
         run: pnpm check
 
-      - name: Package Windows portable exe
+  package-windows:
+    name: Package Windows app
+    runs-on: windows-latest
+    timeout-minutes: 30
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package Windows portable apps
         run: pnpm package:win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
+      - name: Upload Windows packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-browser-windows
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  package-macos:
+    name: Package macOS app
+    runs-on: macos-latest
+    timeout-minutes: 30
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package macOS apps
+        run: pnpm package:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload macOS packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-browser-macos
+          path: |
+            release/*.dmg
+            release/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  package-linux:
+    name: Package Linux app
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package Linux apps
+        run: pnpm package:linux
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload Linux packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-browser-linux
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - package-windows
+      - package-macos
+      - package-linux
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download release packages
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
       - name: Publish GitHub release
-        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
@@ -55,38 +184,29 @@ jobs:
           INPUT_TAG_NAME: ${{ inputs.tag_name }}
           GITHUB_SHA: ${{ github.sha }}
         run: |
-          $ErrorActionPreference = "Stop"
-          if (Test-Path Variable:\PSNativeCommandUseErrorActionPreference) {
-            $PSNativeCommandUseErrorActionPreference = $false
-          }
+          set -euo pipefail
 
-          function Invoke-GitHubCli {
-            & gh @args
-            if ($LASTEXITCODE -ne 0) {
-              throw "GitHub CLI command failed: gh $args"
-            }
-          }
+          tag="${INPUT_TAG_NAME:-$REF_NAME}"
+          version="$(node -p "require('./package.json').version")"
+          expected_tag="v$version"
 
-          $tag = if ($env:EVENT_NAME -eq "workflow_dispatch") { $env:INPUT_TAG_NAME } else { $env:REF_NAME }
-          $version = node -p "require('./package.json').version"
-          $expectedTag = "v$version"
+          if [ "$tag" != "$expected_tag" ]; then
+            echo "Release tag '$tag' does not match package version '$version'. Expected '$expected_tag'." >&2
+            exit 1
+          fi
 
-          if ($tag -ne $expectedTag) {
-            throw "Release tag '$tag' does not match package version '$version'. Expected '$expectedTag'."
-          }
+          mapfile -t assets < <(find release-assets -type f | sort)
+          if [ "${#assets[@]}" -lt 6 ]; then
+            echo "Expected release assets for Windows, macOS, and Linux, found ${#assets[@]}." >&2
+            printf '%s\n' "${assets[@]}" >&2
+            exit 1
+          fi
 
-          $assets = Get-ChildItem -Path release -Filter "*.exe"
-          if ($assets.Count -ne 1) {
-            throw "Expected exactly one Windows exe in release/, found $($assets.Count)."
-          }
+          title="Astra Browser $version"
+          notes="Multi-platform builds for Astra Browser $version: Windows portable executables, macOS DMG/ZIP packages, and Linux AppImage/DEB/tar.gz packages."
 
-          $assetPath = $assets[0].FullName
-          $title = "Astra Browser $version"
-          $notes = "Windows x64 portable build for Astra Browser $version."
-
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) {
-            Invoke-GitHubCli release upload $tag $assetPath --clobber
-          } else {
-            Invoke-GitHubCli release create $tag $assetPath --title $title --notes $notes --target $env:GITHUB_SHA
-          }
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "${assets[@]}" --clobber
+          else
+            gh release create "$tag" "${assets[@]}" --title "$title" --notes "$notes" --target "$GITHUB_SHA"
+          fi

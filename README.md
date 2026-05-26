@@ -66,9 +66,13 @@ A Chromium-based browser shell inspired by Zen and Arc. The first implementation
 pnpm install
 pnpm check
 pnpm dev
+pnpm package:win
+pnpm package:mac
+pnpm package:linux
 ```
 
 `pnpm dev` starts Vite for the React/TypeScript renderer and launches Electron against that dev server. `pnpm start` builds the renderer first and then launches Electron against `dist/renderer`.
+`pnpm package:win`, `pnpm package:mac`, and `pnpm package:linux` create Electron Builder artifacts in `release/`. `pnpm package:all` invokes all configured platform targets from one command when the host platform supports them.
 
 ## Troubleshooting
 
@@ -80,11 +84,13 @@ GitHub Actions runs `pnpm check` on pushes and pull requests to `main`, then upl
 
 - `astra-browser-renderer`: the compiled Vite renderer bundle from `dist/renderer`.
 - `astra-browser-runtime`: renderer output plus Electron main/preload files and package metadata.
-- `astra-browser-windows-x64`: a Windows x64 portable `.exe` produced by Electron Builder on `windows-latest`.
+- `astra-browser-windows`: Windows portable `.exe` packages produced by Electron Builder on `windows-latest`.
+- `astra-browser-macos`: macOS `.dmg` and `.zip` packages produced by Electron Builder on `macos-latest`.
+- `astra-browser-linux`: Linux `.AppImage`, `.deb`, and `.tar.gz` packages produced by Electron Builder on `ubuntu-latest`.
 
 ## Releases
 
-Tags matching the package version, such as `v0.1.0`, trigger the release workflow. The workflow builds the Windows x64 portable `.exe` and publishes it as a GitHub Release asset.
+Tags matching the package version, such as `v0.1.0`, trigger the release workflow. The workflow builds Windows, macOS, and Linux packages, then publishes all platform artifacts as GitHub Release assets.
 
 On minimal Linux environments, Electron also requires native desktop libraries such as GTK, ATK, NSS, and X11/Wayland support. If `pnpm start` fails before opening a window with a missing shared library, install the corresponding system package and rerun the command.
 

@@ -63,7 +63,7 @@ jobs:
           retention-days: 14
 
   package-windows:
-    name: Package Windows executable
+    name: Package Windows app
     runs-on: windows-latest
     timeout-minutes: 25
     needs: build
@@ -86,15 +86,94 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Package Windows portable exe
+      - name: Package Windows portable apps
         run: pnpm package:win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - name: Upload Windows executable
+      - name: Upload Windows packages
         uses: actions/upload-artifact@v4
         with:
-          name: astra-browser-windows-x64
+          name: astra-browser-windows
           path: release/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  package-macos:
+    name: Package macOS app
+    runs-on: macos-latest
+    timeout-minutes: 30
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package macOS apps
+        run: pnpm package:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload macOS packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-browser-macos
+          path: |
+            release/*.dmg
+            release/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  package-linux:
+    name: Package Linux app
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package Linux apps
+        run: pnpm package:linux
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload Linux packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-browser-linux
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.tar.gz
           if-no-files-found: error
           retention-days: 14
