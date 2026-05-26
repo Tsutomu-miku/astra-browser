@@ -2,7 +2,9 @@
 
 ## Product Goal
 
-Build a Chromium-based browser shell inspired by Zen and Arc: vertical workspaces, global Essentials, per-workspace Chromium profiles, internal new tab page, per-workspace homepages, keep-alive Chromium webviews for current Space tabs, sleeping background tabs for memory control, workspace creation/deletion, drag-and-drop workspace ordering, compact tab management, sidebar tab search, sidebar tab context actions, named and color-coded collapsible tab groups, direct tab closing, keyboard tab cycling, close-other-tabs and close-left/right cleanup, tab duplication, per-tab mute, per-tab navigation state, drag-and-drop tab ordering, drag-and-drop cross-workspace tab moves, collapsible focus mode, Zen-style compact mode with floating sidebar and toolbar, compact sidebar address/search entry, page identity feedback, site information, per-origin permissions, profile storage inspection, global and per-profile browsing-data clearing, configurable startup/session restore, state backup import/export, find in page, per-tab zoom, favorites, Glance preview overlay, drag-to-split, resizable two-pane split view, split layout shortcuts, and explicit split-view tab targeting for up to four panes, keyboard-first navigation, omnibox suggestions, command palette with direct search/navigation, per-workspace recently closed tab recovery, searchable and editable history, downloads, and user settings.
+Build a Chromium-based browser shell inspired by Zen and Arc. The product should prioritize vertical organization, Spaces, compact chrome, keyboard-first navigation, split views, Glance previews, and profile-aware browsing data.
+
+The detailed product requirements live in `docs/REQUIREMENTS.md`. Keep this document focused on engineering goals, architecture principles, ownership boundaries, and verification expectations.
 
 Electron is acceptable for this stage because it embeds Chromium and lets the product shell iterate quickly. If the project later needs native Chromium UI integration, keep this shell architecture as the product prototype and migrate features behind stable domain contracts.
 
