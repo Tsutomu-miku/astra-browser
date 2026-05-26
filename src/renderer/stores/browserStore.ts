@@ -82,6 +82,7 @@ interface BrowserStore {
   findOpen: boolean;
   findQuery: string;
   floatingSidebarOpen: boolean;
+  floatingToolbarOpen: boolean;
   panel: Panel;
   permissionRequest: PermissionRequestEvent | null;
   sidebarCollapsed: boolean;
@@ -146,6 +147,7 @@ interface BrowserStore {
   toggleActiveTabPinned: () => void;
   toggleCompactMode: () => void;
   toggleFloatingSidebar: () => void;
+  toggleFloatingToolbar: () => void;
   toggleTabGroupCollapsed: (groupId: string) => void;
   toggleTabMuted: (tabId: string, webview?: WebviewElement) => void;
   toggleTabPinned: (tabId: string) => void;
@@ -170,6 +172,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   findOpen: false,
   findQuery: "",
   floatingSidebarOpen: false,
+  floatingToolbarOpen: false,
   panel: null,
   permissionRequest: null,
   sidebarCollapsed: false,
@@ -293,12 +296,18 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   toggleCompactMode: () => set((state) => ({
     compactMode: !state.compactMode,
     floatingSidebarOpen: false,
+    floatingToolbarOpen: false,
     sidebarCollapsed: !state.compactMode ? true : state.sidebarCollapsed
   })),
   toggleFloatingSidebar: () => set((state) => ({
     compactMode: true,
     floatingSidebarOpen: state.compactMode ? !state.floatingSidebarOpen : true,
     sidebarCollapsed: true
+  })),
+  toggleFloatingToolbar: () => set((state) => ({
+    compactMode: true,
+    floatingToolbarOpen: state.compactMode ? !state.floatingToolbarOpen : true,
+    sidebarCollapsed: state.compactMode ? state.sidebarCollapsed : true
   })),
   toggleTabGroupCollapsed: (groupId) => update(set, (state) => toggleTabGroupCollapsed(state, groupId)),
   toggleTabMuted: (tabId, webview) => update(set, (state) => syncMuted(toggleTabMuted(state, tabId), webview, tabId)),

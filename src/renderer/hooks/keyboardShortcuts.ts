@@ -13,6 +13,7 @@ export type ShortcutIntent =
   | { type: "resetZoom" }
   | { type: "toggleCompactMode" }
   | { type: "toggleFloatingSidebar" }
+  | { type: "toggleFloatingToolbar" }
   | { type: "toggleSidebar" }
   | { type: "toggleSplit" }
   | { type: "toggleSplitGrid" }
@@ -76,6 +77,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (event.altKey && key === "s") {
     return { type: "toggleFloatingSidebar" };
+  }
+
+  if (event.altKey && key === "t") {
+    return { type: "toggleFloatingToolbar" };
   }
 
   if (key === "0") {

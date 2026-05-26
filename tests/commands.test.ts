@@ -51,6 +51,7 @@ describe("buildCommands", () => {
       toggleActiveTabPinned: vi.fn(),
       toggleCompactMode: vi.fn(),
       toggleFloatingSidebar: vi.fn(),
+      toggleFloatingToolbar: vi.fn(),
       toggleTabGroupCollapsed: vi.fn(),
       toggleSidebar: vi.fn(),
       toggleSplitMode: vi.fn(),
@@ -86,6 +87,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "New workspace")).toBe(true);
     expect(commands.some((command) => command.title === "Toggle compact mode")).toBe(true);
     expect(commands.some((command) => command.title === "Toggle floating sidebar")).toBe(true);
+    expect(commands.some((command) => command.title === "Toggle floating toolbar")).toBe(true);
     expect(commands.some((command) => command.title === "Add essential")).toBe(true);
     expect(commands.some((command) => command.title === "Close other tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Close tabs to the left")).toBe(true);

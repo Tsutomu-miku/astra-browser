@@ -39,7 +39,8 @@
 
 .browser.is-compact-mode .topbar:hover,
 .browser.is-compact-mode .topbar:focus-within,
-.browser.is-compact-mode.is-peeking-chrome .topbar {
+.browser.is-compact-mode.is-peeking-chrome .topbar,
+.browser.is-compact-mode.is-floating-toolbar-open .topbar {
   opacity: 1;
   transform: translateY(0);
 }

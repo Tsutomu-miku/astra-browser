@@ -15,7 +15,7 @@ export function App() {
   return (
     <>
       <Sidebar controller={controller} />
-      <main className={`browser ${controller.compactMode ? "is-compact-mode" : ""} ${controller.compactChromePeeking ? "is-peeking-chrome" : ""}`}>
+      <main className={`browser ${controller.compactMode ? "is-compact-mode" : ""} ${controller.compactChromePeeking ? "is-peeking-chrome" : ""} ${controller.floatingToolbarOpen ? "is-floating-toolbar-open" : ""}`}>
         <Topbar controller={controller} />
         <WebviewGrid controller={controller} />
         {controller.findOpen && <FindBar controller={controller} />}
