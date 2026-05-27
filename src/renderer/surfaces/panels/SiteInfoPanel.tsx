@@ -1,4 +1,5 @@
-import { FiX } from "react-icons/fi";
+import type { ReactNode } from "react";
+import { FiShield, FiSliders, FiUser, FiX } from "react-icons/fi";
 
 import { getUrlIdentity } from "../../domain/browser/urlIdentity";
 import {
@@ -9,11 +10,13 @@ import {
 } from "../../domain/permissions/sitePermissions";
 import type { SitePermissionDecision } from "../../domain/browser/types";
 import type { BrowserController } from "../../app/controller/types";
+import { getSecurityDescription, getSitePermissionSummary } from "./model/siteInfoState";
 
 export function SiteInfoPanel({ controller }: { controller: BrowserController }) {
   const { actions, activeTab, activeWorkspace, setPanel, state } = controller;
   const identity = getUrlIdentity(activeTab.url);
   const origin = getOriginFromUrl(activeTab.url);
+  const permissionSummary = getSitePermissionSummary(state.sitePermissions, activeWorkspace.profileId, origin);
 
   return (
     <aside className="site-panel">
@@ -24,6 +27,11 @@ export function SiteInfoPanel({ controller }: { controller: BrowserController })
       <section className="site-summary">
         <span className={`site-security is-${identity.security}`}>{identity.label}</span>
         <span className="site-origin">{origin ?? activeTab.url}</span>
+        <div className="site-summary-grid">
+          <SummaryItem icon={<FiShield />} label="Security" value={getSecurityDescription(identity.security)} />
+          <SummaryItem icon={<FiUser />} label="Profile" value={`${activeWorkspace.profileName} profile`} />
+          <SummaryItem icon={<FiSliders />} label="Permissions" value={permissionSummary.label} />
+        </div>
       </section>
       {origin ? (
         <section className="permission-list" aria-label="Site permissions">
@@ -41,6 +49,26 @@ export function SiteInfoPanel({ controller }: { controller: BrowserController })
         <p className="empty-state">Permissions are available for http and https pages.</p>
       )}
     </aside>
+  );
+}
+
+function SummaryItem({
+  icon,
+  label,
+  value
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <article className="site-summary-item">
+      <span className="site-summary-icon">{icon}</span>
+      <span className="site-summary-copy">
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </span>
+    </article>
   );
 }
 
