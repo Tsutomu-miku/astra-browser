@@ -66,6 +66,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The address bar must be focusable with `Ctrl+L`, `Cmd+L`, `Ctrl+J`, `Cmd+J`, and `Alt+D`.
 - Address bar suggestions must include open tabs, Essentials, workspace favorites, and browsing history.
 - Address bar suggestions must support Arrow, Home, End, Enter, and Alt+Enter split opening.
+- Address bar suggestions must visually hint Alt split opening where suggestions are shown.
 - Compact mode must expose a sidebar address field with the same suggestion and keyboard behavior as the top bar.
 - Back and forward availability must be tracked per tab from Chromium webview navigation state.
 - Back, forward, reload, stop-loading, and hard reload must be available through controls and keyboard shortcuts where appropriate.

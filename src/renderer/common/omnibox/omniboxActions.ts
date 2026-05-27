@@ -1,10 +1,21 @@
 import type { OmniboxSuggestion } from "./omniboxSuggestions";
 
+export interface OmniboxActionHint {
+  id: "split";
+  label: string;
+  modifier: string;
+}
+
 export type OmniboxAction =
   | { type: "navigateActiveTab"; value: string }
   | { type: "openTabInSplit"; tabId: string }
   | { type: "openUrlInSplit"; title?: string; url: string }
   | { type: "selectTab"; tabId: string };
+
+export function getOmniboxActionHints(suggestion: OmniboxSuggestion | undefined): OmniboxActionHint[] {
+  if (!suggestion) return [];
+  return [{ id: "split", modifier: "Alt", label: "Split" }];
+}
 
 export function getOmniboxAction(
   suggestion: OmniboxSuggestion | undefined,

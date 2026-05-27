@@ -20,6 +20,7 @@ import { getUrlIdentity } from "../../domain/browser/urlIdentity";
 import { formatZoomPercent } from "../../domain/browser/zoom";
 import type { BrowserController } from "../../app/controller/types";
 import { useOmniboxController } from "../../app/controller/useOmniboxController";
+import { getOmniboxActionHints } from "../../common/omnibox/omniboxActions";
 import { getReloadButtonState } from "./model/navigationButtonState";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
@@ -78,10 +79,21 @@ export function Topbar({ controller }: { controller: BrowserController }) {
                 key={suggestion.id}
                 type="button"
                 aria-selected={index === omnibox.activeIndex}
+                title="Alt-click to open in split view"
                 onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
                 onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
               >
-                <span className="suggestion-title">{suggestion.title}</span>
+                <span className="suggestion-main">
+                  <span className="suggestion-title">{suggestion.title}</span>
+                  <span className="omnibox-action-hints" aria-label="Alt Split">
+                    {getOmniboxActionHints(suggestion).map((hint) => (
+                      <span className={`omnibox-action-hint is-${hint.id}`} key={hint.id}>
+                        <kbd>{hint.modifier}</kbd>
+                        <span>{hint.label}</span>
+                      </span>
+                    ))}
+                  </span>
+                </span>
                 <span className="suggestion-subtitle">{suggestion.subtitle}</span>
               </button>
             ))}

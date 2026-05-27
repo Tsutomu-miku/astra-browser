@@ -210,6 +210,14 @@ h1 {
   text-align: left;
 }
 
+.sidebar-suggestion-main {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
 .sidebar-omnibox-suggestion:hover,
 .sidebar-omnibox-suggestion[aria-selected="true"] {
   background: var(--panel-soft);
@@ -221,7 +229,7 @@ h1 {
     inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
-.sidebar-omnibox-suggestion span,
+.sidebar-omnibox-suggestion span:not(.omnibox-action-hints, .omnibox-action-hint),
 .sidebar-omnibox-suggestion small {
   min-width: 0;
   overflow: hidden;

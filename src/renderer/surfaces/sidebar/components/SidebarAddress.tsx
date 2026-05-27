@@ -2,6 +2,7 @@ import { FiSearch } from "react-icons/fi";
 
 import type { BrowserController } from "../../../app/controller/types";
 import { useOmniboxController } from "../../../app/controller/useOmniboxController";
+import { getOmniboxActionHints } from "../../../common/omnibox/omniboxActions";
 
 export function SidebarAddress({ controller }: { controller: BrowserController }) {
   const { actions, addressValue, compactMode, setAddressValue, state } = controller;
@@ -35,10 +36,21 @@ export function SidebarAddress({ controller }: { controller: BrowserController }
               key={suggestion.id}
               type="button"
               aria-selected={index === omnibox.activeIndex}
+              title="Alt-click to open in split view"
               onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
               onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
             >
-              <span>{suggestion.title}</span>
+              <span className="sidebar-suggestion-main">
+                <span>{suggestion.title}</span>
+                <span className="omnibox-action-hints" aria-label="Alt Split">
+                  {getOmniboxActionHints(suggestion).map((hint) => (
+                    <span className={`omnibox-action-hint is-${hint.id}`} key={hint.id}>
+                      <kbd>{hint.modifier}</kbd>
+                      <span>{hint.label}</span>
+                    </span>
+                  ))}
+                </span>
+              </span>
               <small>{suggestion.subtitle}</small>
             </button>
           ))}

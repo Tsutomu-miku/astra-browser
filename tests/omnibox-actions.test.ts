@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getOmniboxAction } from "../src/renderer/common/omnibox/omniboxActions";
+import { getOmniboxAction, getOmniboxActionHints } from "../src/renderer/common/omnibox/omniboxActions";
 import type { OmniboxSuggestion } from "../src/renderer/common/omnibox/omniboxSuggestions";
 
 describe("getOmniboxAction", () => {
@@ -46,5 +46,20 @@ describe("getOmniboxAction", () => {
       type: "openUrlInSplit",
       url: "example.com"
     });
+  });
+
+  it("exposes split action hints for visible suggestions", () => {
+    const suggestion: OmniboxSuggestion = {
+      id: "history-1",
+      subtitle: "History",
+      title: "Docs",
+      type: "history",
+      url: "https://docs.example"
+    };
+
+    expect(getOmniboxActionHints(suggestion)).toEqual([
+      { id: "split", modifier: "Alt", label: "Split" }
+    ]);
+    expect(getOmniboxActionHints(undefined)).toEqual([]);
   });
 });

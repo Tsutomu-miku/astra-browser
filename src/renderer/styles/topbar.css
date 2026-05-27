@@ -110,6 +110,14 @@
   text-align: left;
 }
 
+.suggestion-main {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
 .omnibox-suggestion:hover,
 .omnibox-suggestion[aria-selected="true"] {
   background: var(--panel-soft);
@@ -136,6 +144,36 @@
 .suggestion-subtitle {
   color: var(--muted);
   font-size: 12px;
+}
+
+.omnibox-action-hints {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.omnibox-action-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.omnibox-action-hint kbd {
+  min-width: 22px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom-color: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .address-identity {
