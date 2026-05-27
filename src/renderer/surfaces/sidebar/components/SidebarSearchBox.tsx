@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from "react";
 import { FiX } from "react-icons/fi";
 
-import type { SidebarSearchTarget } from "../sidebarFiltering";
+import { getSidebarSearchActionHints, type SidebarSearchTarget } from "../sidebarFiltering";
 
 export function SidebarSearchBox({
   activeSearchTarget,
@@ -16,6 +16,8 @@ export function SidebarSearchBox({
   onQueryChange: (query: string) => void;
   query: string;
 }) {
+  const actionHints = getSidebarSearchActionHints(activeSearchTarget);
+
   return (
     <div className="sidebar-search">
       <input
@@ -30,6 +32,16 @@ export function SidebarSearchBox({
       />
       {query && (
         <button className="icon-button" title="Clear tab search" type="button" onClick={onClear}><FiX /></button>
+      )}
+      {query && actionHints.length > 0 && (
+        <div className="sidebar-search-action-hints" aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}>
+          {actionHints.map((hint) => (
+            <span className={`sidebar-search-action-hint is-${hint.id}`} key={hint.id}>
+              <kbd>{hint.modifier}</kbd>
+              <span>{hint.label}</span>
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );

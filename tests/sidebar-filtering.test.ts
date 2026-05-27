@@ -6,6 +6,7 @@ import {
   clampSidebarSearchIndex,
   filterSidebarItems,
   getNextSidebarSearchIndex,
+  getSidebarSearchActionHints,
   getSidebarSearchTargets
 } from "../src/renderer/surfaces/sidebar/sidebarFiltering";
 
@@ -96,5 +97,18 @@ describe("sidebar filtering", () => {
     expect(getNextSidebarSearchIndex(0, 3, "ArrowUp")).toBe(2);
     expect(getNextSidebarSearchIndex(1, 3, "Home")).toBe(0);
     expect(getNextSidebarSearchIndex(1, 3, "End")).toBe(2);
+  });
+
+  it("exposes preview and split action hints for search targets", () => {
+    expect(getSidebarSearchActionHints({
+      type: "favorite",
+      id: "docs",
+      title: "Docs",
+      url: "https://docs.example"
+    })).toEqual([
+      { id: "preview", modifier: "Alt", label: "Preview" },
+      { id: "split", modifier: "Shift", label: "Split" }
+    ]);
+    expect(getSidebarSearchActionHints(undefined)).toEqual([]);
   });
 });

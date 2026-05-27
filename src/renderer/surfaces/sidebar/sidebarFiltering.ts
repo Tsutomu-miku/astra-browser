@@ -30,6 +30,12 @@ export type SidebarSearchTarget =
 
 export type SidebarSearchNavigationKey = ListNavigationKey;
 
+export interface SidebarSearchActionHint {
+  id: "preview" | "split";
+  label: string;
+  modifier: string;
+}
+
 export function filterSidebarItems(input: SidebarFilterInput, query: string): SidebarFilterResult {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) {
@@ -78,6 +84,14 @@ export function getSidebarSearchTargets(input: SidebarFilterResult): SidebarSear
     })),
     ...input.groupedTabs.flatMap((entry) => entry.tabs.map(toTabTarget)),
     ...input.regularTabs.map(toTabTarget)
+  ];
+}
+
+export function getSidebarSearchActionHints(target: SidebarSearchTarget | undefined): SidebarSearchActionHint[] {
+  if (!target) return [];
+  return [
+    { id: "preview", modifier: "Alt", label: "Preview" },
+    { id: "split", modifier: "Shift", label: "Split" }
   ];
 }
 
