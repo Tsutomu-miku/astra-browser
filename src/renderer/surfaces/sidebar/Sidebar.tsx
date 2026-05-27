@@ -188,6 +188,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         onDragOver={handleWorkspaceDragOver}
         onDragStart={handleWorkspaceDragStart}
         onDrop={handleWorkspaceDrop}
+        onNewWorkspace={actions.addWorkspace}
         onSelect={actions.switchWorkspace}
         onToggleSidebar={actions.toggleSidebar}
       />

@@ -1,5 +1,5 @@
 import type { CSSProperties, DragEvent } from "react";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiPlus } from "react-icons/fi";
 
 import type { Workspace } from "../../../domain/browser-core";
 
@@ -11,6 +11,7 @@ export function WorkspaceStrip({
   onDragOver,
   onDragStart,
   onDrop,
+  onNewWorkspace,
   onSelect,
   onToggleSidebar,
   sidebarCollapsed,
@@ -23,6 +24,7 @@ export function WorkspaceStrip({
   onDragOver: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
   onDragStart: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
   onDrop: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
+  onNewWorkspace: () => void;
   onSelect: (workspaceId: string) => void;
   onToggleSidebar: () => void;
   sidebarCollapsed: boolean;
@@ -53,6 +55,15 @@ export function WorkspaceStrip({
           {workspace.name.slice(0, 1)}
         </button>
       ))}
+      <button
+        className="workspace-button workspace-new-button"
+        title="New Space"
+        type="button"
+        aria-label="New Space"
+        onClick={onNewWorkspace}
+      >
+        <FiPlus />
+      </button>
       <button
         className="workspace-button sidebar-toggle"
         title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}

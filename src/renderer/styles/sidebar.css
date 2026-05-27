@@ -82,6 +82,19 @@
   background: color-mix(in srgb, var(--accent) 34%, rgba(255, 255, 255, 0.12));
 }
 
+.workspace-new-button {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.workspace-new-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  background: rgba(255, 255, 255, 0.075);
+  color: var(--text);
+}
+
 .tab-stack {
   min-width: 0;
   min-height: 0;
