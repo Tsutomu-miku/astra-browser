@@ -126,6 +126,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The new tab page must support Space-aware search.
 - The new tab page must show global Essentials plus favorites and recent history for the active Space.
 - The new tab search must use the shared omnibox suggestion model so Essentials, favorites, open tabs, and history can be opened directly from the start surface.
+- The new tab search must visually hint Alt split opening for suggestions.
 - New tab Essentials, favorites, and recent history entries must support Alt-click Glance preview and Shift-click split opening.
 
 ### Site Identity, Permissions, And Data

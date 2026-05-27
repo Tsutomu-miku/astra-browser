@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { FiClock, FiCommand, FiSearch, FiStar, FiZap } from "react-icons/fi";
 
+import { getOmniboxActionHints } from "../../../common/omnibox/omniboxActions";
 import type { OmniboxSuggestion } from "../../../common/omnibox/omniboxSuggestions";
 import type { BrowserController } from "../../../app/controller/types";
 import { useOmniboxController } from "../../../app/controller/useOmniboxController";
@@ -60,6 +61,7 @@ export function StartSearch({
               type="button"
               role="option"
               aria-selected={index === omnibox.activeIndex}
+              title="Alt-click to open in split view"
               onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
               onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
             >
@@ -69,6 +71,14 @@ export function StartSearch({
               <span className="start-search-suggestion-copy">
                 <span>{suggestion.title}</span>
                 <small>{suggestion.subtitle}</small>
+              </span>
+              <span className="start-search-action-hints" aria-label="Alt Split">
+                {getOmniboxActionHints(suggestion).map((hint) => (
+                  <span className={`start-search-action-hint is-${hint.id}`} key={hint.id}>
+                    <kbd>{hint.modifier}</kbd>
+                    <span>{hint.label}</span>
+                  </span>
+                ))}
               </span>
             </button>
           ))}
