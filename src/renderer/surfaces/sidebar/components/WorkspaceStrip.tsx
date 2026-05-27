@@ -2,6 +2,11 @@ import type { CSSProperties, DragEvent } from "react";
 import { FiChevronLeft, FiChevronRight, FiPlus } from "react-icons/fi";
 
 import type { Workspace } from "../../../domain/browser-core";
+import {
+  getWorkspaceButtonLabel,
+  getWorkspaceInitial,
+  getWorkspaceTabCount
+} from "../model/workspaceStripState";
 
 export function WorkspaceStrip({
   activeWorkspaceId,
@@ -37,9 +42,10 @@ export function WorkspaceStrip({
           className="workspace-button"
           key={workspace.id}
           style={{ "--accent": workspace.accent } as CSSProperties}
-          title={workspace.name}
+          title={getWorkspaceButtonLabel(workspace)}
           type="button"
           draggable
+          aria-label={getWorkspaceButtonLabel(workspace)}
           aria-current={workspace.id === activeWorkspaceId}
           data-dragging={draggingWorkspaceId === workspace.id}
           data-drop-target={Boolean(
@@ -52,7 +58,8 @@ export function WorkspaceStrip({
           onDrop={(event) => onDrop(event, workspace.id)}
           onClick={() => onSelect(workspace.id)}
         >
-          {workspace.name.slice(0, 1)}
+          <span className="workspace-initial">{getWorkspaceInitial(workspace)}</span>
+          <span className="workspace-tab-count" aria-hidden="true">{getWorkspaceTabCount(workspace)}</span>
         </button>
       ))}
       <button

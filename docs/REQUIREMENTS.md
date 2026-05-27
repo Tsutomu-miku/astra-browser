@@ -20,6 +20,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The app must organize browsing around vertical Spaces.
 - Users must be able to create, delete, rename, recolor, and reorder Spaces.
 - The workspace strip must expose a direct new-Space action without opening Settings.
+- The workspace strip must show per-Space tab counts for quick scanning.
 - Each Space must have a stable persistent Chromium profile partition.
 - Each Space must support its own homepage.
 - Startup behavior must support restoring the previous session or opening configured Space homepages.

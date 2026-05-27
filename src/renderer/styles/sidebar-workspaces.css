@@ -1,0 +1,92 @@
+.workspace-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 7px 12px;
+  border-right: 1px solid var(--line);
+  background: rgba(6, 7, 9, 0.44);
+}
+
+.sidebar-toggle {
+  margin-top: auto;
+}
+
+.workspace-button {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.08));
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 700;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.workspace-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  background: color-mix(in srgb, var(--accent) 26%, rgba(255, 255, 255, 0.12));
+  transform: translateY(-1px);
+}
+
+.workspace-button[aria-current="true"] {
+  border-color: color-mix(in srgb, var(--accent) 74%, white);
+  background: color-mix(in srgb, var(--accent) 30%, rgba(255, 255, 255, 0.1));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.workspace-button[data-drop-target="true"] {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.workspace-button[data-dragging="true"] {
+  opacity: 0.48;
+}
+
+.workspace-button[data-drop-target="true"]:hover {
+  background: color-mix(in srgb, var(--accent) 34%, rgba(255, 255, 255, 0.12));
+}
+
+.workspace-initial {
+  line-height: 1;
+}
+
+.workspace-tab-count {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  min-width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(8, 9, 12, 0.86);
+  color: color-mix(in srgb, var(--text) 84%, var(--accent));
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.workspace-new-button {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.workspace-new-button:hover {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  background: rgba(255, 255, 255, 0.075);
+  color: var(--text);
+}
