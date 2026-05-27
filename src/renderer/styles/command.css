@@ -46,7 +46,9 @@
 .command-item {
   width: 100%;
   display: grid;
-  gap: 3px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
   border: 0;
   border-radius: 8px;
   padding: 10px 12px;
@@ -54,6 +56,12 @@
   color: var(--text);
   cursor: pointer;
   text-align: left;
+}
+
+.command-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
 }
 
 .command-item:hover,
@@ -82,4 +90,43 @@
 .command-subtitle {
   color: var(--muted);
   font-size: 12px;
+}
+
+.command-action-hints {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.command-action-hint {
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  padding: 0 7px 0 5px;
+  background: rgba(255, 255, 255, 0.045);
+  color: color-mix(in srgb, var(--muted) 78%, white);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.command-action-hint kbd {
+  min-width: 24px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.command-action-hint.is-preview {
+  color: color-mix(in srgb, var(--accent) 66%, white);
 }

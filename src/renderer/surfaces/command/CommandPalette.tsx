@@ -3,7 +3,7 @@ import { FiX } from "react-icons/fi";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import type { BrowserController } from "../../app/controller/types";
-import { getCommandRunner } from "./model/commandIntent";
+import { getCommandActionHints, getCommandRunner } from "./model/commandIntent";
 import { getVisibleCommands } from "./model/commandSearch";
 import {
   clampCommandIndex,
@@ -65,30 +65,45 @@ export function CommandPalette({ controller }: { controller: BrowserController }
           <button className="icon-button" title="Close command palette" type="button" onClick={() => setCommandOpen(false)}><FiX /></button>
         </header>
         <div className="command-list" role="listbox" aria-label="Commands">
-          {displayedCommands.map((command, index) => (
-            <button
-              className="command-item"
-              id={`command-option-${index}`}
-              key={`${command.title}-${command.subtitle}`}
-              type="button"
-              role="option"
-              aria-selected={index === activeIndex}
-              ref={(element) => {
-                itemRefs.current[index] = element;
-              }}
-              onClick={(event) => {
-                setCommandOpen(false);
-                getCommandRunner(command, {
-                  altKey: event.altKey,
-                  shiftKey: event.shiftKey
-                })();
-              }}
-              onMouseEnter={() => setActiveCommandIndex(index)}
-            >
-              <span className="command-title">{command.title}</span>
-              <span className="command-subtitle">{command.subtitle}</span>
-            </button>
-          ))}
+          {displayedCommands.map((command, index) => {
+            const actionHints = getCommandActionHints(command);
+            return (
+              <button
+                className="command-item"
+                id={`command-option-${index}`}
+                key={`${command.title}-${command.subtitle}`}
+                type="button"
+                role="option"
+                aria-selected={index === activeIndex}
+                ref={(element) => {
+                  itemRefs.current[index] = element;
+                }}
+                onClick={(event) => {
+                  setCommandOpen(false);
+                  getCommandRunner(command, {
+                    altKey: event.altKey,
+                    shiftKey: event.shiftKey
+                  })();
+                }}
+                onMouseEnter={() => setActiveCommandIndex(index)}
+              >
+                <span className="command-copy">
+                  <span className="command-title">{command.title}</span>
+                  <span className="command-subtitle">{command.subtitle}</span>
+                </span>
+                {actionHints.length > 0 && (
+                  <span className="command-action-hints" aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}>
+                    {actionHints.map((hint) => (
+                      <span className={`command-action-hint is-${hint.id}`} key={hint.id}>
+                        <kbd>{hint.modifier}</kbd>
+                        <span>{hint.label}</span>
+                      </span>
+                    ))}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>

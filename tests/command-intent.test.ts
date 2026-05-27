@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { getCommandRunner } from "../src/renderer/surfaces/command/model/commandIntent";
+import { getCommandActionHints, getCommandRunner } from "../src/renderer/surfaces/command/model/commandIntent";
 import type { Command } from "../src/renderer/surfaces/command/model/commandTypes";
 
 describe("getCommandRunner", () => {
@@ -37,5 +37,23 @@ describe("getCommandRunner", () => {
     getCommandRunner(command, { altKey: false, shiftKey: true })();
 
     expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("describes available command alternate actions", () => {
+    expect(getCommandActionHints({
+      run: vi.fn(),
+      runInSplit: vi.fn(),
+      runPreview: vi.fn(),
+      subtitle: "Content",
+      title: "Docs"
+    })).toEqual([
+      { id: "preview", label: "Preview", modifier: "Alt" },
+      { id: "split", label: "Split", modifier: "Shift" }
+    ]);
+    expect(getCommandActionHints({
+      run: vi.fn(),
+      subtitle: "Application",
+      title: "Settings"
+    })).toEqual([]);
   });
 });
