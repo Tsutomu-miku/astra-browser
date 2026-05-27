@@ -16,6 +16,17 @@ export function App() {
     <>
       <Sidebar controller={controller} />
       <main className={`browser ${controller.compactMode ? "is-compact-mode" : ""} ${controller.compactChromePeeking ? "is-peeking-chrome" : ""} ${controller.floatingToolbarOpen ? "is-floating-toolbar-open" : ""}`}>
+        {controller.compactMode && (
+          <button
+            className="compact-peek-zone"
+            type="button"
+            aria-label="Show toolbar"
+            title="Show toolbar"
+            onClick={controller.actions.peekCompactChrome}
+            onFocus={controller.actions.peekCompactChrome}
+            onPointerEnter={controller.actions.peekCompactChrome}
+          />
+        )}
         <Topbar controller={controller} />
         <WebviewGrid controller={controller} />
         {controller.findOpen && <FindBar controller={controller} />}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { getNumberShortcutTarget } from "../common/shortcuts/numberShortcutTargets";
 import { getActiveTab, getActiveWorkspace } from "../domain/selectors";
@@ -6,15 +6,13 @@ import { useBrowserStore, type SplitLayout } from "../stores/browserStore";
 import type { WebviewElement } from "../types/browser-ui";
 import { useBrowserEffects } from "./useBrowserEffects";
 import { buildCommands } from "./useCommands";
+import { useCompactChromePeek } from "./useCompactChromePeek";
 import type { ShortcutIntent } from "./keyboardShortcuts";
-
-const COMPACT_CHROME_PEEK_MS = 1400;
 
 export function useBrowserController() {
   const store = useBrowserStore();
   const webviews = useRef(new Map<string, WebviewElement>());
-  const chromePeekTimeout = useRef<number | null>(null);
-  const [compactChromePeeking, setCompactChromePeeking] = useState(false);
+  const { compactChromePeeking, peekCompactChrome } = useCompactChromePeek(store.compactMode);
   const activeWorkspace = getActiveWorkspace(store.state);
   const activeTab = getActiveTab(activeWorkspace);
   const activeWebview = webviews.current.get(activeTab.id);
@@ -27,26 +25,6 @@ export function useBrowserController() {
     input?.focus();
     input?.select();
   }, [store]);
-
-  const peekCompactChrome = useCallback(() => {
-    if (!store.compactMode) return;
-
-    if (chromePeekTimeout.current) {
-      window.clearTimeout(chromePeekTimeout.current);
-    }
-
-    setCompactChromePeeking(true);
-    chromePeekTimeout.current = window.setTimeout(() => {
-      setCompactChromePeeking(false);
-      chromePeekTimeout.current = null;
-    }, COMPACT_CHROME_PEEK_MS);
-  }, [store.compactMode]);
-
-  useEffect(() => () => {
-    if (chromePeekTimeout.current) {
-      window.clearTimeout(chromePeekTimeout.current);
-    }
-  }, []);
 
   const actions = useMemo(() => ({
     addWorkspace: store.addWorkspace,
@@ -74,6 +52,7 @@ export function useBrowserController() {
     closeTabsToRight: store.closeTabsToRight,
     deleteWorkspace: store.deleteWorkspace,
     focusAddressBar,
+    peekCompactChrome,
     duplicateTab: (tabId: string) => {
       store.duplicateTab(tabId);
       peekCompactChrome();

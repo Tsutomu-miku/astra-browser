@@ -22,6 +22,8 @@ The project is split around runtime boundaries rather than feature folders.
 
 Compact mode is renderer-owned UI state. It does not alter persisted browser data; it composes the existing collapsible sidebar with a floating topbar and compact sidebar address field so the content grid can reclaim the full viewport while browser chrome remains available on hover or focus.
 
+Compact chrome peeking is isolated in a controller hook so tab changes, shortcuts, and the top-edge peek target all share the same temporary reveal timer without leaking timer state into browser domain logic.
+
 `src/renderer/surfaces/sidebar/sidebarFiltering.ts` owns active-Space sidebar search rules for tabs, tab groups, pinned tabs, and favorites. The component keeps only the query state and rendering decisions.
 
 Essentials are global quick entries stored on `BrowserState`, while favorites remain scoped to a workspace. The sidebar renders Essentials above Space-local tab controls so core pages stay available across Spaces without changing the active workspace profile model.

@@ -20,6 +20,50 @@
   height: 11px;
 }
 
+.compact-peek-zone {
+  position: absolute;
+  top: 0;
+  right: 54px;
+  left: 54px;
+  z-index: 21;
+  height: 14px;
+  border: 0;
+  border-radius: 0 0 999px 999px;
+  background: transparent;
+  cursor: ns-resize;
+}
+
+.browser.is-compact-mode:not(.is-peeking-chrome):not(.is-floating-toolbar-open) .compact-peek-zone {
+  z-index: 23;
+}
+
+.compact-peek-zone::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  width: 88px;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 48%, white);
+  opacity: 0;
+  transform: translateX(-50%);
+  transition:
+    opacity 150ms ease,
+    width 150ms ease;
+}
+
+.compact-peek-zone:hover::after,
+.compact-peek-zone:focus-visible::after,
+.browser.is-compact-mode.is-peeking-chrome .compact-peek-zone::after {
+  width: 128px;
+  opacity: 0.72;
+}
+
+.compact-peek-zone:focus-visible {
+  outline: none;
+}
+
 .browser.is-compact-mode .topbar {
   position: absolute;
   top: 0;
