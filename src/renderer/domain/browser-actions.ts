@@ -11,6 +11,7 @@ export {
 } from "./browsing/actions";
 export {
   clearSitePermissionRule,
+  clearSitePermissionRulesForOrigin,
   setSitePermission,
   updateSettings
 } from "./permissions/settingsActions";

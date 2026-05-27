@@ -4,6 +4,7 @@ import {
   addTab,
   clearBrowsingData,
   clearHistory,
+  clearSitePermissionRulesForOrigin,
   clearWorkspaceBrowsingData,
   closeActiveTab,
   closeOtherTabs,
@@ -515,6 +516,23 @@ describe("browser-actions", () => {
     expect(cleared.sitePermissions.map((rule) => rule.profileId)).toEqual(["work"]);
     expect(cleared.downloads).toEqual(withPermissions.downloads);
     expect(getActiveWorkspace(cleared).tabs).toHaveLength(getActiveWorkspace(withPermissions).tabs.length);
+  });
+
+  it("clears site permissions for one origin in one profile", () => {
+    const state = {
+      ...createDefaultState(),
+      sitePermissions: [
+        { profileId: "personal", origin: "https://example.com", permission: "media", decision: "allow" as const, updatedAt: 1 },
+        { profileId: "personal", origin: "https://example.com", permission: "geolocation", decision: "block" as const, updatedAt: 2 },
+        { profileId: "work", origin: "https://example.com", permission: "media", decision: "allow" as const, updatedAt: 3 }
+      ]
+    };
+
+    const cleared = clearSitePermissionRulesForOrigin(state, "personal", "https://example.com");
+
+    expect(cleared.sitePermissions).toEqual([
+      { profileId: "work", origin: "https://example.com", permission: "media", decision: "allow", updatedAt: 3 }
+    ]);
   });
 
   it("removes single history entries and clears history only", () => {

@@ -241,6 +241,21 @@ h2 {
   font-weight: 650;
 }
 
+.site-clear-permissions {
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--control);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.site-clear-permissions:hover {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+  background: var(--panel-soft);
+}
+
 .permission-list {
   display: grid;
 }

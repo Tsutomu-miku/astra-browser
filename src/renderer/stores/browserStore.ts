@@ -10,6 +10,7 @@ import {
   closeTab,
   clearBrowsingData,
   clearSitePermissionRule,
+  clearSitePermissionRulesForOrigin,
   duplicateActiveTab,
   duplicateTab,
   fillSplitView,
@@ -106,6 +107,7 @@ export interface BrowserStore {
   closeTabsToRight: (tabId?: string) => void;
   closeTab: (tabId: string) => void;
   clearSitePermission: (profileId: string, origin: string, permission: string) => void;
+  clearSitePermissionsForOrigin: (profileId: string, origin: string) => void;
   deleteWorkspace: (workspaceId: string) => void;
   duplicateActiveTab: () => void;
   duplicateTab: (tabId: string) => void;
@@ -216,6 +218,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   closeTab: (tabId) => update(set, (state) => closeTab(state, tabId)),
   clearSitePermission: (profileId, origin, permission) =>
     update(set, (state) => clearSitePermissionRule(state, profileId, origin, permission)),
+  clearSitePermissionsForOrigin: (profileId, origin) =>
+    update(set, (state) => clearSitePermissionRulesForOrigin(state, profileId, origin)),
   deleteWorkspace: (workspaceId) => update(set, (state) => deleteWorkspace(state, workspaceId)),
   duplicateActiveTab: () => update(set, duplicateActiveTab),
   duplicateTab: (tabId) => update(set, (state) => duplicateTab(state, tabId)),

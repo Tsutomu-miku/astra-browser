@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   clearSitePermission,
+  clearSitePermissionsForOrigin,
   getOriginFromUrl,
   getPermissionLabel,
   getPermissionRule,
@@ -31,6 +32,20 @@ describe("sitePermissions", () => {
     expect(getPermissionRule(workAllowed, "work", "https://example.com", "geolocation")?.decision).toBe("allow");
     expect(clearSitePermission(workAllowed, "personal", "https://example.com", "geolocation")).toHaveLength(1);
     vi.useRealTimers();
+  });
+
+  it("clears all rules for one profile-scoped origin", () => {
+    const rules = [
+      { profileId: "personal", origin: "https://example.com", permission: "media", decision: "allow" as const, updatedAt: 1 },
+      { profileId: "personal", origin: "https://example.com", permission: "geolocation", decision: "block" as const, updatedAt: 2 },
+      { profileId: "work", origin: "https://example.com", permission: "media", decision: "allow" as const, updatedAt: 3 },
+      { profileId: "personal", origin: "https://other.example", permission: "media", decision: "block" as const, updatedAt: 4 }
+    ];
+
+    expect(clearSitePermissionsForOrigin(rules, "personal", "https://example.com")).toEqual([
+      { profileId: "work", origin: "https://example.com", permission: "media", decision: "allow", updatedAt: 3 },
+      { profileId: "personal", origin: "https://other.example", permission: "media", decision: "block", updatedAt: 4 }
+    ]);
   });
 
   it("normalizes and de-duplicates persisted rules", () => {

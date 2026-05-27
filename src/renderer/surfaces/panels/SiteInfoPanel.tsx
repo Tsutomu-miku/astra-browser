@@ -32,6 +32,15 @@ export function SiteInfoPanel({ controller }: { controller: BrowserController })
           <SummaryItem icon={<FiUser />} label="Profile" value={`${activeWorkspace.profileName} profile`} />
           <SummaryItem icon={<FiSliders />} label="Permissions" value={permissionSummary.label} />
         </div>
+        {origin && permissionSummary.totalCount > 0 && (
+          <button
+            className="site-clear-permissions"
+            type="button"
+            onClick={() => actions.clearSitePermissionsForOrigin(activeWorkspace.profileId, origin)}
+          >
+            Reset permissions for this site
+          </button>
+        )}
       </section>
       {origin ? (
         <section className="permission-list" aria-label="Site permissions">

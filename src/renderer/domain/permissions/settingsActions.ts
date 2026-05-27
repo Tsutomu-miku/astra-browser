@@ -1,5 +1,5 @@
 import { BrowserState, SitePermissionRule } from "../browser-core";
-import { clearSitePermission, upsertSitePermission } from "./sitePermissions";
+import { clearSitePermission, clearSitePermissionsForOrigin, upsertSitePermission } from "./sitePermissions";
 import { updateBrowserState } from "../browser/updateState";
 
 export function updateSettings(state: BrowserState, patch: Partial<BrowserState["settings"]>): BrowserState {
@@ -24,5 +24,11 @@ export function setSitePermission(
 export function clearSitePermissionRule(state: BrowserState, profileId: string, origin: string, permission: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     draft.sitePermissions = clearSitePermission(draft.sitePermissions, profileId, origin, permission);
+  });
+}
+
+export function clearSitePermissionRulesForOrigin(state: BrowserState, profileId: string, origin: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    draft.sitePermissions = clearSitePermissionsForOrigin(draft.sitePermissions, profileId, origin);
   });
 }

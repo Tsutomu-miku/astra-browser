@@ -33,6 +33,7 @@ export function useBrowserActions({
       peekCompactChrome();
     },
     clearSitePermission: store.clearSitePermission,
+    clearSitePermissionsForOrigin: store.clearSitePermissionsForOrigin,
     duplicateActiveTab: () => {
       store.duplicateActiveTab();
       peekCompactChrome();

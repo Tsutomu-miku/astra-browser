@@ -62,6 +62,14 @@ export function clearSitePermission(
   return rules.filter((rule) => rule.profileId !== profileId || rule.origin !== origin || rule.permission !== permission);
 }
 
+export function clearSitePermissionsForOrigin(
+  rules: SitePermissionRule[],
+  profileId: string,
+  origin: string
+): SitePermissionRule[] {
+  return rules.filter((rule) => rule.profileId !== profileId || rule.origin !== origin);
+}
+
 export function normalizeSitePermissions(
   rules: Array<Partial<SitePermissionRule> | null> | undefined
 ): SitePermissionRule[] {
