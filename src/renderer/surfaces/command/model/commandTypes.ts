@@ -1,4 +1,4 @@
-import type { SplitLayout } from "../../../stores/browserStore";
+import type { SplitLayout } from "../../../stores/browserStoreTypes";
 
 export interface Command {
   title: string;

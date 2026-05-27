@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { DownloadEntry } from "../src/renderer/domain/browser-core";
+import type { DownloadEntry } from "../src/renderer/domain/browser";
 import { getDownloadActionsState } from "../src/renderer/surfaces/panels/model/downloadActions";
 
 function download(overrides: Partial<DownloadEntry>): DownloadEntry {

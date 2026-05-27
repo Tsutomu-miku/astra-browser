@@ -1,4 +1,4 @@
-import type { BrowserState } from "../domain/browser-core";
+import type { BrowserState } from "../domain/browser";
 
 export function getActiveUrl(state: BrowserState): string {
   const workspace = state.workspaces.find((candidate) => candidate.id === state.activeWorkspaceId) ?? state.workspaces[0];

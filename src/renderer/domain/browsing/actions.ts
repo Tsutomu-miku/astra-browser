@@ -4,7 +4,7 @@ import {
   DownloadEntry,
   getReadableUrlTitle,
   normalizeAddress
-} from "../browser-core";
+} from "../browser";
 import { isInternalPageUrl } from "../browser/internalPages";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
 import { updateBrowserState } from "../browser/updateState";

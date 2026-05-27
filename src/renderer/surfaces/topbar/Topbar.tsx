@@ -15,7 +15,7 @@ import {
   FiZap
 } from "react-icons/fi";
 
-import { isEssential, isFavorite } from "../../domain/browser-core";
+import { isEssential, isFavorite } from "../../domain/browser";
 import { getUrlIdentity } from "../../domain/browser/urlIdentity";
 import { formatZoomPercent } from "../../domain/browser/zoom";
 import type { BrowserController } from "../../app/controller/types";

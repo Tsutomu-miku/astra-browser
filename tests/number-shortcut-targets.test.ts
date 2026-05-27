@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getNumberShortcutTarget } from "../src/renderer/common/shortcuts/numberShortcutTargets";
-import { createFavorite, createTab, type Workspace } from "../src/renderer/domain/browser-core";
+import { createFavorite, createTab, type Workspace } from "../src/renderer/domain/browser";
 
 function workspaceWithTabs(tabs: Workspace["tabs"]): Pick<Workspace, "tabs"> {
   return { tabs };

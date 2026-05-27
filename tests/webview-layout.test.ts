@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { openTabInSplit, openUrlInActiveWorkspace, sleepInactiveTabs, toggleSplitMode } from "../src/renderer/domain/browser-actions";
-import { createDefaultState, isInternalNewTabUrl } from "../src/renderer/domain/browser-core";
+import { openTabInSplit, openUrlInActiveWorkspace, sleepInactiveTabs, toggleSplitMode } from "../src/renderer/domain/actions";
+import { createDefaultState, isInternalNewTabUrl } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import {
   canResizeSplitLayout,

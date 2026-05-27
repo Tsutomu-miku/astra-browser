@@ -4,14 +4,14 @@ import {
   addWorkspace,
   updateWorkspace,
   updateWorkspaceById
-} from "../src/renderer/domain/browser-actions";
+} from "../src/renderer/domain/actions";
 import {
   createDefaultState,
   getBrowserPartitions,
   getWorkspacePartition,
   normalizeAddress,
   normalizeState
-} from "../src/renderer/domain/browser-core";
+} from "../src/renderer/domain/browser";
 import { getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 
 describe("workspace profiles", () => {

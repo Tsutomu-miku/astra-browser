@@ -1,8 +1,8 @@
 import type { CSSProperties, DragEvent, MouseEvent } from "react";
 import { FiColumns, FiLoader, FiMoon, FiVolumeX, FiX } from "react-icons/fi";
 
-import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../../domain/browser-core";
-import { getTabStatusBadges, type TabStatusBadge } from "../model/sidebarItemState";
+import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../../../domain/browser";
+import { getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
 
 export function SidebarSectionHeader({ count, title }: { count: number; title: string }) {
   return (

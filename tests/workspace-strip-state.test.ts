@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createTab, type Workspace } from "../src/renderer/domain/browser-core";
+import { createTab, type Workspace } from "../src/renderer/domain/browser";
 import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,

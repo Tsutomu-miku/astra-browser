@@ -1,7 +1,7 @@
 import { useMemo, type CSSProperties, type MouseEvent } from "react";
 import { FiClock, FiStar, FiZap } from "react-icons/fi";
 
-import { getReadableUrlTitle } from "../../domain/browser-core";
+import { getReadableUrlTitle } from "../../domain/browser";
 import type { BrowserController } from "../../app/controller/types";
 import { StartEntryActionHints } from "./components/StartEntryActionHints";
 import { StartSearch } from "./components/StartSearch";

@@ -13,7 +13,7 @@ const requiredFiles = [
   "src/renderer/index.html",
   "src/renderer/main.tsx",
   "src/renderer/app/App.tsx",
-  "src/renderer/domain/browser-core.ts",
+  "src/renderer/domain/browser/index.ts",
   "src/renderer/styles.css",
   "docs/PROJECT_SPEC.md"
 ];

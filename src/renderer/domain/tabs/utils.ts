@@ -1,5 +1,5 @@
-import type { BrowserTab, Workspace } from "../browser-core";
-import { getReadableUrlTitle } from "../browser-core";
+import type { BrowserTab, Workspace } from "../browser";
+import { getReadableUrlTitle } from "../browser";
 
 export type TabDropPlacement = "before" | "after";
 

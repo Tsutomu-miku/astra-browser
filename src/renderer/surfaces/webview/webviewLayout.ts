@@ -1,4 +1,4 @@
-import type { BrowserState, BrowserTab, Workspace } from "../../domain/browser-core";
+import type { BrowserState, BrowserTab, Workspace } from "../../domain/browser";
 import { getSplitTabIds } from "../../domain/tabs/splitView";
 
 export interface WebviewLayoutTab {

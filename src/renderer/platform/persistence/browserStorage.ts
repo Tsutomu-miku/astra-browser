@@ -1,4 +1,4 @@
-import { applyStartupBehavior, type BrowserState, normalizeState } from "../../domain/browser-core";
+import { applyStartupBehavior, type BrowserState, normalizeState } from "../../domain/browser";
 
 const STORAGE_KEY = "astra-browser-state";
 const LEGACY_STORAGE_KEY = "zen-style-browser-state";

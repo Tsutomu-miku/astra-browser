@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   createDefaultState,
   createFavorite
-} from "../src/renderer/domain/browser-core";
+} from "../src/renderer/domain/browser";
 import {
   openUrlInActiveWorkspace,
   recordHistory
-} from "../src/renderer/domain/browser-actions";
+} from "../src/renderer/domain/actions";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { buildOmniboxSuggestions } from "../src/renderer/common/omnibox/omniboxSuggestions";
 

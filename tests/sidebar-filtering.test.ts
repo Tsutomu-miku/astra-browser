@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createFavorite, createTab } from "../src/renderer/domain/browser-core";
+import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import { createTabGroup } from "../src/renderer/domain/tabs/groups";
 import {
   clampSidebarSearchIndex,

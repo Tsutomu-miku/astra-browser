@@ -1,5 +1,5 @@
-import type { BrowserTab } from "../../../domain/browser-core";
-import type { MoveWorkspaceTarget, TabCleanupState, TabGroupMenuState } from "../model/tabContextMenuState";
+import type { BrowserTab } from "../../../../domain/browser";
+import type { MoveWorkspaceTarget, TabCleanupState, TabGroupMenuState } from "../../model/tabContextMenuState";
 
 interface TabContextMenuProps {
   left: number;

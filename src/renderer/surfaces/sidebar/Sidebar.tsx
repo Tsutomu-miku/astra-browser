@@ -8,16 +8,16 @@ import {
 } from "react";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
-import { isEssential, isFavorite, type BrowserTab } from "../../domain/browser-core";
+import { isEssential, isFavorite, type BrowserTab } from "../../domain/browser";
 import { getGroupedTabs } from "../../domain/tabs/groups";
 import type { BrowserController } from "../../app/controller/types";
-import { SidebarAddress } from "./components/SidebarAddress";
-import { SidebarFooter } from "./components/SidebarFooter";
-import { SidebarHeader } from "./components/SidebarHeader";
-import { SidebarSearchBox } from "./components/SidebarSearchBox";
-import { SidebarSections } from "./components/SidebarSections";
-import { TabContextMenu } from "./components/TabContextMenu";
-import { WorkspaceStrip } from "./components/WorkspaceStrip";
+import { SidebarAddress } from "./components/chrome/SidebarAddress";
+import { SidebarFooter } from "./components/chrome/SidebarFooter";
+import { SidebarHeader } from "./components/chrome/SidebarHeader";
+import { SidebarSearchBox } from "./components/chrome/SidebarSearchBox";
+import { SidebarSections } from "./components/tabs/SidebarSections";
+import { TabContextMenu } from "./components/tabs/TabContextMenu";
+import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "./model/tabContextMenuState";
 import {
   clampSidebarSearchIndex,

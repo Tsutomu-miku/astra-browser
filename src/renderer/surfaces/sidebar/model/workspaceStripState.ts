@@ -1,4 +1,4 @@
-import type { Workspace } from "../../../domain/browser-core";
+import type { Workspace } from "../../../domain/browser";
 
 export const WORKSPACE_ACCENT_SWATCHES = [
   "#7dd3fc",

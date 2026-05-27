@@ -2,7 +2,7 @@ export {
   closeOtherTabs,
   closeTabsToLeft,
   closeTabsToRight
-} from "./tabs/cleanupActions";
+} from "./cleanupActions";
 export {
   addTab,
   closeActiveTab,
@@ -11,7 +11,7 @@ export {
   duplicateTab,
   restoreClosedTab,
   restoreLastClosedTab
-} from "./tabs/lifecycleActions";
+} from "./lifecycleActions";
 export {
   assignTabToGroup,
   groupActiveTab,
@@ -20,7 +20,7 @@ export {
   ungroupActiveTab,
   ungroupTab,
   updateTabGroup
-} from "./tabs/groupActions";
+} from "./groupActions";
 export {
   fillSplitView,
   focusSplitPane,
@@ -30,11 +30,11 @@ export {
   removeTabFromSplit,
   reorderTab,
   toggleSplitMode
-} from "./tabs/layoutActions";
+} from "./layoutActions";
 export {
   selectAdjacentTab,
   selectTab
-} from "./tabs/selectionActions";
+} from "./selectionActions";
 export {
   resetActiveTabZoom,
   setActiveTabZoom,
@@ -50,5 +50,5 @@ export {
   toggleTabMuted,
   toggleTabPinned,
   updateTab
-} from "./tabs/stateActions";
-export type { TabDropPlacement } from "./tabs/utils";
+} from "./stateActions";
+export type { TabDropPlacement } from "./utils";

@@ -1,4 +1,4 @@
-import type { Favorite, Workspace } from "../../domain/browser-core";
+import type { Favorite, Workspace } from "../../domain/browser";
 
 export type NumberShortcutTarget =
   | { type: "essential"; title: string; url: string }

@@ -45,11 +45,11 @@ import {
   toggleTabMuted,
   toggleTabPinned,
   toggleSplitMode
-} from "../src/renderer/domain/browser-actions";
-import { createDefaultState } from "../src/renderer/domain/browser-core";
+} from "../src/renderer/domain/actions";
+import { createDefaultState } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 
-describe("browser-actions", () => {
+describe("domain actions", () => {
   it("adds, pins, favorites, and closes tabs immutably", () => {
     const initial = createDefaultState();
     const withTab = addTab(initial);

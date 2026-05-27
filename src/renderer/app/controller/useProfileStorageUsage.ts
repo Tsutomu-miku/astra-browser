@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { getWorkspacePartition, type Workspace } from "../../domain/browser-core";
+import { getWorkspacePartition, type Workspace } from "../../domain/browser";
 import type { ProfileStorageUsage } from "../../types/electron";
 
 export interface WorkspaceStorageUsage {

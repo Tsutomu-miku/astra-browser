@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import type { BrowserTab } from "../../../domain/browser-core";
+import type { BrowserTab } from "../../../domain/browser";
 import {
   getNavigationState,
   registerReadyWebview,

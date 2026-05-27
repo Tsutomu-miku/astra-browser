@@ -9,7 +9,7 @@ import {
   FiSquare
 } from "react-icons/fi";
 
-import type { BrowserController } from "../../../app/controller/types";
+import type { BrowserController } from "../../../../app/controller/types";
 
 export function SidebarFooter({
   actions,

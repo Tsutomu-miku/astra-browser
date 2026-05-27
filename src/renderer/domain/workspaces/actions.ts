@@ -5,7 +5,7 @@ import {
   getWorkspaceHomepageUrl,
   getNextWorkspaceAccent,
   Workspace
-} from "../browser-core";
+} from "../browser";
 import { getActiveWorkspace } from "../browser/selectors";
 import { clearSplitView } from "../tabs/splitView";
 import { updateBrowserState } from "../browser/updateState";

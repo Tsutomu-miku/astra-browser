@@ -3,7 +3,7 @@ import {
   createId,
   createTab,
   getWorkspaceHomepageUrl
-} from "../browser-core";
+} from "../browser";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
 import { updateBrowserState } from "../browser/updateState";
 import { pruneEmptyTabGroups } from "./groups";

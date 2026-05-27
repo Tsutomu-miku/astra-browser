@@ -3,7 +3,7 @@ import {
   BrowserTab,
   createFavorite,
   getReadableUrlTitle
-} from "../browser-core";
+} from "../browser";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
 import { getSplitTabIds, setSplitTabIds } from "./splitView";
 import { pruneEmptyTabGroups } from "./groups";

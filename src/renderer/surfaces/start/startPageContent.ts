@@ -1,4 +1,4 @@
-import type { BrowserState, Workspace } from "../../domain/browser-core";
+import type { BrowserState, Workspace } from "../../domain/browser";
 
 const START_PAGE_TILE_LIMIT = 8;
 const START_PAGE_HISTORY_LIMIT = 5;

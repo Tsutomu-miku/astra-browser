@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
 import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2 } from "react-icons/fi";
 
-import type { Workspace } from "../../../domain/browser-core";
+import type { Workspace } from "../../../../domain/browser";
 import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
@@ -9,7 +9,7 @@ import {
   getWorkspaceInitial,
   getWorkspaceTabCount,
   getWorkspaceWheelDirection
-} from "../model/workspaceStripState";
+} from "../../model/workspaceStripState";
 
 export function WorkspaceStrip({
   activeWorkspaceId,

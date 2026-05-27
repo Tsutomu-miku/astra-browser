@@ -1,6 +1,6 @@
 import { FiExternalLink, FiFolder } from "react-icons/fi";
 
-import { formatBytes, type DownloadEntry } from "../../../domain/browser-core";
+import { formatBytes, type DownloadEntry } from "../../../domain/browser";
 import { getDownloadActionsState } from "../model/downloadActions";
 
 export function DownloadItem({ download }: { download: DownloadEntry }) {

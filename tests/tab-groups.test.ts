@@ -12,8 +12,8 @@ import {
   ungroupActiveTab,
   ungroupTab,
   updateTabGroup
-} from "../src/renderer/domain/browser-actions";
-import { createDefaultState, normalizeState } from "../src/renderer/domain/browser-core";
+} from "../src/renderer/domain/actions";
+import { createDefaultState, normalizeState } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { getGroupedTabs } from "../src/renderer/domain/tabs/groups";
 

@@ -1,4 +1,4 @@
-import type { BrowserTab } from "../domain/browser-core";
+import type { BrowserTab } from "../domain/browser";
 import type { WebviewElement } from "../types/browser-ui";
 
 export interface NavigationState {

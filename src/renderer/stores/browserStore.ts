@@ -31,8 +31,6 @@ import {
   removeHistoryEntry,
   reorderWorkspace,
   reorderTab,
-  type TabDropPlacement,
-  type WorkspaceDropPlacement,
   resetActiveTabZoom,
   restoreClosedTab,
   restoreLastClosedTab,
@@ -62,119 +60,18 @@ import {
   updateWorkspace,
   updateWorkspaceById,
   upsertDownload
-} from "../domain/browser-actions";
+} from "../domain/actions";
 import {
   getBrowserPartitions,
   getProfileIdForPartition,
   getWorkspacePartition,
-  type BrowserState,
-  type BrowserTab,
-  type DownloadEntry,
-  type Workspace
-} from "../domain/browser-core";
+  type BrowserState
+} from "../domain/browser";
 import { getPermissionRule } from "../domain/permissions/sitePermissions";
 import { loadBrowserState, saveBrowserState } from "../platform/persistence/browserStorage";
-import type { PermissionRequestEvent } from "../types/electron";
-import type { WebviewAction, WebviewElement } from "../types/browser-ui";
+import type { WebviewElement } from "../types/browser-ui";
 import { getActiveProfileId, getActiveUrl } from "./browserStoreSelectors";
-
-export type Panel = "history" | "downloads" | "settings" | "site" | null;
-export type SplitLayout = "grid" | "horizontal" | "vertical";
-
-export interface BrowserStore {
-  addressValue: string;
-  commandOpen: boolean;
-  commandQuery: string;
-  compactMode: boolean;
-  findOpen: boolean;
-  findQuery: string;
-  floatingSidebarOpen: boolean;
-  floatingToolbarOpen: boolean;
-  panel: Panel;
-  permissionRequest: PermissionRequestEvent | null;
-  sidebarCollapsed: boolean;
-  splitLayout: SplitLayout;
-  state: BrowserState;
-  glance: { title: string; url: string } | null;
-  addWorkspace: () => void;
-  assignTabToGroup: (tabId: string, groupId: string) => void;
-  clearBrowsingData: () => void;
-  clearHistory: () => void;
-  clearWorkspaceBrowsingData: (workspaceId: string) => void;
-  closeActiveTab: () => void;
-  closeOtherTabs: (tabId?: string) => void;
-  closeTabsToLeft: (tabId?: string) => void;
-  closeTabsToRight: (tabId?: string) => void;
-  closeTab: (tabId: string) => void;
-  clearSitePermission: (profileId: string, origin: string, permission: string) => void;
-  clearSitePermissionsForOrigin: (profileId: string, origin: string) => void;
-  deleteWorkspace: (workspaceId: string) => void;
-  duplicateActiveTab: () => void;
-  duplicateTab: (tabId: string) => void;
-  fillSplitView: () => void;
-  focusSplitPane: (tabId: string) => void;
-  groupActiveTab: () => void;
-  groupTab: (tabId: string) => void;
-  ingestDownload: (download: DownloadEntry) => void;
-  ingestPermissionRequest: (request: PermissionRequestEvent) => void;
-  moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
-  closeGlance: () => void;
-  openGlance: (url: string, title?: string) => void;
-  openGlanceInSplit: () => void;
-  openTabInSplit: (tabId: string) => void;
-  openUrlInSplit: (url: string, title?: string) => void;
-  navigateActiveTab: (url: string, webview?: WebviewElement) => void;
-  newTab: () => void;
-  openUrlInActiveWorkspace: (url: string, title?: string) => void;
-  recordHistory: (tabId: string, url: string) => void;
-  removeHistoryEntry: (historyId: string) => void;
-  removeTabFromSplit: (tabId: string) => void;
-  replaceBrowserState: (state: BrowserState) => void;
-  reorderTab: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
-  reorderWorkspace: (workspaceId: string, targetWorkspaceId: string, placement: WorkspaceDropPlacement) => void;
-  runWebviewAction: (action: WebviewAction, webview?: WebviewElement) => void;
-  selectAdjacentTab: (direction: 1 | -1) => void;
-  selectTab: (tabId: string) => void;
-  sleepInactiveTabs: () => void;
-  sleepTab: (tabId: string) => void;
-  resetActiveTabZoom: (webview?: WebviewElement) => void;
-  resolvePermissionRequest: (decision: "allow" | "block") => void;
-  restoreClosedTab: (closedIndex: number) => void;
-  restoreLastClosedTab: () => void;
-  setActiveTabZoom: (zoomFactor: number, webview?: WebviewElement) => void;
-  setAddressValue: (value: string) => void;
-  setCommandOpen: (open: boolean) => void;
-  setCommandQuery: (query: string) => void;
-  setFindOpen: (open: boolean) => void;
-  setFindQuery: (query: string) => void;
-  setPanel: (panel: Panel) => void;
-  setSplitLayout: (layout: SplitLayout) => void;
-  setSitePermission: (profileId: string, origin: string, permission: string, decision: "allow" | "block") => void;
-  switchWorkspace: (workspaceId: string) => void;
-  toggleActiveTabFavorite: () => void;
-  toggleActiveTabEssential: () => void;
-  toggleActiveTabMuted: (webview?: WebviewElement) => void;
-  toggleActiveTabPinned: () => void;
-  toggleCompactMode: () => void;
-  toggleFloatingSidebar: () => void;
-  toggleFloatingToolbar: () => void;
-  toggleTabGroupCollapsed: (groupId: string) => void;
-  toggleTabEssential: (tabId: string) => void;
-  toggleTabFavorite: (tabId: string) => void;
-  toggleTabMuted: (tabId: string, webview?: WebviewElement) => void;
-  toggleTabPinned: (tabId: string) => void;
-  toggleSidebar: () => void;
-  toggleSplitMode: () => void;
-  ungroupActiveTab: () => void;
-  ungroupTab: (tabId: string) => void;
-  zoomIn: (webview?: WebviewElement) => void;
-  zoomOut: (webview?: WebviewElement) => void;
-  updateSettings: (patch: Partial<BrowserState["settings"]>) => void;
-  updateTabGroup: (groupId: string, patch: Partial<Pick<Workspace["tabGroups"][number], "name" | "color">>) => void;
-  updateTab: (tabId: string, patch: Partial<BrowserTab>) => void;
-  updateWorkspaceById: (workspaceId: string, patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>) => void;
-  updateWorkspace: (patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>) => void;
-}
+import type { BrowserStore } from "./browserStoreTypes";
 
 const initialState = loadBrowserState();
 

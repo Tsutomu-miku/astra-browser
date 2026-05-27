@@ -58,7 +58,7 @@ export {
   updateTabGroup,
   updateTab,
   type TabDropPlacement
-} from "./tab-actions";
+} from "./tabs";
 export {
   addWorkspace,
   deleteWorkspace,

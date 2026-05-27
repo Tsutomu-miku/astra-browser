@@ -30,7 +30,7 @@ Electron is acceptable for this stage because it embeds Chromium and lets the pr
 - Inspect Chromium session cache and storage usage through the main process so profile diagnostics use the real browser runtime.
 - Keep startup behavior explicit: restore previous tabs by default, or reset each Space to its own configured homepage when requested.
 - Export browser state as normalized JSON and import backups through the same migration path used for local persistence.
-- Split large domain action files by responsibility and keep `browser-actions.ts` / `tab-actions.ts` as stable import barrels for store/tests.
+- Split large domain action files by responsibility. Keep `domain/actions.ts`, `domain/browser`, and `domain/tabs` as the readable public entries for store/tests.
 - Route Chromium permission requests through the isolated preload bridge and persist origin-level decisions in typed renderer state scoped by workspace profile.
 - Clear Chromium session storage/cache for all workspace profile partitions through the main process while clearing renderer-owned history, downloads, and permission rules.
 - Clear a single workspace profile through the matching Chromium partition while keeping unrelated Space history and permissions intact.

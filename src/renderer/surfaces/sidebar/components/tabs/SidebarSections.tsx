@@ -1,10 +1,10 @@
 import type { DragEvent, MouseEvent } from "react";
 import { FiLoader } from "react-icons/fi";
 
-import { getHostInitial, type BrowserTab } from "../../../domain/browser-core";
-import type { BrowserController } from "../../../app/controller/types";
-import { isSidebarUrlActive } from "../model/sidebarItemState";
-import type { SidebarFilterResult, SidebarSearchTarget } from "../sidebarFiltering";
+import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
+import type { BrowserController } from "../../../../app/controller/types";
+import { isSidebarUrlActive } from "../../model/sidebarItemState";
+import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
 import { FavoriteButton, SidebarSectionHeader, TabGroupSection, TabRow } from "./SidebarItems";
 
 export function SidebarSections({

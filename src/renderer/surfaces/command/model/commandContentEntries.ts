@@ -1,4 +1,4 @@
-import type { BrowserState, Workspace } from "../../../domain/browser-core";
+import type { BrowserState, Workspace } from "../../../domain/browser";
 import type { Command, CommandActions } from "./commandTypes";
 
 export function buildContentCommands(

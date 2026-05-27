@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultState } from "../src/renderer/domain/browser-core";
+import { createDefaultState } from "../src/renderer/domain/browser";
 import { createBrowserStateBackup, parseBrowserStateBackup } from "../src/renderer/platform/persistence/browserBackup";
 
 describe("browser backup", () => {

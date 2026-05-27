@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultState, createFavorite } from "../src/renderer/domain/browser-core";
+import { createDefaultState, createFavorite } from "../src/renderer/domain/browser";
 import { getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { getStartPageContent } from "../src/renderer/surfaces/start/startPageContent";
 

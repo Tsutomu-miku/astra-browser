@@ -3,7 +3,7 @@ import {
   getNextListIndex,
   type ListNavigationKey
 } from "../../common/navigation/listNavigation";
-import type { BrowserTab, Favorite, TabGroup } from "../../domain/browser-core";
+import type { BrowserTab, Favorite, TabGroup } from "../../domain/browser";
 
 export interface SidebarGroupEntry {
   group: TabGroup;

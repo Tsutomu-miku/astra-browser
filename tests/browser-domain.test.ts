@@ -13,9 +13,9 @@ import {
   normalizeAddress,
   normalizeState,
   applyStartupBehavior
-} from "../src/renderer/domain/browser-core";
+} from "../src/renderer/domain/browser";
 
-describe("browser-core", () => {
+describe("browser domain primitives", () => {
   it("normalizes plain domains and search queries", () => {
     expect(normalizeAddress("example.com")).toBe("https://example.com/");
     expect(normalizeAddress("zen browser", "duckduckgo")).toBe("https://duckduckgo.com/?q=zen%20browser");

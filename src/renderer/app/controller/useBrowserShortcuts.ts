@@ -2,8 +2,9 @@ import { useCallback } from "react";
 
 import { getNumberShortcutTarget } from "../../common/shortcuts/numberShortcutTargets";
 import type { ShortcutIntent } from "../../common/shortcuts/keyboardShortcuts";
-import type { Workspace } from "../../domain/browser-core";
-import { useBrowserStore, type BrowserStore, type SplitLayout } from "../../stores/browserStore";
+import type { Workspace } from "../../domain/browser";
+import { useBrowserStore } from "../../stores/browserStore";
+import type { BrowserStore, SplitLayout } from "../../stores/browserStoreTypes";
 import type { WebviewElement } from "../../types/browser-ui";
 import type { BrowserActions } from "./useBrowserActions";
 

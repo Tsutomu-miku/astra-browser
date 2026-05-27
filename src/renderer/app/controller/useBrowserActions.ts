@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { BrowserStore } from "../../stores/browserStore";
+import type { BrowserStore } from "../../stores/browserStoreTypes";
 import type { WebviewAction, WebviewElement } from "../../types/browser-ui";
 
 interface BrowserActionsOptions {

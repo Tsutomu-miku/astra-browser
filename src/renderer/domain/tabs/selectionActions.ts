@@ -1,4 +1,4 @@
-import { BrowserState } from "../browser-core";
+import { BrowserState } from "../browser";
 import { getActiveWorkspace } from "../browser/selectors";
 import { updateBrowserState } from "../browser/updateState";
 import { clearSplitView, getSplitTabIds, setSplitTabIds } from "./splitView";

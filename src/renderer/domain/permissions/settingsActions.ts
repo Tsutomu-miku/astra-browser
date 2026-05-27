@@ -1,4 +1,4 @@
-import { BrowserState, SitePermissionRule } from "../browser-core";
+import { BrowserState, SitePermissionRule } from "../browser";
 import { clearSitePermission, clearSitePermissionsForOrigin, upsertSitePermission } from "./sitePermissions";
 import { updateBrowserState } from "../browser/updateState";
 

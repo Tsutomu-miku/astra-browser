@@ -1,4 +1,4 @@
-import { BrowserState } from "../browser-core";
+import { BrowserState } from "../browser";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
 import { updateBrowserState } from "../browser/updateState";
 import { pruneEmptyTabGroups } from "./groups";

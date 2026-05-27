@@ -8,7 +8,7 @@ import {
   type PointerEvent
 } from "react";
 
-import { getWorkspacePartition, isInternalNewTabUrl } from "../../domain/browser-core";
+import { getWorkspacePartition, isInternalNewTabUrl } from "../../domain/browser";
 import type { BrowserController } from "../../app/controller/types";
 import { StartPage } from "../start/StartPage";
 import { BrowserWebview } from "./components/BrowserWebview";

@@ -1,8 +1,8 @@
 import { FiSearch } from "react-icons/fi";
 
-import type { BrowserController } from "../../../app/controller/types";
-import { useOmniboxController } from "../../../app/controller/useOmniboxController";
-import { getOmniboxActionHints } from "../../../common/omnibox/omniboxActions";
+import type { BrowserController } from "../../../../app/controller/types";
+import { useOmniboxController } from "../../../../app/controller/useOmniboxController";
+import { getOmniboxActionHints } from "../../../../common/omnibox/omniboxActions";
 
 export function SidebarAddress({ controller }: { controller: BrowserController }) {
   const { actions, addressValue, compactMode, setAddressValue, state } = controller;

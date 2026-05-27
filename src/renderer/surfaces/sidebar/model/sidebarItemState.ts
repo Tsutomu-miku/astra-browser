@@ -1,4 +1,4 @@
-import type { BrowserTab } from "../../../domain/browser-core";
+import type { BrowserTab } from "../../../domain/browser";
 
 export interface TabStatusBadge {
   id: "muted" | "sleeping" | "split";

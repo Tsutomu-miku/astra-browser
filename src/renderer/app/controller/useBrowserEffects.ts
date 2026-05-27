@@ -6,7 +6,7 @@ import {
   type DownloadEntry,
   type SitePermissionRule,
   type Workspace
-} from "../../domain/browser-core";
+} from "../../domain/browser";
 import type { PermissionRequestEvent } from "../../types/electron";
 import { resolveShortcut, type ShortcutIntent } from "../../common/shortcuts/keyboardShortcuts";
 

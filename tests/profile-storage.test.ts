@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultState, getWorkspacePartition } from "../src/renderer/domain/browser-core";
+import { createDefaultState, getWorkspacePartition } from "../src/renderer/domain/browser";
 import { createFallbackEntries, createStorageEntries } from "../src/renderer/app/controller/useProfileStorageUsage";
 
 describe("profile storage usage", () => {

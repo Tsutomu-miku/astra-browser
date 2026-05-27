@@ -21,14 +21,15 @@ src/renderer/app
 
 src/renderer/domain
   Pure browser product rules. Keep the root as a small public API surface.
-  browser-core.ts     Stable aggregate for state shape, browser primitives, and helpers
-  browser-actions.ts  Stable aggregate for store actions
-  tab-actions.ts      Stable aggregate for tab actions
-  browser/            State shape, migrations, navigation, selectors, URL identity,
-                      formatting, zoom, and immutable update helpers
+  actions.ts          Store-facing aggregate for browser, tab, Space, data, and
+                      permission mutations
+  browser/            Public browser model entry plus state shape, migrations,
+                      navigation, selectors, URL identity, formatting, zoom,
+                      and immutable update helpers
   browsing/           History, downloads, and navigation mutations
   permissions/        Site permission rules and settings mutations
-  tabs/               Tab lifecycle, grouping, split view, selection, layout, cleanup
+  tabs/               Public tab action entry plus lifecycle, grouping, split view,
+                      selection, layout, cleanup, and tab utilities
   workspaces/         Space/workspace actions and Chromium partition/profile mapping
 
 src/renderer/platform
@@ -37,6 +38,8 @@ src/renderer/platform
 
 src/renderer/stores
   Zustand state container and typed action facade
+  browserStore.ts       Runtime state implementation and side effects
+  browserStoreTypes.ts  Store contract, UI state enums, and action signatures
 
 src/renderer/surfaces
   React UI grouped by product surface
@@ -44,6 +47,10 @@ src/renderer/surfaces
   glance/        Temporary preview panel
   panels/        Settings, history, downloads, and site info drawers
   sidebar/       Spaces, tabs, Essentials, search, and tab context menu
+    components/chrome      Sidebar shell controls, footer, address, and search box
+    components/tabs        Tab lists, groups, status rows, and tab context menu
+    components/workspaces  Vertical Space strip and Space management menu
+    model                  Sidebar-only state derivation and menu/search rules
   start/         React-rendered internal new-tab/start page
   topbar/        Main navigation and address controls
   webview/       Chromium webview grid, lifecycle, and split-pane UI
@@ -62,10 +69,12 @@ tests
 - Keep `useBrowserController` as a composition layer; move action facades, shortcut
   routing, DOM focus, and side-effect subscriptions into focused controller hooks.
 - Put one-surface rules in that surface's `model` folder.
-- Put React subcomponents in that surface's `components` folder.
+- Put React subcomponents in that surface's `components` folder. When a surface grows,
+  split components by visual/behavioral area instead of keeping every component flat.
 - Put domain implementation in a business subfolder (`domain/tabs`, `domain/workspaces`,
   `domain/permissions`, etc.) instead of adding new prefixed files at `domain/` root.
-- Import cross-domain browser primitives from `domain/browser-core` in UI code; use the
-  narrower subfolder path only for local domain implementation or focused tests.
+- Import cross-domain browser primitives from `domain/browser` in UI code; import
+  store-facing mutations from `domain/actions`. Use narrower subfolder paths only
+  for local domain implementation or focused tests.
 - Put localStorage, Electron webview lifecycle, and other runtime adapters under `platform`.
 - Keep browser state transitions and invariants in `domain`.

@@ -1,4 +1,4 @@
-import type { SitePermissionRule } from "../../../domain/browser-core";
+import type { SitePermissionRule } from "../../../domain/browser";
 import type { UrlSecurity } from "../../../domain/browser/urlIdentity";
 
 export interface SitePermissionSummary {

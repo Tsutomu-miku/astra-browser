@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { FiX } from "react-icons/fi";
 
-import type { ClosedTab, HistoryEntry } from "../../domain/browser-core";
+import type { ClosedTab, HistoryEntry } from "../../domain/browser";
 import type { BrowserController } from "../../app/controller/types";
 
 export function HistoryPanel({ controller }: { controller: BrowserController }) {

@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 
-import type { BrowserStore } from "../../stores/browserStore";
+import type { BrowserStore } from "../../stores/browserStoreTypes";
 
 export function useAddressBarFocus(store: BrowserStore) {
   return useCallback(() => {

@@ -1,4 +1,4 @@
-import type { BrowserState } from "../../domain/browser-core";
+import type { BrowserState } from "../../domain/browser";
 import { getActiveWorkspace } from "../../domain/browser/selectors";
 
 export type OmniboxSuggestion =

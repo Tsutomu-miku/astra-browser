@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
 
-import { getReadableUrlTitle, type Favorite } from "../../../domain/browser-core";
+import { getReadableUrlTitle, type Favorite } from "../../../domain/browser";
 import { StartEntryActionHints } from "./StartEntryActionHints";
 
 export function StartTileGrid({

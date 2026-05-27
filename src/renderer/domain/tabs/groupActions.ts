@@ -1,4 +1,4 @@
-import { BrowserState, getReadableUrlTitle } from "../browser-core";
+import { BrowserState, getReadableUrlTitle } from "../browser";
 import type { TabGroup } from "../browser/types";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
 import { updateBrowserState } from "../browser/updateState";

@@ -1,4 +1,4 @@
-import type { BrowserTab, TabGroup, Workspace } from "../../../domain/browser-core";
+import type { BrowserTab, TabGroup, Workspace } from "../../../domain/browser";
 
 export interface MoveWorkspaceTarget {
   id: string;

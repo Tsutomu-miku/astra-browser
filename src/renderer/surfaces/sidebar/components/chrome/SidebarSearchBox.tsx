@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from "react";
 import { FiX } from "react-icons/fi";
 
-import { getSidebarSearchActionHints, type SidebarSearchTarget } from "../sidebarFiltering";
+import { getSidebarSearchActionHints, type SidebarSearchTarget } from "../../sidebarFiltering";
 
 export function SidebarSearchBox({
   activeSearchTarget,
