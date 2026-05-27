@@ -43,6 +43,8 @@ export {
   toggleActiveTabEssential,
   toggleActiveTabMuted,
   toggleActiveTabPinned,
+  toggleTabEssential,
+  toggleTabFavorite,
   toggleTabMuted,
   toggleTabPinned,
   updateTab

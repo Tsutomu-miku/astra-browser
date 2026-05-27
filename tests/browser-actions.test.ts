@@ -39,6 +39,8 @@ import {
   toggleActiveTabFavorite,
   toggleActiveTabMuted,
   toggleActiveTabPinned,
+  toggleTabEssential,
+  toggleTabFavorite,
   toggleTabMuted,
   toggleTabPinned,
   toggleSplitMode
@@ -226,6 +228,29 @@ describe("browser-actions", () => {
     expect(updatedDocs.groupId).toBeNull();
     expect(updatedDocs.isMuted).toBe(true);
     expect(workspace.tabGroups).toHaveLength(0);
+  });
+
+  it("toggles favorites and essentials for a chosen background tab", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const second = openUrlInActiveWorkspace(first, "news.example", "News");
+    const workspace = getActiveWorkspace(second);
+    const docsTab = workspace.tabs.find((tab) => tab.title === "Docs")!;
+    const addedFavorite = toggleTabFavorite(second, docsTab.id);
+    const addedEssential = toggleTabEssential(addedFavorite, docsTab.id);
+    const removedFavorite = toggleTabFavorite(addedEssential, docsTab.id);
+    const removedEssential = toggleTabEssential(removedFavorite, docsTab.id);
+
+    expect(getActiveTab(getActiveWorkspace(addedEssential)).title).toBe("News");
+    expect(getActiveWorkspace(addedFavorite).favorites.at(-1)).toMatchObject({
+      title: "Docs",
+      url: docsTab.url
+    });
+    expect(addedEssential.essentials.at(-1)).toMatchObject({
+      title: "Docs",
+      url: docsTab.url
+    });
+    expect(getActiveWorkspace(removedFavorite).favorites.some((favorite) => favorite.url === docsTab.url)).toBe(false);
+    expect(removedEssential.essentials.some((essential) => essential.url === docsTab.url)).toBe(false);
   });
 
   it("reorders tabs while preserving the active tab", () => {

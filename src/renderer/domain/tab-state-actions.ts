@@ -78,9 +78,15 @@ export function sleepInactiveTabs(state: BrowserState): BrowserState {
 }
 
 export function toggleActiveTabFavorite(state: BrowserState): BrowserState {
+  return toggleTabFavorite(state, getActiveTab(getActiveWorkspace(state)).id);
+}
+
+export function toggleTabFavorite(state: BrowserState, tabId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
-    const workspace = getActiveWorkspace(draft);
-    const tab = getActiveTab(workspace);
+    const workspace = draft.workspaces.find((candidate) => candidate.tabs.some((tab) => tab.id === tabId));
+    const tab = workspace?.tabs.find((candidate) => candidate.id === tabId);
+    if (!workspace || !tab) return;
+
     const index = workspace.favorites.findIndex((favorite) => favorite.url === tab.url);
     index >= 0
       ? workspace.favorites.splice(index, 1)
@@ -89,8 +95,14 @@ export function toggleActiveTabFavorite(state: BrowserState): BrowserState {
 }
 
 export function toggleActiveTabEssential(state: BrowserState): BrowserState {
+  return toggleTabEssential(state, getActiveTab(getActiveWorkspace(state)).id);
+}
+
+export function toggleTabEssential(state: BrowserState, tabId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
-    const tab = getActiveTab(getActiveWorkspace(draft));
+    const tab = draft.workspaces.flatMap((workspace) => workspace.tabs).find((candidate) => candidate.id === tabId);
+    if (!tab) return;
+
     const index = draft.essentials.findIndex((essential) => essential.url === tab.url);
     index >= 0
       ? draft.essentials.splice(index, 1)

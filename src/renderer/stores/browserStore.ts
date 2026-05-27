@@ -46,6 +46,8 @@ import {
   toggleActiveTabEssential,
   toggleActiveTabMuted,
   toggleActiveTabPinned,
+  toggleTabEssential,
+  toggleTabFavorite,
   toggleTabGroupCollapsed,
   toggleTabMuted,
   toggleTabPinned,
@@ -151,6 +153,8 @@ interface BrowserStore {
   toggleFloatingSidebar: () => void;
   toggleFloatingToolbar: () => void;
   toggleTabGroupCollapsed: (groupId: string) => void;
+  toggleTabEssential: (tabId: string) => void;
+  toggleTabFavorite: (tabId: string) => void;
   toggleTabMuted: (tabId: string, webview?: WebviewElement) => void;
   toggleTabPinned: (tabId: string) => void;
   toggleSidebar: () => void;
@@ -313,6 +317,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     sidebarCollapsed: state.compactMode ? state.sidebarCollapsed : true
   })),
   toggleTabGroupCollapsed: (groupId) => update(set, (state) => toggleTabGroupCollapsed(state, groupId)),
+  toggleTabEssential: (tabId) => update(set, (state) => toggleTabEssential(state, tabId)),
+  toggleTabFavorite: (tabId) => update(set, (state) => toggleTabFavorite(state, tabId)),
   toggleTabMuted: (tabId, webview) => update(set, (state) => syncMuted(toggleTabMuted(state, tabId), webview, tabId)),
   toggleTabPinned: (tabId) => update(set, (state) => toggleTabPinned(state, tabId)),
   toggleSidebar: () => set((state) => state.compactMode

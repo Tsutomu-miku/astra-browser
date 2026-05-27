@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
-import type { BrowserTab } from "../../domain/browser-core";
+import { isEssential, isFavorite, type BrowserTab } from "../../domain/browser-core";
 import { getGroupedTabs } from "../../domain/tab-groups";
 import type { BrowserController } from "../../hooks/types";
 import { SidebarAddress } from "./components/SidebarAddress";
@@ -235,8 +235,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onOpenInSplit={actions.openTabInSplit}
           onSelect={actions.selectTab}
           onSleepTab={actions.sleepTab}
+          onToggleEssential={actions.toggleTabEssential}
+          onToggleFavorite={actions.toggleTabFavorite}
           onToggleMuted={actions.toggleTabMuted}
           onTogglePinned={actions.toggleTabPinned}
+          tabIsEssential={isEssential(state, tabMenu.tab.url)}
+          tabIsFavorite={isFavorite(activeWorkspace, tabMenu.tab.url)}
         />
       )}
     </aside>

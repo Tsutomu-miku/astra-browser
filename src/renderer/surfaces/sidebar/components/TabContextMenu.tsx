@@ -9,8 +9,12 @@ interface TabContextMenuProps {
   onOpenInSplit: (tabId: string) => void;
   onSelect: (tabId: string) => void;
   onSleepTab: (tabId: string) => void;
+  onToggleEssential: (tabId: string) => void;
+  onToggleFavorite: (tabId: string) => void;
   onToggleMuted: (tabId: string) => void;
   onTogglePinned: (tabId: string) => void;
+  tabIsEssential: boolean;
+  tabIsFavorite: boolean;
   tab: BrowserTab;
   top: number;
 }
@@ -24,8 +28,12 @@ export function TabContextMenu({
   onOpenInSplit,
   onSelect,
   onSleepTab,
+  onToggleEssential,
+  onToggleFavorite,
   onToggleMuted,
   onTogglePinned,
+  tabIsEssential,
+  tabIsFavorite,
   tab,
   top
 }: TabContextMenuProps) {
@@ -46,6 +54,12 @@ export function TabContextMenu({
       <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</button>
       <button type="button" role="menuitem" onClick={() => run(() => onDuplicate(tab.id))}>Duplicate</button>
       <button type="button" role="menuitem" onClick={() => run(() => onSleepTab(tab.id))}>Sleep tab</button>
+      <button type="button" role="menuitem" onClick={() => run(() => onToggleFavorite(tab.id))}>
+        {tabIsFavorite ? "Remove favorite" : "Add favorite"}
+      </button>
+      <button type="button" role="menuitem" onClick={() => run(() => onToggleEssential(tab.id))}>
+        {tabIsEssential ? "Remove essential" : "Add essential"}
+      </button>
       <button type="button" role="menuitem" onClick={() => run(() => onTogglePinned(tab.id))}>
         {tab.isPinned ? "Unpin" : "Pin"}
       </button>

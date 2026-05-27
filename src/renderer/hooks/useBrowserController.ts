@@ -135,6 +135,8 @@ export function useBrowserController() {
     toggleFloatingSidebar: store.toggleFloatingSidebar,
     toggleFloatingToolbar: store.toggleFloatingToolbar,
     toggleTabGroupCollapsed: store.toggleTabGroupCollapsed,
+    toggleTabEssential: store.toggleTabEssential,
+    toggleTabFavorite: store.toggleTabFavorite,
     toggleTabMuted: (tabId: string) => store.toggleTabMuted(tabId, webviews.current.get(tabId)),
     toggleTabPinned: store.toggleTabPinned,
     toggleSidebar: store.toggleSidebar,

@@ -38,6 +38,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to reorder sidebar tabs by drag and drop.
 - Users must be able to move tabs between Spaces from the command palette or by dragging onto Space buttons.
 - Sidebar tab context menus must support opening, split-view targeting, duplication, pinning, muting, and closing.
+- Sidebar tab context menus must support adding or removing a tab from Space favorites and global Essentials.
 - Users must be able to close other tabs, close tabs to the left, and close tabs to the right.
 - Users must be able to cycle tabs with keyboard shortcuts or the command palette.
 

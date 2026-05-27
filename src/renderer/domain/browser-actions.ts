@@ -45,6 +45,8 @@ export {
   toggleActiveTabEssential,
   toggleActiveTabMuted,
   toggleActiveTabPinned,
+  toggleTabEssential,
+  toggleTabFavorite,
   toggleTabGroupCollapsed,
   toggleTabMuted,
   toggleTabPinned,
