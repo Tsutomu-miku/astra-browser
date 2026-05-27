@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { getWorkspacePartition, type Workspace } from "../domain/browser-core";
-import type { ProfileStorageUsage } from "../types/electron";
+import { getWorkspacePartition, type Workspace } from "../../domain/browser-core";
+import type { ProfileStorageUsage } from "../../types/electron";
 
 export interface WorkspaceStorageUsage {
   cacheBytes: number;

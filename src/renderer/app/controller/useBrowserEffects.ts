@@ -6,9 +6,9 @@ import {
   type DownloadEntry,
   type SitePermissionRule,
   type Workspace
-} from "../domain/browser-core";
-import type { PermissionRequestEvent } from "../types/electron";
-import { resolveShortcut, type ShortcutIntent } from "../common/shortcuts/keyboardShortcuts";
+} from "../../domain/browser-core";
+import type { PermissionRequestEvent } from "../../types/electron";
+import { resolveShortcut, type ShortcutIntent } from "../../common/shortcuts/keyboardShortcuts";
 
 interface BrowserEffectsOptions {
   ingestDownload: (download: DownloadEntry) => void;

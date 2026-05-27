@@ -8,11 +8,11 @@ import {
   type MouseEvent
 } from "react";
 
-import { isListNavigationKey } from "../common/navigation/listNavigation";
+import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import type { BrowserController } from "./types";
-import { getOmniboxAction } from "../common/omnibox/omniboxActions";
-import { buildOmniboxSuggestions, type OmniboxSuggestion } from "../common/omnibox/omniboxSuggestions";
-import { clampOmniboxIndex, getNextOmniboxIndex } from "../common/omnibox/omniboxSelection";
+import { getOmniboxAction } from "../../common/omnibox/omniboxActions";
+import { buildOmniboxSuggestions, type OmniboxSuggestion } from "../../common/omnibox/omniboxSuggestions";
+import { clampOmniboxIndex, getNextOmniboxIndex } from "../../common/omnibox/omniboxSelection";
 
 type OmniboxControllerInput = Pick<
   BrowserController,

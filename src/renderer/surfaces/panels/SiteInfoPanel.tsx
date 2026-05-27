@@ -8,7 +8,7 @@ import {
   getPermissionRule
 } from "../../domain/sitePermissions";
 import type { SitePermissionDecision } from "../../domain/browser-types";
-import type { BrowserController } from "../../hooks/types";
+import type { BrowserController } from "../../app/controller/types";
 
 export function SiteInfoPanel({ controller }: { controller: BrowserController }) {
   const { actions, activeTab, activeWorkspace, setPanel, state } = controller;

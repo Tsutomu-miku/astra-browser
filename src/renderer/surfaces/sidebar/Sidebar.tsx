@@ -10,7 +10,7 @@ import {
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { isEssential, isFavorite, type BrowserTab } from "../../domain/browser-core";
 import { getGroupedTabs } from "../../domain/tab-groups";
-import type { BrowserController } from "../../hooks/types";
+import type { BrowserController } from "../../app/controller/types";
 import { SidebarAddress } from "./components/SidebarAddress";
 import { SidebarFooter } from "./components/SidebarFooter";
 import { SidebarHeader } from "./components/SidebarHeader";

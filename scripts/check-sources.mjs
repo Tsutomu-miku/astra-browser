@@ -12,7 +12,7 @@ const requiredFiles = [
   "src/main/preload.js",
   "src/renderer/index.html",
   "src/renderer/main.tsx",
-  "src/renderer/App.tsx",
+  "src/renderer/app/App.tsx",
   "src/renderer/domain/browser-core.ts",
   "src/renderer/styles.css",
   "docs/PROJECT_SPEC.md"
@@ -68,7 +68,7 @@ for (const file of jsFiles) {
   }
 }
 
-const renderer = readFileSync(join(root, "src/renderer/App.tsx"), "utf8");
+const renderer = readFileSync(join(root, "src/renderer/app/App.tsx"), "utf8");
 const html = readFileSync(join(root, "src/renderer/index.html"), "utf8");
 const referencedIds = [...renderer.matchAll(/document\.querySelector\("#([^"]+)"\)/g)]
   .map((match) => match[1])

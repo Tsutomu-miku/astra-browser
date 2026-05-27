@@ -1,6 +1,6 @@
 import { FiColumns, FiGrid, FiMaximize2, FiMinus, FiMoreHorizontal, FiSidebar } from "react-icons/fi";
 
-import type { BrowserController } from "../../../hooks/types";
+import type { BrowserController } from "../../../app/controller/types";
 
 export function SplitPaneOverlay({
   controller,

@@ -1,5 +1,5 @@
 import { getPermissionLabel } from "../../domain/sitePermissions";
-import type { BrowserController } from "../../hooks/types";
+import type { BrowserController } from "../../app/controller/types";
 
 export function PermissionPrompt({ controller }: { controller: BrowserController }) {
   const { actions, permissionRequest } = controller;

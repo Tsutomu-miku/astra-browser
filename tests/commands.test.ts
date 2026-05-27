@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { closeActiveTab, openUrlInActiveWorkspace, toggleActiveTabFavorite, toggleSplitMode } from "../src/renderer/domain/browser-actions";
 import { createDefaultState } from "../src/renderer/domain/browser-core";
-import { buildCommands } from "../src/renderer/hooks/useCommands";
+import { buildCommands } from "../src/renderer/app/controller/useCommands";
 
 function commandActions() {
   return {

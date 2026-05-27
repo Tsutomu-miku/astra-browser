@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
-import { getNumberShortcutTarget } from "../common/shortcuts/numberShortcutTargets";
-import { getActiveTab, getActiveWorkspace } from "../domain/selectors";
-import { useBrowserStore, type SplitLayout } from "../stores/browserStore";
-import type { WebviewElement } from "../types/browser-ui";
+import { getNumberShortcutTarget } from "../../common/shortcuts/numberShortcutTargets";
+import { getActiveTab, getActiveWorkspace } from "../../domain/selectors";
+import { useBrowserStore, type SplitLayout } from "../../stores/browserStore";
+import type { WebviewElement } from "../../types/browser-ui";
 import { useBrowserEffects } from "./useBrowserEffects";
 import { buildCommands } from "./useCommands";
 import { useCompactChromePeek } from "./useCompactChromePeek";
-import type { ShortcutIntent } from "../common/shortcuts/keyboardShortcuts";
+import type { ShortcutIntent } from "../../common/shortcuts/keyboardShortcuts";
 
 export function useBrowserController() {
   const store = useBrowserStore();

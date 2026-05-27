@@ -7,7 +7,7 @@ import {
   FiSidebar
 } from "react-icons/fi";
 
-import type { BrowserController } from "../../../hooks/types";
+import type { BrowserController } from "../../../app/controller/types";
 
 export function SidebarFooter({
   actions,

@@ -1,6 +1,6 @@
 import { FiX } from "react-icons/fi";
 
-import type { BrowserController } from "../../hooks/types";
+import type { BrowserController } from "../../app/controller/types";
 import { DownloadItem } from "./components/DownloadItem";
 
 export function DownloadsPanel({ controller }: { controller: BrowserController }) {

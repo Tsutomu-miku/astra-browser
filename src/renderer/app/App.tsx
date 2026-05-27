@@ -1,13 +1,13 @@
-import { useBrowserController } from "./hooks/useBrowserController";
-import { CommandPalette } from "./surfaces/command/CommandPalette";
-import { FindBar } from "./surfaces/find/FindBar";
-import { GlancePanel } from "./surfaces/glance/GlancePanel";
-import { DownloadsPanel, HistoryPanel, SettingsPanel } from "./surfaces/panels/Panels";
-import { SiteInfoPanel } from "./surfaces/panels/SiteInfoPanel";
-import { PermissionPrompt } from "./surfaces/permissions/PermissionPrompt";
-import { Sidebar } from "./surfaces/sidebar/Sidebar";
-import { Topbar } from "./surfaces/topbar/Topbar";
-import { WebviewGrid } from "./surfaces/webview/WebviewGrid";
+import { useBrowserController } from "./controller/useBrowserController";
+import { CommandPalette } from "../surfaces/command/CommandPalette";
+import { FindBar } from "../surfaces/find/FindBar";
+import { GlancePanel } from "../surfaces/glance/GlancePanel";
+import { DownloadsPanel, HistoryPanel, SettingsPanel } from "../surfaces/panels/Panels";
+import { SiteInfoPanel } from "../surfaces/panels/SiteInfoPanel";
+import { PermissionPrompt } from "../surfaces/permissions/PermissionPrompt";
+import { Sidebar } from "../surfaces/sidebar/Sidebar";
+import { Topbar } from "../surfaces/topbar/Topbar";
+import { WebviewGrid } from "../surfaces/webview/WebviewGrid";
 
 export function App() {
   const controller = useBrowserController();

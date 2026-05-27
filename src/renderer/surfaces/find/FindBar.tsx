@@ -1,7 +1,7 @@
 import { KeyboardEvent } from "react";
 import { FiChevronDown, FiChevronUp, FiX } from "react-icons/fi";
 
-import type { BrowserController } from "../../hooks/types";
+import type { BrowserController } from "../../app/controller/types";
 
 export function FindBar({ controller }: { controller: BrowserController }) {
   const { actions, findQuery } = controller;

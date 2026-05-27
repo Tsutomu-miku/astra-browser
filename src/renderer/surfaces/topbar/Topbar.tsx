@@ -18,8 +18,8 @@ import {
 import { isEssential, isFavorite } from "../../domain/browser-core";
 import { getUrlIdentity } from "../../domain/urlIdentity";
 import { formatZoomPercent } from "../../domain/zoom";
-import type { BrowserController } from "../../hooks/types";
-import { useOmniboxController } from "../../hooks/useOmniboxController";
+import type { BrowserController } from "../../app/controller/types";
+import { useOmniboxController } from "../../app/controller/useOmniboxController";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWebview, activeWorkspace, actions, addressValue, setAddressValue, setPanel, state } = controller;

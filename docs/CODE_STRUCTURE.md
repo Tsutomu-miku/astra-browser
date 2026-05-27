@@ -12,13 +12,15 @@ src/renderer/common
   omnibox/       Address/start-page suggestion and submit rules
   shortcuts/     Keyboard parsing and shared shortcut target ordering
 
+src/renderer/app
+  React application composition and stateful renderer orchestration
+  App.tsx        Browser shell layout and surface mounting
+  controller/    React hooks that bind store state, side effects, commands, omnibox,
+                 compact chrome behavior, and Electron event subscriptions
+
 src/renderer/domain
   Pure browser product rules: state shape, migrations, tabs, workspaces, history,
   permissions, navigation, split state, selectors, formatting
-
-src/renderer/hooks
-  React hooks only: controller composition, effects, compact chrome peeking,
-  omnibox state wiring, profile storage polling
 
 src/renderer/platform
   Renderer-side adapters for APIs outside pure product rules
@@ -47,8 +49,8 @@ tests
 ## Placement Rules
 
 - Put reusable UI interaction logic in `common` when at least two surfaces use it.
+- Put app-level React orchestration in `app/controller`.
 - Put one-surface rules in that surface's `model` folder.
 - Put React subcomponents in that surface's `components` folder.
-- Keep `hooks` for functions that call React hooks.
 - Put localStorage, Electron webview lifecycle, and other runtime adapters under `platform`.
 - Keep browser state transitions and invariants in `domain`.

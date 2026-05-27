@@ -2,7 +2,7 @@ import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
-import type { BrowserController } from "../../hooks/types";
+import type { BrowserController } from "../../app/controller/types";
 import { getCommandRunner } from "./model/commandIntent";
 import { getVisibleCommands } from "./model/commandSearch";
 import {

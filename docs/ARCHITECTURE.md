@@ -14,11 +14,11 @@ The project is split around runtime boundaries rather than feature folders.
 
 `src/renderer/stores` owns renderer state via Zustand. Store actions delegate browser mutations to domain actions, persist browser state, answer permission requests, and expose UI state such as panels, command palette state, and address input.
 
-`src/renderer/hooks` is React-only UI orchestration. It derives active workspace/tab view models, wires shared command and omnibox models into components, connects webview refs, and subscribes to Electron bridge events. Files in this folder should call React hooks or compose hook state; pure helpers belong in `common`, `domain`, `platform`, or the owning surface's `model` folder.
+`src/renderer/app` is React-only application orchestration. `App.tsx` mounts the browser surfaces, while `app/controller` derives active workspace/tab view models, wires shared command and omnibox models into components, connects webview refs, and subscribes to Electron bridge events. Files in this folder should call React hooks or compose hook state; pure helpers belong in `common`, `domain`, `platform`, or the owning surface's `model` folder.
 
 `src/renderer/common` contains reusable renderer interaction helpers that are not browser state rules and are not owned by one surface. List navigation, the shared omnibox suggestion/action model, keyboard shortcut parsing, shared shortcut target ordering, and similar cross-surface UI utilities belong here so command palette, omnibox, sidebar, and future panels do not duplicate the same behavior.
 
-`src/renderer/platform` contains renderer-side adapters for runtime APIs that are outside pure browser state rules. Webview lifecycle registration, localStorage persistence, and browser state import/export helpers live here instead of in React hooks or domain modules.
+`src/renderer/platform` contains renderer-side adapters for runtime APIs that are outside pure browser state rules. Webview lifecycle registration, localStorage persistence, and browser state import/export helpers live here instead of in app controller hooks or domain modules.
 
 `src/renderer/surfaces` contains React browser surfaces such as the sidebar, topbar, command palette, panels, permission prompts, find bar, and webview grid. Surface-level subcomponents live under `components`, while one-surface pure rules live under `model`. Extraction should clarify ownership rather than chase a line count.
 

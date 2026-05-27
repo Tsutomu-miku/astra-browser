@@ -15,7 +15,7 @@ Electron is acceptable for this stage because it embeds Chromium and lets the pr
 - Keep browser-product rules in framework-independent domain modules.
 - Keep React components presentational where possible.
 - Keep cross-surface UI interaction helpers in `src/renderer/common` instead of tying them to a single hook or surface.
-- Keep `src/renderer/hooks` for React hooks only; move pure helpers into `common`, `domain`, `platform`, or the owning surface's `model` folder.
+- Keep app-level React hooks in `src/renderer/app/controller`; move pure helpers into `common`, `domain`, `platform`, or the owning surface's `model` folder.
 - Use Zustand for renderer state management.
 - Keep state transitions in typed store actions and domain actions, not scattered across component markup.
 - Keep address-bar suggestion ranking in reusable, tested logic rather than component-only filtering.
@@ -64,10 +64,10 @@ The project should follow the broad layering used by mature Electron/React proje
 
 - `src/main`: Electron host process, native window lifecycle, Chromium/session integrations.
 - `src/main/preload.js`: narrow isolated bridge from Electron to renderer.
-- `src/renderer/common`: reusable renderer helpers shared across surfaces and hooks, such as list navigation, omnibox suggestions/actions, shortcut parsing, and shortcut target ordering.
+- `src/renderer/common`: reusable renderer helpers shared across surfaces and app controller hooks, such as list navigation, omnibox suggestions/actions, shortcut parsing, and shortcut target ordering.
 - `src/renderer/domain`: pure browser state, migration, URL, search, history, permissions, focused action modules, selectors, and formatting rules.
 - `src/renderer/stores`: Zustand stores and typed renderer state actions.
-- `src/renderer/hooks`: stateful React orchestration, side effects, and view-model glue.
+- `src/renderer/app`: React app composition and stateful controller orchestration.
 - `src/renderer/platform`: renderer adapters for runtime boundaries such as Electron webview lifecycle and localStorage persistence.
 - `src/renderer/surfaces`: UI grouped by browser surface such as sidebar, topbar, panels, command palette, permissions, find, and webview.
 - `src/renderer/surfaces/*/components`: subcomponents owned by a surface.
@@ -100,7 +100,7 @@ Prefer keeping code together when:
 
 - React components receive data and callbacks through props.
 - Zustand stores own renderer state and expose typed actions.
-- Hooks derive view models, connect webview refs, and subscribe to global side effects.
+- App controller hooks derive view models, connect webview refs, and subscribe to global side effects.
 - Domain modules must not import React, Electron, DOM APIs, or localStorage.
 - Components must not directly mutate browser state objects.
 - Webview lifecycle logic belongs in a focused component or hook.

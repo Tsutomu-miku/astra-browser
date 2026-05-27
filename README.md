@@ -10,7 +10,7 @@ This repository is an active prototype. The current focus is matching Zen-style 
 
 - [Requirements](docs/REQUIREMENTS.md): product scope, functional requirements, keyboard expectations, and quality requirements.
 - [Project spec](docs/PROJECT_SPEC.md): product goal, engineering goals, reference structure, and file split heuristics.
-- [Architecture](docs/ARCHITECTURE.md): runtime boundaries between Electron main, preload, renderer state, hooks, surfaces, and domain logic.
+- [Architecture](docs/ARCHITECTURE.md): runtime boundaries between Electron main, preload, renderer app orchestration, surfaces, state, and domain logic.
 - [Code structure](docs/CODE_STRUCTURE.md): current directory ownership map for day-to-day navigation.
 
 ## Highlights
@@ -60,9 +60,9 @@ Tags matching the package version, such as `v0.1.0`, trigger the release workflo
 
 ```text
 src/main              Electron host process and Chromium session integration
+src/renderer/app      React app shell, controller hooks, and side-effect orchestration
 src/renderer/common   Cross-surface interaction models and shared renderer helpers
 src/renderer/domain   Testable browser state, navigation, history, profile, and tab rules
-src/renderer/hooks    React-only controller hooks and side-effect subscriptions
 src/renderer/platform Renderer adapters for browser runtime and persistence boundaries
 src/renderer/stores   Zustand renderer state and typed actions
 src/renderer/surfaces React browser UI grouped by product surface

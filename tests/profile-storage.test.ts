@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createDefaultState, getWorkspacePartition } from "../src/renderer/domain/browser-core";
-import { createFallbackEntries, createStorageEntries } from "../src/renderer/hooks/useProfileStorageUsage";
+import { createFallbackEntries, createStorageEntries } from "../src/renderer/app/controller/useProfileStorageUsage";
 
 describe("profile storage usage", () => {
   it("maps Electron partition usage back to workspaces", () => {

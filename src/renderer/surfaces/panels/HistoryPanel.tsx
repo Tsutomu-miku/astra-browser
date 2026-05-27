@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { FiX } from "react-icons/fi";
 
 import type { ClosedTab, HistoryEntry } from "../../domain/browser-core";
-import type { BrowserController } from "../../hooks/types";
+import type { BrowserController } from "../../app/controller/types";
 
 export function HistoryPanel({ controller }: { controller: BrowserController }) {
   const { actions, activeWorkspace, setPanel, state } = controller;

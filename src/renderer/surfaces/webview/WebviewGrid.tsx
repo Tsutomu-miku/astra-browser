@@ -9,7 +9,7 @@ import {
 } from "react";
 
 import { getWorkspacePartition, isInternalNewTabUrl } from "../../domain/browser-core";
-import type { BrowserController } from "../../hooks/types";
+import type { BrowserController } from "../../app/controller/types";
 import { StartPage } from "../start/StartPage";
 import { BrowserWebview } from "./components/BrowserWebview";
 import { SplitPaneOverlay } from "./components/SplitPaneOverlay";

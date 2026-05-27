@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { getReadableUrlTitle, getWorkspacePartition } from "../../domain/browser-core";
-import type { BrowserController } from "../../hooks/types";
+import type { BrowserController } from "../../app/controller/types";
 import type { WebviewElement } from "../../types/browser-ui";
 import { GlanceHeader, type GlanceNavigationState } from "./components/GlanceHeader";
 import { GlanceWebview } from "./components/GlanceWebview";
