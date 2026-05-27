@@ -104,7 +104,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The command palette must include entries for open tabs, Essentials, favorites, history, and recently closed tabs.
 - The command palette must directly open URLs or search typed queries.
 - Exact command-name matches must execute ahead of search fallback.
-- Command palette selection must support Arrow, Home, End, Enter, and Escape.
+- Command palette selection must support Arrow, Home, End, Enter, Alt+Enter preview, Shift+Enter split opening, and Escape.
 
 ### New Tab And Start Surface
 

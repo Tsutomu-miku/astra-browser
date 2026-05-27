@@ -3,6 +3,7 @@ import { FiX } from "react-icons/fi";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import type { BrowserController } from "../../hooks/types";
+import { getCommandRunner } from "../../hooks/commandIntent";
 import { getVisibleCommands } from "../../hooks/commandSearch";
 import {
   clampCommandIndex,
@@ -11,9 +12,10 @@ import {
 
 export function CommandPalette({ controller }: { controller: BrowserController }) {
   const { actions, commandQuery, commands, setCommandOpen, setCommandQuery } = controller;
-  const visibleCommands = getVisibleCommands(commands, commandQuery, (query) =>
-    actions.openUrlInActiveWorkspace(query, query)
-  );
+  const visibleCommands = getVisibleCommands(commands, commandQuery, {
+    open: (query) => actions.openUrlInActiveWorkspace(query, query),
+    openInSplit: (query) => actions.openUrlInSplit(query, query)
+  });
   const displayedCommands = useMemo(() => visibleCommands.slice(0, 12), [visibleCommands]);
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
   const activeIndex = clampCommandIndex(activeCommandIndex, displayedCommands.length);
@@ -35,7 +37,10 @@ export function CommandPalette({ controller }: { controller: BrowserController }
     } else if (event.key === "Enter" && displayedCommands[activeIndex]) {
       event.preventDefault();
       setCommandOpen(false);
-      displayedCommands[activeIndex].run();
+      getCommandRunner(displayedCommands[activeIndex], {
+        altKey: event.altKey,
+        shiftKey: event.shiftKey
+      })();
     } else if (event.key === "Escape") {
       event.preventDefault();
       setCommandOpen(false);
@@ -71,9 +76,12 @@ export function CommandPalette({ controller }: { controller: BrowserController }
               ref={(element) => {
                 itemRefs.current[index] = element;
               }}
-              onClick={() => {
+              onClick={(event) => {
                 setCommandOpen(false);
-                command.run();
+                getCommandRunner(command, {
+                  altKey: event.altKey,
+                  shiftKey: event.shiftKey
+                })();
               }}
               onMouseEnter={() => setActiveCommandIndex(index)}
             >

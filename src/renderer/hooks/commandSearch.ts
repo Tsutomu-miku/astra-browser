@@ -1,9 +1,14 @@
 import type { Command } from "./commandTypes";
 
+export interface QueryCommandActions {
+  open: (query: string) => void;
+  openInSplit: (query: string) => void;
+}
+
 export function getVisibleCommands(
   commands: Command[],
   query: string,
-  openQuery: (query: string) => void
+  queryActions: QueryCommandActions
 ): Command[] {
   const normalizedQuery = query.trim().toLowerCase();
   const filteredCommands = normalizedQuery
@@ -17,7 +22,8 @@ export function getVisibleCommands(
   const queryCommand = {
     title: getQueryTitle(query),
     subtitle: isLikelyUrl(query) ? "Open address" : "Search with selected engine",
-    run: () => openQuery(query.trim())
+    run: () => queryActions.open(query.trim()),
+    runInSplit: () => queryActions.openInSplit(query.trim())
   };
 
   if (isLikelyUrl(query) || !hasStrongCommandMatch(filteredCommands, normalizedQuery)) {

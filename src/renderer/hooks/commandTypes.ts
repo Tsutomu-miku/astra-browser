@@ -4,6 +4,8 @@ export interface Command {
   title: string;
   subtitle: string;
   run: () => void;
+  runInSplit?: () => void;
+  runPreview?: () => void;
 }
 
 export interface CommandActions {
@@ -24,6 +26,7 @@ export interface CommandActions {
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
   openGlance: (url: string, title?: string) => void;
   openTabInSplit: (tabId: string) => void;
+  openUrlInSplit: (url: string, title?: string) => void;
   newTab: () => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
   restoreClosedTab: (closedIndex: number) => void;

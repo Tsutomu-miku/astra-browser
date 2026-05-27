@@ -23,6 +23,7 @@ function commandActions() {
     moveTabToWorkspace: vi.fn(),
     openGlance: vi.fn(),
     openTabInSplit: vi.fn(),
+    openUrlInSplit: vi.fn(),
     newTab: vi.fn(),
     openUrlInActiveWorkspace: vi.fn(),
     restoreClosedTab: vi.fn(),
