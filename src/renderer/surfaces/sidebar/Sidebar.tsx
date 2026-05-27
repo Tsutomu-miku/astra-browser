@@ -189,9 +189,11 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         onDragOver={handleWorkspaceDragOver}
         onDragStart={handleWorkspaceDragStart}
         onDrop={handleWorkspaceDrop}
+        onDeleteWorkspace={actions.deleteWorkspace}
         onNewWorkspace={actions.addWorkspace}
         onSelect={actions.switchWorkspace}
         onToggleSidebar={actions.toggleSidebar}
+        onUpdateWorkspace={actions.updateWorkspaceById}
       />
 
       <section className="tab-stack">

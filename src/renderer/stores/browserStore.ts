@@ -59,6 +59,7 @@ import {
   updateSettings,
   updateTab,
   updateWorkspace,
+  updateWorkspaceById,
   upsertDownload
 } from "../domain/browser-actions";
 import {
@@ -169,6 +170,7 @@ interface BrowserStore {
   updateSettings: (patch: Partial<BrowserState["settings"]>) => void;
   updateTabGroup: (groupId: string, patch: Partial<Pick<Workspace["tabGroups"][number], "name" | "color">>) => void;
   updateTab: (tabId: string, patch: Partial<BrowserTab>) => void;
+  updateWorkspaceById: (workspaceId: string, patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>) => void;
   updateWorkspace: (patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>) => void;
 }
 
@@ -335,6 +337,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   updateSettings: (patch) => update(set, (state) => updateSettings(state, patch)),
   updateTabGroup: (groupId, patch) => update(set, (state) => updateTabGroup(state, groupId, patch)),
   updateTab: (tabId, patch) => update(set, (state) => updateTab(state, tabId, patch)),
+  updateWorkspaceById: (workspaceId, patch) => update(set, (state) => updateWorkspaceById(state, workspaceId, patch)),
   updateWorkspace: (patch) => update(set, (state) => updateWorkspace(state, patch)),
   zoomIn: (webview) => update(set, (state) => syncZoom(stepActiveTabZoom(state, 1), webview)),
   zoomOut: (webview) => update(set, (state) => syncZoom(stepActiveTabZoom(state, -1), webview))

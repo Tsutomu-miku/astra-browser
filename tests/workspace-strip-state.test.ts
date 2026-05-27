@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createTab, type Workspace } from "../src/renderer/domain/browser-core";
 import {
+  WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
   getWorkspaceButtonLabel,
   getWorkspaceInitial,
@@ -47,5 +48,11 @@ describe("workspace strip state", () => {
     expect(getAdjacentWorkspaceId(workspaces, "personal", -1)).toBe("later");
     expect(getAdjacentWorkspaceId(workspaces, "later", 1)).toBe("personal");
     expect(getAdjacentWorkspaceId([{ id: "only" }], "only", 1)).toBeNull();
+  });
+
+  it("offers a compact accent swatch set for direct Space styling", () => {
+    expect(WORKSPACE_ACCENT_SWATCHES).toContain("#7dd3fc");
+    expect(WORKSPACE_ACCENT_SWATCHES).toContain("#f0abfc");
+    expect(new Set(WORKSPACE_ACCENT_SWATCHES).size).toBe(WORKSPACE_ACCENT_SWATCHES.length);
   });
 });

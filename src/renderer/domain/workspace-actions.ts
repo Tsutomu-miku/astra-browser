@@ -82,8 +82,18 @@ export function updateWorkspace(
   state: BrowserState,
   patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>
 ): BrowserState {
+  return updateWorkspaceById(state, state.activeWorkspaceId, patch);
+}
+
+export function updateWorkspaceById(
+  state: BrowserState,
+  workspaceId: string,
+  patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>
+): BrowserState {
   return updateBrowserState(state, (draft) => {
-    const workspace = getActiveWorkspace(draft);
+    const workspace = draft.workspaces.find((candidate) => candidate.id === workspaceId);
+    if (!workspace) return;
+
     Object.assign(workspace, patch);
     if (patch.homepage !== undefined) {
       workspace.homepage = getWorkspaceHomepageUrl(draft, workspace);

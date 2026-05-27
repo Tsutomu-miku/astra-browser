@@ -63,6 +63,7 @@ export {
   deleteWorkspace,
   reorderWorkspace,
   switchWorkspace,
+  updateWorkspaceById,
   updateWorkspace,
   type WorkspaceDropPlacement
 } from "./workspace-actions";

@@ -147,6 +147,7 @@ export function useBrowserController() {
     updateSettings: store.updateSettings,
     updateTabGroup: store.updateTabGroup,
     updateTab: store.updateTab,
+    updateWorkspaceById: store.updateWorkspaceById,
     updateWorkspace: store.updateWorkspace,
     zoomIn: () => store.zoomIn(activeWebview),
     zoomOut: () => store.zoomOut(activeWebview)

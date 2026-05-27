@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   addWorkspace,
-  updateWorkspace
+  updateWorkspace,
+  updateWorkspaceById
 } from "../src/renderer/domain/browser-actions";
 import {
   createDefaultState,
@@ -63,6 +64,16 @@ describe("workspace profiles", () => {
 
     expect(workspace.profileName).toBe("Research");
     expect(getWorkspacePartition(workspace)).toBe(before);
+  });
+
+  it("updates a workspace by id without switching spaces", () => {
+    const state = createDefaultState();
+    const updated = updateWorkspaceById(state, "work", { name: "Deep Work", accent: "#123456" });
+    const workspace = updated.workspaces.find((candidate) => candidate.id === "work")!;
+
+    expect(updated.activeWorkspaceId).toBe(state.activeWorkspaceId);
+    expect(workspace.name).toBe("Deep Work");
+    expect(workspace.accent).toBe("#123456");
   });
 
   it("collects unique Chromium partitions for browser-data clearing", () => {

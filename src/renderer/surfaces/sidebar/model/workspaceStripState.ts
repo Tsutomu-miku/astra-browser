@@ -1,5 +1,14 @@
 import type { Workspace } from "../../../domain/browser-core";
 
+export const WORKSPACE_ACCENT_SWATCHES = [
+  "#7dd3fc",
+  "#f0abfc",
+  "#86d39d",
+  "#facc15",
+  "#fb7185",
+  "#a78bfa"
+] as const;
+
 export function getWorkspaceInitial(workspace: Pick<Workspace, "name">): string {
   return getWorkspaceDisplayName(workspace).slice(0, 1).toUpperCase();
 }
