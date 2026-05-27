@@ -8,6 +8,12 @@ export interface StartOpenModifiers {
   shiftKey: boolean;
 }
 
+export interface StartOpenActionHint {
+  id: "preview" | "split";
+  label: string;
+  modifier: string;
+}
+
 export function getStartOpenIntent(
   url: string,
   title: string | undefined,
@@ -22,4 +28,11 @@ export function getStartOpenIntent(
   }
 
   return { title, type: "open", url };
+}
+
+export function getStartOpenActionHints(): StartOpenActionHint[] {
+  return [
+    { id: "preview", modifier: "Alt", label: "Preview" },
+    { id: "split", modifier: "Shift", label: "Split" }
+  ];
 }

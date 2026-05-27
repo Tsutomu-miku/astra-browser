@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getStartOpenIntent } from "../src/renderer/surfaces/start/startOpenIntent";
+import { getStartOpenActionHints, getStartOpenIntent } from "../src/renderer/surfaces/start/startOpenIntent";
 
 describe("getStartOpenIntent", () => {
   it("uses normal, preview, and split modifiers for start page entries", () => {
@@ -30,5 +30,12 @@ describe("getStartOpenIntent", () => {
       type: "split",
       url: "https://docs.example"
     });
+  });
+
+  it("exposes quick-entry action hints", () => {
+    expect(getStartOpenActionHints()).toEqual([
+      { id: "preview", modifier: "Alt", label: "Preview" },
+      { id: "split", modifier: "Shift", label: "Split" }
+    ]);
   });
 });

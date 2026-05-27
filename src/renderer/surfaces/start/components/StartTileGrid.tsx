@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 
 import { getReadableUrlTitle, type Favorite } from "../../../domain/browser-core";
+import { StartEntryActionHints } from "./StartEntryActionHints";
 
 export function StartTileGrid({
   emptyText,
@@ -25,6 +26,7 @@ export function StartTileGrid({
         >
           <span className="start-tile-icon">{getReadableUrlTitle(item.url).slice(0, 1).toUpperCase()}</span>
           <span className="start-tile-title">{item.title}</span>
+          <StartEntryActionHints />
         </button>
       ))}
     </div>

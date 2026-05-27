@@ -208,6 +208,7 @@
 
 .start-tile,
 .start-history-item {
+  position: relative;
   min-width: 0;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -221,12 +222,14 @@
   grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  padding: 10px;
+  padding: 10px 10px 30px;
   text-align: left;
 }
 
 .start-tile:hover,
-.start-history-item:hover {
+.start-tile:focus-visible,
+.start-history-item:hover,
+.start-history-item:focus-visible {
   border-color: color-mix(in srgb, var(--start-accent) 35%, transparent);
   background: var(--panel-soft);
 }
@@ -260,8 +263,68 @@
   grid-template-columns: minmax(0, 1fr) minmax(120px, 220px);
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 10px 118px 10px 12px;
   text-align: left;
+}
+
+.start-entry-action-hints {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(4px);
+  transition:
+    opacity 130ms ease,
+    transform 130ms ease;
+}
+
+.start-tile:hover .start-entry-action-hints,
+.start-tile:focus-visible .start-entry-action-hints,
+.start-history-item:hover .start-entry-action-hints,
+.start-history-item:focus-visible .start-entry-action-hints {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.start-entry-action-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.start-entry-action-hint kbd {
+  min-width: 28px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom-color: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.start-tile .start-entry-action-hints {
+  top: auto;
+  bottom: 7px;
+  transform: translateX(4px);
+}
+
+.start-tile:hover .start-entry-action-hints,
+.start-tile:focus-visible .start-entry-action-hints {
+  transform: translateX(0);
 }
 
 .start-history-item small,

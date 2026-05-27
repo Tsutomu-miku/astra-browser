@@ -3,6 +3,7 @@ import { FiClock, FiStar, FiZap } from "react-icons/fi";
 
 import { getReadableUrlTitle } from "../../domain/browser-core";
 import type { BrowserController } from "../../app/controller/types";
+import { StartEntryActionHints } from "./components/StartEntryActionHints";
 import { StartSearch } from "./components/StartSearch";
 import { StartTileGrid } from "./components/StartTileGrid";
 import { getStartOpenIntent } from "./startOpenIntent";
@@ -91,6 +92,7 @@ export function StartPage({
               >
                 <span>{entry.title}</span>
                 <small>{getReadableUrlTitle(entry.url)}</small>
+                <StartEntryActionHints />
               </button>
             ))}
           </div>
