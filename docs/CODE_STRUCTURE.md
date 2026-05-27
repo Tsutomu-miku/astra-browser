@@ -15,7 +15,8 @@ src/renderer/common
 src/renderer/app
   React application composition and stateful renderer orchestration
   App.tsx        Browser shell layout and surface mounting
-  controller/    React hooks that bind store state, side effects, commands, omnibox,
+  controller/    Thin browser controller composition plus focused hooks for address
+                 focus, action facades, shortcut routing, commands, omnibox,
                  compact chrome behavior, and Electron event subscriptions
 
 src/renderer/domain
@@ -58,6 +59,8 @@ tests
 
 - Put reusable UI interaction logic in `common` when at least two surfaces use it.
 - Put app-level React orchestration in `app/controller`.
+- Keep `useBrowserController` as a composition layer; move action facades, shortcut
+  routing, DOM focus, and side-effect subscriptions into focused controller hooks.
 - Put one-surface rules in that surface's `model` folder.
 - Put React subcomponents in that surface's `components` folder.
 - Put domain implementation in a business subfolder (`domain/tabs`, `domain/workspaces`,

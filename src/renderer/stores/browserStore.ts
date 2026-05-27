@@ -80,7 +80,7 @@ import { getActiveProfileId, getActiveUrl } from "./browserStoreSelectors";
 export type Panel = "history" | "downloads" | "settings" | "site" | null;
 export type SplitLayout = "grid" | "horizontal" | "vertical";
 
-interface BrowserStore {
+export interface BrowserStore {
   addressValue: string;
   commandOpen: boolean;
   commandQuery: string;

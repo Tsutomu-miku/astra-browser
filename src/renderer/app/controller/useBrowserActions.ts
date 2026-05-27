@@ -1,0 +1,149 @@
+import { useMemo } from "react";
+
+import type { BrowserStore } from "../../stores/browserStore";
+import type { WebviewAction, WebviewElement } from "../../types/browser-ui";
+
+interface BrowserActionsOptions {
+  activeWebview: WebviewElement | undefined;
+  focusAddressBar: () => void;
+  peekCompactChrome: () => void;
+  store: BrowserStore;
+  webviews: { current: Map<string, WebviewElement> };
+}
+
+export function useBrowserActions({
+  activeWebview,
+  focusAddressBar,
+  peekCompactChrome,
+  store,
+  webviews
+}: BrowserActionsOptions) {
+  return useMemo(() => ({
+    addWorkspace: store.addWorkspace,
+    assignTabToGroup: store.assignTabToGroup,
+    clearBrowsingData: store.clearBrowsingData,
+    clearHistory: store.clearHistory,
+    clearWorkspaceBrowsingData: store.clearWorkspaceBrowsingData,
+    closeActiveTab: () => {
+      store.closeActiveTab();
+      peekCompactChrome();
+    },
+    closeTab: (tabId: string) => {
+      store.closeTab(tabId);
+      peekCompactChrome();
+    },
+    clearSitePermission: store.clearSitePermission,
+    duplicateActiveTab: () => {
+      store.duplicateActiveTab();
+      peekCompactChrome();
+    },
+    fillSplitView: store.fillSplitView,
+    groupActiveTab: store.groupActiveTab,
+    groupTab: store.groupTab,
+    closeOtherTabs: store.closeOtherTabs,
+    closeTabsToLeft: store.closeTabsToLeft,
+    closeTabsToRight: store.closeTabsToRight,
+    deleteWorkspace: store.deleteWorkspace,
+    focusAddressBar,
+    peekCompactChrome,
+    duplicateTab: (tabId: string) => {
+      store.duplicateTab(tabId);
+      peekCompactChrome();
+    },
+    closeFind: () => {
+      activeWebview?.stopFindInPage?.("clearSelection");
+      store.setFindOpen(false);
+      store.setFindQuery("");
+    },
+    findInPage: (query: string, forward = true) => {
+      store.setFindQuery(query);
+      if (query.trim()) {
+        activeWebview?.findInPage?.(query, { findNext: true, forward });
+      }
+    },
+    moveTabToWorkspace: store.moveTabToWorkspace,
+    focusSplitPane: (tabId: string) => {
+      store.focusSplitPane(tabId);
+      peekCompactChrome();
+    },
+    closeGlance: store.closeGlance,
+    openGlance: store.openGlance,
+    openGlanceInSplit: store.openGlanceInSplit,
+    openTabInSplit: (tabId: string) => {
+      store.openTabInSplit(tabId);
+      peekCompactChrome();
+    },
+    openUrlInSplit: (url: string, title?: string) => {
+      store.openUrlInSplit(url, title);
+      peekCompactChrome();
+    },
+    navigateActiveTab: (url: string) => store.navigateActiveTab(url, activeWebview),
+    newTab: () => {
+      store.newTab();
+      peekCompactChrome();
+    },
+    openUrlInActiveWorkspace: (url: string, title?: string) => {
+      store.openUrlInActiveWorkspace(url, title);
+      peekCompactChrome();
+    },
+    recordHistory: store.recordHistory,
+    removeHistoryEntry: store.removeHistoryEntry,
+    removeTabFromSplit: store.removeTabFromSplit,
+    replaceBrowserState: store.replaceBrowserState,
+    reorderWorkspace: store.reorderWorkspace,
+    reorderTab: store.reorderTab,
+    resetActiveTabZoom: () => store.resetActiveTabZoom(activeWebview),
+    resolvePermissionRequest: store.resolvePermissionRequest,
+    restoreClosedTab: (closedIndex: number) => {
+      store.restoreClosedTab(closedIndex);
+      peekCompactChrome();
+    },
+    restoreLastClosedTab: () => {
+      store.restoreLastClosedTab();
+      peekCompactChrome();
+    },
+    runWebviewAction: (action: WebviewAction) => store.runWebviewAction(action, activeWebview),
+    selectAdjacentTab: (direction: 1 | -1) => {
+      store.selectAdjacentTab(direction);
+      peekCompactChrome();
+    },
+    selectTab: (tabId: string) => {
+      store.selectTab(tabId);
+      peekCompactChrome();
+    },
+    sleepInactiveTabs: store.sleepInactiveTabs,
+    sleepTab: store.sleepTab,
+    setActiveTabZoom: (zoomFactor: number) => store.setActiveTabZoom(zoomFactor, activeWebview),
+    setSplitLayout: store.setSplitLayout,
+    setSitePermission: store.setSitePermission,
+    switchWorkspace: (workspaceId: string) => {
+      store.switchWorkspace(workspaceId);
+      peekCompactChrome();
+    },
+    toggleActiveTabFavorite: store.toggleActiveTabFavorite,
+    toggleActiveTabEssential: store.toggleActiveTabEssential,
+    toggleActiveTabMuted: () => store.toggleActiveTabMuted(activeWebview),
+    toggleActiveTabPinned: store.toggleActiveTabPinned,
+    toggleCompactMode: store.toggleCompactMode,
+    toggleFloatingSidebar: store.toggleFloatingSidebar,
+    toggleFloatingToolbar: store.toggleFloatingToolbar,
+    toggleTabGroupCollapsed: store.toggleTabGroupCollapsed,
+    toggleTabEssential: store.toggleTabEssential,
+    toggleTabFavorite: store.toggleTabFavorite,
+    toggleTabMuted: (tabId: string) => store.toggleTabMuted(tabId, webviews.current.get(tabId)),
+    toggleTabPinned: store.toggleTabPinned,
+    toggleSidebar: store.toggleSidebar,
+    toggleSplitMode: store.toggleSplitMode,
+    ungroupActiveTab: store.ungroupActiveTab,
+    ungroupTab: store.ungroupTab,
+    updateSettings: store.updateSettings,
+    updateTabGroup: store.updateTabGroup,
+    updateTab: store.updateTab,
+    updateWorkspaceById: store.updateWorkspaceById,
+    updateWorkspace: store.updateWorkspace,
+    zoomIn: () => store.zoomIn(activeWebview),
+    zoomOut: () => store.zoomOut(activeWebview)
+  }), [activeWebview, focusAddressBar, peekCompactChrome, store, webviews]);
+}
+
+export type BrowserActions = ReturnType<typeof useBrowserActions>;
