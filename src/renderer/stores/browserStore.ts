@@ -15,6 +15,7 @@ import {
   fillSplitView,
   focusSplitPane,
   groupActiveTab,
+  groupTab,
   closeOtherTabs,
   closeTabsToLeft,
   closeTabsToRight,
@@ -53,6 +54,7 @@ import {
   toggleTabPinned,
   toggleSplitMode,
   ungroupActiveTab,
+  ungroupTab,
   updateTabGroup,
   updateSettings,
   updateTab,
@@ -109,6 +111,7 @@ interface BrowserStore {
   fillSplitView: () => void;
   focusSplitPane: (tabId: string) => void;
   groupActiveTab: () => void;
+  groupTab: (tabId: string) => void;
   ingestDownload: (download: DownloadEntry) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
@@ -160,6 +163,7 @@ interface BrowserStore {
   toggleSidebar: () => void;
   toggleSplitMode: () => void;
   ungroupActiveTab: () => void;
+  ungroupTab: (tabId: string) => void;
   zoomIn: (webview?: WebviewElement) => void;
   zoomOut: (webview?: WebviewElement) => void;
   updateSettings: (patch: Partial<BrowserState["settings"]>) => void;
@@ -218,6 +222,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     set({ splitLayout: "grid" });
   },
   groupActiveTab: () => update(set, groupActiveTab),
+  groupTab: (tabId) => update(set, (state) => groupTab(state, tabId)),
   ingestDownload: (download) => {
     update(set, (state) => upsertDownload(state, download));
     set({ panel: "downloads" });
@@ -326,6 +331,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     : { sidebarCollapsed: !state.sidebarCollapsed }),
   toggleSplitMode: () => update(set, toggleSplitMode),
   ungroupActiveTab: () => update(set, ungroupActiveTab),
+  ungroupTab: (tabId) => update(set, (state) => ungroupTab(state, tabId)),
   updateSettings: (patch) => update(set, (state) => updateSettings(state, patch)),
   updateTabGroup: (groupId, patch) => update(set, (state) => updateTabGroup(state, groupId, patch)),
   updateTab: (tabId, patch) => update(set, (state) => updateTab(state, tabId, patch)),

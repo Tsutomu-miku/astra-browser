@@ -1,6 +1,11 @@
-import type { BrowserTab, Workspace } from "../../../domain/browser-core";
+import type { BrowserTab, TabGroup, Workspace } from "../../../domain/browser-core";
 
 export interface MoveWorkspaceTarget {
+  id: string;
+  name: string;
+}
+
+export interface MoveGroupTarget {
   id: string;
   name: string;
 }
@@ -9,6 +14,12 @@ export interface TabCleanupState {
   canCloseOtherTabs: boolean;
   canCloseTabsToLeft: boolean;
   canCloseTabsToRight: boolean;
+}
+
+export interface TabGroupMenuState {
+  canCreateGroup: boolean;
+  canUngroup: boolean;
+  moveGroupTargets: MoveGroupTarget[];
 }
 
 export function getMoveWorkspaceTargets(
@@ -40,5 +51,29 @@ export function getTabCleanupState(
     canCloseOtherTabs: tabs.length > 1,
     canCloseTabsToLeft: index > 0,
     canCloseTabsToRight: index < tabs.length - 1
+  };
+}
+
+export function getTabGroupMenuState(
+  groups: Pick<TabGroup, "id" | "name">[],
+  tab: Pick<BrowserTab, "groupId" | "isPinned">
+): TabGroupMenuState {
+  if (tab.isPinned) {
+    return {
+      canCreateGroup: false,
+      canUngroup: false,
+      moveGroupTargets: []
+    };
+  }
+
+  return {
+    canCreateGroup: !tab.groupId,
+    canUngroup: Boolean(tab.groupId),
+    moveGroupTargets: groups
+      .filter((group) => group.id !== tab.groupId)
+      .map((group) => ({
+        id: group.id,
+        name: group.name.trim() || "Group"
+      }))
   };
 }

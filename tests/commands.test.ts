@@ -20,6 +20,7 @@ function commandActions() {
     fillSplitView: vi.fn(),
     focusAddressBar: vi.fn(),
     groupActiveTab: vi.fn(),
+    groupTab: vi.fn(),
     moveTabToWorkspace: vi.fn(),
     openGlance: vi.fn(),
     openTabInSplit: vi.fn(),
@@ -45,6 +46,7 @@ function commandActions() {
     toggleSidebar: vi.fn(),
     toggleSplitMode: vi.fn(),
     ungroupActiveTab: vi.fn(),
+    ungroupTab: vi.fn(),
     zoomIn: vi.fn(),
     zoomOut: vi.fn()
   };

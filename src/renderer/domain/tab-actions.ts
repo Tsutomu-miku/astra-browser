@@ -15,8 +15,10 @@ export {
 export {
   assignTabToGroup,
   groupActiveTab,
+  groupTab,
   toggleTabGroupCollapsed,
   ungroupActiveTab,
+  ungroupTab,
   updateTabGroup
 } from "./tab-group-actions";
 export {

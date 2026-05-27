@@ -4,11 +4,13 @@ import {
   assignTabToGroup,
   closeActiveTab,
   groupActiveTab,
+  groupTab,
   moveTabToWorkspace,
   openUrlInActiveWorkspace,
   toggleActiveTabPinned,
   toggleTabGroupCollapsed,
   ungroupActiveTab,
+  ungroupTab,
   updateTabGroup
 } from "../src/renderer/domain/browser-actions";
 import { createDefaultState, normalizeState } from "../src/renderer/domain/browser-core";
@@ -48,6 +50,24 @@ describe("tab groups", () => {
     expect(getActiveTab(getActiveWorkspace(grouped)).groupId).toBe(group.id);
     expect(getGroupedTabs(getActiveWorkspace(grouped))[0].tabs).toHaveLength(1);
     expect(getActiveWorkspace(collapsed).tabGroups[0].isCollapsed).toBe(true);
+    expect(getActiveWorkspace(ungrouped).tabGroups).toHaveLength(0);
+  });
+
+  it("groups and ungroups a background target tab without requiring selection first", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const second = openUrlInActiveWorkspace(first, "news.example", "News");
+    const workspace = getActiveWorkspace(second);
+    const docsTab = workspace.tabs.find((tab) => tab.title === "Docs")!;
+    const grouped = groupTab(second, docsTab.id);
+    const groupedWorkspace = getActiveWorkspace(grouped);
+    const groupedDocsTab = groupedWorkspace.tabs.find((tab) => tab.id === docsTab.id)!;
+    const group = groupedWorkspace.tabGroups[0];
+    const ungrouped = ungroupTab(grouped, docsTab.id);
+
+    expect(getActiveTab(groupedWorkspace).title).toBe("News");
+    expect(groupedDocsTab.groupId).toBe(group.id);
+    expect(getActiveTab(getActiveWorkspace(ungrouped)).title).toBe("News");
+    expect(getActiveWorkspace(ungrouped).tabs.find((tab) => tab.id === docsTab.id)?.groupId).toBeNull();
     expect(getActiveWorkspace(ungrouped).tabGroups).toHaveLength(0);
   });
 

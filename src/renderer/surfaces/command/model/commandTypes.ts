@@ -23,6 +23,7 @@ export interface CommandActions {
   fillSplitView: () => void;
   focusAddressBar: () => void;
   groupActiveTab: () => void;
+  groupTab: (tabId: string) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
   openGlance: (url: string, title?: string) => void;
   openTabInSplit: (tabId: string) => void;
@@ -48,6 +49,7 @@ export interface CommandActions {
   toggleSidebar: () => void;
   toggleSplitMode: () => void;
   ungroupActiveTab: () => void;
+  ungroupTab: (tabId: string) => void;
   zoomIn: () => void;
   zoomOut: () => void;
 }

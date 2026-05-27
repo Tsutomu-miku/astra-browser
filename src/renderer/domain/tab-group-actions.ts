@@ -10,10 +10,14 @@ import {
 } from "./tab-groups";
 
 export function groupActiveTab(state: BrowserState): BrowserState {
+  return groupTab(state);
+}
+
+export function groupTab(state: BrowserState, tabId?: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
-    const tab = getActiveTab(workspace);
-    if (tab.groupId) return;
+    const tab = getTargetTab(workspace, tabId);
+    if (!tab || tab.isPinned || tab.groupId) return;
 
     const group = createTabGroup(getReadableUrlTitle(tab.url), workspace.tabGroups.length);
     workspace.tabGroups.push(group);
@@ -22,9 +26,15 @@ export function groupActiveTab(state: BrowserState): BrowserState {
 }
 
 export function ungroupActiveTab(state: BrowserState): BrowserState {
+  return ungroupTab(state);
+}
+
+export function ungroupTab(state: BrowserState, tabId?: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
-    const tab = getActiveTab(workspace);
+    const tab = getTargetTab(workspace, tabId);
+    if (!tab) return;
+
     tab.groupId = null;
     pruneEmptyTabGroups(workspace);
   });
@@ -66,4 +76,10 @@ export function toggleTabGroupCollapsed(state: BrowserState, groupId: string): B
     const group = getActiveWorkspace(draft).tabGroups.find((candidate) => candidate.id === groupId);
     if (group) group.isCollapsed = !group.isCollapsed;
   });
+}
+
+function getTargetTab(workspace: ReturnType<typeof getActiveWorkspace>, tabId: string | undefined) {
+  return tabId
+    ? workspace.tabs.find((candidate) => candidate.id === tabId)
+    : getActiveTab(workspace);
 }

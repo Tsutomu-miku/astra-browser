@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getMoveWorkspaceTargets, getTabCleanupState } from "../src/renderer/surfaces/sidebar/model/tabContextMenuState";
+import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "../src/renderer/surfaces/sidebar/model/tabContextMenuState";
 
 describe("tab context menu state", () => {
   it("lists non-active workspaces as move targets", () => {
@@ -44,6 +44,32 @@ describe("tab context menu state", () => {
       canCloseOtherTabs: false,
       canCloseTabsToLeft: false,
       canCloseTabsToRight: false
+    });
+  });
+
+  it("describes grouping actions for regular, grouped, and pinned tabs", () => {
+    const groups = [
+      { id: "research", name: "Research" },
+      { id: "blank", name: " " }
+    ];
+
+    expect(getTabGroupMenuState(groups, { groupId: null, isPinned: false })).toEqual({
+      canCreateGroup: true,
+      canUngroup: false,
+      moveGroupTargets: [
+        { id: "research", name: "Research" },
+        { id: "blank", name: "Group" }
+      ]
+    });
+    expect(getTabGroupMenuState(groups, { groupId: "research", isPinned: false })).toEqual({
+      canCreateGroup: false,
+      canUngroup: true,
+      moveGroupTargets: [{ id: "blank", name: "Group" }]
+    });
+    expect(getTabGroupMenuState(groups, { groupId: null, isPinned: true })).toEqual({
+      canCreateGroup: false,
+      canUngroup: false,
+      moveGroupTargets: []
     });
   });
 });

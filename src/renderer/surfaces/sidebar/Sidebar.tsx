@@ -18,7 +18,7 @@ import { SidebarSearchBox } from "./components/SidebarSearchBox";
 import { SidebarSections } from "./components/SidebarSections";
 import { TabContextMenu } from "./components/TabContextMenu";
 import { WorkspaceStrip } from "./components/WorkspaceStrip";
-import { getMoveWorkspaceTargets, getTabCleanupState } from "./model/tabContextMenuState";
+import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "./model/tabContextMenuState";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -228,6 +228,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         <TabContextMenu
           left={tabMenu.left}
           cleanupState={getTabCleanupState(activeWorkspace.tabs, tabMenu.tab.id)}
+          groupMenuState={getTabGroupMenuState(activeWorkspace.tabGroups, tabMenu.tab)}
           moveWorkspaceTargets={getMoveWorkspaceTargets(state.workspaces, activeWorkspace.id)}
           tab={tabMenu.tab}
           top={tabMenu.top}
@@ -237,6 +238,8 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onCloseTabsToLeft={actions.closeTabsToLeft}
           onCloseTabsToRight={actions.closeTabsToRight}
           onDuplicate={actions.duplicateTab}
+          onGroupTab={actions.groupTab}
+          onMoveToGroup={actions.assignTabToGroup}
           onMoveToWorkspace={actions.moveTabToWorkspace}
           onOpenGlance={actions.openGlance}
           onOpenInSplit={actions.openTabInSplit}
@@ -246,6 +249,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onToggleFavorite={actions.toggleTabFavorite}
           onToggleMuted={actions.toggleTabMuted}
           onTogglePinned={actions.toggleTabPinned}
+          onUngroupTab={actions.ungroupTab}
           tabIsEssential={isEssential(state, tabMenu.tab.url)}
           tabIsFavorite={isFavorite(activeWorkspace, tabMenu.tab.url)}
         />

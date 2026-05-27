@@ -1,16 +1,19 @@
 import type { BrowserTab } from "../../../domain/browser-core";
-import type { MoveWorkspaceTarget, TabCleanupState } from "../model/tabContextMenuState";
+import type { MoveWorkspaceTarget, TabCleanupState, TabGroupMenuState } from "../model/tabContextMenuState";
 
 interface TabContextMenuProps {
   left: number;
   moveWorkspaceTargets: MoveWorkspaceTarget[];
   cleanupState: TabCleanupState;
+  groupMenuState: TabGroupMenuState;
   onClose: () => void;
   onCloseTab: (tabId: string) => void;
   onCloseOtherTabs: (tabId: string) => void;
   onCloseTabsToLeft: (tabId: string) => void;
   onCloseTabsToRight: (tabId: string) => void;
   onDuplicate: (tabId: string) => void;
+  onGroupTab: (tabId: string) => void;
+  onMoveToGroup: (tabId: string, groupId: string) => void;
   onMoveToWorkspace: (tabId: string, workspaceId: string) => void;
   onOpenGlance: (url: string, title?: string) => void;
   onOpenInSplit: (tabId: string) => void;
@@ -20,6 +23,7 @@ interface TabContextMenuProps {
   onToggleFavorite: (tabId: string) => void;
   onToggleMuted: (tabId: string) => void;
   onTogglePinned: (tabId: string) => void;
+  onUngroupTab: (tabId: string) => void;
   tabIsEssential: boolean;
   tabIsFavorite: boolean;
   tab: BrowserTab;
@@ -30,12 +34,15 @@ export function TabContextMenu({
   left,
   moveWorkspaceTargets,
   cleanupState,
+  groupMenuState,
   onClose,
   onCloseTab,
   onCloseOtherTabs,
   onCloseTabsToLeft,
   onCloseTabsToRight,
   onDuplicate,
+  onGroupTab,
+  onMoveToGroup,
   onMoveToWorkspace,
   onOpenGlance,
   onOpenInSplit,
@@ -45,6 +52,7 @@ export function TabContextMenu({
   onToggleFavorite,
   onToggleMuted,
   onTogglePinned,
+  onUngroupTab,
   tabIsEssential,
   tabIsFavorite,
   tab,
@@ -67,6 +75,27 @@ export function TabContextMenu({
       <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</button>
       <button type="button" role="menuitem" onClick={() => run(() => onDuplicate(tab.id))}>Duplicate</button>
       <button type="button" role="menuitem" onClick={() => run(() => onSleepTab(tab.id))}>Sleep tab</button>
+      {(groupMenuState.canCreateGroup || groupMenuState.canUngroup || groupMenuState.moveGroupTargets.length > 0) && (
+        <>
+          <span className="tab-context-menu-separator" />
+          {groupMenuState.canCreateGroup && (
+            <button type="button" role="menuitem" onClick={() => run(() => onGroupTab(tab.id))}>New group from tab</button>
+          )}
+          {groupMenuState.canUngroup && (
+            <button type="button" role="menuitem" onClick={() => run(() => onUngroupTab(tab.id))}>Ungroup tab</button>
+          )}
+          {groupMenuState.moveGroupTargets.map((group) => (
+            <button
+              key={group.id}
+              type="button"
+              role="menuitem"
+              onClick={() => run(() => onMoveToGroup(tab.id, group.id))}
+            >
+              Move to {group.name}
+            </button>
+          ))}
+        </>
+      )}
       {moveWorkspaceTargets.length > 0 && (
         <>
           <span className="tab-context-menu-separator" />

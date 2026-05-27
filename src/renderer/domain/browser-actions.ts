@@ -27,6 +27,7 @@ export {
   fillSplitView,
   focusSplitPane,
   groupActiveTab,
+  groupTab,
   moveTabToWorkspace,
   openTabInSplit,
   openUrlInSplit,
@@ -52,6 +53,7 @@ export {
   toggleTabPinned,
   toggleSplitMode,
   ungroupActiveTab,
+  ungroupTab,
   updateTabGroup,
   updateTab,
   type TabDropPlacement

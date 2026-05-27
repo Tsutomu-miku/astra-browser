@@ -46,6 +46,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 ### Groups, Pins, Essentials, And Favorites
 
 - Users must be able to create named, color-coded, collapsible tab groups.
+- Sidebar tab context menus must support creating a new group from a tab, moving tabs to existing groups, and ungrouping grouped tabs.
 - Users must be able to pin tabs per Space.
 - Users must have global Essentials visible across Spaces for core pages.
 - Users must have Space-local favorites for quick access.
