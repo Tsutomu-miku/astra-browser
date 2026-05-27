@@ -1,4 +1,4 @@
-import type { BrowserState, BrowserTab, Workspace } from "../domain/browser-core";
+import type { BrowserState, BrowserTab, Workspace } from "../../../domain/browser-core";
 import type { Command, CommandActions } from "./commandTypes";
 
 export function buildSplitCommands(

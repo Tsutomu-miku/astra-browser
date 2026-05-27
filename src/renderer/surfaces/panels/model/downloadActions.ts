@@ -1,4 +1,4 @@
-import type { DownloadEntry } from "../../domain/browser-core";
+import type { DownloadEntry } from "../../../domain/browser-core";
 
 export interface DownloadActionsState {
   canOpen: boolean;

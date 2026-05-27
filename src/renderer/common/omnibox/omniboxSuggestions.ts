@@ -1,5 +1,5 @@
-import type { BrowserState } from "../domain/browser-core";
-import { getActiveWorkspace } from "../domain/selectors";
+import type { BrowserState } from "../../domain/browser-core";
+import { getActiveWorkspace } from "../../domain/selectors";
 
 export type OmniboxSuggestion =
   | { type: "navigate"; id: string; title: string; subtitle: string; value: string }

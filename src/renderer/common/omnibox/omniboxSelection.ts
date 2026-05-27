@@ -2,7 +2,7 @@ import {
   clampListIndex,
   getNextListIndex,
   type ListNavigationKey
-} from "../common/navigation/listNavigation";
+} from "../navigation/listNavigation";
 
 export type OmniboxNavigationKey = ListNavigationKey;
 

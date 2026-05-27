@@ -10,9 +10,9 @@ import {
 
 import { isListNavigationKey } from "../common/navigation/listNavigation";
 import type { BrowserController } from "./types";
-import { getOmniboxAction } from "./omniboxActions";
-import { buildOmniboxSuggestions, type OmniboxSuggestion } from "./omniboxSuggestions";
-import { clampOmniboxIndex, getNextOmniboxIndex } from "./omniboxSelection";
+import { getOmniboxAction } from "../common/omnibox/omniboxActions";
+import { buildOmniboxSuggestions, type OmniboxSuggestion } from "../common/omnibox/omniboxSuggestions";
+import { clampOmniboxIndex, getNextOmniboxIndex } from "../common/omnibox/omniboxSelection";
 
 type OmniboxControllerInput = Pick<
   BrowserController,

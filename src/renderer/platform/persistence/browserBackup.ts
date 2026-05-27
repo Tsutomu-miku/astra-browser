@@ -1,4 +1,4 @@
-import { normalizeState, type BrowserState, type PartialBrowserState } from "../domain/browser-core";
+import { normalizeState, type BrowserState, type PartialBrowserState } from "../../domain/browser-core";
 
 const BACKUP_VERSION = 1;
 

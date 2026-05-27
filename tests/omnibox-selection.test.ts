@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   clampOmniboxIndex,
   getNextOmniboxIndex
-} from "../src/renderer/hooks/omniboxSelection";
+} from "../src/renderer/common/omnibox/omniboxSelection";
 
 describe("omnibox selection", () => {
   it("clamps selected suggestion indexes", () => {

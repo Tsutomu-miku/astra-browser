@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { getCommandRunner } from "../src/renderer/hooks/commandIntent";
-import type { Command } from "../src/renderer/hooks/commandTypes";
+import { getCommandRunner } from "../src/renderer/surfaces/command/model/commandIntent";
+import type { Command } from "../src/renderer/surfaces/command/model/commandTypes";
 
 describe("getCommandRunner", () => {
   it("prefers preview, split, then normal command actions", () => {

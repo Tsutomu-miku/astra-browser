@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { FiClock, FiCommand, FiSearch, FiStar, FiZap } from "react-icons/fi";
 
-import type { OmniboxSuggestion } from "../../../hooks/omniboxSuggestions";
+import type { OmniboxSuggestion } from "../../../common/omnibox/omniboxSuggestions";
 import type { BrowserController } from "../../../hooks/types";
 import { useOmniboxController } from "../../../hooks/useOmniboxController";
 

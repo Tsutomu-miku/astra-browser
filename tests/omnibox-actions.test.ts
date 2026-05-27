@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { getOmniboxAction } from "../src/renderer/hooks/omniboxActions";
-import type { OmniboxSuggestion } from "../src/renderer/hooks/omniboxSuggestions";
+import { getOmniboxAction } from "../src/renderer/common/omnibox/omniboxActions";
+import type { OmniboxSuggestion } from "../src/renderer/common/omnibox/omniboxSuggestions";
 
 describe("getOmniboxAction", () => {
   it("selects or splits tab suggestions", () => {

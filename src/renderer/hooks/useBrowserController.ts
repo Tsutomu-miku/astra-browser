@@ -7,7 +7,7 @@ import type { WebviewElement } from "../types/browser-ui";
 import { useBrowserEffects } from "./useBrowserEffects";
 import { buildCommands } from "./useCommands";
 import { useCompactChromePeek } from "./useCompactChromePeek";
-import type { ShortcutIntent } from "./keyboardShortcuts";
+import type { ShortcutIntent } from "../common/shortcuts/keyboardShortcuts";
 
 export function useBrowserController() {
   const store = useBrowserStore();

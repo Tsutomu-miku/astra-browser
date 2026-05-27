@@ -9,7 +9,7 @@ import {
   recordHistory
 } from "../src/renderer/domain/browser-actions";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/selectors";
-import { buildOmniboxSuggestions } from "../src/renderer/hooks/omniboxSuggestions";
+import { buildOmniboxSuggestions } from "../src/renderer/common/omnibox/omniboxSuggestions";
 
 describe("buildOmniboxSuggestions", () => {
   it("adds a direct navigation suggestion for typed queries", () => {

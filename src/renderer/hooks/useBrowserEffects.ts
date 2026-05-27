@@ -8,7 +8,7 @@ import {
   type Workspace
 } from "../domain/browser-core";
 import type { PermissionRequestEvent } from "../types/electron";
-import { resolveShortcut, type ShortcutIntent } from "./keyboardShortcuts";
+import { resolveShortcut, type ShortcutIntent } from "../common/shortcuts/keyboardShortcuts";
 
 interface BrowserEffectsOptions {
   ingestDownload: (download: DownloadEntry) => void;

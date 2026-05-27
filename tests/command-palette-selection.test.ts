@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   clampCommandIndex,
   getNextCommandIndex
-} from "../src/renderer/hooks/commandPaletteSelection";
+} from "../src/renderer/surfaces/command/model/commandPaletteSelection";
 
 describe("command palette selection", () => {
   it("clamps active command indexes to available commands", () => {

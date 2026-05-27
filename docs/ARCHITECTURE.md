@@ -14,11 +14,13 @@ The project is split around runtime boundaries rather than feature folders.
 
 `src/renderer/stores` owns renderer state via Zustand. Store actions delegate browser mutations to domain actions, persist browser state, answer permission requests, and expose UI state such as panels, command palette state, and address input.
 
-`src/renderer/hooks` is UI orchestration. It derives active workspace/tab view models, builds command and omnibox suggestions, connects webview refs, handles keyboard shortcuts, imports/exports browser state backups, and subscribes to Electron bridge events. It should stay thin enough that browser rules can be tested outside Electron.
+`src/renderer/hooks` is React-only UI orchestration. It derives active workspace/tab view models, wires shared command and omnibox models into components, connects webview refs, and subscribes to Electron bridge events. Files in this folder should call React hooks or compose hook state; pure helpers belong in `common`, `domain`, `platform`, or the owning surface's `model` folder.
 
-`src/renderer/common` contains reusable renderer interaction helpers that are not browser state rules and are not owned by one surface. List navigation, shared shortcut target ordering, and similar cross-surface UI utilities belong here so command palette, omnibox, sidebar, and future panels do not duplicate the same behavior.
+`src/renderer/common` contains reusable renderer interaction helpers that are not browser state rules and are not owned by one surface. List navigation, the shared omnibox suggestion/action model, keyboard shortcut parsing, shared shortcut target ordering, and similar cross-surface UI utilities belong here so command palette, omnibox, sidebar, and future panels do not duplicate the same behavior.
 
-`src/renderer/surfaces` contains React browser surfaces such as the sidebar, topbar, command palette, panels, permission prompts, find bar, and webview grid. Surface-level subcomponents live beside the parent surface when that improves readability, but extraction should clarify ownership rather than chase a line count.
+`src/renderer/platform` contains renderer-side adapters for runtime APIs that are outside pure browser state rules. Webview lifecycle registration, localStorage persistence, and browser state import/export helpers live here instead of in React hooks or domain modules.
+
+`src/renderer/surfaces` contains React browser surfaces such as the sidebar, topbar, command palette, panels, permission prompts, find bar, and webview grid. Surface-level subcomponents live under `components`, while one-surface pure rules live under `model`. Extraction should clarify ownership rather than chase a line count.
 
 Compact mode is renderer-owned UI state. It does not alter persisted browser data; it composes the existing collapsible sidebar with a floating topbar and compact sidebar address field so the content grid can reclaim the full viewport while browser chrome remains available on hover or focus.
 
@@ -42,7 +44,7 @@ Glance header controls and webview rendering live under `surfaces/glance/compone
 
 `src/renderer/surfaces/sidebar` owns vertical navigation, Space switching, tab organization, and sidebar search. Sidebar search intent resolution is separated from rendering so keyboard and pointer modifiers can share the same preview, split-open, and normal-open rules.
 
-Command palette entries expose optional preview and split runners. The command surface resolves Enter modifiers through a small shared helper so content commands and typed query commands can participate in the same Glance and split-view flow without changing command search ranking.
+Command palette entries expose optional preview and split runners. Command-specific building, search, selection, and modifier intent live under `src/renderer/surfaces/command/model` so the surface owns its own rules while keeping the visual component focused.
 
 `src/renderer/platform/webviewLifecycle.ts` owns the renderer-side contract for Electron webview readiness. A webview is registered with the controller only after `dom-ready`, so store and controller actions never call Chromium webview methods on a detached or not-yet-ready element. Lifecycle bugs should be fixed at this boundary rather than hidden by catch-and-ignore compatibility code.
 

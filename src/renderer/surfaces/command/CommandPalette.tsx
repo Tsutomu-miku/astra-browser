@@ -3,12 +3,12 @@ import { FiX } from "react-icons/fi";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import type { BrowserController } from "../../hooks/types";
-import { getCommandRunner } from "../../hooks/commandIntent";
-import { getVisibleCommands } from "../../hooks/commandSearch";
+import { getCommandRunner } from "./model/commandIntent";
+import { getVisibleCommands } from "./model/commandSearch";
 import {
   clampCommandIndex,
   getNextCommandIndex
-} from "../../hooks/commandPaletteSelection";
+} from "./model/commandPaletteSelection";
 
 export function CommandPalette({ controller }: { controller: BrowserController }) {
   const { actions, commandQuery, commands, setCommandOpen, setCommandQuery } = controller;

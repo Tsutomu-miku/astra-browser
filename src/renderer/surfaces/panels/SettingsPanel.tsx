@@ -8,7 +8,7 @@ import {
   type SearchEngineKey,
   type StartupBehavior
 } from "../../domain/browser-core";
-import { createBrowserStateBackup, parseBrowserStateBackup } from "../../hooks/browserBackup";
+import { createBrowserStateBackup, parseBrowserStateBackup } from "../../platform/persistence/browserBackup";
 import type { BrowserController } from "../../hooks/types";
 import { useProfileStorageUsage, type WorkspaceStorageUsage } from "../../hooks/useProfileStorageUsage";
 

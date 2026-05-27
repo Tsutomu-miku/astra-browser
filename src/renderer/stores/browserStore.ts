@@ -67,7 +67,7 @@ import {
   type Workspace
 } from "../domain/browser-core";
 import { getPermissionRule } from "../domain/sitePermissions";
-import { loadBrowserState, saveBrowserState } from "../hooks/browserStorage";
+import { loadBrowserState, saveBrowserState } from "../platform/persistence/browserStorage";
 import type { PermissionRequestEvent } from "../types/electron";
 import type { WebviewAction, WebviewElement } from "../types/browser-ui";
 import { getActiveProfileId, getActiveUrl } from "./browserStoreSelectors";

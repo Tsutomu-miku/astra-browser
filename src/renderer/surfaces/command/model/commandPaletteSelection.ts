@@ -2,7 +2,7 @@ import {
   clampListIndex,
   getNextListIndex,
   type ListNavigationKey
-} from "../common/navigation/listNavigation";
+} from "../../../common/navigation/listNavigation";
 
 export type CommandPaletteNavigationKey = ListNavigationKey;
 

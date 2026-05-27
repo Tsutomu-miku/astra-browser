@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { getVisibleCommands } from "../src/renderer/hooks/commandSearch";
-import type { Command } from "../src/renderer/hooks/commandTypes";
+import { getVisibleCommands } from "../src/renderer/surfaces/command/model/commandSearch";
+import type { Command } from "../src/renderer/surfaces/command/model/commandTypes";
 
 const commands: Command[] = [
   {

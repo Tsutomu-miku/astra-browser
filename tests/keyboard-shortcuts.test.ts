@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveShortcut, type ShortcutEventLike } from "../src/renderer/hooks/keyboardShortcuts";
+import { resolveShortcut, type ShortcutEventLike } from "../src/renderer/common/shortcuts/keyboardShortcuts";
 
 function event(overrides: Partial<ShortcutEventLike>): ShortcutEventLike {
   return {

@@ -1,9 +1,9 @@
 import { BrowserState, isEssential, isFavorite } from "../domain/browser-core";
 import { getActiveTab, getActiveWorkspace } from "../domain/selectors";
 import type { Panel } from "../stores/browserStore";
-import { buildContentCommands } from "./commandContentEntries";
-import { buildSplitCommands } from "./commandSplitEntries";
-import type { Command, CommandActions } from "./commandTypes";
+import { buildContentCommands } from "../surfaces/command/model/commandContentEntries";
+import { buildSplitCommands } from "../surfaces/command/model/commandSplitEntries";
+import type { Command, CommandActions } from "../surfaces/command/model/commandTypes";
 
 export function buildCommands(
   state: BrowserState,
