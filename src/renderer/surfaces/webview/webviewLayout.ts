@@ -1,5 +1,5 @@
 import type { BrowserState, BrowserTab, Workspace } from "../../domain/browser-core";
-import { getSplitTabIds } from "../../domain/split-view";
+import { getSplitTabIds } from "../../domain/tabs/splitView";
 
 export interface WebviewLayoutTab {
   isVisible: boolean;

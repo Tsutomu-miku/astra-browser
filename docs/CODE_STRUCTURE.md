@@ -19,8 +19,16 @@ src/renderer/app
                  compact chrome behavior, and Electron event subscriptions
 
 src/renderer/domain
-  Pure browser product rules: state shape, migrations, tabs, workspaces, history,
-  permissions, navigation, split state, selectors, formatting
+  Pure browser product rules. Keep the root as a small public API surface.
+  browser-core.ts     Stable aggregate for state shape, browser primitives, and helpers
+  browser-actions.ts  Stable aggregate for store actions
+  tab-actions.ts      Stable aggregate for tab actions
+  browser/            State shape, migrations, navigation, selectors, URL identity,
+                      formatting, zoom, and immutable update helpers
+  browsing/           History, downloads, and navigation mutations
+  permissions/        Site permission rules and settings mutations
+  tabs/               Tab lifecycle, grouping, split view, selection, layout, cleanup
+  workspaces/         Space/workspace actions and Chromium partition/profile mapping
 
 src/renderer/platform
   Renderer-side adapters for APIs outside pure product rules
@@ -52,5 +60,9 @@ tests
 - Put app-level React orchestration in `app/controller`.
 - Put one-surface rules in that surface's `model` folder.
 - Put React subcomponents in that surface's `components` folder.
+- Put domain implementation in a business subfolder (`domain/tabs`, `domain/workspaces`,
+  `domain/permissions`, etc.) instead of adding new prefixed files at `domain/` root.
+- Import cross-domain browser primitives from `domain/browser-core` in UI code; use the
+  narrower subfolder path only for local domain implementation or focused tests.
 - Put localStorage, Electron webview lifecycle, and other runtime adapters under `platform`.
 - Keep browser state transitions and invariants in `domain`.

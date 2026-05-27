@@ -14,8 +14,8 @@ import {
   updateTabGroup
 } from "../src/renderer/domain/browser-actions";
 import { createDefaultState, normalizeState } from "../src/renderer/domain/browser-core";
-import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/selectors";
-import { getGroupedTabs } from "../src/renderer/domain/tab-groups";
+import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
+import { getGroupedTabs } from "../src/renderer/domain/tabs/groups";
 
 describe("tab groups", () => {
   it("normalizes persisted groups and tab membership", () => {

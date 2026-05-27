@@ -1,4 +1,4 @@
-import type { BrowserState, Workspace } from "./browser-types";
+import type { BrowserState, Workspace } from "../browser/types";
 
 export const MAX_SPLIT_VIEW_TABS = 4;
 const MAX_SPLIT_TARGETS = MAX_SPLIT_VIEW_TABS - 1;

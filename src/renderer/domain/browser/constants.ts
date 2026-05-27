@@ -1,4 +1,4 @@
-import type { SearchEngine, SearchEngineKey } from "./browser-types";
+import type { SearchEngine, SearchEngineKey } from "./types";
 
 export const INTERNAL_NEW_TAB_URL = "astra://newtab";
 export const DEFAULT_URL = INTERNAL_NEW_TAB_URL;

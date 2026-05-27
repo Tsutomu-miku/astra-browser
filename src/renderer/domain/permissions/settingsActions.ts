@@ -1,6 +1,6 @@
-import { BrowserState, SitePermissionRule } from "./browser-core";
+import { BrowserState, SitePermissionRule } from "../browser-core";
 import { clearSitePermission, upsertSitePermission } from "./sitePermissions";
-import { updateBrowserState } from "./action-core";
+import { updateBrowserState } from "../browser/updateState";
 
 export function updateSettings(state: BrowserState, patch: Partial<BrowserState["settings"]>): BrowserState {
   return updateBrowserState(state, (draft) => Object.assign(draft.settings, patch));

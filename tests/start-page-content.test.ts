@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createDefaultState, createFavorite } from "../src/renderer/domain/browser-core";
-import { getActiveWorkspace } from "../src/renderer/domain/selectors";
+import { getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { getStartPageContent } from "../src/renderer/surfaces/start/startPageContent";
 
 describe("getStartPageContent", () => {

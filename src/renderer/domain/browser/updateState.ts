@@ -1,4 +1,5 @@
-import { BrowserState, normalizeState } from "./browser-core";
+import type { BrowserState } from "./types";
+import { normalizeState } from "./stateNormalization";
 
 export function updateBrowserState(
   state: BrowserState,

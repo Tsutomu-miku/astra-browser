@@ -1,7 +1,7 @@
-export { DEFAULT_URL, INTERNAL_NEW_TAB_URL, SEARCH_ENGINES } from "./browser-constants";
-export { createDefaultState, createFavorite, createId, createTab, getNextWorkspaceAccent } from "./browser-factory";
-export { formatBytes } from "./formatting";
-export { isInternalNewTabUrl, isInternalPageUrl } from "./internalPages";
+export { DEFAULT_URL, INTERNAL_NEW_TAB_URL, SEARCH_ENGINES } from "./browser/constants";
+export { createDefaultState, createFavorite, createId, createTab, getNextWorkspaceAccent } from "./browser/factory";
+export { formatBytes } from "./browser/formatting";
+export { isInternalNewTabUrl, isInternalPageUrl } from "./browser/internalPages";
 export {
   getHomepageUrl,
   getHostInitial,
@@ -11,15 +11,15 @@ export {
   getWorkspaceHomepageUrl,
   isFavorite,
   normalizeAddress
-} from "./navigation";
+} from "./browser/navigation";
 export {
   applyStartupBehavior,
   normalizeClosedTabs,
   normalizeFavorites,
   normalizeState
-} from "./state-normalization";
-export { getBrowserPartitions, getProfileIdForPartition, getWorkspacePartition } from "./workspaceProfiles";
-export { getSplitTabIds, MAX_SPLIT_VIEW_TABS } from "./split-view";
+} from "./browser/stateNormalization";
+export { getBrowserPartitions, getProfileIdForPartition, getWorkspacePartition } from "./workspaces/profiles";
+export { getSplitTabIds, MAX_SPLIT_VIEW_TABS } from "./tabs/splitView";
 
 export type {
   BrowserState,
@@ -34,4 +34,4 @@ export type {
   StartupBehavior,
   TabGroup,
   Workspace
-} from "./browser-types";
+} from "./browser/types";

@@ -8,7 +8,7 @@ import {
   openUrlInActiveWorkspace,
   recordHistory
 } from "../src/renderer/domain/browser-actions";
-import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/selectors";
+import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { buildOmniboxSuggestions } from "../src/renderer/common/omnibox/omniboxSuggestions";
 
 describe("buildOmniboxSuggestions", () => {

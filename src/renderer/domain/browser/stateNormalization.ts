@@ -1,5 +1,5 @@
-import { DEFAULT_URL, SEARCH_ENGINES } from "./browser-constants";
-import { createDefaultState, createId, createTab, getNextWorkspaceAccent } from "./browser-factory";
+import { DEFAULT_URL, SEARCH_ENGINES } from "./constants";
+import { createDefaultState, createId, createTab, getNextWorkspaceAccent } from "./factory";
 import type {
   BrowserState,
   BrowserTab,
@@ -11,12 +11,12 @@ import type {
   SearchEngineKey,
   StartupBehavior,
   TabGroup
-} from "./browser-types";
+} from "./types";
 import { getHomepageUrl, getReadableUrlTitle, getWorkspaceHomepageUrl, normalizeAddress } from "./navigation";
-import { normalizeSitePermissions } from "./sitePermissions";
-import { getSplitTabIds, pruneSplitTabIds } from "./split-view";
-import { normalizeTabGroups } from "./tab-groups";
-import { normalizeWorkspaceProfile } from "./workspaceProfiles";
+import { normalizeSitePermissions } from "../permissions/sitePermissions";
+import { getSplitTabIds, pruneSplitTabIds } from "../tabs/splitView";
+import { normalizeTabGroups } from "../tabs/groups";
+import { normalizeWorkspaceProfile } from "../workspaces/profiles";
 import { normalizeZoomFactor } from "./zoom";
 
 export function normalizeState(candidateState: PartialBrowserState | null | undefined): BrowserState {

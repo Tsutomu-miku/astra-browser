@@ -12,7 +12,7 @@ import {
   normalizeAddress,
   normalizeState
 } from "../src/renderer/domain/browser-core";
-import { getActiveWorkspace } from "../src/renderer/domain/selectors";
+import { getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 
 describe("workspace profiles", () => {
   it("normalizes persisted workspaces with profile identity", () => {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { getNumberShortcutTarget } from "../../common/shortcuts/numberShortcutTargets";
-import { getActiveTab, getActiveWorkspace } from "../../domain/selectors";
+import { getActiveTab, getActiveWorkspace } from "../../domain/browser/selectors";
 import { useBrowserStore, type SplitLayout } from "../../stores/browserStore";
 import type { WebviewElement } from "../../types/browser-ui";
 import { useBrowserEffects } from "./useBrowserEffects";

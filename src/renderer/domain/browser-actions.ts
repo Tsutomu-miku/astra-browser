@@ -1,4 +1,4 @@
-export { updateBrowserState } from "./action-core";
+export { updateBrowserState } from "./browser/updateState";
 export {
   clearHistory,
   clearBrowsingData,
@@ -8,12 +8,12 @@ export {
   recordHistory,
   removeHistoryEntry,
   upsertDownload
-} from "./browsing-actions";
+} from "./browsing/actions";
 export {
   clearSitePermissionRule,
   setSitePermission,
   updateSettings
-} from "./settings-actions";
+} from "./permissions/settingsActions";
 export {
   addTab,
   assignTabToGroup,
@@ -66,4 +66,4 @@ export {
   updateWorkspaceById,
   updateWorkspace,
   type WorkspaceDropPlacement
-} from "./workspace-actions";
+} from "./workspaces/actions";

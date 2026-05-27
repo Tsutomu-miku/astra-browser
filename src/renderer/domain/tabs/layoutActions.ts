@@ -6,12 +6,12 @@ import {
   getWorkspaceHomepageUrl,
   normalizeAddress,
   Workspace
-} from "./browser-core";
-import { getActiveTab, getActiveWorkspace } from "./selectors";
-import { updateBrowserState } from "./action-core";
-import { clearSplitView, getSplitTabIds, MAX_SPLIT_VIEW_TABS, setSplitTabIds } from "./split-view";
-import { pruneEmptyTabGroups } from "./tab-groups";
-import type { TabDropPlacement } from "./tab-utils";
+} from "../browser-core";
+import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
+import { updateBrowserState } from "../browser/updateState";
+import { clearSplitView, getSplitTabIds, MAX_SPLIT_VIEW_TABS, setSplitTabIds } from "./splitView";
+import { pruneEmptyTabGroups } from "./groups";
+import type { TabDropPlacement } from "./utils";
 
 export function reorderTab(
   state: BrowserState,

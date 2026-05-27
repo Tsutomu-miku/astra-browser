@@ -1,4 +1,4 @@
-import { INTERNAL_NEW_TAB_URL } from "./browser-constants";
+import { INTERNAL_NEW_TAB_URL } from "./constants";
 
 export function isInternalNewTabUrl(url: string | undefined): boolean {
   return normalizeInternalUrl(url) === INTERNAL_NEW_TAB_URL;

@@ -16,8 +16,8 @@ import {
 } from "react-icons/fi";
 
 import { isEssential, isFavorite } from "../../domain/browser-core";
-import { getUrlIdentity } from "../../domain/urlIdentity";
-import { formatZoomPercent } from "../../domain/zoom";
+import { getUrlIdentity } from "../../domain/browser/urlIdentity";
+import { formatZoomPercent } from "../../domain/browser/zoom";
 import type { BrowserController } from "../../app/controller/types";
 import { useOmniboxController } from "../../app/controller/useOmniboxController";
 import { getReloadButtonState } from "./model/navigationButtonState";

@@ -3,12 +3,12 @@ import {
   createId,
   createTab,
   getWorkspaceHomepageUrl
-} from "./browser-core";
-import { getActiveTab, getActiveWorkspace } from "./selectors";
-import { updateBrowserState } from "./action-core";
-import { pruneEmptyTabGroups } from "./tab-groups";
-import { clearSplitView, pruneSplitTabIds } from "./split-view";
-import { prependClosedTabs } from "./tab-utils";
+} from "../browser-core";
+import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
+import { updateBrowserState } from "../browser/updateState";
+import { pruneEmptyTabGroups } from "./groups";
+import { clearSplitView, pruneSplitTabIds } from "./splitView";
+import { prependClosedTabs } from "./utils";
 
 export function addTab(state: BrowserState): BrowserState {
   return updateBrowserState(state, (draft) => {

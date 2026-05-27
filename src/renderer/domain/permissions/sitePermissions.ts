@@ -1,7 +1,7 @@
 import type {
   SitePermissionDecision,
   SitePermissionRule
-} from "./browser-types";
+} from "../browser/types";
 
 export const COMMON_SITE_PERMISSIONS = [
   "media",

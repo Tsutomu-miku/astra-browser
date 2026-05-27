@@ -3,12 +3,12 @@ import {
   BrowserTab,
   createFavorite,
   getReadableUrlTitle
-} from "./browser-core";
-import { getActiveTab, getActiveWorkspace } from "./selectors";
-import { getSplitTabIds, setSplitTabIds } from "./split-view";
-import { pruneEmptyTabGroups } from "./tab-groups";
-import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "./zoom";
-import { updateBrowserState } from "./action-core";
+} from "../browser-core";
+import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
+import { getSplitTabIds, setSplitTabIds } from "./splitView";
+import { pruneEmptyTabGroups } from "./groups";
+import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "../browser/zoom";
+import { updateBrowserState } from "../browser/updateState";
 
 export function toggleActiveTabPinned(state: BrowserState): BrowserState {
   return toggleTabPinned(state, getActiveTab(getActiveWorkspace(state)).id);

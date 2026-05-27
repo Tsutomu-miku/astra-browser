@@ -1,13 +1,13 @@
 import { FiX } from "react-icons/fi";
 
-import { getUrlIdentity } from "../../domain/urlIdentity";
+import { getUrlIdentity } from "../../domain/browser/urlIdentity";
 import {
   COMMON_SITE_PERMISSIONS,
   getOriginFromUrl,
   getPermissionLabel,
   getPermissionRule
-} from "../../domain/sitePermissions";
-import type { SitePermissionDecision } from "../../domain/browser-types";
+} from "../../domain/permissions/sitePermissions";
+import type { SitePermissionDecision } from "../../domain/browser/types";
 import type { BrowserController } from "../../app/controller/types";
 
 export function SiteInfoPanel({ controller }: { controller: BrowserController }) {

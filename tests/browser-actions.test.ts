@@ -46,7 +46,7 @@ import {
   toggleSplitMode
 } from "../src/renderer/domain/browser-actions";
 import { createDefaultState } from "../src/renderer/domain/browser-core";
-import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/selectors";
+import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 
 describe("browser-actions", () => {
   it("adds, pins, favorites, and closes tabs immutably", () => {

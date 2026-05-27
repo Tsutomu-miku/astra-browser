@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatZoomPercent, normalizeZoomFactor, stepZoomFactor } from "../src/renderer/domain/zoom";
+import { formatZoomPercent, normalizeZoomFactor, stepZoomFactor } from "../src/renderer/domain/browser/zoom";
 
 describe("zoom helpers", () => {
   it("normalizes invalid and out-of-range zoom factors", () => {

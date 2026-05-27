@@ -1,5 +1,5 @@
-import { DEFAULT_URL, WORKSPACE_ACCENTS } from "./browser-constants";
-import type { BrowserState, BrowserTab, Favorite } from "./browser-types";
+import { DEFAULT_URL, WORKSPACE_ACCENTS } from "./constants";
+import type { BrowserState, BrowserTab, Favorite } from "./types";
 import { DEFAULT_ZOOM_FACTOR } from "./zoom";
 
 export function createId(): string {

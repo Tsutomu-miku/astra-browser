@@ -1,4 +1,4 @@
-import type { BrowserState, Workspace } from "./browser-types";
+import type { BrowserState, Workspace } from "../browser/types";
 
 const DEFAULT_PROFILE_ID = "default";
 const PARTITION_PREFIX = "persist:astra-";

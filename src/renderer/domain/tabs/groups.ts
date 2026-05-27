@@ -1,4 +1,4 @@
-import type { BrowserTab, TabGroup, Workspace } from "./browser-types";
+import type { BrowserTab, TabGroup, Workspace } from "../browser/types";
 
 const GROUP_COLORS = ["#7dd3fc", "#f0abfc", "#86efac", "#fda4af", "#fde68a", "#c4b5fd"];
 

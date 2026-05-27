@@ -5,11 +5,11 @@ import {
   getWorkspaceHomepageUrl,
   getNextWorkspaceAccent,
   Workspace
-} from "./browser-core";
-import { getActiveWorkspace } from "./selectors";
-import { clearSplitView } from "./split-view";
-import { updateBrowserState } from "./action-core";
-import { normalizeWorkspaceProfile } from "./workspaceProfiles";
+} from "../browser-core";
+import { getActiveWorkspace } from "../browser/selectors";
+import { clearSplitView } from "../tabs/splitView";
+import { updateBrowserState } from "../browser/updateState";
+import { normalizeWorkspaceProfile } from "./profiles";
 
 export type WorkspaceDropPlacement = "before" | "after";
 

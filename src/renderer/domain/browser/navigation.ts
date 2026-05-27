@@ -1,5 +1,5 @@
-import { DEFAULT_URL, SEARCH_ENGINES } from "./browser-constants";
-import type { BrowserState, Favorite, SearchEngineKey, Workspace } from "./browser-types";
+import { DEFAULT_URL, SEARCH_ENGINES } from "./constants";
+import type { BrowserState, Favorite, SearchEngineKey, Workspace } from "./types";
 import { isInternalNewTabUrl } from "./internalPages";
 
 export function normalizeAddress(value: unknown, searchEngineKey: SearchEngineKey = "google"): string {

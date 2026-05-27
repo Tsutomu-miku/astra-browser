@@ -4,10 +4,10 @@ import {
   DownloadEntry,
   getReadableUrlTitle,
   normalizeAddress
-} from "./browser-core";
-import { isInternalPageUrl } from "./internalPages";
-import { getActiveTab, getActiveWorkspace } from "./selectors";
-import { updateBrowserState } from "./action-core";
+} from "../browser-core";
+import { isInternalPageUrl } from "../browser/internalPages";
+import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
+import { updateBrowserState } from "../browser/updateState";
 
 const MAX_HISTORY_ITEMS = 200;
 

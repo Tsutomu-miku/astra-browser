@@ -1,7 +1,7 @@
-import { BrowserState } from "./browser-core";
-import { getActiveWorkspace } from "./selectors";
-import { updateBrowserState } from "./action-core";
-import { clearSplitView, getSplitTabIds, setSplitTabIds } from "./split-view";
+import { BrowserState } from "../browser-core";
+import { getActiveWorkspace } from "../browser/selectors";
+import { updateBrowserState } from "../browser/updateState";
+import { clearSplitView, getSplitTabIds, setSplitTabIds } from "./splitView";
 
 export function selectTab(state: BrowserState, tabId: string): BrowserState {
   return updateBrowserState(state, (draft) => {

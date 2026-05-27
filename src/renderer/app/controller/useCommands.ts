@@ -1,5 +1,5 @@
 import { BrowserState, isEssential, isFavorite } from "../../domain/browser-core";
-import { getActiveTab, getActiveWorkspace } from "../../domain/selectors";
+import { getActiveTab, getActiveWorkspace } from "../../domain/browser/selectors";
 import type { Panel } from "../../stores/browserStore";
 import { buildContentCommands } from "../../surfaces/command/model/commandContentEntries";
 import { buildSplitCommands } from "../../surfaces/command/model/commandSplitEntries";

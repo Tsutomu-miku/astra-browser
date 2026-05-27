@@ -7,7 +7,7 @@ import {
   getPermissionRule,
   normalizeSitePermissions,
   upsertSitePermission
-} from "../src/renderer/domain/sitePermissions";
+} from "../src/renderer/domain/permissions/sitePermissions";
 
 describe("sitePermissions", () => {
   it("extracts http origins only", () => {

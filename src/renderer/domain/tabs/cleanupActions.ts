@@ -1,9 +1,9 @@
-import { BrowserState } from "./browser-core";
-import { getActiveTab, getActiveWorkspace } from "./selectors";
-import { updateBrowserState } from "./action-core";
-import { pruneEmptyTabGroups } from "./tab-groups";
-import { clearSplitView, pruneSplitTabIds } from "./split-view";
-import { prependClosedTabs } from "./tab-utils";
+import { BrowserState } from "../browser-core";
+import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
+import { updateBrowserState } from "../browser/updateState";
+import { pruneEmptyTabGroups } from "./groups";
+import { clearSplitView, pruneSplitTabIds } from "./splitView";
+import { prependClosedTabs } from "./utils";
 
 export function closeOtherTabs(state: BrowserState, targetTabId?: string): BrowserState {
   return updateBrowserState(state, (draft) => {

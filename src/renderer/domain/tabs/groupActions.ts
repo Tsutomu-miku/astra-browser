@@ -1,13 +1,13 @@
-import { BrowserState, getReadableUrlTitle } from "./browser-core";
-import type { TabGroup } from "./browser-types";
-import { getActiveTab, getActiveWorkspace } from "./selectors";
-import { updateBrowserState } from "./action-core";
+import { BrowserState, getReadableUrlTitle } from "../browser-core";
+import type { TabGroup } from "../browser/types";
+import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
+import { updateBrowserState } from "../browser/updateState";
 import {
   createTabGroup,
   normalizeTabGroupColor,
   normalizeTabGroupName,
   pruneEmptyTabGroups
-} from "./tab-groups";
+} from "./groups";
 
 export function groupActiveTab(state: BrowserState): BrowserState {
   return groupTab(state);

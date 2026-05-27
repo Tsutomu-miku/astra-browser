@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getSecurityGlyph, getUrlIdentity } from "../src/renderer/domain/urlIdentity";
+import { getSecurityGlyph, getUrlIdentity } from "../src/renderer/domain/browser/urlIdentity";
 
 describe("urlIdentity", () => {
   it("marks https pages as secure", () => {
