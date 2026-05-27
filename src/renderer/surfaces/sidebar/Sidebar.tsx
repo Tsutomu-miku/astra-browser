@@ -225,7 +225,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         />
       </section>
 
-      <SidebarFooter actions={actions} compactMode={compactMode} setPanel={setPanel} splitMode={state.splitMode} />
+      <SidebarFooter actions={actions} compactMode={compactMode} setPanel={setPanel} splitLayout={controller.splitLayout} splitMode={state.splitMode} />
       {tabMenu && (
         <TabContextMenu
           left={tabMenu.left}

@@ -602,6 +602,43 @@ h1 {
   background: rgba(12, 13, 16, 0.72);
 }
 
+.sidebar-split-layout {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  padding-bottom: 4px;
+}
+
+.sidebar-split-layout button {
+  min-width: 0;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--control);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.sidebar-split-layout button:hover {
+  border-color: var(--line);
+  background: var(--control-hover);
+  color: var(--text);
+}
+
+.sidebar-split-layout button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 22%, var(--control));
+  color: #f6fff8;
+}
+
+.sidebar-split-layout svg {
+  width: 15px;
+  height: 15px;
+}
+
 @media (max-width: 1080px) {
   .sidebar {
     grid-template-columns: 48px minmax(0, 1fr);
