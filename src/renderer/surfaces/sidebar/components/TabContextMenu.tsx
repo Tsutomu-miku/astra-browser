@@ -1,11 +1,15 @@
 import type { BrowserTab } from "../../../domain/browser-core";
-import type { MoveWorkspaceTarget } from "../model/tabContextMenuState";
+import type { MoveWorkspaceTarget, TabCleanupState } from "../model/tabContextMenuState";
 
 interface TabContextMenuProps {
   left: number;
   moveWorkspaceTargets: MoveWorkspaceTarget[];
+  cleanupState: TabCleanupState;
   onClose: () => void;
   onCloseTab: (tabId: string) => void;
+  onCloseOtherTabs: (tabId: string) => void;
+  onCloseTabsToLeft: (tabId: string) => void;
+  onCloseTabsToRight: (tabId: string) => void;
   onDuplicate: (tabId: string) => void;
   onMoveToWorkspace: (tabId: string, workspaceId: string) => void;
   onOpenGlance: (url: string, title?: string) => void;
@@ -25,8 +29,12 @@ interface TabContextMenuProps {
 export function TabContextMenu({
   left,
   moveWorkspaceTargets,
+  cleanupState,
   onClose,
   onCloseTab,
+  onCloseOtherTabs,
+  onCloseTabsToLeft,
+  onCloseTabsToRight,
   onDuplicate,
   onMoveToWorkspace,
   onOpenGlance,
@@ -85,6 +93,31 @@ export function TabContextMenu({
       </button>
       <button type="button" role="menuitem" onClick={() => run(() => onToggleMuted(tab.id))}>
         {tab.isMuted ? "Unmute" : "Mute"}
+      </button>
+      <span className="tab-context-menu-separator" />
+      <button
+        type="button"
+        role="menuitem"
+        disabled={!cleanupState.canCloseOtherTabs}
+        onClick={() => run(() => onCloseOtherTabs(tab.id))}
+      >
+        Close other tabs
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        disabled={!cleanupState.canCloseTabsToLeft}
+        onClick={() => run(() => onCloseTabsToLeft(tab.id))}
+      >
+        Close tabs to the left
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        disabled={!cleanupState.canCloseTabsToRight}
+        onClick={() => run(() => onCloseTabsToRight(tab.id))}
+      >
+        Close tabs to the right
       </button>
       <span className="tab-context-menu-separator" />
       <button type="button" role="menuitem" className="danger" onClick={() => run(() => onCloseTab(tab.id))}>Close</button>

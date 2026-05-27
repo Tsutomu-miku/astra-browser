@@ -15,9 +15,9 @@ export interface CommandActions {
   clearWorkspaceBrowsingData: (workspaceId: string) => void;
   assignTabToGroup: (tabId: string, groupId: string) => void;
   closeActiveTab: () => void;
-  closeOtherTabs: () => void;
-  closeTabsToLeft: () => void;
-  closeTabsToRight: () => void;
+  closeOtherTabs: (tabId?: string) => void;
+  closeTabsToLeft: (tabId?: string) => void;
+  closeTabsToRight: (tabId?: string) => void;
   deleteWorkspace: (workspaceId: string) => void;
   duplicateActiveTab: () => void;
   fillSplitView: () => void;

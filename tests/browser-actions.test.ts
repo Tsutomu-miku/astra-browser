@@ -139,6 +139,20 @@ describe("browser-actions", () => {
     expect(closed.splitTabIds).toEqual([]);
   });
 
+  it("closes other tabs around a background target tab", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const third = openUrlInActiveWorkspace(second, "third.test", "Third");
+    const workspace = getActiveWorkspace(third);
+    const firstTab = workspace.tabs.find((tab) => tab.title === "First")!;
+    const closed = closeOtherTabs(third, firstTab.id);
+    const nextWorkspace = getActiveWorkspace(closed);
+
+    expect(nextWorkspace.tabs.map((tab) => tab.title)).toEqual(["First"]);
+    expect(getActiveTab(nextWorkspace).title).toBe("First");
+    expect(nextWorkspace.closedTabs.map((tab) => tab.title)).toEqual(["Third", "Second", "New Tab"]);
+  });
+
   it("closes tabs to the right and keeps left tabs", () => {
     const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
     const second = openUrlInActiveWorkspace(first, "second.test", "Second");
@@ -159,6 +173,20 @@ describe("browser-actions", () => {
     expect(getActiveWorkspace(closed).closedTabs[0].title).toBe("Third");
   });
 
+  it("closes tabs to the right of a background target tab", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const third = openUrlInActiveWorkspace(second, "third.test", "Third");
+    const workspace = getActiveWorkspace(third);
+    const firstTab = workspace.tabs.find((tab) => tab.title === "First")!;
+    const closed = closeTabsToRight(third, firstTab.id);
+    const nextWorkspace = getActiveWorkspace(closed);
+
+    expect(nextWorkspace.tabs.map((tab) => tab.title)).toEqual(["New Tab", "First"]);
+    expect(getActiveTab(nextWorkspace).title).toBe("First");
+    expect(nextWorkspace.closedTabs.map((tab) => tab.title).slice(0, 2)).toEqual(["Third", "Second"]);
+  });
+
   it("closes tabs to the left and keeps right tabs", () => {
     const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
     const second = openUrlInActiveWorkspace(first, "second.test", "Second");
@@ -177,6 +205,20 @@ describe("browser-actions", () => {
     expect(titles).toEqual(["Second", "Third"]);
     expect(getActiveTab(getActiveWorkspace(closed)).title).toBe("Second");
     expect(getActiveWorkspace(closed).closedTabs[0].title).toBe("First");
+  });
+
+  it("closes tabs to the left of a background target tab", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const third = openUrlInActiveWorkspace(second, "third.test", "Third");
+    const workspace = getActiveWorkspace(third);
+    const secondTab = workspace.tabs.find((tab) => tab.title === "Second")!;
+    const closed = closeTabsToLeft(third, secondTab.id);
+    const nextWorkspace = getActiveWorkspace(closed);
+
+    expect(nextWorkspace.tabs.map((tab) => tab.title)).toEqual(["Second", "Third"]);
+    expect(getActiveTab(nextWorkspace).title).toBe("Second");
+    expect(nextWorkspace.closedTabs.map((tab) => tab.title).slice(0, 2)).toEqual(["First", "New Tab"]);
   });
 
   it("duplicates the active tab next to the original", () => {

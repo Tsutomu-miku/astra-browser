@@ -98,9 +98,9 @@ interface BrowserStore {
   clearHistory: () => void;
   clearWorkspaceBrowsingData: (workspaceId: string) => void;
   closeActiveTab: () => void;
-  closeOtherTabs: () => void;
-  closeTabsToLeft: () => void;
-  closeTabsToRight: () => void;
+  closeOtherTabs: (tabId?: string) => void;
+  closeTabsToLeft: (tabId?: string) => void;
+  closeTabsToRight: (tabId?: string) => void;
   closeTab: (tabId: string) => void;
   clearSitePermission: (profileId: string, origin: string, permission: string) => void;
   deleteWorkspace: (workspaceId: string) => void;
@@ -204,9 +204,9 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     return next;
   },
   closeActiveTab: () => update(set, closeActiveTab),
-  closeOtherTabs: () => update(set, closeOtherTabs),
-  closeTabsToLeft: () => update(set, closeTabsToLeft),
-  closeTabsToRight: () => update(set, closeTabsToRight),
+  closeOtherTabs: (tabId) => update(set, (state) => closeOtherTabs(state, tabId)),
+  closeTabsToLeft: (tabId) => update(set, (state) => closeTabsToLeft(state, tabId)),
+  closeTabsToRight: (tabId) => update(set, (state) => closeTabsToRight(state, tabId)),
   closeTab: (tabId) => update(set, (state) => closeTab(state, tabId)),
   clearSitePermission: (profileId, origin, permission) =>
     update(set, (state) => clearSitePermissionRule(state, profileId, origin, permission)),

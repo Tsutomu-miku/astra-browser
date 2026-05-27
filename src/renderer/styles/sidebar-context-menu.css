@@ -28,6 +28,17 @@
   outline: none;
 }
 
+.tab-context-menu button:disabled {
+  color: var(--muted);
+  cursor: default;
+  opacity: 0.48;
+}
+
+.tab-context-menu button:disabled:hover,
+.tab-context-menu button:disabled:focus-visible {
+  background: transparent;
+}
+
 .tab-context-menu button.danger {
   color: #fda4af;
 }
