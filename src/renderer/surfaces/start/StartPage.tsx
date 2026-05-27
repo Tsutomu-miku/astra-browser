@@ -5,6 +5,7 @@ import { getReadableUrlTitle } from "../../domain/browser-core";
 import type { BrowserController } from "../../hooks/types";
 import { StartSearch } from "./components/StartSearch";
 import { StartTileGrid } from "./components/StartTileGrid";
+import { getStartOpenIntent } from "./startOpenIntent";
 import { getStartPageContent } from "./startPageContent";
 
 export function StartPage({
@@ -19,7 +20,18 @@ export function StartPage({
   const accentStyle = { "--start-accent": activeWorkspace.accent } as CSSProperties;
 
   function openOrPreview(event: MouseEvent, url: string, title?: string) {
-    event.altKey ? actions.openGlance(url, title) : actions.navigateActiveTab(url);
+    const intent = getStartOpenIntent(url, title, {
+      altKey: event.altKey,
+      shiftKey: event.shiftKey
+    });
+
+    if (intent.type === "preview") {
+      actions.openGlance(intent.url, intent.title);
+    } else if (intent.type === "split") {
+      actions.openUrlInSplit(intent.url, intent.title);
+    } else {
+      actions.navigateActiveTab(intent.url);
+    }
   }
 
   return (

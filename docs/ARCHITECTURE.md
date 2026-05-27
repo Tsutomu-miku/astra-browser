@@ -38,7 +38,7 @@ Split layout mode is also renderer-owned UI state. Keyboard shortcuts and comman
 
 Glance header controls and webview rendering live under `surfaces/glance/components`; navigation state is read through a small helper so optional Electron webview methods stay isolated from the visual component.
 
-`src/renderer/surfaces/start` renders internal browser pages such as `astra://newtab`. These pages are part of the product shell and do not use Electron webviews, so startup search, global Essentials, favorites, and recent Space history remain responsive even before any external page is loaded. Start search reuses the shared omnibox suggestion/action model, while its visual pieces live under `surfaces/start/components`.
+`src/renderer/surfaces/start` renders internal browser pages such as `astra://newtab`. These pages are part of the product shell and do not use Electron webviews, so startup search, global Essentials, favorites, and recent Space history remain responsive even before any external page is loaded. Start search reuses the shared omnibox suggestion/action model, while its visual pieces live under `surfaces/start/components`. Start entry modifier intent is separated from rendering so tile and history entries share the same open, Glance preview, and split-open behavior.
 
 `src/renderer/surfaces/sidebar` owns vertical navigation, Space switching, tab organization, and sidebar search. Sidebar search intent resolution is separated from rendering so keyboard and pointer modifiers can share the same preview, split-open, and normal-open rules.
 
