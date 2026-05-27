@@ -290,11 +290,50 @@ h1 {
   font-size: 11px;
 }
 
+.sidebar-section {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 0 0 10px;
+}
+
+.sidebar-section-header {
+  min-width: 0;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 3px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 760;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.sidebar-section-header span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-section-header span:last-child {
+  min-width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: color-mix(in srgb, var(--muted) 82%, white);
+  font-size: 10px;
+}
+
 .pinned-tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 7px;
-  padding: 4px 0 12px;
 }
 
 .pinned-tab-button {
@@ -328,7 +367,6 @@ h1 {
 .favorites {
   display: grid;
   gap: 6px;
-  padding: 0 0 12px;
 }
 
 .essentials {
@@ -401,6 +439,20 @@ h1 {
   box-shadow:
     inset 3px 0 0 var(--accent),
     inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.favorite-button[aria-current="true"] {
+  border-color: color-mix(in srgb, var(--accent) 36%, transparent);
+  background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.08));
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.essentials .favorite-button[aria-current="true"] {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .tab-row[aria-selected="true"],
@@ -483,6 +535,11 @@ h1 {
   padding-right: 2px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.tabs-section {
+  min-height: 0;
+  padding-bottom: 0;
 }
 
 .tab-button {

@@ -3,6 +3,15 @@ import { FiLoader, FiMoon, FiX } from "react-icons/fi";
 
 import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../../domain/browser-core";
 
+export function SidebarSectionHeader({ count, title }: { count: number; title: string }) {
+  return (
+    <header className="sidebar-section-header">
+      <span>{title}</span>
+      <span>{count}</span>
+    </header>
+  );
+}
+
 export function TabGroupSection({
   activeTab,
   draggingTabId,
@@ -178,6 +187,7 @@ export function TabRow({
 export function FavoriteButton({
   favorite,
   id,
+  isActive = false,
   isSearchSelected = false,
   onOpen,
   onOpenInSplit,
@@ -185,6 +195,7 @@ export function FavoriteButton({
 }: {
   favorite: Favorite;
   id?: string;
+  isActive?: boolean;
   isSearchSelected?: boolean;
   onOpen: (url: string, title?: string) => void;
   onOpenInSplit: (url: string, title?: string) => void;
@@ -196,6 +207,7 @@ export function FavoriteButton({
       id={id}
       type="button"
       title={favorite.url}
+      aria-current={isActive}
       aria-selected={isSearchSelected}
       onClick={(event) => {
         if (event.altKey) {
