@@ -133,6 +133,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - History entries must support single-entry removal and full clearing.
 - History must include per-workspace recently closed tab restore.
 - Chromium downloads must be tracked in a downloads drawer that can be opened with `Ctrl+Shift+Y` or `Cmd+Shift+Y`.
+- Completed downloads must support opening the file and revealing it in the file manager from the downloads drawer.
 
 ### Settings
 

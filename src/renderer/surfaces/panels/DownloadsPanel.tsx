@@ -1,7 +1,8 @@
-import { FiX } from "react-icons/fi";
+import { FiExternalLink, FiFolder, FiX } from "react-icons/fi";
 
 import { formatBytes, type DownloadEntry } from "../../domain/browser-core";
 import type { BrowserController } from "../../hooks/types";
+import { getDownloadActionsState } from "./downloadActions";
 
 export function DownloadsPanel({ controller }: { controller: BrowserController }) {
   const { setPanel, state } = controller;
@@ -22,29 +23,36 @@ export function DownloadsPanel({ controller }: { controller: BrowserController }
 }
 
 function DownloadItem({ download }: { download: DownloadEntry }) {
-  const progress = getDownloadProgress(download);
+  const actionsState = getDownloadActionsState(download);
   return (
     <article className="download-item">
       <div className="download-main">
         <span className="download-title">{download.filename}</span>
-        <span className="download-meta">{getDownloadMeta(download, progress)}</span>
+        <span className="download-meta">{getDownloadMeta(download, actionsState.progress)}</span>
       </div>
-      <progress className="download-progress" max="100" value={progress} />
-      <button
-        className="toolbar-button download-action"
-        type="button"
-        disabled={download.state !== "completed" || !download.savePath}
-        onClick={() => window.astraShell?.showItemInFolder(download.savePath)}
-      >
-        Show
-      </button>
+      <div className="download-actions">
+        <button
+          className="icon-button"
+          type="button"
+          title="Open download"
+          disabled={!actionsState.canOpen}
+          onClick={() => window.astraShell?.openPath(download.savePath)}
+        >
+          <FiExternalLink />
+        </button>
+        <button
+          className="icon-button"
+          type="button"
+          title="Show in folder"
+          disabled={!actionsState.canShowInFolder}
+          onClick={() => window.astraShell?.showItemInFolder(download.savePath)}
+        >
+          <FiFolder />
+        </button>
+      </div>
+      <progress className="download-progress" max="100" value={actionsState.progress} />
     </article>
   );
-}
-
-function getDownloadProgress(download: DownloadEntry): number {
-  if (!download.totalBytes) return download.state === "completed" ? 100 : 0;
-  return Math.round((download.receivedBytes / download.totalBytes) * 100);
 }
 
 function getDownloadMeta(download: DownloadEntry, progress: number): string {

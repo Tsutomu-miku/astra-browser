@@ -8,7 +8,7 @@ The project is split around runtime boundaries rather than feature folders.
 
 ## Preload
 
-`src/main/preload.js` is the only bridge exposed to renderer code. It keeps `contextIsolation` enabled and publishes a minimal `window.astraShell` API for app version, download events, profile partition registration, profile storage inspection, permission prompts/rules, browsing-data clearing, and showing completed downloads in the file manager.
+`src/main/preload.js` is the only bridge exposed to renderer code. It keeps `contextIsolation` enabled and publishes a minimal `window.astraShell` API for app version, download events, profile partition registration, profile storage inspection, permission prompts/rules, browsing-data clearing, opening completed downloads, and showing completed downloads in the file manager.
 
 ## Renderer
 

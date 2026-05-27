@@ -246,6 +246,10 @@ ipcMain.handle("show-item-in-folder", (_event, filePath) => {
     shell.showItemInFolder(filePath);
   }
 });
+ipcMain.handle("open-path", (_event, filePath) => {
+  if (!filePath) return "";
+  return shell.openPath(filePath);
+});
 
 function getSessionsForClearing(partitions) {
   const targets = [session.defaultSession];

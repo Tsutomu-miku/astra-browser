@@ -40,6 +40,7 @@ export interface AstraShellApi {
   getVersion: () => Promise<string>;
   onDownloadEvent: (listener: (payload: DownloadEvent) => void) => () => void;
   onPermissionRequest: (listener: (payload: PermissionRequestEvent) => void) => () => void;
+  openPath: (filePath: string) => Promise<string>;
   resolvePermissionRequest: (id: string, allowed: boolean) => Promise<void>;
   setProfilePartitions: (partitions: string[]) => Promise<void>;
   setPermissionRules: (rules: PermissionRulePayload[]) => Promise<void>;
