@@ -18,6 +18,7 @@ import { SidebarSearchBox } from "./components/SidebarSearchBox";
 import { SidebarSections } from "./components/SidebarSections";
 import { TabContextMenu } from "./components/TabContextMenu";
 import { WorkspaceStrip } from "./components/WorkspaceStrip";
+import { getMoveWorkspaceTargets } from "./model/tabContextMenuState";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -226,11 +227,13 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       {tabMenu && (
         <TabContextMenu
           left={tabMenu.left}
+          moveWorkspaceTargets={getMoveWorkspaceTargets(state.workspaces, activeWorkspace.id)}
           tab={tabMenu.tab}
           top={tabMenu.top}
           onClose={() => setTabMenu(null)}
           onCloseTab={actions.closeTab}
           onDuplicate={actions.duplicateTab}
+          onMoveToWorkspace={actions.moveTabToWorkspace}
           onOpenGlance={actions.openGlance}
           onOpenInSplit={actions.openTabInSplit}
           onSelect={actions.selectTab}

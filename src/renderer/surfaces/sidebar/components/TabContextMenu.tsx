@@ -1,10 +1,13 @@
 import type { BrowserTab } from "../../../domain/browser-core";
+import type { MoveWorkspaceTarget } from "../model/tabContextMenuState";
 
 interface TabContextMenuProps {
   left: number;
+  moveWorkspaceTargets: MoveWorkspaceTarget[];
   onClose: () => void;
   onCloseTab: (tabId: string) => void;
   onDuplicate: (tabId: string) => void;
+  onMoveToWorkspace: (tabId: string, workspaceId: string) => void;
   onOpenGlance: (url: string, title?: string) => void;
   onOpenInSplit: (tabId: string) => void;
   onSelect: (tabId: string) => void;
@@ -21,9 +24,11 @@ interface TabContextMenuProps {
 
 export function TabContextMenu({
   left,
+  moveWorkspaceTargets,
   onClose,
   onCloseTab,
   onDuplicate,
+  onMoveToWorkspace,
   onOpenGlance,
   onOpenInSplit,
   onSelect,
@@ -54,6 +59,21 @@ export function TabContextMenu({
       <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</button>
       <button type="button" role="menuitem" onClick={() => run(() => onDuplicate(tab.id))}>Duplicate</button>
       <button type="button" role="menuitem" onClick={() => run(() => onSleepTab(tab.id))}>Sleep tab</button>
+      {moveWorkspaceTargets.length > 0 && (
+        <>
+          <span className="tab-context-menu-separator" />
+          {moveWorkspaceTargets.map((workspace) => (
+            <button
+              key={workspace.id}
+              type="button"
+              role="menuitem"
+              onClick={() => run(() => onMoveToWorkspace(tab.id, workspace.id))}
+            >
+              Move to {workspace.name}
+            </button>
+          ))}
+        </>
+      )}
       <button type="button" role="menuitem" onClick={() => run(() => onToggleFavorite(tab.id))}>
         {tabIsFavorite ? "Remove favorite" : "Add favorite"}
       </button>
