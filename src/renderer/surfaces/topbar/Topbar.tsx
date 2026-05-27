@@ -20,18 +20,28 @@ import { getUrlIdentity } from "../../domain/urlIdentity";
 import { formatZoomPercent } from "../../domain/zoom";
 import type { BrowserController } from "../../app/controller/types";
 import { useOmniboxController } from "../../app/controller/useOmniboxController";
+import { getReloadButtonState } from "./model/navigationButtonState";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWebview, activeWorkspace, actions, addressValue, setAddressValue, setPanel, state } = controller;
   const identity = getUrlIdentity(activeTab.url);
   const omnibox = useOmniboxController({ actions, addressValue, setAddressValue, state });
+  const reloadButton = getReloadButtonState(activeTab.isLoading);
 
   return (
     <header className="topbar">
       <nav className="nav-controls" aria-label="Navigation">
         <button className="icon-button" title="Back" type="button" disabled={!activeTab.canGoBack} onClick={() => actions.runWebviewAction("goBack")}><FiArrowLeft /></button>
         <button className="icon-button" title="Forward" type="button" disabled={!activeTab.canGoForward} onClick={() => actions.runWebviewAction("goForward")}><FiArrowRight /></button>
-        <button className="icon-button" title="Reload" type="button" onClick={() => actions.runWebviewAction("reload")}><FiRefreshCw /></button>
+        <button
+          className="icon-button"
+          title={reloadButton.label}
+          type="button"
+          aria-label={reloadButton.label}
+          onClick={() => actions.runWebviewAction(reloadButton.action)}
+        >
+          {activeTab.isLoading ? <FiX /> : <FiRefreshCw />}
+        </button>
       </nav>
       <div className="address-area">
         <form className="address-form" onSubmit={omnibox.submitAddress}>
