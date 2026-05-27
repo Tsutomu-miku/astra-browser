@@ -1,11 +1,13 @@
-import type { CSSProperties, DragEvent } from "react";
+import type { CSSProperties, DragEvent, WheelEvent } from "react";
 import { FiChevronLeft, FiChevronRight, FiPlus } from "react-icons/fi";
 
 import type { Workspace } from "../../../domain/browser-core";
 import {
+  getAdjacentWorkspaceId,
   getWorkspaceButtonLabel,
   getWorkspaceInitial,
-  getWorkspaceTabCount
+  getWorkspaceTabCount,
+  getWorkspaceWheelDirection
 } from "../model/workspaceStripState";
 
 export function WorkspaceStrip({
@@ -35,8 +37,19 @@ export function WorkspaceStrip({
   sidebarCollapsed: boolean;
   workspaces: Workspace[];
 }) {
+  function onWorkspaceWheel(event: WheelEvent<HTMLElement>) {
+    const direction = getWorkspaceWheelDirection(event.deltaX, event.deltaY);
+    if (!direction) return;
+
+    const workspaceId = getAdjacentWorkspaceId(workspaces, activeWorkspaceId, direction);
+    if (!workspaceId) return;
+
+    event.preventDefault();
+    onSelect(workspaceId);
+  }
+
   return (
-    <section className="workspace-strip" aria-label="Workspaces">
+    <section className="workspace-strip" aria-label="Workspaces" onWheel={onWorkspaceWheel}>
       {workspaces.map((workspace) => (
         <button
           className="workspace-button"

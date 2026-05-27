@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { createTab, type Workspace } from "../src/renderer/domain/browser-core";
 import {
+  getAdjacentWorkspaceId,
   getWorkspaceButtonLabel,
   getWorkspaceInitial,
-  getWorkspaceTabCount
+  getWorkspaceTabCount,
+  getWorkspaceWheelDirection
 } from "../src/renderer/surfaces/sidebar/model/workspaceStripState";
 
 function workspace(name: string, tabCount: number): Pick<Workspace, "name" | "tabs"> {
@@ -28,5 +30,22 @@ describe("workspace strip state", () => {
 
     expect(getWorkspaceInitial(unnamed)).toBe("S");
     expect(getWorkspaceButtonLabel(unnamed)).toBe("Space, 1 tab");
+  });
+
+  it("maps wheel movement to workspace cycle direction", () => {
+    expect(getWorkspaceWheelDirection(0, 12)).toBe(1);
+    expect(getWorkspaceWheelDirection(0, -12)).toBe(-1);
+    expect(getWorkspaceWheelDirection(14, 3)).toBe(1);
+    expect(getWorkspaceWheelDirection(-14, 3)).toBe(-1);
+    expect(getWorkspaceWheelDirection(0.2, 0.4)).toBe(0);
+  });
+
+  it("wraps to adjacent workspaces for wheel cycling", () => {
+    const workspaces = [{ id: "personal" }, { id: "work" }, { id: "later" }];
+
+    expect(getAdjacentWorkspaceId(workspaces, "personal", 1)).toBe("work");
+    expect(getAdjacentWorkspaceId(workspaces, "personal", -1)).toBe("later");
+    expect(getAdjacentWorkspaceId(workspaces, "later", 1)).toBe("personal");
+    expect(getAdjacentWorkspaceId([{ id: "only" }], "only", 1)).toBeNull();
   });
 });
