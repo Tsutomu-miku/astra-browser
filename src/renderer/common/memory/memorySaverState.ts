@@ -5,13 +5,15 @@ export interface MemorySaverState {
   mountedWebviews: number;
   protectedTabs: number;
   reclaimableTabs: number;
+  sleepAfterMinutes: number;
+  sleepEnabled: boolean;
   sleepingTabs: number;
   summary: string;
 }
 
 export function getMemorySaverState(
   workspace: Workspace,
-  state: Pick<BrowserState, "splitMode" | "splitTabId" | "splitTabIds">
+  state: Pick<BrowserState, "splitMode" | "splitTabId" | "splitTabIds"> & Partial<Pick<BrowserState, "settings">>
 ): MemorySaverState {
   const visibleTabIds = new Set([workspace.activeTabId, ...getSplitTabIds(state)].filter(Boolean));
   let protectedTabs = 0;
@@ -37,6 +39,8 @@ export function getMemorySaverState(
     mountedWebviews,
     protectedTabs,
     reclaimableTabs,
+    sleepAfterMinutes: state.settings?.memorySaverIdleMinutes ?? 30,
+    sleepEnabled: state.settings?.memorySaverEnabled ?? true,
     sleepingTabs,
     summary: `${reclaimableTabs} releasable · ${sleepingTabs} sleeping · ${protectedTabs} protected`
   };

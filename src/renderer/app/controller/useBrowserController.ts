@@ -66,6 +66,7 @@ export function useBrowserController() {
     ingestPermissionRequest: store.ingestPermissionRequest,
     onShortcut: handleShortcut,
     sitePermissions: store.state.sitePermissions,
+    sleepIdleTabs: store.sleepIdleTabs,
     workspaces: store.state.workspaces
   });
 

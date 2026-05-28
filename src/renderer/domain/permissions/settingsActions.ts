@@ -3,7 +3,16 @@ import { clearSitePermission, clearSitePermissionsForOrigin, upsertSitePermissio
 import { updateBrowserState } from "../browser/updateState";
 
 export function updateSettings(state: BrowserState, patch: Partial<BrowserState["settings"]>): BrowserState {
-  return updateBrowserState(state, (draft) => Object.assign(draft.settings, patch));
+  return updateBrowserState(state, (draft) => {
+    Object.assign(draft.settings, patch);
+    draft.settings.memorySaverIdleMinutes = normalizeMemorySaverIdleMinutes(draft.settings.memorySaverIdleMinutes);
+  });
+}
+
+function normalizeMemorySaverIdleMinutes(value: unknown): number {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes)) return 30;
+  return Math.min(240, Math.max(1, Math.round(minutes)));
 }
 
 export function setSitePermission(

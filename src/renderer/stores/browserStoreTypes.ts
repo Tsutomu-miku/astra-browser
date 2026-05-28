@@ -69,6 +69,7 @@ export interface BrowserStore {
   runWebviewAction: (action: WebviewAction, webview?: WebviewElement) => void;
   selectAdjacentTab: (direction: 1 | -1) => void;
   selectTab: (tabId: string) => void;
+  sleepIdleTabs: () => void;
   sleepInactiveTabs: () => void;
   sleepTab: (tabId: string) => void;
   resetActiveTabZoom: (webview?: WebviewElement) => void;

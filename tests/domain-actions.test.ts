@@ -32,6 +32,7 @@ import {
   selectAdjacentTab,
   selectTab,
   setActiveTabZoom,
+  sleepIdleTabs,
   sleepInactiveTabs,
   sleepTab,
   stepActiveTabZoom,
@@ -606,5 +607,44 @@ describe("domain actions", () => {
     expect(sleepingTab.isSleeping).toBe(true);
     expect(getActiveTab(workspace).id).not.toBe(active.id);
     expect(slept.splitMode).toBe(false);
+  });
+
+  it("automatically sleeps idle background tabs while protecting active split and pinned tabs", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const third = openUrlInActiveWorkspace(second, "third.test", "Third");
+    const splitCandidate = getActiveWorkspace(third).tabs.find((tab) => tab.title === "First")!;
+    const split = openTabInSplit(third, splitCandidate.id);
+    const workspace = getActiveWorkspace(split);
+    const active = getActiveTab(workspace);
+    const splitTab = workspace.tabs.find((tab) => tab.title === "First")!;
+    const background = workspace.tabs.find((tab) => tab.title === "Second")!;
+    const pinned = workspace.tabs.find((tab) => tab.title === "New Tab")!;
+    const now = 1_000_000;
+    background.lastActiveAt = now - 31 * 60_000;
+    active.lastActiveAt = now - 31 * 60_000;
+    splitTab.lastActiveAt = now - 31 * 60_000;
+    pinned.isPinned = true;
+    pinned.lastActiveAt = now - 31 * 60_000;
+
+    const slept = sleepIdleTabs(split, now);
+    const sleptWorkspace = getActiveWorkspace(slept);
+
+    expect(sleptWorkspace.tabs.find((tab) => tab.id === background.id)?.isSleeping).toBe(true);
+    expect(sleptWorkspace.tabs.find((tab) => tab.id === active.id)?.isSleeping).toBe(false);
+    expect(sleptWorkspace.tabs.find((tab) => tab.id === splitTab.id)?.isSleeping).toBe(false);
+    expect(sleptWorkspace.tabs.find((tab) => tab.id === pinned.id)?.isSleeping).toBe(false);
+  });
+
+  it("does not sleep idle tabs when automatic Memory Saver is disabled", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const workspace = getActiveWorkspace(second);
+    const background = workspace.tabs.find((tab) => tab.title === "First")!;
+    const now = 1_000_000;
+    second.settings.memorySaverEnabled = false;
+    background.lastActiveAt = now - 31 * 60_000;
+
+    expect(sleepIdleTabs(second, now)).toBe(second);
   });
 });

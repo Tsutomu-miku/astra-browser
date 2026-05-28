@@ -46,6 +46,8 @@ describe("browser domain primitives", () => {
     expect(state.activeWorkspaceId).toBe("space");
     expect(state.settings.searchEngine).toBe("google");
     expect(state.settings.startupBehavior).toBe("restore");
+    expect(state.settings.memorySaverEnabled).toBe(true);
+    expect(state.settings.memorySaverIdleMinutes).toBe(30);
     expect(state.workspaces[0].name).toBe("Space");
     expect(state.workspaces[0].homepage).toBe("about:blank");
     expect(state.workspaces[0].favorites[0].url).toBe("https://github.com/");
@@ -56,7 +58,23 @@ describe("browser domain primitives", () => {
     expect(state.workspaces[0].tabs[0].canGoBack).toBe(false);
     expect(state.workspaces[0].tabs[0].canGoForward).toBe(false);
     expect(state.workspaces[0].tabs[0].isMuted).toBe(false);
+    expect(state.workspaces[0].tabs[0].lastActiveAt).toBeGreaterThan(0);
     expect(state.workspaces[0].tabs[0].zoomFactor).toBe(1);
+  });
+
+  it("normalizes Memory Saver settings for restored states", () => {
+    const state = normalizeState({
+      settings: {
+        homepage: "about:blank",
+        memorySaverEnabled: false,
+        memorySaverIdleMinutes: 999
+      },
+      workspaces: [{ id: "space", tabs: [{ title: "Old", url: "old.example", lastActiveAt: 123 }] }]
+    });
+
+    expect(state.settings.memorySaverEnabled).toBe(false);
+    expect(state.settings.memorySaverIdleMinutes).toBe(240);
+    expect(state.workspaces[0].tabs[0].lastActiveAt).toBe(123);
   });
 
   it("can reset restored tabs to homepage on startup", () => {

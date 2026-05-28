@@ -87,7 +87,8 @@ export function duplicateTab(state: BrowserState, tabId: string): BrowserState {
       id: createId(),
       canGoBack: false,
       canGoForward: false,
-      isLoading: false
+      isLoading: false,
+      lastActiveAt: Date.now()
     };
     workspace.tabs.splice(index + 1, 0, tab);
     draft.activeWorkspaceId = workspace.id;

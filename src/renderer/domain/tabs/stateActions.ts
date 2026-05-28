@@ -77,6 +77,31 @@ export function sleepInactiveTabs(state: BrowserState): BrowserState {
   });
 }
 
+export function sleepIdleTabs(state: BrowserState, now = Date.now()): BrowserState {
+  if (!state.settings.memorySaverEnabled) return state;
+
+  let sleptTabs = 0;
+  const next = updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const visibleTabIds = new Set([workspace.activeTabId, ...getSplitTabIds(draft)].filter(Boolean));
+    const cutoff = now - draft.settings.memorySaverIdleMinutes * 60_000;
+
+    for (const tab of workspace.tabs) {
+      if (tab.isSleeping || tab.isPinned || visibleTabIds.has(tab.id) || tab.lastActiveAt > cutoff) {
+        continue;
+      }
+
+      tab.isSleeping = true;
+      tab.isLoading = false;
+      tab.canGoBack = false;
+      tab.canGoForward = false;
+      sleptTabs += 1;
+    }
+  });
+
+  return sleptTabs > 0 ? next : state;
+}
+
 export function toggleActiveTabFavorite(state: BrowserState): BrowserState {
   return toggleTabFavorite(state, getActiveTab(getActiveWorkspace(state)).id);
 }
@@ -130,6 +155,7 @@ export function updateTab(state: BrowserState, tabId: string, patch: Partial<Bro
       Object.assign(tab, patch);
       if (patch.url || patch.isLoading) {
         tab.isSleeping = false;
+        tab.lastActiveAt = Date.now();
       }
     }
   });

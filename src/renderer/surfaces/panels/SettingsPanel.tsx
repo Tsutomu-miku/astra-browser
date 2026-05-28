@@ -75,6 +75,7 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
             onImportBackup={importBackup}
             onRefreshProfileStorage={profileStorage.refresh}
             onSleepInactiveTabs={actions.sleepInactiveTabs}
+            onUpdateMemorySaver={actions.updateSettings}
             profileStorageEntries={profileStorage.entries}
             profileStorageError={profileStorage.error}
             profileStorageStatus={profileStorage.status}

@@ -18,6 +18,7 @@ export function createTab(title: string, url: string): BrowserTab {
     isPinned: false,
     isLoading: false,
     isSleeping: false,
+    lastActiveAt: Date.now(),
     zoomFactor: DEFAULT_ZOOM_FACTOR
   };
 }
@@ -45,6 +46,8 @@ export function createDefaultState(): BrowserState {
     sitePermissions: [],
     settings: {
       homepage: DEFAULT_URL,
+      memorySaverEnabled: true,
+      memorySaverIdleMinutes: 30,
       searchEngine: "google",
       startupBehavior: "restore"
     },

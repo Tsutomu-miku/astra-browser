@@ -56,6 +56,8 @@ describe("settings panel sections", () => {
         mountedWebviews: 3,
         protectedTabs: 1,
         reclaimableTabs: 2,
+        sleepAfterMinutes: 30,
+        sleepEnabled: true,
         sleepingTabs: 0,
         summary: "2 releasable · 0 sleeping · 1 protected"
       },
@@ -65,6 +67,7 @@ describe("settings panel sections", () => {
       onImportBackup: vi.fn(),
       onRefreshProfileStorage: vi.fn(),
       onSleepInactiveTabs: vi.fn(),
+      onUpdateMemorySaver: vi.fn(),
       profileStorageEntries: [],
       profileStorageError: null,
       profileStorageStatus: "ready"
@@ -118,6 +121,8 @@ describe("settings panel sections", () => {
       mountedWebviews: 3,
       protectedTabs: 2,
       reclaimableTabs: 1,
+      sleepAfterMinutes: 30,
+      sleepEnabled: true,
       sleepingTabs: 1,
       summary: "1 releasable · 1 sleeping · 2 protected"
     });
@@ -130,14 +135,19 @@ describe("settings panel sections", () => {
         mountedWebviews: 4,
         protectedTabs: 2,
         reclaimableTabs: 1,
+        sleepAfterMinutes: 15,
+        sleepEnabled: true,
         sleepingTabs: 1,
         summary: "1 releasable · 1 sleeping · 2 protected"
       },
-      onSleepInactiveTabs
+      onSleepInactiveTabs,
+      onUpdateMemorySaver: vi.fn()
     }));
 
     expect(html).toContain('aria-label="Memory saver"');
+    expect(html).toContain("Auto sleep after 15 min");
     expect(html).toContain("1 releasable · 1 sleeping · 2 protected");
+    expect(html).toContain("Automatically sleep inactive tabs");
     expect(html).toContain("<strong>4</strong>");
     expect(html).not.toContain("disabled");
   });

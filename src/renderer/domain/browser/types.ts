@@ -17,6 +17,7 @@ export interface BrowserTab {
   isPinned: boolean;
   isLoading: boolean;
   isSleeping: boolean;
+  lastActiveAt: number;
   zoomFactor: number;
 }
 
@@ -70,6 +71,8 @@ export interface SitePermissionRule {
 
 export interface BrowserSettings {
   homepage: string;
+  memorySaverEnabled: boolean;
+  memorySaverIdleMinutes: number;
   searchEngine: SearchEngineKey;
   startupBehavior: StartupBehavior;
 }

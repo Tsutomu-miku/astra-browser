@@ -84,6 +84,47 @@
   gap: 8px;
 }
 
+.memory-saver-controls {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  align-items: center;
+  gap: 10px;
+}
+
+.memory-saver-toggle,
+.memory-saver-delay {
+  min-width: 0;
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.memory-saver-toggle {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.memory-saver-delay {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.memory-saver-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.memory-saver-delay select {
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 8px;
+  background: #0f1117;
+  color: var(--text);
+}
+
 .memory-saver-metrics span {
   min-width: 0;
   display: grid;

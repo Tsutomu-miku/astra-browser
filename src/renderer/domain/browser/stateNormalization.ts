@@ -42,6 +42,8 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
     state.settings.startupBehavior = fallback.settings.startupBehavior;
   }
 
+  state.settings.memorySaverEnabled = state.settings.memorySaverEnabled !== false;
+  state.settings.memorySaverIdleMinutes = normalizeMemorySaverIdleMinutes(state.settings.memorySaverIdleMinutes);
   state.settings.homepage = normalizeAddress(state.settings.homepage || DEFAULT_URL, state.settings.searchEngine);
 
   for (const workspace of state.workspaces) {
@@ -70,6 +72,7 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
       tab.isPinned = Boolean(tab.isPinned);
       tab.isLoading = Boolean(tab.isLoading);
       tab.isSleeping = Boolean(tab.isSleeping);
+      tab.lastActiveAt = normalizeTimestamp(tab.lastActiveAt);
       tab.zoomFactor = normalizeZoomFactor(tab.zoomFactor);
     }
 
@@ -161,6 +164,17 @@ function isSearchEngineKey(value: unknown): value is SearchEngineKey {
 
 function isStartupBehavior(value: unknown): value is StartupBehavior {
   return value === "restore" || value === "homepage";
+}
+
+function normalizeTimestamp(value: unknown): number {
+  const timestamp = Number(value);
+  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : Date.now();
+}
+
+function normalizeMemorySaverIdleMinutes(value: unknown): number {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes)) return 30;
+  return Math.min(240, Math.max(1, Math.round(minutes)));
 }
 
 function isKnownTabGroup(groups: TabGroup[], groupId: unknown): groupId is string {

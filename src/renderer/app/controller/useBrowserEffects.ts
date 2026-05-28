@@ -15,6 +15,7 @@ interface BrowserEffectsOptions {
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   onShortcut: (intent: ShortcutIntent) => void;
   sitePermissions: SitePermissionRule[];
+  sleepIdleTabs: () => void;
   workspaces: Workspace[];
 }
 
@@ -23,6 +24,7 @@ export function useBrowserEffects({
   ingestPermissionRequest,
   onShortcut,
   sitePermissions,
+  sleepIdleTabs,
   workspaces
 }: BrowserEffectsOptions) {
   useEffect(() => window.astraShell?.onDownloadEvent((download) => {
@@ -58,4 +60,9 @@ export function useBrowserEffects({
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onShortcut]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(sleepIdleTabs, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, [sleepIdleTabs]);
 }

@@ -16,6 +16,7 @@ export function DataSettingsSection({
   onImportBackup,
   onRefreshProfileStorage,
   onSleepInactiveTabs,
+  onUpdateMemorySaver,
   profileStorageEntries,
   profileStorageError,
   profileStorageStatus
@@ -30,6 +31,7 @@ export function DataSettingsSection({
   onImportBackup: (event: ChangeEvent<HTMLInputElement>) => void;
   onRefreshProfileStorage: () => void;
   onSleepInactiveTabs: () => void;
+  onUpdateMemorySaver: (patch: { memorySaverEnabled?: boolean; memorySaverIdleMinutes?: number }) => void;
   profileStorageEntries: WorkspaceStorageUsage[];
   profileStorageError: string | null;
   profileStorageStatus: string;
@@ -43,7 +45,11 @@ export function DataSettingsSection({
         </div>
         <button className="toolbar-button" type="button" onClick={onClearBrowsingData}>Clear</button>
       </section>
-      <MemorySaverSection memorySaver={memorySaver} onSleepInactiveTabs={onSleepInactiveTabs} />
+      <MemorySaverSection
+        memorySaver={memorySaver}
+        onSleepInactiveTabs={onSleepInactiveTabs}
+        onUpdateMemorySaver={onUpdateMemorySaver}
+      />
       <section className="settings-section" aria-label="Browser backup">
         <div className="section-copy">
           <span>Browser backup</span>

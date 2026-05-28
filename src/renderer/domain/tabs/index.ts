@@ -38,6 +38,7 @@ export {
 export {
   resetActiveTabZoom,
   setActiveTabZoom,
+  sleepIdleTabs,
   sleepInactiveTabs,
   sleepTab,
   stepActiveTabZoom,
