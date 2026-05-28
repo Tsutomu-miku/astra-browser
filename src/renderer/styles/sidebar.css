@@ -441,7 +441,7 @@ h1 {
 .favorite-button {
   min-height: 34px;
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
@@ -500,7 +500,7 @@ h1 {
 .tab-button {
   min-height: 38px;
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-columns: 24px minmax(0, 1fr) auto;
   align-items: center;
   gap: 9px;
   padding: 7px 5px 7px 9px;

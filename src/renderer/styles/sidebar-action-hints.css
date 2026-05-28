@@ -1,0 +1,53 @@
+.sidebar-item-action-hints {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  color: var(--muted);
+  opacity: 0;
+  transform: translateX(3px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.tab-row:hover .sidebar-item-action-hints,
+.tab-row:focus-within .sidebar-item-action-hints,
+.favorite-button:hover .sidebar-item-action-hints,
+.favorite-button:focus-visible .sidebar-item-action-hints {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.sidebar-item-action-hint {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.sidebar-item-action-hint kbd {
+  min-width: 24px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.sidebar-item-action-hint.is-preview {
+  color: color-mix(in srgb, var(--accent) 66%, white);
+}
+
+.essentials .sidebar-item-action-hints {
+  display: none;
+}
