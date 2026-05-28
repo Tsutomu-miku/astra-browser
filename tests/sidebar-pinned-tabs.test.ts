@@ -111,6 +111,35 @@ describe("sidebar pinned tabs", () => {
     act(() => root.unmount());
   });
 
+  it("closes focused pinned tabs with Backspace without selecting first", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarPinnedTabs, {
+        actions,
+        activeTab: { ...createTab("Active", "https://active.example") },
+        draggingTabId: null,
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onPinDrop: vi.fn(),
+        pinnedTabs: [pinned],
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const button = container.querySelector(".pinned-tab-button");
+    button?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Backspace" }));
+
+    expect(actions.closeTab).toHaveBeenCalledWith(pinned.id);
+    expect(actions.selectTab).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("renders compact status badges for split and muted pinned tabs", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isMuted: true, isPinned: true };
     const html = renderToStaticMarkup(createElement(SidebarPinnedTabs, {

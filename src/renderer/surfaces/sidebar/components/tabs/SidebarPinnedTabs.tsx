@@ -1,9 +1,10 @@
-import type { DragEvent, MouseEvent } from "react";
+import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { FiLoader } from "react-icons/fi";
 
 import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
+import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import type { SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarSectionHeader } from "./SidebarItems";
@@ -81,6 +82,12 @@ export function SidebarPinnedTabs({
                   actions.openTabInSplit(tab.id);
                 } else {
                   actions.selectTab(tab.id);
+                }
+              }}
+              onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+                if (isCloseTabKey(event.key)) {
+                  event.preventDefault();
+                  actions.closeTab(tab.id);
                 }
               }}
               onContextMenu={(event) => onTabContextMenu(event, tab)}

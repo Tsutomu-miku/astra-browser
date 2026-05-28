@@ -1,8 +1,9 @@
-import type { DragEvent, MouseEvent } from "react";
+import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icons/fi";
 
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
+import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
 
@@ -107,6 +108,12 @@ export function TabRow({
             onSplit(tab.id);
           } else {
             onSelect(tab.id);
+          }
+        }}
+        onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+          if (isCloseTabKey(event.key)) {
+            event.preventDefault();
+            onClose(tab.id);
           }
         }}
       >

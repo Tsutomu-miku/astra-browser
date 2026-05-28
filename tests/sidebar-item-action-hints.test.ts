@@ -63,6 +63,38 @@ describe("sidebar item action hints", () => {
     act(() => root.unmount());
   });
 
+  it("closes focused tab rows with Delete without selecting first", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const onClose = vi.fn();
+    const onSelect = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabRow, {
+        activeTabId: "other-tab",
+        draggingTabId: null,
+        onClose,
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onPreview: vi.fn(),
+        onSelect,
+        onSplit: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tab
+      }));
+    });
+
+    const button = container.querySelector(".tab-button");
+    button?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete" }));
+
+    expect(onClose).toHaveBeenCalledWith(tab.id);
+    expect(onSelect).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("renders preview and split hints for favorite rows", () => {
     const html = renderToStaticMarkup(createElement(FavoriteButton, {
       favorite: createFavorite("Docs", "https://docs.example"),
