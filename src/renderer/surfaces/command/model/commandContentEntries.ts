@@ -23,7 +23,7 @@ export function buildContentCommands(
     })),
     ...workspace.tabs.map((tab) => ({
       title: tab.title || tab.url,
-      subtitle: `${tab.isSleeping ? "Sleeping tab" : "Open tab"} · ${tab.url}`,
+      subtitle: `${getOpenTabCommandLabel(tab.id, workspace.activeTabId, tab.isSleeping)} · ${tab.url}`,
       run: () => actions.selectTab(tab.id),
       runInSplit: () => actions.openTabInSplit(tab.id),
       runPreview: () => actions.openGlance(tab.url, tab.title)
@@ -41,4 +41,9 @@ export function buildContentCommands(
       runPreview: () => actions.openGlance(entry.url, entry.title)
     }))
   ];
+}
+
+function getOpenTabCommandLabel(tabId: string, activeTabId: string | null, isSleeping: boolean): string {
+  if (tabId === activeTabId) return "Active tab";
+  return isSleeping ? "Sleeping tab" : "Open tab";
 }

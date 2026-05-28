@@ -209,4 +209,12 @@ describe("buildCommands", () => {
 
     expect(actions.selectTab).toHaveBeenCalledWith(sleepingTab.id);
   });
+
+  it("labels the active tab in command palette open-tab entries", () => {
+    const state = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const commands = buildCommands(state, commandActions(), vi.fn(), defaultChromeState);
+    const activeTabCommand = commands.find((command) => command.title === "Example");
+
+    expect(activeTabCommand?.subtitle).toBe("Active tab · https://example.com/");
+  });
 });
