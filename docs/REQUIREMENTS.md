@@ -178,6 +178,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Settings must support startup restore/homepage behavior.
 - Settings must support state backup import/export.
 - Settings must support browsing-data and profile cleanup controls.
+- Settings must group global, Space, data, and workspace management controls behind clear section navigation.
 
 ### Packaging And Release
 

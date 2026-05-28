@@ -23,6 +23,7 @@ export { getSplitTabIds, MAX_SPLIT_VIEW_TABS } from "../tabs/splitView";
 
 export type {
   BrowserState,
+  BrowserSettings,
   BrowserTab,
   ClosedTab,
   DownloadEntry,
