@@ -25,6 +25,8 @@ import { getReloadButtonState } from "../../common/navigation/reloadButtonState"
 import { getOmniboxActionHints } from "../../common/omnibox/omniboxActions";
 import { PageIdentityContextMenu } from "./components/PageIdentityContextMenu";
 import { usePageIdentityContextMenu } from "./components/usePageIdentityContextMenu";
+import { WorkspacePillContextMenu } from "./components/WorkspacePillContextMenu";
+import { useWorkspacePillContextMenu } from "./components/useWorkspacePillContextMenu";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWebview, activeWorkspace, actions, addressValue, compactMode, floatingToolbarOpen, setAddressValue, setPanel, state } = controller;
@@ -32,6 +34,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
   const omnibox = useOmniboxController({ actions, addressValue, setAddressValue, state });
   const reloadButton = getReloadButtonState(activeTab.isLoading);
   const pageIdentityMenu = usePageIdentityContextMenu();
+  const workspacePillMenu = useWorkspacePillContextMenu();
 
   return (
     <header className="topbar">
@@ -121,10 +124,31 @@ export function Topbar({ controller }: { controller: BrowserController }) {
           />
         )}
       </div>
-      <button className="toolbar-button" title="Workspace settings" type="button" onClick={() => setPanel("settings")}>
+      <button
+        className="toolbar-button"
+        title="Workspace settings"
+        type="button"
+        onClick={() => setPanel("settings")}
+        onContextMenu={(event) => workspacePillMenu.openWorkspacePillMenu(event, {
+          id: activeWorkspace.id,
+          name: activeWorkspace.name
+        })}
+      >
         <span className="topbar-workspace-dot" style={{ background: activeWorkspace.accent }} />
         <span className="topbar-workspace-name">{activeWorkspace.name}</span>
       </button>
+      {workspacePillMenu.menu && (
+        <WorkspacePillContextMenu
+          canDelete={state.workspaces.length > 1}
+          left={workspacePillMenu.menu.left}
+          top={workspacePillMenu.menu.top}
+          workspaceName={workspacePillMenu.menu.item.name}
+          onClose={workspacePillMenu.closeMenu}
+          onDeleteWorkspace={() => actions.deleteWorkspace(workspacePillMenu.menu?.item.id ?? activeWorkspace.id)}
+          onNewWorkspace={actions.addWorkspace}
+          onOpenSettings={() => setPanel("settings")}
+        />
+      )}
       <div className="page-actions" aria-label="Page actions">
         {compactMode && (
           <button
