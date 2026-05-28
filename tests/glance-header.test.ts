@@ -13,6 +13,7 @@ describe("GlanceHeader", () => {
         isLoading: true
       },
       onClose: vi.fn(),
+      onCopyUrl: vi.fn(),
       onGoBack: vi.fn(),
       onGoForward: vi.fn(),
       onOpen: vi.fn(),
@@ -24,5 +25,27 @@ describe("GlanceHeader", () => {
 
     expect(html).toContain('aria-label="Stop loading"');
     expect(html).toContain('title="Stop loading"');
+  });
+
+  it("offers a direct copy action for the preview URL", () => {
+    const html = renderToStaticMarkup(createElement(GlanceHeader, {
+      navigation: {
+        canGoBack: true,
+        canGoForward: true,
+        isLoading: false
+      },
+      onClose: vi.fn(),
+      onCopyUrl: vi.fn(),
+      onGoBack: vi.fn(),
+      onGoForward: vi.fn(),
+      onOpen: vi.fn(),
+      onRefresh: vi.fn(),
+      onSplit: vi.fn(),
+      title: "Example",
+      url: "https://example.com"
+    }));
+
+    expect(html).toContain('title="Copy preview URL"');
+    expect(html).toContain("Open in split view");
   });
 });

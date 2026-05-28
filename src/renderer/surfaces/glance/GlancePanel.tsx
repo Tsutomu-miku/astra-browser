@@ -96,6 +96,7 @@ export function GlancePanel({ controller }: { controller: BrowserController }) {
           title={title}
           url={previewUrl}
           onClose={closeGlance}
+          onCopyUrl={() => actions.copyText(previewUrl)}
           onGoBack={() => webviewRef.current?.goBack?.()}
           onGoForward={() => webviewRef.current?.goForward?.()}
           onOpen={() => {

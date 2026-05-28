@@ -2,6 +2,7 @@ import {
   FiArrowLeft,
   FiArrowRight,
   FiColumns,
+  FiCopy,
   FiExternalLink,
   FiRefreshCw,
   FiX
@@ -18,6 +19,7 @@ export interface GlanceNavigationState {
 export function GlanceHeader({
   navigation,
   onClose,
+  onCopyUrl,
   onGoBack,
   onGoForward,
   onOpen,
@@ -28,6 +30,7 @@ export function GlanceHeader({
 }: {
   navigation: GlanceNavigationState;
   onClose: () => void;
+  onCopyUrl: () => void;
   onGoBack: () => void;
   onGoForward: () => void;
   onOpen: () => void;
@@ -69,6 +72,9 @@ export function GlanceHeader({
         <span>{url}</span>
       </div>
       <div className="glance-actions">
+        <button className="icon-button" title="Copy preview URL" type="button" onClick={onCopyUrl}>
+          <FiCopy />
+        </button>
         <button className="icon-button" title="Open in tab" type="button" onClick={onOpen}>
           <FiExternalLink />
         </button>
