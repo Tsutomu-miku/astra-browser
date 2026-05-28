@@ -166,6 +166,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Per-tab zoom controls must use Chromium webview zoom.
 - Browsing history must be searchable.
 - History entries must support single-entry removal and full clearing.
+- History entries must support Alt-click Glance preview, Shift-click split opening, and context menus for open, preview, split, and removal.
 - History must include per-workspace recently closed tab restore.
 - Chromium downloads must be tracked in a downloads drawer that can be opened with `Ctrl+Shift+Y` or `Cmd+Shift+Y`.
 - Completed downloads must support opening the file and revealing it in the file manager from the downloads drawer.

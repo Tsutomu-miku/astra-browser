@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react";
 import { FiX } from "react-icons/fi";
 
-import type { ClosedTab, HistoryEntry } from "../../domain/browser";
 import type { BrowserController } from "../../app/controller/types";
+import { ClosedTabList } from "./history/components/ClosedTabList";
+import { HistoryEntryContextMenu } from "./history/components/HistoryEntryContextMenu";
+import { HistoryItem } from "./history/components/HistoryItem";
+import { useHistoryEntryContextMenu } from "./history/components/useHistoryEntryContextMenu";
+import { filterHistory } from "./history/model/historyFilters";
 
 export function HistoryPanel({ controller }: { controller: BrowserController }) {
   const { actions, activeWorkspace, setPanel, state } = controller;
+  const { closeMenu, menu, openHistoryMenu } = useHistoryEntryContextMenu();
   const [query, setQuery] = useState("");
   const visibleHistory = useMemo(() => filterHistory(state.history, query).slice(0, 80), [query, state.history]);
 
@@ -36,76 +41,27 @@ export function HistoryPanel({ controller }: { controller: BrowserController }) 
             <HistoryItem
               entry={entry}
               key={entry.id}
+              onContextMenu={openHistoryMenu}
               onOpen={actions.openUrlInActiveWorkspace}
+              onOpenInSplit={actions.openUrlInSplit}
               onPreview={actions.openGlance}
               onRemove={actions.removeHistoryEntry}
             />
           ))}
         </section>
+        {menu && (
+          <HistoryEntryContextMenu
+            entry={menu.item}
+            left={menu.left}
+            top={menu.top}
+            onClose={closeMenu}
+            onOpen={actions.openUrlInActiveWorkspace}
+            onOpenInSplit={actions.openUrlInSplit}
+            onPreview={actions.openGlance}
+            onRemove={actions.removeHistoryEntry}
+          />
+        )}
       </div>
     </aside>
   );
-}
-
-function ClosedTabList({ closedTabs, onRestore }: { closedTabs: ClosedTab[]; onRestore: (closedIndex: number) => void }) {
-  if (closedTabs.length === 0) return null;
-
-  return (
-    <section className="closed-list" aria-label="Recently closed tabs">
-      <h3 className="panel-section-title">Recently closed</h3>
-      {closedTabs.slice(0, 8).map((tab, index) => (
-        <button className="history-item" key={`${tab.url}-${tab.closedAt}`} type="button" onClick={() => onRestore(index)}>
-          <span className="history-title">{tab.title}</span>
-          <span className="history-time">{formatTime(tab.closedAt)}</span>
-          <span className="history-url">{tab.url}</span>
-        </button>
-      ))}
-    </section>
-  );
-}
-
-function HistoryItem({
-  entry,
-  onOpen,
-  onPreview,
-  onRemove
-}: {
-  entry: HistoryEntry;
-  onOpen: (url: string, title?: string) => void;
-  onPreview: (url: string, title?: string) => void;
-  onRemove: (historyId: string) => void;
-}) {
-  return (
-    <article className="history-item">
-      <button
-        className="history-open"
-        type="button"
-        onClick={(event) => {
-          event.altKey ? onPreview(entry.url, entry.title) : onOpen(entry.url, entry.title);
-        }}
-      >
-        <span className="history-title">{entry.title}</span>
-        <span className="history-url">{entry.url}</span>
-      </button>
-      <span className="history-time">{formatTime(entry.visitedAt)}</span>
-      <button className="history-remove" type="button" title="Remove history entry" onClick={() => onRemove(entry.id)}><FiX /></button>
-    </article>
-  );
-}
-
-function filterHistory(history: HistoryEntry[], query: string): HistoryEntry[] {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) return history;
-
-  return history.filter((entry) =>
-    entry.title.toLowerCase().includes(normalizedQuery) ||
-    entry.url.toLowerCase().includes(normalizedQuery)
-  );
-}
-
-function formatTime(value: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(value);
 }
