@@ -106,6 +106,7 @@ export function useBrowserActions({
     removeTabFromSplit: store.removeTabFromSplit,
     replaceBrowserState: store.replaceBrowserState,
     reorderWorkspace: store.reorderWorkspace,
+    reorderWorkspaceFavorite: store.reorderWorkspaceFavorite,
     reorderTab: store.reorderTab,
     resetActiveTabZoom: () => store.resetActiveTabZoom(activeWebview),
     resolvePermissionRequest: store.resolvePermissionRequest,

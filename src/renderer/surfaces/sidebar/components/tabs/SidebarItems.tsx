@@ -222,20 +222,30 @@ export function TabRow({
 }
 
 export function FavoriteButton({
+  draggable = false,
+  draggingFavoriteId = null,
   favorite,
   id,
   isActive = false,
   isSearchSelected = false,
+  onDragEnd,
+  onDragStart,
+  onDrop,
   onOpen,
   onOpenInSplit,
   onContextMenu,
   onPreview
 }: {
+  draggable?: boolean;
+  draggingFavoriteId?: string | null;
   favorite: Favorite;
   id?: string;
   isActive?: boolean;
   isSearchSelected?: boolean;
   onContextMenu?: (event: MouseEvent, favorite: Favorite) => void;
+  onDragEnd?: () => void;
+  onDragStart?: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
+  onDrop?: (event: DragEvent<HTMLElement>, targetFavoriteId: string) => void;
   onOpen: (url: string, title?: string) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
@@ -248,6 +258,20 @@ export function FavoriteButton({
       title={favorite.url}
       aria-current={isActive}
       aria-selected={isSearchSelected}
+      draggable={draggable}
+      data-dragging={draggable && draggingFavoriteId === favorite.id}
+      data-drop-target={draggable && Boolean(draggingFavoriteId && draggingFavoriteId !== favorite.id)}
+      onDragStart={draggable && onDragStart ? (event) => onDragStart(event, favorite.id) : undefined}
+      onDragEnd={draggable ? onDragEnd : undefined}
+      onDragOver={(event) => {
+        if (draggingFavoriteId && draggingFavoriteId !== favorite.id) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }
+      }}
+      onDrop={(event) => {
+        if (draggingFavoriteId && draggingFavoriteId !== favorite.id) onDrop?.(event, favorite.id);
+      }}
       onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
       onClick={(event) => {
         if (event.altKey) {

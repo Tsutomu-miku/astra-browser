@@ -41,6 +41,7 @@ import {
   toggleActiveTabFavorite,
   removeEssential,
   removeWorkspaceFavorite,
+  reorderWorkspaceFavorite,
   toggleActiveTabMuted,
   toggleActiveTabPinned,
   toggleTabEssential,
@@ -49,7 +50,7 @@ import {
   toggleTabPinned,
   toggleSplitMode
 } from "../src/renderer/domain/actions";
-import { createDefaultState } from "../src/renderer/domain/browser";
+import { createDefaultState, createFavorite } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 
 describe("domain actions", () => {
@@ -330,6 +331,23 @@ describe("domain actions", () => {
 
     expect(reordered.workspaces.map((workspace) => workspace.id)).toEqual(["work", "personal"]);
     expect(reordered.activeWorkspaceId).toBe(initial.activeWorkspaceId);
+  });
+
+  it("reorders active workspace favorites", () => {
+    const initial = createDefaultState();
+    const workspace = getActiveWorkspace(initial);
+    const first = createFavorite("First", "https://first.example");
+    const second = createFavorite("Second", "https://second.example");
+    const third = createFavorite("Third", "https://third.example");
+    workspace.favorites = [first, second, third];
+
+    const movedBefore = reorderWorkspaceFavorite(initial, third.id, first.id, "before");
+    const movedAfter = reorderWorkspaceFavorite(movedBefore, first.id, second.id, "after");
+    const ignored = reorderWorkspaceFavorite(movedAfter, "missing", second.id, "before");
+
+    expect(getActiveWorkspace(movedBefore).favorites.map((favorite) => favorite.title)).toEqual(["Third", "First", "Second"]);
+    expect(getActiveWorkspace(movedAfter).favorites.map((favorite) => favorite.title)).toEqual(["Third", "Second", "First"]);
+    expect(getActiveWorkspace(ignored).favorites.map((favorite) => favorite.title)).toEqual(["Third", "Second", "First"]);
   });
 
   it("deletes the active workspace and keeps at least one workspace", () => {

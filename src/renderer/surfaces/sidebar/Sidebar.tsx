@@ -20,6 +20,7 @@ import { SidebarSections } from "./components/tabs/SidebarSections";
 import { TabContextMenu } from "./components/tabs/TabContextMenu";
 import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus";
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
+import { useSidebarFavoriteDrag } from "./hooks/useSidebarFavoriteDrag";
 import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "./model/tabContextMenuState";
 import {
   clampSidebarSearchIndex,
@@ -53,6 +54,13 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const activeSearchTarget = filteredItems.isFiltering
     ? searchTargets[clampSidebarSearchIndex(activeSearchIndex, searchTargets.length)]
     : undefined;
+  const {
+    draggingFavoriteId,
+    handleFavoriteDragStart,
+    handleFavoriteDrop,
+    handleFavoriteReorderDrop,
+    setDraggingFavoriteId
+  } = useSidebarFavoriteDrag({ actions, activeWorkspace, draggingTabId, setDraggingTabId });
 
   const handleTabDrop = (event: DragEvent<HTMLElement>, targetTabId: string) => {
     event.preventDefault();
@@ -76,16 +84,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
 
     event.preventDefault();
     if (!tab.isPinned) actions.toggleTabPinned(tab.id);
-    setDraggingTabId(null);
-  };
-
-  const handleFavoriteDrop = (event: DragEvent<HTMLElement>) => {
-    const tabId = getDroppedTabId(event);
-    const tab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
-    if (!tab) return;
-
-    event.preventDefault();
-    if (!isFavorite(activeWorkspace, tab.url)) actions.toggleTabFavorite(tab.id);
     setDraggingTabId(null);
   };
 
@@ -209,14 +207,18 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           activeSearchTarget={activeSearchTarget}
           activeTab={activeTab}
           closedTabs={activeWorkspace.closedTabs}
+          draggingFavoriteId={draggingFavoriteId}
           draggingTabId={draggingTabId}
           filteredItems={filteredItems}
+          onFavoriteDragStart={handleFavoriteDragStart}
           onFavoriteDrop={handleFavoriteDrop}
+          onFavoriteReorderDrop={handleFavoriteReorderDrop}
           splitTabIds={state.splitTabIds}
           onQuickEntryContextMenu={openQuickEntryMenu}
           onPinDrop={handlePinDrop}
           onTabContextMenu={openTabMenu}
           onTabDrop={handleTabDrop}
+          setDraggingFavoriteId={setDraggingFavoriteId}
           setDraggingTabId={setDraggingTabId}
         />
       </section>

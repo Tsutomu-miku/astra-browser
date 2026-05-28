@@ -35,6 +35,7 @@ export {
   removeTabFromSplit,
   removeEssential,
   removeWorkspaceFavorite,
+  reorderWorkspaceFavorite,
   reorderTab,
   resetActiveTabZoom,
   restoreClosedTab,

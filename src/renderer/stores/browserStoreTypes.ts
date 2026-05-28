@@ -64,6 +64,7 @@ export interface BrowserStore {
   removeTabFromSplit: (tabId: string) => void;
   removeWorkspaceFavorite: (url: string) => void;
   replaceBrowserState: (state: BrowserState) => void;
+  reorderWorkspaceFavorite: (favoriteId: string, targetFavoriteId: string, placement: TabDropPlacement) => void;
   reorderTab: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   reorderWorkspace: (workspaceId: string, targetWorkspaceId: string, placement: WorkspaceDropPlacement) => void;
   runWebviewAction: (action: WebviewAction, webview?: WebviewElement) => void;

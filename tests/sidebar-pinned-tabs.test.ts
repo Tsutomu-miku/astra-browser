@@ -144,6 +144,8 @@ describe("sidebar pinned tabs", () => {
     expect(sidebarCss).toContain('.pinned-tab-button[data-drop-target="true"]');
     expect(dropZoneCss).toContain('.pinned-tabs[data-drop-target="true"]');
     expect(dropZoneCss).toContain('.favorites[data-drop-target="true"]');
+    expect(dropZoneCss).toContain('.favorite-button[data-dragging="true"]');
+    expect(dropZoneCss).toContain('.favorite-button[data-drop-target="true"]');
     expect(dropZoneCss).toContain(".sidebar-drop-empty");
     expect(sidebarCss).toContain("cursor: grabbing");
   });

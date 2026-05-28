@@ -9,6 +9,7 @@ import { getSplitTabIds, setSplitTabIds } from "./splitView";
 import { pruneEmptyTabGroups } from "./groups";
 import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "../browser/zoom";
 import { updateBrowserState } from "../browser/updateState";
+import type { TabDropPlacement } from "./utils";
 
 export function toggleActiveTabPinned(state: BrowserState): BrowserState {
   return toggleTabPinned(state, getActiveTab(getActiveWorkspace(state)).id);
@@ -123,6 +124,27 @@ export function removeWorkspaceFavorite(state: BrowserState, url: string): Brows
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
     workspace.favorites = workspace.favorites.filter((favorite) => favorite.url !== url);
+  });
+}
+
+export function reorderWorkspaceFavorite(
+  state: BrowserState,
+  favoriteId: string,
+  targetFavoriteId: string,
+  placement: TabDropPlacement
+): BrowserState {
+  if (favoriteId === targetFavoriteId) return state;
+
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const fromIndex = workspace.favorites.findIndex((favorite) => favorite.id === favoriteId);
+    const targetIndex = workspace.favorites.findIndex((favorite) => favorite.id === targetFavoriteId);
+    if (fromIndex < 0 || targetIndex < 0) return;
+
+    const [favorite] = workspace.favorites.splice(fromIndex, 1);
+    const droppedOnIndex = workspace.favorites.findIndex((candidate) => candidate.id === targetFavoriteId);
+    const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
+    workspace.favorites.splice(insertIndex, 0, favorite);
   });
 }
 

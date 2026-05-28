@@ -44,6 +44,7 @@ export {
   stepActiveTabZoom,
   removeEssential,
   removeWorkspaceFavorite,
+  reorderWorkspaceFavorite,
   toggleActiveTabFavorite,
   toggleActiveTabEssential,
   toggleActiveTabMuted,

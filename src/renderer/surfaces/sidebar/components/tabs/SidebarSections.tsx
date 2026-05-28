@@ -17,13 +17,17 @@ export function SidebarSections({
   activeSearchTarget,
   activeTab,
   closedTabs,
+  draggingFavoriteId,
   draggingTabId,
   filteredItems,
+  onFavoriteDragStart,
   onFavoriteDrop,
+  onFavoriteReorderDrop,
   onPinDrop,
   onTabContextMenu,
   onTabDrop,
   onQuickEntryContextMenu,
+  setDraggingFavoriteId,
   setDraggingTabId,
   splitTabIds
 }: {
@@ -31,13 +35,17 @@ export function SidebarSections({
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
   closedTabs: ClosedTab[];
+  draggingFavoriteId: string | null;
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
+  onFavoriteDragStart: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
   onFavoriteDrop: (event: DragEvent<HTMLElement>) => void;
+  onFavoriteReorderDrop: (event: DragEvent<HTMLElement>, targetFavoriteId: string) => void;
   onPinDrop: (event: DragEvent<HTMLElement>) => void;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  setDraggingFavoriteId: (favoriteId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
 }) {
@@ -124,11 +132,16 @@ export function SidebarSections({
             {filteredItems.favorites.map((favorite) => (
               <FavoriteButton
                 key={favorite.id}
+                draggable
+                draggingFavoriteId={draggingFavoriteId}
                 favorite={favorite}
                 id={`sidebar-search-favorite-${favorite.id}`}
                 isActive={isSidebarUrlActive(activeTab.url, favorite.url)}
                 isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
                 onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "favorite")}
+                onDragStart={onFavoriteDragStart}
+                onDragEnd={() => setDraggingFavoriteId(null)}
+                onDrop={onFavoriteReorderDrop}
                 onOpen={actions.openUrlInActiveWorkspace}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}

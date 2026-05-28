@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { createTab } from "../src/renderer/domain/browser";
+import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
 
@@ -13,6 +13,7 @@ describe("sidebar section drop zones", () => {
       actions: createActions(),
       activeTab: tab,
       closedTabs: [],
+      draggingFavoriteId: null,
       draggingTabId: tab.id,
       filteredItems: {
         essentials: [],
@@ -23,11 +24,14 @@ describe("sidebar section drop zones", () => {
         pinnedTabs: [],
         regularTabs: [tab]
       },
+      onFavoriteDragStart: vi.fn(),
       onFavoriteDrop: vi.fn(),
+      onFavoriteReorderDrop: vi.fn(),
       onPinDrop: vi.fn(),
       onQuickEntryContextMenu: vi.fn(),
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
+      setDraggingFavoriteId: vi.fn(),
       setDraggingTabId: vi.fn(),
       splitTabIds: []
     }));
@@ -36,6 +40,42 @@ describe("sidebar section drop zones", () => {
     expect(html).toContain("Drop to favorite");
     expect(html).toContain('aria-label="Pinned tabs"');
     expect(html).toContain('aria-label="Favorites"');
+  });
+
+  it("marks Space favorites as reorderable drop targets while dragging a favorite", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const first = createFavorite("First", "https://first.example");
+    const second = createFavorite("Second", "https://second.example");
+    const html = renderToStaticMarkup(createElement(SidebarSections, {
+      actions: createActions(),
+      activeTab: tab,
+      closedTabs: [],
+      draggingFavoriteId: first.id,
+      draggingTabId: null,
+      filteredItems: {
+        essentials: [],
+        favorites: [first, second],
+        groupedTabs: [],
+        hasMatches: true,
+        isFiltering: false,
+        pinnedTabs: [],
+        regularTabs: [tab]
+      },
+      onFavoriteDragStart: vi.fn(),
+      onFavoriteDrop: vi.fn(),
+      onFavoriteReorderDrop: vi.fn(),
+      onPinDrop: vi.fn(),
+      onQuickEntryContextMenu: vi.fn(),
+      onTabContextMenu: vi.fn(),
+      onTabDrop: vi.fn(),
+      setDraggingFavoriteId: vi.fn(),
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
+    }));
+
+    expect(html).toContain('draggable="true"');
+    expect(html).toContain('data-dragging="true"');
+    expect(html).toContain('data-drop-target="true"');
   });
 });
 
