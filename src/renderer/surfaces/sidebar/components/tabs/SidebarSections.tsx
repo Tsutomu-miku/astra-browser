@@ -1,5 +1,4 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
-import { FiFolderPlus } from "react-icons/fi";
 
 import type { BrowserTab, ClosedTab, Favorite } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
@@ -8,6 +7,7 @@ import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFilt
 import { ClosedTabButton } from "./ClosedTabButton";
 import { FavoriteButton, SidebarSectionHeader, TabGroupSection, TabRow } from "./SidebarItems";
 import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
+import { TabOrganizationDropTargets } from "./TabOrganizationDropTargets";
 
 const SIDEBAR_RECENTLY_CLOSED_LIMIT = 4;
 
@@ -71,6 +71,9 @@ export function SidebarSections({
   const recentlyClosedTabs = closedTabs.slice(0, SIDEBAR_RECENTLY_CLOSED_LIMIT);
   const canCreateGroupFromDraggedTab = Boolean(
     draggingTabId && filteredItems.regularTabs.some((tab) => tab.id === draggingTabId)
+  );
+  const canUngroupDraggedTab = Boolean(
+    draggingTabId && filteredItems.groupedTabs.some((entry) => entry.tabs.some((tab) => tab.id === draggingTabId))
   );
   const isSectionCollapsed = (sectionId: SidebarSectionId) => !filteredItems.isFiltering && collapsedSections[sectionId];
   const toggleSection = (sectionId: SidebarSectionId) => {
@@ -218,26 +221,15 @@ export function SidebarSections({
           onToggle={() => toggleSection("tabs")}
         />
         {!isSectionCollapsed("tabs") && <nav className="tabs" aria-label="Tabs">
-          {!filteredItems.isFiltering && canCreateGroupFromDraggedTab && (
-            <div
-              className="tab-group-drop-target"
-              role="button"
-              aria-label="Create new group from dragged tab"
-              data-drop-target="true"
-              onDragOver={(event) => {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
-                if (tabId) actions.groupTab(tabId);
-                setDraggingTabId(null);
-              }}
-            >
-              <FiFolderPlus />
-              <span>New group</span>
-            </div>
+          {!filteredItems.isFiltering && (
+            <TabOrganizationDropTargets
+              canCreateGroup={canCreateGroupFromDraggedTab}
+              canUngroup={canUngroupDraggedTab}
+              draggingTabId={draggingTabId}
+              onCreateGroup={actions.groupTab}
+              onUngroupTab={actions.ungroupTab}
+              setDraggingTabId={setDraggingTabId}
+            />
           )}
           {filteredItems.groupedTabs.map(({ group, tabs }) => (
             <TabGroupSection

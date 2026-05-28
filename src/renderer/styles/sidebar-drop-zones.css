@@ -38,7 +38,7 @@
     inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
-.tab-group-drop-target {
+.tab-organization-drop-target {
   min-height: 36px;
   display: flex;
   align-items: center;
@@ -52,7 +52,7 @@
   font-weight: 780;
 }
 
-.tab-group-drop-target svg {
+.tab-organization-drop-target svg {
   width: 14px;
   height: 14px;
 }

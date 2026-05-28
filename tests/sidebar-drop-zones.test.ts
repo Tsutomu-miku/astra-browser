@@ -45,6 +45,7 @@ describe("sidebar section drop zones", () => {
     expect(html).toContain("Drop to essential");
     expect(html).toContain("Drop to favorite");
     expect(html).toContain("New group");
+    expect(html).not.toContain("Ungroup tab");
     expect(html).toContain('aria-label="Pinned tabs"');
     expect(html).toContain('aria-label="Essentials"');
     expect(html).toContain('aria-label="Favorites"');
@@ -85,6 +86,48 @@ describe("sidebar section drop zones", () => {
       splitTabIds: []
     }));
 
+    expect(html).not.toContain("New group");
+  });
+
+  it("offers an Ungroup target for dragged grouped tabs", () => {
+    const grouped = { ...createTab("Docs", "https://docs.example"), groupId: "group" };
+    const html = renderToStaticMarkup(createElement(SidebarSections, {
+      actions: createActions(),
+      activeTab: grouped,
+      closedTabs: [],
+      draggingEssentialId: null,
+      draggingFavoriteId: null,
+      draggingTabId: grouped.id,
+      filteredItems: {
+        essentials: [],
+        favorites: [],
+        groupedTabs: [{
+          group: { id: "group", name: "Research", color: "#7dd3fc", isCollapsed: false },
+          tabs: [grouped]
+        }],
+        hasMatches: true,
+        isFiltering: false,
+        pinnedTabs: [],
+        regularTabs: []
+      },
+      onEssentialDragStart: vi.fn(),
+      onEssentialDrop: vi.fn(),
+      onEssentialReorderDrop: vi.fn(),
+      onFavoriteDragStart: vi.fn(),
+      onFavoriteDrop: vi.fn(),
+      onFavoriteReorderDrop: vi.fn(),
+      onPinDrop: vi.fn(),
+      onQuickEntryContextMenu: vi.fn(),
+      onTabContextMenu: vi.fn(),
+      onTabDrop: vi.fn(),
+      setDraggingEssentialId: vi.fn(),
+      setDraggingFavoriteId: vi.fn(),
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
+    }));
+
+    expect(html).toContain("Ungroup tab");
+    expect(html).toContain('aria-label="Remove dragged tab from group"');
     expect(html).not.toContain("New group");
   });
 
