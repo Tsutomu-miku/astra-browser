@@ -79,10 +79,16 @@ jobs:
           retention-days: 14
 
   package-macos:
-    name: Package macOS app
+    name: Package macOS app (${{ matrix.arch }})
     runs-on: macos-latest
     timeout-minutes: 30
     needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - arm64
+          - x64
 
     steps:
       - name: Checkout
@@ -103,17 +109,23 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Package macOS apps
-        run: pnpm package:mac
+        run: pnpm package:mac:${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - name: Upload macOS packages
+      - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
-          name: astra-browser-macos
-          path: |
-            release/*.dmg
-            release/*.zip
+          name: astra-browser-macos-${{ matrix.arch }}-dmg
+          path: release/*.dmg
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload macOS ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-browser-macos-${{ matrix.arch }}-zip
+          path: release/*.zip
           if-no-files-found: error
           retention-days: 14
 

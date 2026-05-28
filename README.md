@@ -43,19 +43,25 @@ pnpm test
 pnpm build
 pnpm package:win
 pnpm package:mac
+pnpm package:mac:arm64
+pnpm package:mac:x64
+pnpm package:mac:all
 pnpm package:linux
 pnpm package:all
 ```
 
 - `pnpm start` builds the renderer and launches Electron against `dist/renderer`.
 - `pnpm check` runs source validation, TypeScript, tests, and production build.
-- `pnpm package:win`, `pnpm package:mac`, and `pnpm package:linux` create Electron Builder artifacts in `release/`.
+- `pnpm package:win`, `pnpm package:mac`, and `pnpm package:linux` clean `release/` and create Electron Builder artifacts.
+- `pnpm package:mac` builds the current macOS architecture; `pnpm package:mac:arm64` and `pnpm package:mac:x64` build one macOS architecture at a time.
+- `pnpm package:mac:all` builds both x64 and arm64 artifacts for local release checks.
 - `pnpm package:all` invokes all configured platform targets from one command when the host platform supports them.
+- Release artifacts keep only the supported Electron locales to avoid oversized macOS packages.
 - Package scripts build artifacts only; GitHub Release publishing is handled by the release workflow after artifacts are uploaded.
 
 ## Releases
 
-Tags matching the package version, such as `v0.1.0`, trigger the release workflow. The workflow runs the quality gate, builds Windows portable executables, macOS DMG/ZIP packages, and Linux AppImage/DEB/tar.gz packages, then publishes the platform artifacts as GitHub Release assets.
+Tags matching the package version, such as `v0.1.7`, trigger the release workflow. The workflow runs the quality gate, builds Windows portable executables, macOS DMG/ZIP packages, and Linux AppImage/DEB/tar.gz packages, then publishes the platform artifacts as GitHub Release assets.
 
 ## Repository Layout
 

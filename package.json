@@ -1,6 +1,6 @@
 {
   "name": "astra-browser",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "description": "A Chromium-based browser inspired by Zen and Arc.",
   "author": {
@@ -12,11 +12,15 @@
     "dev": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "start": "pnpm build && electron .",
     "build": "vite build",
-    "package": "pnpm build && electron-builder --publish never",
-    "package:all": "pnpm build && electron-builder --mac --win --linux --publish never",
-    "package:mac": "pnpm build && electron-builder --mac dmg zip --x64 --arm64 --publish never",
-    "package:linux": "pnpm build && electron-builder --linux AppImage deb tar.gz --x64 --publish never",
-    "package:win": "pnpm build && electron-builder --win portable --x64 --arm64 --publish never",
+    "clean:release": "node scripts/clean-release.mjs",
+    "package": "pnpm clean:release && pnpm build && electron-builder --publish never",
+    "package:all": "pnpm clean:release && pnpm build && electron-builder --mac --win --linux --publish never",
+    "package:mac": "pnpm clean:release && pnpm build && electron-builder --mac dmg zip --publish never",
+    "package:mac:arm64": "pnpm clean:release && pnpm build && electron-builder --mac dmg zip --arm64 --publish never",
+    "package:mac:x64": "pnpm clean:release && pnpm build && electron-builder --mac dmg zip --x64 --publish never",
+    "package:mac:all": "pnpm clean:release && pnpm build && electron-builder --mac dmg zip --x64 --arm64 --publish never",
+    "package:linux": "pnpm clean:release && pnpm build && electron-builder --linux AppImage deb tar.gz --x64 --publish never",
+    "package:win": "pnpm clean:release && pnpm build && electron-builder --win portable --x64 --arm64 --publish never",
     "typecheck": "tsc --noEmit",
     "lint": "node scripts/check-sources.mjs",
     "test": "vitest run",
@@ -46,6 +50,11 @@
     "productName": "Astra Browser",
     "asar": true,
     "npmRebuild": false,
+    "electronLanguages": [
+      "en-US",
+      "zh-CN",
+      "zh-TW"
+    ],
     "directories": {
       "output": "release"
     },
@@ -61,20 +70,8 @@
       "category": "public.app-category.productivity",
       "identity": null,
       "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
+        "dmg",
+        "zip"
       ],
       "artifactName": "Astra-Browser-${version}-mac-${arch}.${ext}"
     },

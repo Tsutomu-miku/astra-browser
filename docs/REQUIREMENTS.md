@@ -205,6 +205,9 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Windows packaging must produce portable executables.
 - macOS packaging must produce DMG and ZIP artifacts.
 - Linux packaging must produce AppImage, DEB, and tar.gz artifacts.
+- Local package scripts must clean stale release output before building new artifacts.
+- Default macOS packaging must build the current architecture, while release packaging must build x64 and arm64 artifacts as separate jobs and upload assets by architecture and package type.
+- Application package metadata must include author email and Linux maintainer information for DEB builds.
 - GitHub Releases must publish all platform artifacts for version-matching tags.
 
 ## Quality Requirements
