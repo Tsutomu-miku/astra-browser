@@ -74,7 +74,13 @@ export function TabContextMenu({
       <button type="button" role="menuitem" onClick={() => run(() => onOpenGlance(tab.url, tab.title))}>Preview in Glance</button>
       <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</button>
       <button type="button" role="menuitem" onClick={() => run(() => onDuplicate(tab.id))}>Duplicate</button>
-      <button type="button" role="menuitem" onClick={() => run(() => onSleepTab(tab.id))}>Sleep tab</button>
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => run(() => tab.isSleeping ? onSelect(tab.id) : onSleepTab(tab.id))}
+      >
+        {tab.isSleeping ? "Wake tab" : "Sleep tab"}
+      </button>
       {(groupMenuState.canCreateGroup || groupMenuState.canUngroup || groupMenuState.moveGroupTargets.length > 0) && (
         <>
           <span className="tab-context-menu-separator" />

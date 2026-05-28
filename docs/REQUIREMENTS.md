@@ -35,6 +35,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Each Space must support multiple tabs.
 - The current Space's tabs must keep their Chromium webviews mounted so tab switching preserves page state.
 - Background tabs must be able to sleep, unloading hidden webviews to reduce memory use.
+- Sleeping tabs must expose a direct wake action from the sidebar tab context menu.
 - Active tabs, split-view tabs, and pinned tabs must be protected from bulk sleep.
 - Users must be able to close tabs directly from the sidebar with recently closed recovery.
 - Users must be able to duplicate the active tab.
