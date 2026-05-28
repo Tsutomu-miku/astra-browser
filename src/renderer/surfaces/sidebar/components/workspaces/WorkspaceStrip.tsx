@@ -23,6 +23,7 @@ export function WorkspaceStrip({
   onDragStart,
   onDrop,
   onNewWorkspace,
+  onNewWorkspaceDrop,
   onDeleteWorkspace,
   onSelect,
   onToggleSidebar,
@@ -42,6 +43,7 @@ export function WorkspaceStrip({
   onDrop: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
   onDeleteWorkspace: (workspaceId: string) => void;
   onNewWorkspace: () => void;
+  onNewWorkspaceDrop: (event: DragEvent<HTMLButtonElement>) => void;
   onSelect: (workspaceId: string) => void;
   onToggleSidebar: () => void;
   onUpdateWorkspace: (workspaceId: string, patch: Partial<Pick<Workspace, "accent" | "name">>) => void;
@@ -128,6 +130,14 @@ export function WorkspaceStrip({
         title="New Space"
         type="button"
         aria-label="New Space"
+        data-drop-target={Boolean(draggingGroupId || draggingTabId)}
+        onDragOver={(event) => {
+          if (draggingGroupId || draggingTabId) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+          }
+        }}
+        onDrop={onNewWorkspaceDrop}
         onClick={onNewWorkspace}
       >
         <FiPlus />

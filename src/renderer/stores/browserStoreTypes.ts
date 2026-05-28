@@ -53,6 +53,8 @@ export interface BrowserStore {
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
   moveTabGroupToWorkspace: (groupId: string, workspaceId: string) => void;
+  moveTabToNewWorkspace: (tabId: string) => void;
+  moveTabGroupToNewWorkspace: (groupId: string) => void;
   closeGlance: () => void;
   openGlance: (url: string, title?: string) => void;
   openGlanceInSplit: () => void;

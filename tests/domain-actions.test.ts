@@ -19,6 +19,7 @@ import {
   focusSplitPane,
   assignTabToGroup,
   groupActiveTab,
+  moveTabToNewWorkspace,
   moveTabToWorkspace,
   openTabInSplit,
   openUrlInSplit,
@@ -132,6 +133,22 @@ describe("domain actions", () => {
     expect(getActiveTab(getActiveWorkspace(closed)).id).toBe(activeTab.id);
     expect(getActiveWorkspace(closed).tabs.some((tab) => tab.id === backgroundTab.id)).toBe(false);
     expect(getActiveWorkspace(closed).closedTabs[0].url).toBe(backgroundTab.url);
+  });
+
+  it("moves a tab into a new workspace from sidebar organization", () => {
+    const opened = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const tab = getActiveTab(getActiveWorkspace(opened));
+    const moved = moveTabToNewWorkspace(opened, tab.id);
+    const source = moved.workspaces.find((workspace) => workspace.id === "personal")!;
+    const target = getActiveWorkspace(moved);
+
+    expect(moved.workspaces).toHaveLength(opened.workspaces.length + 1);
+    expect(target.name).toBe("Docs");
+    expect(target.tabs.map((candidate) => candidate.id)).toEqual([tab.id]);
+    expect(target.activeTabId).toBe(tab.id);
+    expect(source.tabs.some((candidate) => candidate.id === tab.id)).toBe(false);
+    expect(source.activeTabId).toBe(source.tabs[0].id);
+    expect(moved.splitMode).toBe(false);
   });
 
   it("closes other tabs and stores them as recently closed", () => {

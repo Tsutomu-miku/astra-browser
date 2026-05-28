@@ -87,6 +87,14 @@ export function useBrowserActions({
       store.moveTabGroupToWorkspace(groupId, workspaceId);
       peekCompactChrome();
     },
+    moveTabToNewWorkspace: (tabId: string) => {
+      store.moveTabToNewWorkspace(tabId);
+      peekCompactChrome();
+    },
+    moveTabGroupToNewWorkspace: (groupId: string) => {
+      store.moveTabGroupToNewWorkspace(groupId);
+      peekCompactChrome();
+    },
     focusSplitPane: (tabId: string) => {
       store.focusSplitPane(tabId);
       peekCompactChrome();

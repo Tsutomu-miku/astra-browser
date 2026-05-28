@@ -30,16 +30,37 @@ describe("workspace strip compact controls", () => {
 
     expect(html).toContain('data-drop-target="true"');
   });
+
+  it("marks New Space as a drop target while dragging tabs or groups", () => {
+    const tabHtml = renderStrip({
+      compactMode: false,
+      draggingTabId: "tab",
+      floatingSidebarOpen: false,
+      sidebarCollapsed: false
+    });
+    const groupHtml = renderStrip({
+      compactMode: false,
+      draggingGroupId: "group",
+      floatingSidebarOpen: false,
+      sidebarCollapsed: false
+    });
+
+    expect(tabHtml).toContain('class="workspace-button workspace-new-button"');
+    expect(tabHtml).toContain('aria-label="New Space" data-drop-target="true"');
+    expect(groupHtml).toContain('aria-label="New Space" data-drop-target="true"');
+  });
 });
 
 function renderStrip({
   compactMode,
   draggingGroupId = null,
+  draggingTabId = null,
   floatingSidebarOpen,
   sidebarCollapsed
 }: {
   compactMode: boolean;
   draggingGroupId?: string | null;
+  draggingTabId?: string | null;
   floatingSidebarOpen: boolean;
   sidebarCollapsed: boolean;
 }) {
@@ -50,7 +71,7 @@ function renderStrip({
     activeWorkspaceId: activeWorkspace.id,
     compactMode,
     draggingGroupId,
-    draggingTabId: null,
+    draggingTabId,
     draggingWorkspaceId: null,
     floatingSidebarOpen,
     onDragEnd: vi.fn(),
@@ -59,6 +80,7 @@ function renderStrip({
     onDrop: vi.fn(),
     onDeleteWorkspace: vi.fn(),
     onNewWorkspace: vi.fn(),
+    onNewWorkspaceDrop: vi.fn(),
     onSelect: vi.fn(),
     onToggleSidebar: vi.fn(),
     onUpdateWorkspace: vi.fn(),

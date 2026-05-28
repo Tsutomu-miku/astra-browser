@@ -6,6 +6,7 @@ import {
   duplicateTabGroup,
   groupActiveTab,
   groupTab,
+  moveTabGroupToNewWorkspace,
   moveTabGroupToWorkspace,
   moveTabToWorkspace,
   openUrlInActiveWorkspace,
@@ -97,6 +98,24 @@ describe("tab groups", () => {
     expect(moved.activeWorkspaceId).toBe("work");
     expect(source.tabGroups).toHaveLength(0);
     expect(source.tabs.map((tab) => tab.title)).toEqual(["New Tab"]);
+    expect(target.tabGroups[0]).toMatchObject({ id: group.id, name: group.name, color: group.color });
+    expect(target.tabs.filter((tab) => tab.groupId === group.id).map((tab) => tab.title)).toEqual(["Docs", "News"]);
+    expect(target.activeTabId).toBe(secondTab.id);
+  });
+
+  it("moves a whole tab group into a new workspace", () => {
+    const first = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
+    const group = getActiveWorkspace(first).tabGroups[0];
+    const opened = openUrlInActiveWorkspace(first, "news.example", "News");
+    const secondTab = getActiveTab(getActiveWorkspace(opened));
+    const assigned = assignTabToGroup(opened, secondTab.id, group.id);
+    const moved = moveTabGroupToNewWorkspace(assigned, group.id);
+    const source = moved.workspaces.find((workspace) => workspace.id === "personal")!;
+    const target = getActiveWorkspace(moved);
+
+    expect(moved.workspaces).toHaveLength(assigned.workspaces.length + 1);
+    expect(target.name).toBe(group.name);
+    expect(source.tabGroups).toHaveLength(0);
     expect(target.tabGroups[0]).toMatchObject({ id: group.id, name: group.name, color: group.color });
     expect(target.tabs.filter((tab) => tab.groupId === group.id).map((tab) => tab.title)).toEqual(["Docs", "News"]);
     expect(target.activeTabId).toBe(secondTab.id);

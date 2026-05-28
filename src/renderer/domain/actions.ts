@@ -72,6 +72,8 @@ export {
 export {
   addWorkspace,
   deleteWorkspace,
+  moveTabGroupToNewWorkspace,
+  moveTabToNewWorkspace,
   reorderWorkspace,
   switchWorkspace,
   updateWorkspaceById,

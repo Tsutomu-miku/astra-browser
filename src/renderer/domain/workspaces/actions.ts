@@ -1,12 +1,16 @@
 import {
-  BrowserState,
   createTab,
+  getReadableUrlTitle,
   getHomepageUrl,
   getWorkspaceHomepageUrl,
   getNextWorkspaceAccent,
-  Workspace
+  type BrowserState,
+  type BrowserTab,
+  type TabGroup,
+  type Workspace
 } from "../browser";
 import { getActiveWorkspace } from "../browser/selectors";
+import { pruneEmptyTabGroups } from "../tabs/groups";
 import { clearSplitView } from "../tabs/splitView";
 import { updateBrowserState } from "../browser/updateState";
 import { normalizeWorkspaceProfile } from "./profiles";
@@ -22,23 +26,62 @@ export function switchWorkspace(state: BrowserState, workspaceId: string): Brows
 
 export function addWorkspace(state: BrowserState): BrowserState {
   return updateBrowserState(state, (draft) => {
-    const index = draft.workspaces.length + 1;
-    const id = crypto.randomUUID();
-    const name = `Space ${index}`;
-    const tab = createTab("New Tab", getHomepageUrl(draft));
-    draft.workspaces.push({
-      id,
-      name,
-      accent: getNextWorkspaceAccent(index),
-      homepage: getHomepageUrl(draft),
-      ...normalizeWorkspaceProfile({ id, name }),
-      closedTabs: [],
-      favorites: [],
-      tabGroups: [],
+    const workspace = createWorkspace(draft, {
+      name: `Space ${draft.workspaces.length + 1}`,
+      tabs: [createTab("New Tab", getHomepageUrl(draft))]
+    });
+    draft.workspaces.push(workspace);
+    draft.activeWorkspaceId = draft.workspaces.at(-1)!.id;
+  });
+}
+
+export function moveTabToNewWorkspace(state: BrowserState, tabId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const source = draft.workspaces.find((workspace) => workspace.tabs.some((tab) => tab.id === tabId));
+    if (!source) return;
+
+    const index = source.tabs.findIndex((tab) => tab.id === tabId);
+    const [tab] = source.tabs.splice(index, 1);
+    tab.groupId = null;
+    pruneEmptyTabGroups(source);
+    replaceEmptyOrMovedActiveTab(draft, source, tabId, index);
+
+    const workspace = createWorkspace(draft, {
+      name: tab.title || getReadableUrlTitle(tab.url),
       tabs: [tab],
       activeTabId: tab.id
     });
-    draft.activeWorkspaceId = draft.workspaces.at(-1)!.id;
+    draft.workspaces.push(workspace);
+    draft.activeWorkspaceId = workspace.id;
+    clearSplitView(draft);
+  });
+}
+
+export function moveTabGroupToNewWorkspace(state: BrowserState, groupId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const source = draft.workspaces.find((workspace) => workspace.tabGroups.some((group) => group.id === groupId));
+    if (!source) return;
+
+    const group = source.tabGroups.find((candidate) => candidate.id === groupId);
+    const movingTabs = source.tabs.filter((tab) => tab.groupId === groupId);
+    if (!group || movingTabs.length === 0) return;
+
+    const firstMovedIndex = source.tabs.findIndex((tab) => tab.groupId === groupId);
+    const movingIds = new Set(movingTabs.map((tab) => tab.id));
+    const activeMovedTab = movingTabs.find((tab) => tab.id === source.activeTabId);
+    source.tabs = source.tabs.filter((tab) => !movingIds.has(tab.id));
+    pruneEmptyTabGroups(source);
+    replaceEmptyOrMovedActiveTab(draft, source, activeMovedTab?.id ?? movingTabs[0].id, firstMovedIndex);
+
+    const workspace = createWorkspace(draft, {
+      name: group.name,
+      tabGroups: [{ ...group }],
+      tabs: movingTabs,
+      activeTabId: activeMovedTab?.id ?? movingTabs[0].id
+    });
+    draft.workspaces.push(workspace);
+    draft.activeWorkspaceId = workspace.id;
+    clearSplitView(draft);
   });
 }
 
@@ -99,4 +142,47 @@ export function updateWorkspaceById(
       workspace.homepage = getWorkspaceHomepageUrl(draft, workspace);
     }
   });
+}
+
+function createWorkspace(
+  state: BrowserState,
+  options: {
+    activeTabId?: string;
+    name: string;
+    tabGroups?: TabGroup[];
+    tabs: BrowserTab[];
+  }
+): Workspace {
+  const index = state.workspaces.length + 1;
+  const id = crypto.randomUUID();
+  const name = options.name.trim() || `Space ${index}`;
+  const tabs = options.tabs.length > 0 ? options.tabs : [createTab("New Tab", getHomepageUrl(state))];
+
+  return {
+    id,
+    name,
+    accent: getNextWorkspaceAccent(index),
+    homepage: getHomepageUrl(state),
+    ...normalizeWorkspaceProfile({ id, name }),
+    closedTabs: [],
+    favorites: [],
+    tabGroups: options.tabGroups ?? [],
+    tabs,
+    activeTabId: options.activeTabId ?? tabs[0].id
+  };
+}
+
+function replaceEmptyOrMovedActiveTab(
+  state: BrowserState,
+  workspace: Workspace,
+  movedTabId: string,
+  movedIndex: number
+) {
+  if (workspace.tabs.length === 0) {
+    const replacement = createTab("New Tab", getWorkspaceHomepageUrl(state, workspace));
+    workspace.tabs.push(replacement);
+    workspace.activeTabId = replacement.id;
+  } else if (workspace.activeTabId === movedTabId || !workspace.tabs.some((tab) => tab.id === workspace.activeTabId)) {
+    workspace.activeTabId = workspace.tabs[Math.min(movedIndex, workspace.tabs.length - 1)].id;
+  }
 }

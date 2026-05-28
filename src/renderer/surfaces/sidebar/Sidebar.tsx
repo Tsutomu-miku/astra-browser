@@ -19,6 +19,7 @@ import { SidebarSections } from "./components/tabs/SidebarSections";
 import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus";
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
+import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -30,9 +31,6 @@ import { getSidebarSearchOpenIntent, type SidebarOpenIntent } from "./sidebarOpe
 
 export function Sidebar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWorkspace, actions, compactChromePeeking, compactMode, floatingSidebarOpen, setPanel, sidebarCollapsed, state } = controller;
-  const [draggingGroupId, setDraggingGroupId] = useState<string | null>(null);
-  const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
-  const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
   const [tabQuery, setTabQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const {
@@ -62,6 +60,18 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const activeSearchTarget = filteredItems.isFiltering
     ? searchTargets[clampSidebarSearchIndex(activeSearchIndex, searchTargets.length)]
     : undefined;
+  const {
+    clearWorkspaceDrag,
+    draggingGroupId,
+    draggingTabId,
+    draggingWorkspaceId,
+    handleNewWorkspaceDrop,
+    handleWorkspaceDragOver,
+    handleWorkspaceDragStart,
+    handleWorkspaceDrop,
+    setDraggingGroupId,
+    setDraggingTabId
+  } = useSidebarWorkspaceDrag({ actions, activeWorkspaceId: activeWorkspace.id });
   const {
     draggingEssentialId,
     draggingFavoriteId,
@@ -145,49 +155,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     }
   }
 
-  const handleWorkspaceDragStart = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    setDraggingGroupId(null);
-    setDraggingTabId(null);
-    setDraggingWorkspaceId(workspaceId);
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/workspace-id", workspaceId);
-  };
-
-  const handleWorkspaceDragOver = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    const isGroupTarget = draggingGroupId && workspaceId !== activeWorkspace.id;
-    const isTabTarget = draggingTabId && workspaceId !== activeWorkspace.id;
-    const isWorkspaceTarget = draggingWorkspaceId && workspaceId !== draggingWorkspaceId;
-    if (isGroupTarget || isTabTarget || isWorkspaceTarget) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-    }
-  };
-
-  const handleWorkspaceDrop = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    event.preventDefault();
-    if (draggingWorkspaceId && draggingWorkspaceId !== workspaceId) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      const placement = event.clientY > rect.top + rect.height / 2 ? "after" : "before";
-      actions.reorderWorkspace(draggingWorkspaceId, workspaceId, placement);
-      setDraggingWorkspaceId(null);
-      return;
-    }
-
-    const groupId = draggingGroupId || event.dataTransfer.getData("text/group-id");
-    if (groupId && workspaceId !== activeWorkspace.id) {
-      actions.moveTabGroupToWorkspace(groupId, workspaceId);
-      setDraggingGroupId(null);
-      return;
-    }
-
-    const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
-    if (tabId && workspaceId !== activeWorkspace.id) {
-      actions.moveTabToWorkspace(tabId, workspaceId);
-    }
-    setDraggingGroupId(null);
-    setDraggingTabId(null);
-  };
-
   return (
     <aside className={`sidebar ${sidebarCollapsed || compactMode ? "is-collapsed" : ""} ${compactMode ? "is-compact-mode" : ""} ${floatingSidebarOpen ? "is-floating-open" : ""} ${compactChromePeeking ? "is-peeking-chrome" : ""}`}>
       <section className="traffic-space" aria-hidden="true" />
@@ -200,15 +167,13 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         floatingSidebarOpen={floatingSidebarOpen}
         sidebarCollapsed={sidebarCollapsed}
         workspaces={state.workspaces}
-        onDragEnd={() => {
-          setDraggingGroupId(null);
-          setDraggingWorkspaceId(null);
-        }}
+        onDragEnd={clearWorkspaceDrag}
         onDragOver={handleWorkspaceDragOver}
         onDragStart={handleWorkspaceDragStart}
         onDrop={handleWorkspaceDrop}
         onDeleteWorkspace={actions.deleteWorkspace}
         onNewWorkspace={actions.addWorkspace}
+        onNewWorkspaceDrop={handleNewWorkspaceDrop}
         onSelect={actions.switchWorkspace}
         onToggleSidebar={actions.toggleSidebar}
         onUpdateWorkspace={actions.updateWorkspaceById}

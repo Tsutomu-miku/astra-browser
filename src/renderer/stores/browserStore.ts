@@ -25,6 +25,8 @@ import {
   deleteWorkspace,
   moveTabToWorkspace,
   moveTabGroupToWorkspace,
+  moveTabToNewWorkspace,
+  moveTabGroupToNewWorkspace,
   openTabInSplit,
   openUrlInSplit,
   removeTabFromSplit,
@@ -79,9 +81,9 @@ import {
 } from "../domain/browser";
 import { getPermissionRule } from "../domain/permissions/sitePermissions";
 import { loadBrowserState, saveBrowserState } from "../platform/persistence/browserStorage";
-import type { WebviewElement } from "../types/browser-ui";
 import { getActiveProfileId, getActiveUrl } from "./browserStoreSelectors";
 import type { BrowserStore } from "./browserStoreTypes";
+import { syncMuted, syncZoom } from "./browserStoreWebviewSync";
 
 const initialState = loadBrowserState();
 
@@ -156,6 +158,9 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   moveTabToWorkspace: (tabId, workspaceId) => update(set, (state) => moveTabToWorkspace(state, tabId, workspaceId)),
   moveTabGroupToWorkspace: (groupId, workspaceId) =>
     update(set, (state) => moveTabGroupToWorkspace(state, groupId, workspaceId)),
+  moveTabToNewWorkspace: (tabId) => update(set, (state) => moveTabToNewWorkspace(state, tabId)),
+  moveTabGroupToNewWorkspace: (groupId) =>
+    update(set, (state) => moveTabGroupToNewWorkspace(state, groupId)),
   focusSplitPane: (tabId) => update(set, (state) => focusSplitPane(state, tabId)),
   closeGlance: () => set({ glance: null }),
   openGlance: (url, title) => set({ glance: { title: title || url, url } }),
@@ -280,20 +285,4 @@ function update(
   saveBrowserState(next);
   set({ state: next, addressValue: getActiveUrl(next) });
   return next;
-}
-
-function syncZoom(state: BrowserState, webview?: WebviewElement): BrowserState {
-  const workspace = state.workspaces.find((candidate) => candidate.id === state.activeWorkspaceId) ?? state.workspaces[0];
-  const tab = workspace.tabs.find((candidate) => candidate.id === workspace.activeTabId) ?? workspace.tabs[0];
-  webview?.setZoomFactor?.(tab.zoomFactor);
-  return state;
-}
-
-function syncMuted(state: BrowserState, webview?: WebviewElement, tabId?: string): BrowserState {
-  const workspace = state.workspaces.find((candidate) => candidate.id === state.activeWorkspaceId) ?? state.workspaces[0];
-  const tab = tabId
-    ? state.workspaces.flatMap((candidate) => candidate.tabs).find((candidate) => candidate.id === tabId)
-    : workspace.tabs.find((candidate) => candidate.id === workspace.activeTabId) ?? workspace.tabs[0];
-  if (tab) webview?.setAudioMuted?.(tab.isMuted);
-  return state;
 }

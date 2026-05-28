@@ -47,6 +47,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to duplicate the active tab.
 - Users must be able to reorder sidebar tabs by drag and drop.
 - Users must be able to move tabs between Spaces from the command palette or by dragging onto Space buttons.
+- Users must be able to drag sidebar tabs onto the New Space button to create a Space from that tab.
 - Users must be able to move tabs between Spaces from the sidebar tab context menu.
 - Sidebar tab context menus must support opening, split-view targeting, duplication, pinning, muting, and closing.
 - Sidebar tab context menus must support copying the tab URL and title without selecting the tab.
@@ -63,6 +64,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to create named, color-coded, collapsible tab groups.
 - Sidebar tab group headers must support context menus for collapsing, sleeping, duplicating, renaming, recoloring, moving to another Space, closing, and ungrouping the whole group.
 - Users must be able to drag sidebar tab groups onto Space buttons to move the whole group between Spaces.
+- Users must be able to drag sidebar tab groups onto the New Space button to create a Space from that group.
 - Sidebar tab context menus must support creating a new group from a tab, moving tabs to existing groups, and ungrouping grouped tabs.
 - Users must be able to drag a regular sidebar tab onto a New Group target to create a tab group.
 - Users must be able to drag a grouped sidebar tab onto an Ungroup target to remove it from its group.
