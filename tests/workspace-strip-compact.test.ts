@@ -19,14 +19,27 @@ describe("workspace strip compact controls", () => {
     expect(pinned).toContain('aria-label="Unpin floating sidebar"');
     expect(pinned).toContain('aria-pressed="true"');
   });
+
+  it("marks other Spaces as drop targets while dragging a tab group", () => {
+    const html = renderStrip({
+      compactMode: false,
+      draggingGroupId: "group",
+      floatingSidebarOpen: false,
+      sidebarCollapsed: false
+    });
+
+    expect(html).toContain('data-drop-target="true"');
+  });
 });
 
 function renderStrip({
   compactMode,
+  draggingGroupId = null,
   floatingSidebarOpen,
   sidebarCollapsed
 }: {
   compactMode: boolean;
+  draggingGroupId?: string | null;
   floatingSidebarOpen: boolean;
   sidebarCollapsed: boolean;
 }) {
@@ -36,6 +49,7 @@ function renderStrip({
   return renderToStaticMarkup(createElement(WorkspaceStrip, {
     activeWorkspaceId: activeWorkspace.id,
     compactMode,
+    draggingGroupId,
     draggingTabId: null,
     draggingWorkspaceId: null,
     floatingSidebarOpen,

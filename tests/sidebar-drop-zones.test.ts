@@ -15,6 +15,7 @@ describe("sidebar section drop zones", () => {
       closedTabs: [],
       draggingEssentialId: null,
       draggingFavoriteId: null,
+      draggingGroupId: null,
       draggingTabId: tab.id,
       filteredItems: {
         essentials: [],
@@ -39,6 +40,7 @@ describe("sidebar section drop zones", () => {
       onTabDrop: vi.fn(),
       setDraggingEssentialId: vi.fn(),
       setDraggingFavoriteId: vi.fn(),
+      setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
       splitTabIds: []
     }));
@@ -62,6 +64,7 @@ describe("sidebar section drop zones", () => {
       closedTabs: [],
       draggingEssentialId: null,
       draggingFavoriteId: null,
+      draggingGroupId: null,
       draggingTabId: pinned.id,
       filteredItems: {
         essentials: [],
@@ -86,6 +89,7 @@ describe("sidebar section drop zones", () => {
       onTabDrop: vi.fn(),
       setDraggingEssentialId: vi.fn(),
       setDraggingFavoriteId: vi.fn(),
+      setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
       splitTabIds: []
     }));
@@ -101,6 +105,7 @@ describe("sidebar section drop zones", () => {
       closedTabs: [],
       draggingEssentialId: null,
       draggingFavoriteId: null,
+      draggingGroupId: null,
       draggingTabId: grouped.id,
       filteredItems: {
         essentials: [],
@@ -128,6 +133,7 @@ describe("sidebar section drop zones", () => {
       onTabDrop: vi.fn(),
       setDraggingEssentialId: vi.fn(),
       setDraggingFavoriteId: vi.fn(),
+      setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
       splitTabIds: []
     }));
@@ -147,6 +153,7 @@ describe("sidebar section drop zones", () => {
       closedTabs: [],
       draggingEssentialId: first.id,
       draggingFavoriteId: null,
+      draggingGroupId: null,
       draggingTabId: null,
       filteredItems: {
         essentials: [first, second],
@@ -171,6 +178,7 @@ describe("sidebar section drop zones", () => {
       onTabDrop: vi.fn(),
       setDraggingEssentialId: vi.fn(),
       setDraggingFavoriteId: vi.fn(),
+      setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
       splitTabIds: []
     }));
@@ -190,6 +198,7 @@ describe("sidebar section drop zones", () => {
       closedTabs: [],
       draggingEssentialId: null,
       draggingFavoriteId: first.id,
+      draggingGroupId: null,
       draggingTabId: null,
       filteredItems: {
         essentials: [],
@@ -214,6 +223,7 @@ describe("sidebar section drop zones", () => {
       onTabDrop: vi.fn(),
       setDraggingEssentialId: vi.fn(),
       setDraggingFavoriteId: vi.fn(),
+      setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
       splitTabIds: []
     }));
@@ -221,6 +231,52 @@ describe("sidebar section drop zones", () => {
     expect(html).toContain('draggable="true"');
     expect(html).toContain('data-dragging="true"');
     expect(html).toContain('data-drop-target="true"');
+  });
+
+  it("marks tab group headers as draggable for cross-Space moves", () => {
+    const grouped = { ...createTab("Docs", "https://docs.example"), groupId: "group" };
+    const html = renderToStaticMarkup(createElement(SidebarSections, {
+      actions: createActions(),
+      activeTab: grouped,
+      closedTabs: [],
+      draggingEssentialId: null,
+      draggingFavoriteId: null,
+      draggingGroupId: "group",
+      draggingTabId: null,
+      filteredItems: {
+        essentials: [],
+        favorites: [],
+        groupedTabs: [{
+          group: { id: "group", name: "Research", color: "#7dd3fc", isCollapsed: false },
+          tabs: [grouped]
+        }],
+        hasMatches: true,
+        isFiltering: false,
+        pinnedTabs: [],
+        regularTabs: []
+      },
+      onEssentialDragStart: vi.fn(),
+      onEssentialDrop: vi.fn(),
+      onEssentialReorderDrop: vi.fn(),
+      onFavoriteDragStart: vi.fn(),
+      onFavoriteDrop: vi.fn(),
+      onFavoriteReorderDrop: vi.fn(),
+      onClosedTabContextMenu: vi.fn(),
+      onTabGroupContextMenu: vi.fn(),
+      onPinDrop: vi.fn(),
+      onQuickEntryContextMenu: vi.fn(),
+      onTabContextMenu: vi.fn(),
+      onTabDrop: vi.fn(),
+      setDraggingEssentialId: vi.fn(),
+      setDraggingFavoriteId: vi.fn(),
+      setDraggingGroupId: vi.fn(),
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
+    }));
+
+    expect(html).toContain('class="tab-group-header"');
+    expect(html).toContain('draggable="true"');
+    expect(html).toContain('data-dragging="true"');
   });
 });
 

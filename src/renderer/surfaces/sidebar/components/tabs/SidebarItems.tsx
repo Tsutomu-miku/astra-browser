@@ -1,7 +1,7 @@
-import type { CSSProperties, DragEvent, MouseEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
 import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icons/fi";
 
-import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../../../domain/browser";
+import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
@@ -40,106 +40,6 @@ export function SidebarSectionHeader({
         </button>
       ) : content}
     </header>
-  );
-}
-
-export function TabGroupSection({
-  activeTab,
-  draggingTabId,
-  group,
-  onAssignTab,
-  onClose,
-  onContextMenu,
-  onGroupContextMenu,
-  onDrop,
-  onPreview,
-  onSelect,
-  onSplit,
-  onToggle,
-  onUpdate,
-  searchSelectedTabId,
-  setDraggingTabId,
-  splitTabIds,
-  tabs
-}: {
-  activeTab: BrowserTab;
-  draggingTabId: string | null;
-  group: TabGroup;
-  onAssignTab: (tabId: string, groupId: string) => void;
-  onClose: (tabId: string) => void;
-  onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
-  onGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
-  onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
-  onPreview: (url: string, title?: string) => void;
-  onSelect: (tabId: string) => void;
-  onSplit: (tabId: string) => void;
-  onToggle: () => void;
-  onUpdate: (groupId: string, patch: Partial<Pick<TabGroup, "name" | "color">>) => void;
-  searchSelectedTabId?: string;
-  setDraggingTabId: (tabId: string | null) => void;
-  splitTabIds: string[];
-  tabs: BrowserTab[];
-}) {
-  const hasActiveTab = tabs.some((tab) => tab.id === activeTab.id);
-
-  return (
-    <section className="tab-group" style={{ "--group-color": group.color } as CSSProperties}>
-      <div
-        className="tab-group-header"
-        data-drop-target={Boolean(draggingTabId)}
-        onContextMenu={(event) => onGroupContextMenu(event, group)}
-        onDragOver={(event) => {
-          if (draggingTabId) event.preventDefault();
-        }}
-        onDrop={(event) => {
-          event.preventDefault();
-          const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
-          if (tabId) onAssignTab(tabId, group.id);
-          setDraggingTabId(null);
-        }}
-      >
-        <button
-          className="tab-group-toggle"
-          type="button"
-          aria-expanded={!group.isCollapsed}
-          title={group.isCollapsed ? "Expand group" : "Collapse group"}
-          onClick={onToggle}
-        >
-          <span className="tab-group-dot" />
-        </button>
-        <input
-          className="tab-group-title-input"
-          aria-label="Tab group name"
-          value={group.name}
-          onChange={(event) => onUpdate(group.id, { name: event.target.value })}
-        />
-        <span className="tab-group-count">{tabs.length}</span>
-        <input
-          className="tab-group-color"
-          aria-label="Tab group color"
-          type="color"
-          value={group.color}
-          onChange={(event) => onUpdate(group.id, { color: event.target.value })}
-        />
-      </div>
-      {(!group.isCollapsed || hasActiveTab) && tabs.map((tab) => (
-        <TabRow
-          key={tab.id}
-          activeTabId={activeTab.id}
-          draggingTabId={draggingTabId}
-          isSearchSelected={searchSelectedTabId === tab.id}
-          splitTabIds={splitTabIds}
-          tab={tab}
-          onClose={onClose}
-          onContextMenu={onContextMenu}
-          onDrop={onDrop}
-          onPreview={onPreview}
-          onSelect={onSelect}
-          onSplit={onSplit}
-          setDraggingTabId={setDraggingTabId}
-        />
-      ))}
-    </section>
   );
 }
 

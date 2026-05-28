@@ -30,6 +30,7 @@ import { getSidebarSearchOpenIntent, type SidebarOpenIntent } from "./sidebarOpe
 
 export function Sidebar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWorkspace, actions, compactChromePeeking, compactMode, floatingSidebarOpen, setPanel, sidebarCollapsed, state } = controller;
+  const [draggingGroupId, setDraggingGroupId] = useState<string | null>(null);
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
   const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
   const [tabQuery, setTabQuery] = useState("");
@@ -145,15 +146,18 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   }
 
   const handleWorkspaceDragStart = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    setDraggingGroupId(null);
+    setDraggingTabId(null);
     setDraggingWorkspaceId(workspaceId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/workspace-id", workspaceId);
   };
 
   const handleWorkspaceDragOver = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    const isGroupTarget = draggingGroupId && workspaceId !== activeWorkspace.id;
     const isTabTarget = draggingTabId && workspaceId !== activeWorkspace.id;
     const isWorkspaceTarget = draggingWorkspaceId && workspaceId !== draggingWorkspaceId;
-    if (isTabTarget || isWorkspaceTarget) {
+    if (isGroupTarget || isTabTarget || isWorkspaceTarget) {
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
     }
@@ -169,10 +173,18 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       return;
     }
 
+    const groupId = draggingGroupId || event.dataTransfer.getData("text/group-id");
+    if (groupId && workspaceId !== activeWorkspace.id) {
+      actions.moveTabGroupToWorkspace(groupId, workspaceId);
+      setDraggingGroupId(null);
+      return;
+    }
+
     const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
     if (tabId && workspaceId !== activeWorkspace.id) {
       actions.moveTabToWorkspace(tabId, workspaceId);
     }
+    setDraggingGroupId(null);
     setDraggingTabId(null);
   };
 
@@ -182,12 +194,16 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       <WorkspaceStrip
         activeWorkspaceId={activeWorkspace.id}
         compactMode={compactMode}
+        draggingGroupId={draggingGroupId}
         draggingTabId={draggingTabId}
         draggingWorkspaceId={draggingWorkspaceId}
         floatingSidebarOpen={floatingSidebarOpen}
         sidebarCollapsed={sidebarCollapsed}
         workspaces={state.workspaces}
-        onDragEnd={() => setDraggingWorkspaceId(null)}
+        onDragEnd={() => {
+          setDraggingGroupId(null);
+          setDraggingWorkspaceId(null);
+        }}
         onDragOver={handleWorkspaceDragOver}
         onDragStart={handleWorkspaceDragStart}
         onDrop={handleWorkspaceDrop}
@@ -221,6 +237,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           closedTabs={activeWorkspace.closedTabs}
           draggingEssentialId={draggingEssentialId}
           draggingFavoriteId={draggingFavoriteId}
+          draggingGroupId={draggingGroupId}
           draggingTabId={draggingTabId}
           filteredItems={filteredItems}
           onEssentialDragStart={handleEssentialDragStart}
@@ -238,6 +255,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onTabDrop={handleTabDrop}
           setDraggingEssentialId={setDraggingEssentialId}
           setDraggingFavoriteId={setDraggingFavoriteId}
+          setDraggingGroupId={setDraggingGroupId}
           setDraggingTabId={setDraggingTabId}
         />
       </section>

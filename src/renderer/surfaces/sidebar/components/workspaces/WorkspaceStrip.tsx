@@ -14,6 +14,7 @@ import {
 export function WorkspaceStrip({
   activeWorkspaceId,
   compactMode,
+  draggingGroupId,
   draggingTabId,
   draggingWorkspaceId,
   floatingSidebarOpen,
@@ -31,6 +32,7 @@ export function WorkspaceStrip({
 }: {
   activeWorkspaceId: string;
   compactMode: boolean;
+  draggingGroupId: string | null;
   draggingTabId: string | null;
   draggingWorkspaceId: string | null;
   floatingSidebarOpen: boolean;
@@ -106,6 +108,7 @@ export function WorkspaceStrip({
           aria-current={workspace.id === activeWorkspaceId}
           data-dragging={draggingWorkspaceId === workspace.id}
           data-drop-target={Boolean(
+            (draggingGroupId && workspace.id !== activeWorkspaceId) ||
             (draggingTabId && workspace.id !== activeWorkspaceId) ||
             (draggingWorkspaceId && workspace.id !== draggingWorkspaceId)
           )}

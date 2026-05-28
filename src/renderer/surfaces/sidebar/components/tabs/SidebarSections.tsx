@@ -5,8 +5,9 @@ import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
-import { FavoriteButton, SidebarSectionHeader, TabGroupSection, TabRow } from "./SidebarItems";
+import { FavoriteButton, SidebarSectionHeader, TabRow } from "./SidebarItems";
 import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
+import { TabGroupSection } from "./TabGroupSection";
 import { TabOrganizationDropTargets } from "./TabOrganizationDropTargets";
 
 const SIDEBAR_RECENTLY_CLOSED_LIMIT = 4;
@@ -20,6 +21,7 @@ export function SidebarSections({
   closedTabs,
   draggingEssentialId,
   draggingFavoriteId,
+  draggingGroupId,
   draggingTabId,
   filteredItems,
   onEssentialDragStart,
@@ -36,6 +38,7 @@ export function SidebarSections({
   onQuickEntryContextMenu,
   setDraggingEssentialId,
   setDraggingFavoriteId,
+  setDraggingGroupId,
   setDraggingTabId,
   splitTabIds
 }: {
@@ -45,6 +48,7 @@ export function SidebarSections({
   closedTabs: ClosedTab[];
   draggingEssentialId: string | null;
   draggingFavoriteId: string | null;
+  draggingGroupId: string | null;
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
   onEssentialDragStart: (event: DragEvent<HTMLButtonElement>, essentialId: string) => void;
@@ -61,6 +65,7 @@ export function SidebarSections({
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
+  setDraggingGroupId: (groupId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
 }) {
@@ -240,6 +245,7 @@ export function SidebarSections({
             <TabGroupSection
               key={group.id}
               activeTab={activeTab}
+              draggingGroupId={draggingGroupId}
               group={group}
               searchSelectedTabId={activeSearchTarget?.type === "tab" ? activeSearchTarget.id : undefined}
               splitTabIds={splitTabIds}
@@ -256,6 +262,7 @@ export function SidebarSections({
               onToggle={() => actions.toggleTabGroupCollapsed(group.id)}
               onUpdate={actions.updateTabGroup}
               setDraggingTabId={setDraggingTabId}
+              setDraggingGroupId={setDraggingGroupId}
             />
           ))}
           {filteredItems.regularTabs.map((tab) => (
