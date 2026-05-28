@@ -141,6 +141,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The command palette must expose state-aware Memory Saver auto-sleep toggles and delay presets.
 - The command palette must expose page tools such as find in page and site information.
 - The command palette must expose page navigation tools for back, forward, reload, stop-loading, and hard reload.
+- The command palette must expose split-pane focus commands while split view is active.
 - The command palette must include entries for open tabs, Essentials, favorites, history, and recently closed tabs.
 - The command palette must identify active and sleeping open-tab entries so keyboard navigation has clear tab state.
 - The command palette must directly open URLs or search typed queries.

@@ -26,6 +26,7 @@ export interface CommandActions {
   duplicateActiveTab: () => void;
   fillSplitView: () => void;
   focusAddressBar: () => void;
+  focusSplitPane: (tabId: string) => void;
   groupActiveTab: () => void;
   groupTab: (tabId: string) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;

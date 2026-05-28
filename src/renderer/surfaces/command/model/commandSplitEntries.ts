@@ -1,5 +1,6 @@
 import type { BrowserState, BrowserTab, Workspace } from "../../../domain/browser";
 import { shortcutLabels } from "../../../common/shortcuts/shortcutLabels";
+import { getSplitTabIds } from "../../../domain/tabs/splitView";
 import type { Command, CommandActions } from "./commandTypes";
 
 export function buildSplitCommands(
@@ -23,6 +24,14 @@ export function buildSplitCommands(
       run: actions.toggleSplitMode
     }]
     : [];
+  const focusSplitPaneCommands: Command[] = getSplitTabIds(state)
+    .map((tabId) => workspace.tabs.find((tab) => tab.id === tabId))
+    .filter((tab): tab is BrowserTab => Boolean(tab))
+    .map((tab) => ({
+      title: `Focus ${tab.title || tab.url} split pane`,
+      subtitle: "Make this split pane active",
+      run: () => actions.focusSplitPane(tab.id)
+    }));
 
   return [
     {
@@ -32,6 +41,7 @@ export function buildSplitCommands(
       run: actions.toggleSplitMode
     },
     ...unsplitCommands,
+    ...focusSplitPaneCommands,
     {
       title: "Fill split grid",
       subtitle: "Open up to four tabs in Zen-style split view",

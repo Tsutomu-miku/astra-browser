@@ -28,6 +28,7 @@ function commandActions() {
     duplicateActiveTab: vi.fn(),
     fillSplitView: vi.fn(),
     focusAddressBar: vi.fn(),
+    focusSplitPane: vi.fn(),
     groupActiveTab: vi.fn(),
     groupTab: vi.fn(),
     moveTabToWorkspace: vi.fn(),
@@ -136,11 +137,18 @@ describe("buildCommands", () => {
 
   it("only shows unsplit all when split view is active", () => {
     const withSecondTab = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const actions = commandActions();
     const splitState = toggleSplitMode(withSecondTab);
-    const commands = buildCommands(splitState, commandActions(), vi.fn(), defaultChromeState);
+    const commands = buildCommands(splitState, actions, vi.fn(), defaultChromeState);
+    const splitTabId = splitState.splitTabIds[0];
 
     expect(commands.some((command) => command.title === "Close split view")).toBe(true);
     expect(commands.some((command) => command.title === "Unsplit all tabs")).toBe(true);
+    expect(commands.some((command) => command.title === "Focus New Tab split pane")).toBe(true);
+
+    commands.find((command) => command.title === "Focus New Tab split pane")?.run();
+
+    expect(actions.focusSplitPane).toHaveBeenCalledWith(splitTabId);
   });
 
   it("labels compact chrome commands by current state", () => {
