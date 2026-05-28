@@ -23,12 +23,15 @@ import type { BrowserController } from "../../app/controller/types";
 import { useOmniboxController } from "../../app/controller/useOmniboxController";
 import { getReloadButtonState } from "../../common/navigation/reloadButtonState";
 import { getOmniboxActionHints } from "../../common/omnibox/omniboxActions";
+import { PageIdentityContextMenu } from "./components/PageIdentityContextMenu";
+import { usePageIdentityContextMenu } from "./components/usePageIdentityContextMenu";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWebview, activeWorkspace, actions, addressValue, compactMode, floatingToolbarOpen, setAddressValue, setPanel, state } = controller;
   const identity = getUrlIdentity(activeTab.url);
   const omnibox = useOmniboxController({ actions, addressValue, setAddressValue, state });
   const reloadButton = getReloadButtonState(activeTab.isLoading);
+  const pageIdentityMenu = usePageIdentityContextMenu();
 
   return (
     <header className="topbar">
@@ -52,6 +55,10 @@ export function Topbar({ controller }: { controller: BrowserController }) {
             title={identity.host || identity.label}
             type="button"
             onClick={() => setPanel("site")}
+            onContextMenu={(event) => pageIdentityMenu.openPageIdentityMenu(event, {
+              title: activeTab.title,
+              url: activeTab.url
+            })}
           >
             <span className="identity-glyph"><SecurityIcon security={identity.security} /></span>
             <span className="identity-label">{activeTab.isLoading ? "Loading" : identity.label}</span>
@@ -99,6 +106,19 @@ export function Topbar({ controller }: { controller: BrowserController }) {
               </button>
             ))}
           </div>
+        )}
+        {pageIdentityMenu.menu && (
+          <PageIdentityContextMenu
+            item={pageIdentityMenu.menu.item}
+            left={pageIdentityMenu.menu.left}
+            top={pageIdentityMenu.menu.top}
+            onClose={pageIdentityMenu.closeMenu}
+            onCopyTitle={actions.copyText}
+            onCopyUrl={actions.copyText}
+            onOpenGlance={actions.openGlance}
+            onOpenInSplit={actions.openUrlInSplit}
+            onOpenSiteInfo={() => setPanel("site")}
+          />
         )}
       </div>
       <button className="toolbar-button" title="Workspace settings" type="button" onClick={() => setPanel("settings")}>
