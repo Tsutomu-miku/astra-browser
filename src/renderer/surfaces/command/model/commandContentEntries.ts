@@ -31,7 +31,9 @@ export function buildContentCommands(
     ...workspace.closedTabs.slice(0, 10).map((tab, index) => ({
       title: `Reopen ${tab.title || tab.url}`,
       subtitle: `Recently closed · ${tab.url}`,
-      run: () => actions.restoreClosedTab(index)
+      run: () => actions.restoreClosedTab(index),
+      runInSplit: () => actions.openUrlInSplit(tab.url, tab.title),
+      runPreview: () => actions.openGlance(tab.url, tab.title)
     })),
     ...state.history.slice(0, 10).map((entry) => ({
       title: entry.title,

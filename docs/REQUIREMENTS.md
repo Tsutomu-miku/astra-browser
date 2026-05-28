@@ -143,6 +143,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The command palette must expose page navigation tools for back, forward, reload, stop-loading, and hard reload.
 - The command palette must expose split-pane focus commands while split view is active.
 - The command palette must include entries for open tabs, Essentials, favorites, history, and recently closed tabs.
+- Recently closed command palette entries must support direct restore, Glance preview, and split opening.
 - The command palette must identify active and sleeping open-tab entries so keyboard navigation has clear tab state.
 - The command palette must directly open URLs or search typed queries.
 - The command palette must preview typed URLs or searches in Glance with `Alt+Enter`.

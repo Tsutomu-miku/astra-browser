@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { closeActiveTab, openUrlInActiveWorkspace, sleepInactiveTabs, toggleActiveTabFavorite, toggleSplitMode } from "../src/renderer/domain/actions";
 import { createDefaultState } from "../src/renderer/domain/browser";
 import { buildCommands } from "../src/renderer/app/controller/useCommands";
+import { getCommandRunner } from "../src/renderer/surfaces/command/model/commandIntent";
 import type { CommandChromeState } from "../src/renderer/app/controller/useCommands";
 
 const defaultChromeState: CommandChromeState = {
@@ -149,6 +150,21 @@ describe("buildCommands", () => {
     commands.find((command) => command.title === "Focus New Tab split pane")?.run();
 
     expect(actions.focusSplitPane).toHaveBeenCalledWith(splitTabId);
+  });
+
+  it("previews and split-opens recently closed entries from command palette modifiers", () => {
+    const actions = commandActions();
+    const state = closeActiveTab(openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example"));
+    const commands = buildCommands(state, actions, vi.fn(), defaultChromeState);
+    const recentlyClosedCommand = commands.find((command) => command.title === "Reopen Example")!;
+
+    getCommandRunner(recentlyClosedCommand, { altKey: true, shiftKey: false })();
+    getCommandRunner(recentlyClosedCommand, { altKey: false, shiftKey: true })();
+    getCommandRunner(recentlyClosedCommand, { altKey: false, shiftKey: false })();
+
+    expect(actions.openGlance).toHaveBeenCalledWith("https://example.com/", "Example");
+    expect(actions.openUrlInSplit).toHaveBeenCalledWith("https://example.com/", "Example");
+    expect(actions.restoreClosedTab).toHaveBeenCalledWith(0);
   });
 
   it("labels compact chrome commands by current state", () => {
