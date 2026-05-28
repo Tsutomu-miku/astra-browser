@@ -76,6 +76,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to drag sidebar tabs into Essentials to save them as global quick entries.
 - Users must be able to reorder global Essentials directly from the sidebar with drag and drop.
 - Users must have Space-local favorites for quick access.
+- Clicking a Space favorite from the sidebar must navigate the current tab instead of creating a new tab.
 - Users must be able to drag sidebar tabs into Space favorites to save them for quick access.
 - Users must be able to reorder Space favorites directly from the sidebar with drag and drop.
 - Sidebar Essentials and favorites must support context menus for opening, Glance preview, split opening, and removing the entry.

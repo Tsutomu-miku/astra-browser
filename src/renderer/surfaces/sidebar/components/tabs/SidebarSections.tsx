@@ -187,7 +187,7 @@ export function SidebarSections({
                 onDragStart={onFavoriteDragStart}
                 onDragEnd={() => setDraggingFavoriteId(null)}
                 onDrop={onFavoriteReorderDrop}
-                onOpen={actions.openUrlInActiveWorkspace}
+                onOpen={actions.navigateActiveTab}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}
               />

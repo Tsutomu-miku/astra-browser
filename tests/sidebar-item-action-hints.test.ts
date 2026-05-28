@@ -95,6 +95,45 @@ describe("sidebar item action hints", () => {
     act(() => root.unmount());
   });
 
+  it("uses the visible tab button as the drag source", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const setDraggingTabId = vi.fn();
+    const data = new Map<string, string>();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabRow, {
+        activeTabId: tab.id,
+        draggingTabId: null,
+        onClose: vi.fn(),
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onPreview: vi.fn(),
+        onSelect: vi.fn(),
+        onSplit: vi.fn(),
+        setDraggingTabId,
+        splitTabIds: [],
+        tab
+      }));
+    });
+
+    const event = new Event("dragstart", { bubbles: true });
+    Object.defineProperty(event, "dataTransfer", {
+      value: {
+        effectAllowed: "",
+        setData: (type: string, value: string) => data.set(type, value)
+      }
+    });
+    container.querySelector(".tab-button")?.dispatchEvent(event);
+
+    expect(container.querySelector(".tab-button")?.getAttribute("draggable")).toBe("true");
+    expect(setDraggingTabId).toHaveBeenCalledWith(tab.id);
+    expect(data.get("text/plain")).toBe(tab.id);
+
+    act(() => root.unmount());
+  });
+
   it("renders preview and split hints for favorite rows", () => {
     const html = renderToStaticMarkup(createElement(FavoriteButton, {
       favorite: createFavorite("Docs", "https://docs.example"),

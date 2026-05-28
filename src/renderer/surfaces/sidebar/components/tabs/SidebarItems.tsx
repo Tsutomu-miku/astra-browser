@@ -78,14 +78,7 @@ export function TabRow({
       className={`tab-row ${tab.isSleeping ? "is-sleeping" : ""} ${splitTabIds.includes(tab.id) ? "is-split-tab" : ""}`}
       aria-current={tab.id === activeTabId}
       aria-selected={isSearchSelected}
-      draggable
       data-dragging={draggingTabId === tab.id}
-      onDragStart={(event) => {
-        setDraggingTabId(tab.id);
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("text/plain", tab.id);
-      }}
-      onDragEnd={() => setDraggingTabId(null)}
       onDragOver={(event) => {
         if (draggingTabId && draggingTabId !== tab.id) event.preventDefault();
       }}
@@ -95,6 +88,13 @@ export function TabRow({
       <button
         className="tab-button"
         type="button"
+        draggable
+        onDragStart={(event) => {
+          setDraggingTabId(tab.id);
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", tab.id);
+        }}
+        onDragEnd={() => setDraggingTabId(null)}
         onAuxClick={(event) => {
           if (event.button === 1) {
             event.preventDefault();
