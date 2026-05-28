@@ -124,6 +124,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Exact command-name matches must execute ahead of search fallback.
 - Command palette selection must support Arrow, Home, End, Enter, Alt+Enter preview, Shift+Enter split opening, and Escape.
 - Command palette entries must visually hint when Alt preview or Shift split actions are available.
+- Command palette chrome commands must use state-aware labels for sidebar, compact mode, and pinned floating chrome actions.
 
 ### New Tab And Start Surface
 

@@ -3,6 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import { closeActiveTab, openUrlInActiveWorkspace, toggleActiveTabFavorite, toggleSplitMode } from "../src/renderer/domain/actions";
 import { createDefaultState } from "../src/renderer/domain/browser";
 import { buildCommands } from "../src/renderer/app/controller/useCommands";
+import type { CommandChromeState } from "../src/renderer/app/controller/useCommands";
+
+const defaultChromeState: CommandChromeState = {
+  compactMode: false,
+  floatingSidebarOpen: false,
+  floatingToolbarOpen: false,
+  sidebarCollapsed: false
+};
 
 function commandActions() {
   return {
@@ -66,7 +74,7 @@ describe("buildCommands", () => {
       visitedAt: Date.now()
     });
 
-    const commands = buildCommands(withSplitCandidate, commandActions(), vi.fn());
+    const commands = buildCommands(withSplitCandidate, commandActions(), vi.fn(), defaultChromeState);
 
     expect(commands.some((command) => command.title === "Reopen closed tab")).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("Open tab"))).toBe(true);
@@ -74,7 +82,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.subtitle.startsWith("Favorite"))).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("Recently closed"))).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("History"))).toBe(true);
-    expect(commands.some((command) => command.title === "Toggle sidebar")).toBe(true);
+    expect(commands.some((command) => command.title === "Collapse sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Reset zoom")).toBe(true);
     expect(commands.some((command) => command.title === "Sleep inactive tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Duplicate tab")).toBe(true);
@@ -95,9 +103,9 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Clear history")).toBe(true);
     expect(commands.some((command) => command.title === "Delete workspace")).toBe(true);
     expect(commands.some((command) => command.title === "New workspace")).toBe(true);
-    expect(commands.some((command) => command.title === "Toggle compact mode")).toBe(true);
-    expect(commands.some((command) => command.title === "Toggle floating sidebar")).toBe(true);
-    expect(commands.some((command) => command.title === "Toggle floating toolbar")).toBe(true);
+    expect(commands.some((command) => command.title === "Enter compact mode")).toBe(true);
+    expect(commands.some((command) => command.title === "Pin floating sidebar")).toBe(true);
+    expect(commands.some((command) => command.title === "Pin floating toolbar")).toBe(true);
     expect(commands.some((command) => command.title === "Add essential")).toBe(true);
     expect(commands.some((command) => command.title === "Close other tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Close tabs to the left")).toBe(true);
@@ -107,9 +115,23 @@ describe("buildCommands", () => {
   it("only shows unsplit all when split view is active", () => {
     const withSecondTab = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
     const splitState = toggleSplitMode(withSecondTab);
-    const commands = buildCommands(splitState, commandActions(), vi.fn());
+    const commands = buildCommands(splitState, commandActions(), vi.fn(), defaultChromeState);
 
     expect(commands.some((command) => command.title === "Close split view")).toBe(true);
     expect(commands.some((command) => command.title === "Unsplit all tabs")).toBe(true);
+  });
+
+  it("labels compact chrome commands by current state", () => {
+    const commands = buildCommands(createDefaultState(), commandActions(), vi.fn(), {
+      compactMode: true,
+      floatingSidebarOpen: true,
+      floatingToolbarOpen: true,
+      sidebarCollapsed: true
+    });
+
+    expect(commands.some((command) => command.title === "Expand sidebar")).toBe(true);
+    expect(commands.some((command) => command.title === "Exit compact mode")).toBe(true);
+    expect(commands.some((command) => command.title === "Unpin floating sidebar")).toBe(true);
+    expect(commands.some((command) => command.title === "Unpin floating toolbar")).toBe(true);
   });
 });

@@ -25,7 +25,12 @@ export function useBrowserController() {
     store,
     webviews
   });
-  const commands = useMemo(() => buildCommands(store.state, actions, store.setPanel), [actions, store]);
+  const commands = useMemo(() => buildCommands(store.state, actions, store.setPanel, {
+    compactMode: store.compactMode,
+    floatingSidebarOpen: store.floatingSidebarOpen,
+    floatingToolbarOpen: store.floatingToolbarOpen,
+    sidebarCollapsed: store.sidebarCollapsed
+  }), [actions, store]);
   const handleShortcut = useBrowserShortcuts({ actions, activeWebview, activeWorkspace, store });
 
   useEffect(() => {

@@ -5,13 +5,25 @@ import { buildContentCommands } from "../../surfaces/command/model/commandConten
 import { buildSplitCommands } from "../../surfaces/command/model/commandSplitEntries";
 import type { Command, CommandActions } from "../../surfaces/command/model/commandTypes";
 
+export interface CommandChromeState {
+  compactMode: boolean;
+  floatingSidebarOpen: boolean;
+  floatingToolbarOpen: boolean;
+  sidebarCollapsed: boolean;
+}
+
 export function buildCommands(
   state: BrowserState,
   actions: CommandActions,
-  setPanel: (panel: Panel) => void
+  setPanel: (panel: Panel) => void,
+  chromeState: CommandChromeState
 ): Command[] {
   const workspace = getActiveWorkspace(state);
   const activeTab = getActiveTab(workspace);
+  const sidebarCommandTitle = chromeState.sidebarCollapsed || chromeState.compactMode ? "Expand sidebar" : "Collapse sidebar";
+  const compactModeCommandTitle = chromeState.compactMode ? "Exit compact mode" : "Enter compact mode";
+  const floatingSidebarCommandTitle = chromeState.floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar";
+  const floatingToolbarCommandTitle = chromeState.floatingToolbarOpen ? "Unpin floating toolbar" : "Pin floating toolbar";
   const workspaceCommands = state.workspaces.map((candidate) => ({
     title: `Switch to ${candidate.name}`,
     subtitle: "Workspace",
@@ -84,23 +96,23 @@ export function buildCommands(
     { title: "Reset zoom", subtitle: "Return page zoom to 100%", run: actions.resetActiveTabZoom },
     { title: "Sleep inactive tabs", subtitle: "Unload hidden tabs in this Space", run: actions.sleepInactiveTabs },
     {
-      title: "Toggle sidebar",
-      subtitle: "Enter or leave focus mode",
+      title: sidebarCommandTitle,
+      subtitle: chromeState.sidebarCollapsed || chromeState.compactMode ? "Restore sidebar controls" : "Enter focus mode",
       run: actions.toggleSidebar
     },
     {
-      title: "Toggle compact mode",
-      subtitle: "Hide toolbar and float browser chrome on hover",
+      title: compactModeCommandTitle,
+      subtitle: chromeState.compactMode ? "Restore toolbar and sidebar chrome" : "Hide toolbar and float browser chrome on hover",
       run: actions.toggleCompactMode
     },
     {
-      title: "Toggle floating sidebar",
-      subtitle: "Keep the compact sidebar open until toggled again",
+      title: floatingSidebarCommandTitle,
+      subtitle: chromeState.floatingSidebarOpen ? "Let the compact sidebar hide automatically" : "Keep the compact sidebar open",
       run: actions.toggleFloatingSidebar
     },
     {
-      title: "Toggle floating toolbar",
-      subtitle: "Keep the compact toolbar open until toggled again",
+      title: floatingToolbarCommandTitle,
+      subtitle: chromeState.floatingToolbarOpen ? "Let the compact toolbar hide automatically" : "Keep the compact toolbar open",
       run: actions.toggleFloatingToolbar
     },
     { title: "Focus address bar", subtitle: "Search or navigate", run: actions.focusAddressBar },
