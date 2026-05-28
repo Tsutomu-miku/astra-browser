@@ -1,9 +1,13 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarFooter } from "../src/renderer/surfaces/sidebar/components/chrome/SidebarFooter";
+
+const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 
 describe("sidebar footer compact controls", () => {
   it("turns the sidebar toggle into a floating-sidebar pin control in compact mode", () => {
@@ -17,25 +21,57 @@ describe("sidebar footer compact controls", () => {
     expect(pinned).toContain('aria-label="Unpin floating sidebar"');
     expect(pinned).toContain('aria-pressed="true"');
   });
+
+  it("marks the split button as a tab drop target while dragging another tab", () => {
+    const html = renderFooter({
+      compactMode: false,
+      draggingTabId: "other-tab",
+      floatingSidebarOpen: false
+    });
+
+    expect(html).toContain('aria-label="Split view"');
+    expect(html).toContain('data-drop-target="true"');
+  });
+
+  it("does not mark the split button as a target for the active tab", () => {
+    expect(renderFooter({
+      activeTabId: "active-tab",
+      compactMode: false,
+      draggingTabId: "active-tab",
+      floatingSidebarOpen: false
+    })).toContain('data-drop-target="false"');
+  });
+
+  it("styles the split drop target state", () => {
+    expect(sidebarCss).toContain('.sidebar-footer .icon-button[data-drop-target="true"]');
+  });
 });
 
 function renderFooter({
+  activeTabId = "active-tab",
   compactMode,
+  draggingTabId = null,
   floatingSidebarOpen
 }: {
+  activeTabId?: string;
   compactMode: boolean;
+  draggingTabId?: string | null;
   floatingSidebarOpen: boolean;
 }) {
   return renderToStaticMarkup(createElement(SidebarFooter, {
     actions: {
+      openTabInSplit: vi.fn(),
       setSplitLayout: vi.fn(),
       toggleCompactMode: vi.fn(),
       toggleSidebar: vi.fn(),
       toggleSplitMode: vi.fn()
     } as unknown as BrowserController["actions"],
+    activeTabId,
     compactMode,
+    draggingTabId,
     floatingSidebarOpen,
     setPanel: vi.fn(),
+    setDraggingTabId: vi.fn(),
     splitLayout: "horizontal",
     splitMode: false
   }));

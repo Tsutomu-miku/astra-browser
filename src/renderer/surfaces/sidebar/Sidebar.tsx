@@ -229,9 +229,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
 
       <SidebarFooter
         actions={actions}
+        activeTabId={activeTab.id}
         compactMode={compactMode}
+        draggingTabId={draggingTabId}
         floatingSidebarOpen={floatingSidebarOpen}
         setPanel={setPanel}
+        setDraggingTabId={setDraggingTabId}
         splitLayout={controller.splitLayout}
         splitMode={state.splitMode}
       />

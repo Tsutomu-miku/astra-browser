@@ -658,6 +658,15 @@ h1 {
   height: 15px;
 }
 
+.sidebar-footer .icon-button[data-drop-target="true"] {
+  border-color: color-mix(in srgb, var(--accent) 46%, transparent);
+  background: color-mix(in srgb, var(--accent) 24%, var(--control));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+  color: #f6fff8;
+}
+
 @media (max-width: 1080px) {
   .sidebar {
     grid-template-columns: 48px minmax(0, 1fr);
