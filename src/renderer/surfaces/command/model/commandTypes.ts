@@ -1,4 +1,5 @@
 import type { SplitLayout } from "../../../stores/browserStoreTypes";
+import type { BrowserSettings } from "../../../domain/browser";
 import type { WebviewAction } from "../../../types/browser-ui";
 
 export interface Command {
@@ -58,6 +59,7 @@ export interface CommandActions {
   toggleSplitMode: () => void;
   ungroupActiveTab: () => void;
   ungroupTab: (tabId: string) => void;
+  updateSettings: (patch: Partial<BrowserSettings>) => void;
   zoomIn: () => void;
   zoomOut: () => void;
 }

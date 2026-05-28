@@ -126,6 +126,13 @@ export function buildCommands(
     ...sleepCurrentTabCommands,
     { title: "Sleep inactive tabs", subtitle: memorySaver.summary, run: actions.sleepInactiveTabs },
     {
+      title: memorySaver.sleepEnabled ? "Disable Memory Saver" : "Enable Memory Saver",
+      subtitle: memorySaver.sleepEnabled
+        ? `Auto-sleep idle tabs after ${memorySaver.sleepAfterMinutes} minutes`
+        : "Keep background tabs awake until manually slept",
+      run: () => actions.updateSettings({ memorySaverEnabled: !memorySaver.sleepEnabled })
+    },
+    {
       title: sidebarCommandTitle,
       subtitle: chromeState.sidebarCollapsed || chromeState.compactMode ? "Restore sidebar controls" : "Enter focus mode",
       shortcut: shortcutLabels.toggleSidebar,

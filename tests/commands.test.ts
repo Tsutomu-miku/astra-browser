@@ -61,6 +61,7 @@ function commandActions() {
     toggleSplitMode: vi.fn(),
     ungroupActiveTab: vi.fn(),
     ungroupTab: vi.fn(),
+    updateSettings: vi.fn(),
     zoomIn: vi.fn(),
     zoomOut: vi.fn()
   };
@@ -93,6 +94,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Reset zoom")).toBe(true);
     expect(commands.find((command) => command.title === "Reset zoom")?.shortcut).toBe("Ctrl/Cmd+0");
     expect(commands.some((command) => command.title === "Sleep inactive tabs")).toBe(true);
+    expect(commands.some((command) => command.title === "Disable Memory Saver")).toBe(true);
     expect(commands.some((command) => command.title === "Sleep current tab")).toBe(true);
     expect(commands.some((command) => command.title === "Duplicate tab")).toBe(true);
     expect(commands.some((command) => command.title === "Group tab")).toBe(true);
@@ -230,6 +232,23 @@ describe("buildCommands", () => {
     const commands = buildCommands(state, commandActions(), vi.fn(), defaultChromeState);
 
     expect(commands.find((command) => command.title === "Sleep inactive tabs")?.subtitle).toBe("1 releasable · 0 sleeping · 1 protected");
+  });
+
+  it("toggles automatic Memory Saver from command palette actions", () => {
+    const actions = commandActions();
+    const state = createDefaultState();
+    const commands = buildCommands(state, actions, vi.fn(), defaultChromeState);
+
+    commands.find((command) => command.title === "Disable Memory Saver")?.run();
+
+    state.settings.memorySaverEnabled = false;
+    const disabledCommands = buildCommands(state, actions, vi.fn(), defaultChromeState);
+    disabledCommands.find((command) => command.title === "Enable Memory Saver")?.run();
+
+    expect(commands.find((command) => command.title === "Disable Memory Saver")?.subtitle).toBe("Auto-sleep idle tabs after 30 minutes");
+    expect(disabledCommands.find((command) => command.title === "Enable Memory Saver")?.subtitle).toBe("Keep background tabs awake until manually slept");
+    expect(actions.updateSettings).toHaveBeenCalledWith({ memorySaverEnabled: false });
+    expect(actions.updateSettings).toHaveBeenCalledWith({ memorySaverEnabled: true });
   });
 
   it("hides the current tab sleep command when focus has nowhere to move", () => {
