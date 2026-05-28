@@ -49,6 +49,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Pinned tabs must participate in sidebar drag-and-drop reordering.
 - Users must be able to close other tabs, close tabs to the left, and close tabs to the right from command palette and sidebar tab context menu flows.
 - Users must be able to cycle tabs with keyboard shortcuts or the command palette.
+- Users must be able to sleep the current tab from the command palette when another tab can receive focus.
 
 ### Groups, Pins, Essentials, And Favorites
 

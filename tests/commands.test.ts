@@ -45,6 +45,7 @@ function commandActions() {
     selectTab: vi.fn(),
     setSplitLayout: vi.fn(),
     sleepInactiveTabs: vi.fn(),
+    sleepTab: vi.fn(),
     switchWorkspace: vi.fn(),
     toggleActiveTabFavorite: vi.fn(),
     toggleActiveTabEssential: vi.fn(),
@@ -91,6 +92,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Reset zoom")).toBe(true);
     expect(commands.find((command) => command.title === "Reset zoom")?.shortcut).toBe("Ctrl/Cmd+0");
     expect(commands.some((command) => command.title === "Sleep inactive tabs")).toBe(true);
+    expect(commands.some((command) => command.title === "Sleep current tab")).toBe(true);
     expect(commands.some((command) => command.title === "Duplicate tab")).toBe(true);
     expect(commands.some((command) => command.title === "Group tab")).toBe(true);
     expect(commands.some((command) => command.title === "Next tab")).toBe(true);
@@ -173,5 +175,22 @@ describe("buildCommands", () => {
 
     expect(actions.openFind).toHaveBeenCalled();
     expect(setPanel).toHaveBeenCalledWith("site");
+  });
+
+  it("sleeps the active tab from command palette actions", () => {
+    const actions = commandActions();
+    const state = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const activeTabId = state.workspaces[0].activeTabId;
+    const commands = buildCommands(state, actions, vi.fn(), defaultChromeState);
+
+    commands.find((command) => command.title === "Sleep current tab")?.run();
+
+    expect(actions.sleepTab).toHaveBeenCalledWith(activeTabId);
+  });
+
+  it("hides the current tab sleep command when focus has nowhere to move", () => {
+    const commands = buildCommands(createDefaultState(), commandActions(), vi.fn(), defaultChromeState);
+
+    expect(commands.some((command) => command.title === "Sleep current tab")).toBe(false);
   });
 });

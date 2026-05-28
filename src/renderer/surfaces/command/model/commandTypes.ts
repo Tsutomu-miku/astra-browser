@@ -41,6 +41,7 @@ export interface CommandActions {
   setSplitLayout: (layout: SplitLayout) => void;
   resetActiveTabZoom: () => void;
   sleepInactiveTabs: () => void;
+  sleepTab: (tabId: string) => void;
   switchWorkspace: (workspaceId: string) => void;
   toggleActiveTabFavorite: () => void;
   toggleActiveTabEssential: () => void;

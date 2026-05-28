@@ -80,6 +80,13 @@ export function buildCommands(
       }
     ]
     : [];
+  const sleepCurrentTabCommands = workspace.tabs.length > 1
+    ? [{
+      title: "Sleep current tab",
+      subtitle: activeTab.title || activeTab.url,
+      run: () => actions.sleepTab(activeTab.id)
+    }]
+    : [];
 
   return [
     {
@@ -114,6 +121,7 @@ export function buildCommands(
       shortcut: shortcutLabels.resetZoom,
       run: actions.resetActiveTabZoom
     },
+    ...sleepCurrentTabCommands,
     { title: "Sleep inactive tabs", subtitle: "Unload hidden tabs in this Space", run: actions.sleepInactiveTabs },
     {
       title: sidebarCommandTitle,
