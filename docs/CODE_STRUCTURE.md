@@ -5,6 +5,10 @@ This map is the working guide for where new code should live.
 ```text
 src/main
   Electron host process, Chromium sessions, IPC handlers, native shell integrations
+  diagnostics.js   DevTools shortcuts and renderer failure diagnostics
+  ipcHandlers.js   Native IPC contracts for profile data, downloads, permissions,
+                   diagnostics, and shell file actions
+  main.js          Window lifecycle, webContents policy, and Chromium session bridge
 
 src/renderer/common
   Cross-surface interaction models and reusable renderer helpers

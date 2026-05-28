@@ -4,7 +4,7 @@ The project is split around runtime boundaries rather than feature folders.
 
 ## Main Process
 
-`src/main/main.js` is the Electron/Chromium host. It creates the native browser window, enables `webview`, blocks untrusted top-level shell navigation, routes popups to the OS browser, bridges Chromium download events to the renderer, handles Chromium session permission requests per profile partition, inspects profile storage usage, and clears Chromium session data globally or for selected workspace profile partitions on request.
+`src/main/main.js` is the Electron/Chromium host entry. It creates the native browser window, enables `webview`, blocks untrusted top-level shell navigation, routes popups to the OS browser, and owns the Chromium session bridge for downloads plus per-profile permission requests. `src/main/ipcHandlers.js` owns renderer IPC contracts for app version, diagnostics, profile storage inspection, browsing-data clearing, permission decisions/rules, and native file actions. `src/main/diagnostics.js` owns DevTools shortcuts and failure diagnostics.
 
 ## Preload
 
