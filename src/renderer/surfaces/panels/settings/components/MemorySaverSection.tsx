@@ -33,18 +33,25 @@ export function MemorySaverSection({
           />
           <span>Automatically sleep inactive tabs</span>
         </label>
-        <label className="memory-saver-delay">
+        <div className="memory-saver-delay" aria-label="Memory saver auto sleep delay">
           <span>After</span>
-          <select
-            value={memorySaver.sleepAfterMinutes}
-            disabled={!memorySaver.sleepEnabled}
-            onChange={(event) => onUpdateMemorySaver({ memorySaverIdleMinutes: Number(event.target.value) })}
-          >
+          <div className="memory-saver-delay-options">
             {memorySaverIdleMinuteOptions.map((minutes) => (
-              <option key={minutes} value={minutes}>{minutes} min</option>
+              <button
+                key={minutes}
+                type="button"
+                aria-pressed={memorySaver.sleepAfterMinutes === minutes}
+                title={`Auto sleep after ${minutes} minutes`}
+                onClick={() => onUpdateMemorySaver({
+                  memorySaverEnabled: true,
+                  memorySaverIdleMinutes: minutes
+                })}
+              >
+                {minutes}m
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+        </div>
       </div>
       <div className="memory-saver-metrics" aria-label="Memory saver tab counts">
         <span><strong>{memorySaver.mountedWebviews}</strong> mounted</span>

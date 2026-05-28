@@ -148,6 +148,9 @@ describe("settings panel sections", () => {
     expect(html).toContain("Auto sleep after 15 min");
     expect(html).toContain("1 releasable · 1 sleeping · 2 protected");
     expect(html).toContain("Automatically sleep inactive tabs");
+    expect(html).toContain('aria-label="Memory saver auto sleep delay"');
+    expect(html).toContain("15m");
+    expect(html).toContain('aria-pressed="true"');
     expect(html).toContain("<strong>4</strong>");
     expect(html).not.toContain("disabled");
   });
@@ -157,5 +160,6 @@ describe("settings panel sections", () => {
     expect(panelsSettingsCss).toContain(".settings-section-tab[aria-pressed=\"true\"]");
     expect(panelsSettingsCss).toContain(".settings-pane");
     expect(panelsSettingsCss).toContain(".memory-saver-metrics");
+    expect(panelsSettingsCss).toContain(".memory-saver-delay-options button[aria-pressed=\"true\"]");
   });
 });

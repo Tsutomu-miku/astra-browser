@@ -87,7 +87,7 @@
 .memory-saver-controls {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, auto);
   align-items: center;
   gap: 10px;
 }
@@ -115,13 +115,34 @@
   accent-color: var(--accent);
 }
 
-.memory-saver-delay select {
-  width: 100%;
-  height: 32px;
+.memory-saver-delay-options {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(38px, 1fr));
+  gap: 4px;
+  padding: 3px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 0 8px;
-  background: #0f1117;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.memory-saver-delay-options button {
+  min-width: 0;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.memory-saver-delay-options button:hover,
+.memory-saver-delay-options button:focus-visible,
+.memory-saver-delay-options button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 36%, transparent);
+  background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.06));
   color: var(--text);
 }
 
