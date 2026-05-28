@@ -27,6 +27,7 @@ export {
   fillSplitView,
   focusSplitPane,
   moveTabToWorkspace,
+  moveTabGroupToWorkspace,
   openTabInSplit,
   openUrlInSplit,
   removeTabFromSplit,

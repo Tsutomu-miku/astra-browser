@@ -84,10 +84,12 @@ export function SidebarContextMenus({
         <TabGroupContextMenu
           group={tabGroupMenuGroup}
           left={tabGroupMenu.left}
+          moveWorkspaceTargets={getMoveWorkspaceTargets(state.workspaces, activeWorkspace.id)}
           tabCount={tabGroupMenuTabCount}
           top={tabGroupMenu.top}
           onClose={closeMenus}
           onCloseGroup={actions.closeTabGroup}
+          onMoveToWorkspace={actions.moveTabGroupToWorkspace}
           onToggleCollapsed={actions.toggleTabGroupCollapsed}
           onUngroupGroup={actions.ungroupTabGroup}
           onUpdate={actions.updateTabGroup}

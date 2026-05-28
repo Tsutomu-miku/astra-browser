@@ -13,6 +13,7 @@ describe("sidebar tab group context menu", () => {
     expect(html).toContain("Collapse group");
     expect(html).toContain("Name");
     expect(html).toContain("Group color");
+    expect(html).toContain("Move group to Work");
     expect(html).toContain("Close group");
     expect(html).toContain("Ungroup 2 tabs");
     expect(html).toContain(TAB_GROUP_COLOR_SWATCHES[0]);
@@ -29,24 +30,28 @@ describe("sidebar tab group context menu", () => {
   it("wires group update and ungroup callbacks", () => {
     const onClose = vi.fn();
     const onCloseGroup = vi.fn();
+    const onMoveToWorkspace = vi.fn();
     const onToggleCollapsed = vi.fn();
     const onUngroupGroup = vi.fn();
     const onUpdate = vi.fn();
     const menu = createElement(TabGroupContextMenu, props({
       onClose,
       onCloseGroup,
+      onMoveToWorkspace,
       onToggleCollapsed,
       onUngroupGroup,
       onUpdate
     }));
 
     menu.props.onCloseGroup("group");
+    menu.props.onMoveToWorkspace("group", "work");
     menu.props.onToggleCollapsed("group");
     menu.props.onUpdate("group", { name: "Planning" });
     menu.props.onUpdate("group", { color: "#f0abfc" });
     menu.props.onUngroupGroup("group");
 
     expect(onCloseGroup).toHaveBeenCalledWith("group");
+    expect(onMoveToWorkspace).toHaveBeenCalledWith("group", "work");
     expect(onToggleCollapsed).toHaveBeenCalledWith("group");
     expect(onUpdate).toHaveBeenCalledWith("group", { name: "Planning" });
     expect(onUpdate).toHaveBeenCalledWith("group", { color: "#f0abfc" });
@@ -70,8 +75,10 @@ function props(overrides: Partial<TabGroupContextMenuProps> = {}): TabGroupConte
   return {
     group: group(),
     left: 10,
+    moveWorkspaceTargets: [{ id: "work", name: "Work" }],
     onClose: vi.fn(),
     onCloseGroup: vi.fn(),
+    onMoveToWorkspace: vi.fn(),
     onToggleCollapsed: vi.fn(),
     onUngroupGroup: vi.fn(),
     onUpdate: vi.fn(),

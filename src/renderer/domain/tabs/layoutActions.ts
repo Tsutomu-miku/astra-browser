@@ -59,6 +59,41 @@ export function moveTabToWorkspace(state: BrowserState, tabId: string, workspace
   });
 }
 
+export function moveTabGroupToWorkspace(state: BrowserState, groupId: string, workspaceId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const source = draft.workspaces.find((workspace) => workspace.tabGroups.some((group) => group.id === groupId));
+    const target = draft.workspaces.find((workspace) => workspace.id === workspaceId);
+    if (!source || !target || source.id === target.id) return;
+
+    const group = source.tabGroups.find((candidate) => candidate.id === groupId);
+    const movingTabs = source.tabs.filter((tab) => tab.groupId === groupId);
+    if (!group || movingTabs.length === 0) return;
+
+    const firstMovedIndex = source.tabs.findIndex((tab) => tab.groupId === groupId);
+    const movingIds = new Set(movingTabs.map((tab) => tab.id));
+    const activeMovedTab = movingTabs.find((tab) => tab.id === source.activeTabId);
+
+    source.tabs = source.tabs.filter((tab) => !movingIds.has(tab.id));
+    pruneEmptyTabGroups(source);
+
+    if (source.tabs.length === 0) {
+      const replacement = createTab("New Tab", getWorkspaceHomepageUrl(draft, source));
+      source.tabs.push(replacement);
+      source.activeTabId = replacement.id;
+    } else if (!source.tabs.some((tab) => tab.id === source.activeTabId)) {
+      source.activeTabId = source.tabs[Math.min(firstMovedIndex, source.tabs.length - 1)].id;
+    }
+
+    if (!target.tabGroups.some((candidate) => candidate.id === group.id)) {
+      target.tabGroups.push({ ...group });
+    }
+    target.tabs.push(...movingTabs);
+    target.activeTabId = activeMovedTab?.id ?? movingTabs[0].id;
+    draft.activeWorkspaceId = target.id;
+    clearSplitView(draft);
+  });
+}
+
 export function openTabInSplit(state: BrowserState, tabId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);

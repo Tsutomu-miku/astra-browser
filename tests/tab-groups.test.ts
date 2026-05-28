@@ -5,6 +5,7 @@ import {
   closeActiveTab,
   groupActiveTab,
   groupTab,
+  moveTabGroupToWorkspace,
   moveTabToWorkspace,
   openUrlInActiveWorkspace,
   toggleActiveTabPinned,
@@ -80,6 +81,24 @@ describe("tab groups", () => {
     const assigned = assignTabToGroup(second, secondTab.id, group.id);
 
     expect(getGroupedTabs(getActiveWorkspace(assigned))[0].tabs.map((tab) => tab.title)).toEqual(["Docs", "News"]);
+  });
+
+  it("moves a whole tab group to another workspace", () => {
+    const first = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
+    const group = getActiveWorkspace(first).tabGroups[0];
+    const opened = openUrlInActiveWorkspace(first, "news.example", "News");
+    const secondTab = getActiveTab(getActiveWorkspace(opened));
+    const assigned = assignTabToGroup(opened, secondTab.id, group.id);
+    const moved = moveTabGroupToWorkspace(assigned, group.id, "work");
+    const source = moved.workspaces.find((workspace) => workspace.id === "personal")!;
+    const target = moved.workspaces.find((workspace) => workspace.id === "work")!;
+
+    expect(moved.activeWorkspaceId).toBe("work");
+    expect(source.tabGroups).toHaveLength(0);
+    expect(source.tabs.map((tab) => tab.title)).toEqual(["New Tab"]);
+    expect(target.tabGroups[0]).toMatchObject({ id: group.id, name: group.name, color: group.color });
+    expect(target.tabs.filter((tab) => tab.groupId === group.id).map((tab) => tab.title)).toEqual(["Docs", "News"]);
+    expect(target.activeTabId).toBe(secondTab.id);
   });
 
   it("ungroups every tab in a group without changing selection", () => {

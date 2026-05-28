@@ -23,6 +23,7 @@ import {
   closeTabsToRight,
   deleteWorkspace,
   moveTabToWorkspace,
+  moveTabGroupToWorkspace,
   openTabInSplit,
   openUrlInSplit,
   removeTabFromSplit,
@@ -150,6 +151,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     set({ permissionRequest: { ...request, profileId } });
   },
   moveTabToWorkspace: (tabId, workspaceId) => update(set, (state) => moveTabToWorkspace(state, tabId, workspaceId)),
+  moveTabGroupToWorkspace: (groupId, workspaceId) =>
+    update(set, (state) => moveTabGroupToWorkspace(state, groupId, workspaceId)),
   focusSplitPane: (tabId) => update(set, (state) => focusSplitPane(state, tabId)),
   closeGlance: () => set({ glance: null }),
   openGlance: (url, title) => set({ glance: { title: title || url, url } }),

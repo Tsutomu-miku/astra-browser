@@ -2,12 +2,15 @@ import type { CSSProperties, KeyboardEvent } from "react";
 
 import type { TabGroup } from "../../../../domain/browser";
 import { TAB_GROUP_COLOR_SWATCHES } from "../../../../domain/tabs/groups";
+import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
 interface TabGroupContextMenuProps {
   group: TabGroup;
   left: number;
+  moveWorkspaceTargets: MoveWorkspaceTarget[];
   onCloseGroup: (groupId: string) => void;
   onClose: () => void;
+  onMoveToWorkspace: (groupId: string, workspaceId: string) => void;
   onToggleCollapsed: (groupId: string) => void;
   onUngroupGroup: (groupId: string) => void;
   onUpdate: (groupId: string, patch: Partial<Pick<TabGroup, "name" | "color">>) => void;
@@ -18,8 +21,10 @@ interface TabGroupContextMenuProps {
 export function TabGroupContextMenu({
   group,
   left,
+  moveWorkspaceTargets,
   onClose,
   onCloseGroup,
+  onMoveToWorkspace,
   onToggleCollapsed,
   onUngroupGroup,
   onUpdate,
@@ -68,6 +73,21 @@ export function TabGroupContextMenu({
           />
         ))}
       </div>
+      {moveWorkspaceTargets.length > 0 && (
+        <>
+          <span className="tab-context-menu-separator" />
+          {moveWorkspaceTargets.map((workspace) => (
+            <button
+              key={workspace.id}
+              type="button"
+              role="menuitem"
+              onClick={() => run(() => onMoveToWorkspace(group.id, workspace.id))}
+            >
+              Move group to {workspace.name}
+            </button>
+          ))}
+        </>
+      )}
       <span className="tab-context-menu-separator" />
       <button type="button" role="menuitem" onClick={() => run(() => onCloseGroup(group.id))}>
         Close group

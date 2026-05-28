@@ -31,6 +31,7 @@ export {
   groupActiveTab,
   groupTab,
   moveTabToWorkspace,
+  moveTabGroupToWorkspace,
   openTabInSplit,
   openUrlInSplit,
   removeTabFromSplit,

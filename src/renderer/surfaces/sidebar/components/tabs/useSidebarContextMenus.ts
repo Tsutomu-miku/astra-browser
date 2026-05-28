@@ -2,6 +2,8 @@ import { useEffect, useState, type MouseEvent } from "react";
 
 import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
 
+const MENU_EDGE_GAP = 12;
+
 export interface TabMenuState {
   left: number;
   tab: BrowserTab;
@@ -47,9 +49,8 @@ export function useSidebarContextMenus() {
     setTabGroupMenu(null);
     setQuickEntryMenu(null);
     setTabMenu({
-      left: Math.min(event.clientX, window.innerWidth - 190),
+      ...getMenuPosition(event, 190, 260),
       tab,
-      top: Math.min(event.clientY, window.innerHeight - 260)
     });
   }
 
@@ -61,8 +62,7 @@ export function useSidebarContextMenus() {
     setQuickEntryMenu({
       item,
       kind,
-      left: Math.min(event.clientX, window.innerWidth - 206),
-      top: Math.min(event.clientY, window.innerHeight - 188)
+      ...getMenuPosition(event, 206, 188)
     });
   }
 
@@ -73,9 +73,8 @@ export function useSidebarContextMenus() {
     setTabMenu(null);
     setClosedTabMenu({
       closedIndex,
-      left: Math.min(event.clientX, window.innerWidth - 206),
       tab,
-      top: Math.min(event.clientY, window.innerHeight - 170)
+      ...getMenuPosition(event, 206, 170)
     });
   }
 
@@ -86,8 +85,7 @@ export function useSidebarContextMenus() {
     setTabMenu(null);
     setTabGroupMenu({
       groupId: group.id,
-      left: Math.min(event.clientX, window.innerWidth - 224),
-      top: Math.min(event.clientY, window.innerHeight - 260)
+      ...getMenuPosition(event, 224, 348)
     });
   }
 
@@ -120,5 +118,12 @@ export function useSidebarContextMenus() {
     quickEntryMenu,
     tabGroupMenu,
     tabMenu
+  };
+}
+
+function getMenuPosition(event: MouseEvent, width: number, height: number) {
+  return {
+    left: Math.max(MENU_EDGE_GAP, Math.min(event.clientX, window.innerWidth - width - MENU_EDGE_GAP)),
+    top: Math.max(MENU_EDGE_GAP, Math.min(event.clientY, window.innerHeight - height - MENU_EDGE_GAP))
   };
 }
