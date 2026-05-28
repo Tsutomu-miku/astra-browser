@@ -29,7 +29,7 @@ import { WorkspacePillContextMenu } from "./components/WorkspacePillContextMenu"
 import { useWorkspacePillContextMenu } from "./components/useWorkspacePillContextMenu";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
-  const { activeTab, activeWebview, activeWorkspace, actions, addressValue, compactMode, floatingToolbarOpen, setAddressValue, setPanel, state } = controller;
+  const { activeTab, activeWorkspace, actions, addressValue, compactMode, floatingToolbarOpen, setAddressValue, setPanel, state } = controller;
   const identity = getUrlIdentity(activeTab.url);
   const omnibox = useOmniboxController({ actions, addressValue, setAddressValue, state });
   const reloadButton = getReloadButtonState(activeTab.isLoading);

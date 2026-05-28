@@ -3,9 +3,7 @@ import { useEffect, useRef } from "react";
 import type { BrowserTab } from "../../../domain/browser";
 import {
   getNavigationState,
-  registerReadyWebview,
   syncWebviewPreferences,
-  unregisterWebview,
   type NavigationState
 } from "../../../platform/webviewLifecycle";
 import type { WebviewElement } from "../../../types/browser-ui";
@@ -15,7 +13,8 @@ export function BrowserWebview({
   onLoadingChange,
   onNavigate,
   onTitleChange,
-  refMap,
+  onWebviewReady,
+  onWebviewRemoved,
   partition,
   tab
 }: {
@@ -23,8 +22,9 @@ export function BrowserWebview({
   onLoadingChange: (isLoading: boolean, navigationState: NavigationState) => void;
   onNavigate: (url: string) => void;
   onTitleChange: (title: string) => void;
+  onWebviewReady: (tabId: string, webview: WebviewElement) => void;
+  onWebviewRemoved: (tabId: string, webview: WebviewElement) => void;
   partition: string;
-  refMap: Map<string, WebviewElement>;
   tab: BrowserTab;
 }) {
   const ref = useRef<WebviewElement | null>(null);
@@ -58,7 +58,7 @@ export function BrowserWebview({
     };
     const onDomReady = () => {
       readyRef.current = true;
-      registerReadyWebview(refMap, tab.id, webview);
+      onWebviewReady(tab.id, webview);
       syncWebviewPreferences(webview, latestRef.current.tab);
       latestRef.current.onLoadingChange(false, readNavigationState());
     };
@@ -72,7 +72,7 @@ export function BrowserWebview({
 
     return () => {
       readyRef.current = false;
-      unregisterWebview(refMap, tab.id, webview);
+      onWebviewRemoved(tab.id, webview);
       webview.removeEventListener("dom-ready", onDomReady);
       webview.removeEventListener("did-start-loading", onStart);
       webview.removeEventListener("did-stop-loading", onStop);
@@ -80,7 +80,7 @@ export function BrowserWebview({
       webview.removeEventListener("did-navigate", onNav);
       webview.removeEventListener("did-navigate-in-page", onNav);
     };
-  }, [refMap, tab.id]);
+  }, [onWebviewReady, onWebviewRemoved, tab.id]);
 
   useEffect(() => {
     const webview = ref.current;

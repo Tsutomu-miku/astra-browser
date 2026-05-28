@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { getActiveTab, getActiveWorkspace } from "../../domain/browser/selectors";
+import { registerReadyWebview, unregisterWebview } from "../../platform/webviewLifecycle";
 import { useBrowserStore } from "../../stores/browserStore";
 import type { WebviewElement } from "../../types/browser-ui";
 import { useAddressBarFocus } from "./useAddressBarFocus";
@@ -17,6 +18,12 @@ export function useBrowserController() {
   const activeWorkspace = getActiveWorkspace(store.state);
   const activeTab = getActiveTab(activeWorkspace);
   const activeWebview = webviews.current.get(activeTab.id);
+  const registerWebview = useCallback((tabId: string, webview: WebviewElement) => {
+    registerReadyWebview(webviews.current, tabId, webview);
+  }, []);
+  const removeWebview = useCallback((tabId: string, webview: WebviewElement) => {
+    unregisterWebview(webviews.current, tabId, webview);
+  }, []);
   const focusAddressBar = useAddressBarFocus(store);
   const actions = useBrowserActions({
     activeWebview,
@@ -73,7 +80,6 @@ export function useBrowserController() {
   return {
     actions,
     activeTab,
-    activeWebview,
     activeWorkspace,
     addressValue: store.addressValue,
     commands,
@@ -89,6 +95,8 @@ export function useBrowserController() {
     glance: store.glance,
     panel: store.panel,
     permissionRequest: store.permissionRequest,
+    registerWebview,
+    removeWebview,
     setAddressValue: store.setAddressValue,
     setCommandOpen: store.setCommandOpen,
     setCommandQuery: store.setCommandQuery,
@@ -97,7 +105,6 @@ export function useBrowserController() {
     setPanel: store.setPanel,
     sidebarCollapsed: store.sidebarCollapsed,
     splitLayout: store.splitLayout,
-    state: store.state,
-    webviews
+    state: store.state
   };
 }

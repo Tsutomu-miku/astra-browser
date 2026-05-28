@@ -22,7 +22,7 @@ import {
 } from "./webviewLayout";
 
 export function WebviewGrid({ controller }: { controller: BrowserController }) {
-  const { activeTab, activeWorkspace, actions, splitLayout, state, webviews } = controller;
+  const { activeTab, activeWorkspace, actions, registerWebview, removeWebview, splitLayout, state } = controller;
   const [isSplitDropTarget, setSplitDropTarget] = useState(false);
   const [splitRatio, setSplitRatio] = useState(DEFAULT_SPLIT_RATIO);
   const splitGridRef = useRef<HTMLElement | null>(null);
@@ -113,7 +113,8 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
               isVisible={isVisible}
               partition={partition}
               tab={tab}
-              refMap={webviews.current}
+              onWebviewReady={registerWebview}
+              onWebviewRemoved={removeWebview}
               onLoadingChange={(isLoading, navigationState) => actions.updateTab(tab.id, { isLoading, ...navigationState })}
               onTitleChange={(title) => actions.updateTab(tab.id, { title })}
               onNavigate={(url) => {
