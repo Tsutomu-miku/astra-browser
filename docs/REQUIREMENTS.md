@@ -37,6 +37,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Background tabs must be able to sleep, unloading hidden webviews to reduce memory use.
 - Memory Saver must be able to automatically sleep idle background tabs while protecting active, split-view, and pinned tabs.
 - Settings must expose a Memory Saver summary and a direct sleep-inactive-tabs action.
+- The sidebar footer must expose a compact Memory Saver status and direct sleep action.
 - Sleeping tabs must expose a direct wake action from the sidebar tab context menu.
 - Active tabs, split-view tabs, and pinned tabs must be protected from bulk sleep.
 - Users must be able to close tabs directly from the sidebar with recently closed recovery.

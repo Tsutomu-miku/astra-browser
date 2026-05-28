@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
+import { getMemorySaverState } from "../../common/memory/memorySaverState";
 import { isEssential, isFavorite } from "../../domain/browser";
 import { getGroupedTabs } from "../../domain/tabs/groups";
 import type { BrowserController } from "../../app/controller/types";
@@ -40,6 +41,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const groupedTabs = getGroupedTabs(activeWorkspace);
   const groupedTabIds = new Set(groupedTabs.flatMap((entry) => entry.tabs.map((tab) => tab.id)));
   const regularTabs = activeWorkspace.tabs.filter((tab) => !tab.isPinned && !groupedTabIds.has(tab.id));
+  const memorySaver = useMemo(() => getMemorySaverState(activeWorkspace, state), [activeWorkspace, state]);
   const filteredItems = useMemo(() => filterSidebarItems({
     essentials: state.essentials,
     favorites: activeWorkspace.favorites,
@@ -200,6 +202,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         compactMode={compactMode}
         draggingTabId={draggingTabId}
         floatingSidebarOpen={floatingSidebarOpen}
+        memorySaver={memorySaver}
         setPanel={setPanel}
         setDraggingTabId={setDraggingTabId}
         splitLayout={controller.splitLayout}

@@ -661,6 +661,58 @@ h1 {
   background: rgba(12, 13, 16, 0.72);
 }
 
+.sidebar-memory-saver {
+  grid-column: 1 / -1;
+  min-width: 0;
+  height: 30px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  border-radius: 8px;
+  padding: 0 8px;
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.045));
+  color: var(--text);
+  cursor: pointer;
+}
+
+.sidebar-memory-saver:hover,
+.sidebar-memory-saver:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--line));
+  background: color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.07));
+  outline: none;
+}
+
+.sidebar-memory-saver:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.sidebar-memory-saver span,
+.sidebar-memory-saver small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-memory-saver span {
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.sidebar-memory-saver small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.sidebar-memory-saver svg {
+  width: 14px;
+  height: 14px;
+  color: color-mix(in srgb, var(--accent) 70%, white);
+}
+
 .sidebar-split-layout {
   grid-column: 1 / -1;
   display: grid;

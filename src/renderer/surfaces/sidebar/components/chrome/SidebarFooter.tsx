@@ -6,6 +6,7 @@ import {
   FiGrid,
   FiLock,
   FiMinimize2,
+  FiMoon,
   FiSettings,
   FiSidebar,
   FiSquare,
@@ -13,6 +14,7 @@ import {
 } from "react-icons/fi";
 
 import type { BrowserController } from "../../../../app/controller/types";
+import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
 
 export function SidebarFooter({
   actions,
@@ -20,6 +22,7 @@ export function SidebarFooter({
   compactMode,
   draggingTabId,
   floatingSidebarOpen,
+  memorySaver,
   setPanel,
   setDraggingTabId,
   splitLayout,
@@ -30,6 +33,7 @@ export function SidebarFooter({
   compactMode: boolean;
   draggingTabId: string | null;
   floatingSidebarOpen: boolean;
+  memorySaver: MemorySaverState;
   setPanel: BrowserController["setPanel"];
   setDraggingTabId: (tabId: string | null) => void;
   splitLayout: BrowserController["splitLayout"];
@@ -39,6 +43,10 @@ export function SidebarFooter({
     ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
     : "Focus sidebar";
   const canDropSplitTab = Boolean(draggingTabId && draggingTabId !== activeTabId);
+  const memorySaverLabel = memorySaver.sleepingTabs > 0
+    ? `${memorySaver.sleepingTabs} asleep`
+    : `${memorySaver.reclaimableTabs} ready`;
+  const memorySaverMode = memorySaver.sleepEnabled ? `Auto ${memorySaver.sleepAfterMinutes}m` : "Manual";
 
   function dropTabIntoSplit(event: DragEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -77,6 +85,18 @@ export function SidebarFooter({
           </button>
         </div>
       )}
+      <button
+        className="sidebar-memory-saver"
+        title={`Memory Saver: ${memorySaver.summary}`}
+        type="button"
+        aria-label={`Memory Saver, ${memorySaver.summary}`}
+        disabled={memorySaver.reclaimableTabs === 0}
+        onClick={actions.sleepInactiveTabs}
+      >
+        <FiMoon />
+        <span>{memorySaverLabel}</span>
+        <small>{memorySaverMode}</small>
+      </button>
       <button
         className="icon-button"
         title={sidebarToggleLabel}
