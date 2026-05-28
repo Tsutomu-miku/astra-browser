@@ -17,6 +17,7 @@ describe("sidebar quick entry context menu", () => {
       left: 10,
       top: 20,
       onClose: vi.fn(),
+      onCopyText: vi.fn(),
       onOpen: vi.fn(),
       onOpenInSplit: vi.fn(),
       onPreview: vi.fn(),
@@ -27,7 +28,32 @@ describe("sidebar quick entry context menu", () => {
     expect(html).toContain("Open");
     expect(html).toContain("Preview in Glance");
     expect(html).toContain("Open in split view");
+    expect(html).toContain("Copy URL");
+    expect(html).toContain("Copy title");
     expect(html).toContain("Remove Essential");
+  });
+
+  it("copies quick entry URL and title", () => {
+    const onCopyText = vi.fn();
+    const menu = createElement(QuickEntryContextMenu, {
+      item: createFavorite("Docs", "https://docs.example"),
+      kind: "favorite",
+      left: 10,
+      top: 20,
+      onClose: vi.fn(),
+      onCopyText,
+      onOpen: vi.fn(),
+      onOpenInSplit: vi.fn(),
+      onPreview: vi.fn(),
+      onRemove: vi.fn()
+    });
+
+    menu.props.onCopyText(menu.props.item.url);
+    menu.props.onCopyText(menu.props.item.title || menu.props.item.url);
+
+    expect(renderToStaticMarkup(menu)).toContain("Copy URL");
+    expect(onCopyText).toHaveBeenCalledWith("https://docs.example");
+    expect(onCopyText).toHaveBeenCalledWith("Docs");
   });
 
   it("renders Favorite removal copy", () => {
@@ -37,6 +63,7 @@ describe("sidebar quick entry context menu", () => {
       left: 10,
       top: 20,
       onClose: vi.fn(),
+      onCopyText: vi.fn(),
       onOpen: vi.fn(),
       onOpenInSplit: vi.fn(),
       onPreview: vi.fn(),

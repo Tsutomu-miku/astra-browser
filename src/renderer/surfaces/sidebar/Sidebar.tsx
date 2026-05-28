@@ -283,6 +283,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           left={quickEntryMenu.left}
           top={quickEntryMenu.top}
           onClose={() => setQuickEntryMenu(null)}
+          onCopyText={actions.copyText}
           onOpen={actions.openUrlInActiveWorkspace}
           onOpenInSplit={actions.openUrlInSplit}
           onPreview={actions.openGlance}

@@ -5,6 +5,7 @@ export function QuickEntryContextMenu({
   kind,
   left,
   onClose,
+  onCopyText,
   onOpen,
   onOpenInSplit,
   onPreview,
@@ -15,6 +16,7 @@ export function QuickEntryContextMenu({
   kind: "essential" | "favorite";
   left: number;
   onClose: () => void;
+  onCopyText: (text: string) => void;
   onOpen: (url: string, title?: string) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
@@ -42,6 +44,12 @@ export function QuickEntryContextMenu({
       </button>
       <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(item.url, item.title))}>
         Open in split view
+      </button>
+      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(item.url))}>
+        Copy URL
+      </button>
+      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(item.title || item.url))}>
+        Copy title
       </button>
       <span className="tab-context-menu-separator" />
       <button type="button" role="menuitem" className="danger" onClick={() => run(() => onRemove(item.url))}>
