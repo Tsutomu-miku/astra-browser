@@ -88,7 +88,9 @@ export function useBrowserActions({
       peekCompactChrome();
     },
     recordHistory: store.recordHistory,
+    removeEssential: store.removeEssential,
     removeHistoryEntry: store.removeHistoryEntry,
+    removeWorkspaceFavorite: store.removeWorkspaceFavorite,
     removeTabFromSplit: store.removeTabFromSplit,
     replaceBrowserState: store.replaceBrowserState,
     reorderWorkspace: store.reorderWorkspace,

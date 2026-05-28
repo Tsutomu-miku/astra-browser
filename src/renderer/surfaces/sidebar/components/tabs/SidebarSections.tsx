@@ -1,6 +1,6 @@
 import type { DragEvent, MouseEvent } from "react";
 
-import type { BrowserTab } from "../../../../domain/browser";
+import type { BrowserTab, Favorite } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
@@ -15,6 +15,7 @@ export function SidebarSections({
   filteredItems,
   onTabContextMenu,
   onTabDrop,
+  onQuickEntryContextMenu,
   setDraggingTabId,
   splitTabIds
 }: {
@@ -23,6 +24,7 @@ export function SidebarSections({
   activeTab: BrowserTab;
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
+  onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
   setDraggingTabId: (tabId: string | null) => void;
@@ -43,6 +45,7 @@ export function SidebarSections({
                 id={`sidebar-search-essential-${essential.id}`}
                 isActive={isSidebarUrlActive(activeTab.url, essential.url)}
                 isSearchSelected={activeSearchTarget?.type === "essential" && activeSearchTarget.id === essential.id}
+                onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "essential")}
                 onOpen={actions.openUrlInActiveWorkspace}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}
@@ -75,6 +78,7 @@ export function SidebarSections({
                 id={`sidebar-search-favorite-${favorite.id}`}
                 isActive={isSidebarUrlActive(activeTab.url, favorite.url)}
                 isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
+                onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "favorite")}
                 onOpen={actions.openUrlInActiveWorkspace}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}

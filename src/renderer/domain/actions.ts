@@ -33,6 +33,8 @@ export {
   openTabInSplit,
   openUrlInSplit,
   removeTabFromSplit,
+  removeEssential,
+  removeWorkspaceFavorite,
   reorderTab,
   resetActiveTabZoom,
   restoreClosedTab,

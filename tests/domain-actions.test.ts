@@ -38,6 +38,8 @@ import {
   switchWorkspace,
   toggleActiveTabEssential,
   toggleActiveTabFavorite,
+  removeEssential,
+  removeWorkspaceFavorite,
   toggleActiveTabMuted,
   toggleActiveTabPinned,
   toggleTabEssential,
@@ -294,6 +296,17 @@ describe("domain actions", () => {
     });
     expect(getActiveWorkspace(removedFavorite).favorites.some((favorite) => favorite.url === docsTab.url)).toBe(false);
     expect(removedEssential.essentials.some((essential) => essential.url === docsTab.url)).toBe(false);
+  });
+
+  it("removes quick entries by url without requiring a matching tab", () => {
+    const withFavorite = toggleActiveTabFavorite(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
+    const withEssential = toggleActiveTabEssential(withFavorite);
+    const url = getActiveTab(getActiveWorkspace(withEssential)).url;
+    const withoutFavorite = removeWorkspaceFavorite(withEssential, url);
+    const withoutEssential = removeEssential(withoutFavorite, url);
+
+    expect(getActiveWorkspace(withoutFavorite).favorites.some((favorite) => favorite.url === url)).toBe(false);
+    expect(withoutEssential.essentials.some((essential) => essential.url === url)).toBe(false);
   });
 
   it("reorders tabs while preserving the active tab", () => {

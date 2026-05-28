@@ -28,9 +28,11 @@ import {
   navigateActiveTab,
   openUrlInActiveWorkspace,
   recordHistory,
+  removeEssential,
   removeHistoryEntry,
   reorderWorkspace,
   reorderTab,
+  removeWorkspaceFavorite,
   resetActiveTabZoom,
   restoreClosedTab,
   restoreLastClosedTab,
@@ -160,7 +162,9 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   newTab: () => update(set, addTab),
   openUrlInActiveWorkspace: (url, title) => update(set, (state) => openUrlInActiveWorkspace(state, url, title)),
   recordHistory: (tabId, url) => update(set, (state) => recordHistory(state, tabId, url)),
+  removeEssential: (url) => update(set, (state) => removeEssential(state, url)),
   removeHistoryEntry: (historyId) => update(set, (state) => removeHistoryEntry(state, historyId)),
+  removeWorkspaceFavorite: (url) => update(set, (state) => removeWorkspaceFavorite(state, url)),
   removeTabFromSplit: (tabId) => update(set, (state) => removeTabFromSplit(state, tabId)),
   replaceBrowserState: (state) => {
     saveBrowserState(state);

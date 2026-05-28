@@ -94,6 +94,13 @@ export function toggleTabFavorite(state: BrowserState, tabId: string): BrowserSt
   });
 }
 
+export function removeWorkspaceFavorite(state: BrowserState, url: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    workspace.favorites = workspace.favorites.filter((favorite) => favorite.url !== url);
+  });
+}
+
 export function toggleActiveTabEssential(state: BrowserState): BrowserState {
   return toggleTabEssential(state, getActiveTab(getActiveWorkspace(state)).id);
 }
@@ -107,6 +114,12 @@ export function toggleTabEssential(state: BrowserState, tabId: string): BrowserS
     index >= 0
       ? draft.essentials.splice(index, 1)
       : draft.essentials.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url));
+  });
+}
+
+export function removeEssential(state: BrowserState, url: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    draft.essentials = draft.essentials.filter((essential) => essential.url !== url);
   });
 }
 

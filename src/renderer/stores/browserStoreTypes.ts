@@ -53,7 +53,9 @@ export interface BrowserStore {
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
   recordHistory: (tabId: string, url: string) => void;
   removeHistoryEntry: (historyId: string) => void;
+  removeEssential: (url: string) => void;
   removeTabFromSplit: (tabId: string) => void;
+  removeWorkspaceFavorite: (url: string) => void;
   replaceBrowserState: (state: BrowserState) => void;
   reorderTab: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   reorderWorkspace: (workspaceId: string, targetWorkspaceId: string, placement: WorkspaceDropPlacement) => void;

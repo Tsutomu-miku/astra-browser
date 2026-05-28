@@ -41,6 +41,8 @@ export {
   sleepInactiveTabs,
   sleepTab,
   stepActiveTabZoom,
+  removeEssential,
+  removeWorkspaceFavorite,
   toggleActiveTabFavorite,
   toggleActiveTabEssential,
   toggleActiveTabMuted,

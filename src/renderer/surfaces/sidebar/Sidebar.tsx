@@ -3,20 +3,21 @@ import {
   useMemo,
   useState,
   type DragEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type MouseEvent
+  type KeyboardEvent as ReactKeyboardEvent
 } from "react";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
-import { isEssential, isFavorite, type BrowserTab } from "../../domain/browser";
+import { isEssential, isFavorite } from "../../domain/browser";
 import { getGroupedTabs } from "../../domain/tabs/groups";
 import type { BrowserController } from "../../app/controller/types";
 import { SidebarAddress } from "./components/chrome/SidebarAddress";
 import { SidebarFooter } from "./components/chrome/SidebarFooter";
 import { SidebarHeader } from "./components/chrome/SidebarHeader";
 import { SidebarSearchBox } from "./components/chrome/SidebarSearchBox";
+import { QuickEntryContextMenu } from "./components/tabs/QuickEntryContextMenu";
 import { SidebarSections } from "./components/tabs/SidebarSections";
 import { TabContextMenu } from "./components/tabs/TabContextMenu";
+import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus";
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "./model/tabContextMenuState";
 import {
@@ -28,19 +29,13 @@ import {
 } from "./sidebarFiltering";
 import { getSidebarSearchOpenIntent, type SidebarOpenIntent } from "./sidebarOpenIntent";
 
-interface TabMenuState {
-  left: number;
-  tab: BrowserTab;
-  top: number;
-}
-
 export function Sidebar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWorkspace, actions, compactChromePeeking, compactMode, floatingSidebarOpen, setPanel, sidebarCollapsed, state } = controller;
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
   const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
   const [tabQuery, setTabQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
-  const [tabMenu, setTabMenu] = useState<TabMenuState | null>(null);
+  const { closeMenus, openQuickEntryMenu, openTabMenu, quickEntryMenu, setQuickEntryMenu, tabMenu } = useSidebarContextMenus();
   const pinnedTabs = activeWorkspace.tabs.filter((tab) => tab.isPinned);
   const groupedTabs = getGroupedTabs(activeWorkspace);
   const groupedTabIds = new Set(groupedTabs.flatMap((entry) => entry.tabs.map((tab) => tab.id)));
@@ -69,35 +64,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     actions.reorderTab(draggingTabId, targetTabId, placement);
     setDraggingTabId(null);
   };
-
-  const openTabMenu = (event: MouseEvent, tab: BrowserTab) => {
-    event.preventDefault();
-    setTabMenu({
-      left: Math.min(event.clientX, window.innerWidth - 190),
-      tab,
-      top: Math.min(event.clientY, window.innerHeight - 260)
-    });
-  };
-
-  useEffect(() => {
-    if (!tabMenu) return;
-
-    const close = () => setTabMenu(null);
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-
-    window.addEventListener("click", close);
-    window.addEventListener("blur", close);
-    window.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("scroll", close, true);
-    return () => {
-      window.removeEventListener("click", close);
-      window.removeEventListener("blur", close);
-      window.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("scroll", close, true);
-    };
-  }, [tabMenu]);
 
   useEffect(() => {
     setTabQuery("");
@@ -221,6 +187,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           draggingTabId={draggingTabId}
           filteredItems={filteredItems}
           splitTabIds={state.splitTabIds}
+          onQuickEntryContextMenu={openQuickEntryMenu}
           onTabContextMenu={openTabMenu}
           onTabDrop={handleTabDrop}
           setDraggingTabId={setDraggingTabId}
@@ -246,7 +213,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           moveWorkspaceTargets={getMoveWorkspaceTargets(state.workspaces, activeWorkspace.id)}
           tab={tabMenu.tab}
           top={tabMenu.top}
-          onClose={() => setTabMenu(null)}
+          onClose={closeMenus}
           onCloseTab={actions.closeTab}
           onCloseOtherTabs={actions.closeOtherTabs}
           onCloseTabsToLeft={actions.closeTabsToLeft}
@@ -266,6 +233,19 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onUngroupTab={actions.ungroupTab}
           tabIsEssential={isEssential(state, tabMenu.tab.url)}
           tabIsFavorite={isFavorite(activeWorkspace, tabMenu.tab.url)}
+        />
+      )}
+      {quickEntryMenu && (
+        <QuickEntryContextMenu
+          item={quickEntryMenu.item}
+          kind={quickEntryMenu.kind}
+          left={quickEntryMenu.left}
+          top={quickEntryMenu.top}
+          onClose={() => setQuickEntryMenu(null)}
+          onOpen={actions.openUrlInActiveWorkspace}
+          onOpenInSplit={actions.openUrlInSplit}
+          onPreview={actions.openGlance}
+          onRemove={quickEntryMenu.kind === "essential" ? actions.removeEssential : actions.removeWorkspaceFavorite}
         />
       )}
     </aside>

@@ -200,12 +200,14 @@ export function FavoriteButton({
   isSearchSelected = false,
   onOpen,
   onOpenInSplit,
+  onContextMenu,
   onPreview
 }: {
   favorite: Favorite;
   id?: string;
   isActive?: boolean;
   isSearchSelected?: boolean;
+  onContextMenu?: (event: MouseEvent, favorite: Favorite) => void;
   onOpen: (url: string, title?: string) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
@@ -218,6 +220,7 @@ export function FavoriteButton({
       title={favorite.url}
       aria-current={isActive}
       aria-selected={isSearchSelected}
+      onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
       onClick={(event) => {
         if (event.altKey) {
           onPreview(favorite.url, favorite.title);
