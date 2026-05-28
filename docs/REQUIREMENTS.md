@@ -93,6 +93,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The app must support collapsible sidebar focus mode.
 - Sidebar width must be toggleable with `Alt+B`.
 - The app must support Zen-style compact mode that hides browser chrome until hover or focus.
+- Collapsed and compact sidebars must reveal their tab controls on hover or keyboard focus.
 - Compact mode must be toggleable with `Ctrl+Alt+C` or `Cmd+Alt+C`.
 - Compact mode must briefly peek browser chrome after tab changes.
 - Compact mode must expose a top-edge peek target for temporarily showing the toolbar.
