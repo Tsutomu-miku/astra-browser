@@ -85,7 +85,7 @@ export function useSidebarContextMenus() {
     setTabMenu(null);
     setTabGroupMenu({
       groupId: group.id,
-      ...getMenuPosition(event, 224, 348)
+      ...getMenuPosition(event, 224, 430)
     });
   }
 

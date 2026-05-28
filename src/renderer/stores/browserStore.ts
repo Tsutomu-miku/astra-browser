@@ -45,6 +45,7 @@ import {
   sleepIdleTabs,
   setActiveTabZoom,
   sleepInactiveTabs,
+  sleepTabGroup,
   sleepTab,
   setSitePermission,
   stepActiveTabZoom,
@@ -207,6 +208,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   selectTab: (tabId) => update(set, (state) => selectTab(state, tabId)),
   sleepIdleTabs: () => update(set, sleepIdleTabs),
   sleepInactiveTabs: () => update(set, sleepInactiveTabs),
+  sleepTabGroup: (groupId) => update(set, (state) => sleepTabGroup(state, groupId)),
   sleepTab: (tabId) => update(set, (state) => sleepTab(state, tabId)),
   setActiveTabZoom: (zoomFactor, webview) => update(set, (state) => syncZoom(setActiveTabZoom(state, zoomFactor), webview)),
   setAddressValue: (addressValue) => {

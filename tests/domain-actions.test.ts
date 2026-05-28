@@ -36,6 +36,7 @@ import {
   setActiveTabZoom,
   sleepIdleTabs,
   sleepInactiveTabs,
+  sleepTabGroup,
   sleepTab,
   stepActiveTabZoom,
   switchWorkspace,
@@ -676,6 +677,27 @@ describe("domain actions", () => {
     expect(sleepingTab.isSleeping).toBe(true);
     expect(getActiveTab(workspace).id).not.toBe(active.id);
     expect(slept.splitMode).toBe(false);
+  });
+
+  it("sleeps a tab group while protecting active and split tabs", () => {
+    const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.test", "Docs"));
+    const group = getActiveWorkspace(grouped).tabGroups[0];
+    const withNews = openUrlInActiveWorkspace(grouped, "news.test", "News");
+    const newsTab = getActiveTab(getActiveWorkspace(withNews));
+    const groupedNews = assignTabToGroup(withNews, newsTab.id, group.id);
+    const withLater = openUrlInActiveWorkspace(groupedNews, "later.test", "Later");
+    const laterTab = getActiveTab(getActiveWorkspace(withLater));
+    const groupedLater = assignTabToGroup(withLater, laterTab.id, group.id);
+    const docsTab = getActiveWorkspace(groupedLater).tabs.find((tab) => tab.title === "Docs")!;
+    const split = openTabInSplit(groupedLater, docsTab.id);
+    const slept = sleepTabGroup(split, group.id);
+    const workspace = getActiveWorkspace(slept);
+
+    expect(workspace.tabs.find((tab) => tab.title === "News")?.isSleeping).toBe(true);
+    expect(workspace.tabs.find((tab) => tab.title === "Docs")?.isSleeping).toBe(false);
+    expect(getActiveTab(workspace).title).toBe("Later");
+    expect(getActiveTab(workspace).isSleeping).toBe(false);
+    expect(slept.splitTabIds).toContain(docsTab.id);
   });
 
   it("automatically sleeps idle background tabs while protecting active split and pinned tabs", () => {

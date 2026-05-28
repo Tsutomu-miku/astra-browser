@@ -29,9 +29,14 @@ export function SidebarContextMenus({
   const tabGroupMenuGroup = tabGroupMenu
     ? activeWorkspace.tabGroups.find((group) => group.id === tabGroupMenu.groupId)
     : undefined;
+  const tabGroupTabs = tabGroupMenuGroup
+    ? activeWorkspace.tabs.filter((tab) => tab.groupId === tabGroupMenuGroup.id && !tab.isPinned)
+    : [];
+  const protectedTabIds = new Set([activeWorkspace.activeTabId, ...state.splitTabIds].filter(Boolean));
   const tabGroupMenuTabCount = tabGroupMenuGroup
-    ? activeWorkspace.tabs.filter((tab) => tab.groupId === tabGroupMenuGroup.id && !tab.isPinned).length
+    ? tabGroupTabs.length
     : 0;
+  const canSleepTabGroup = tabGroupTabs.some((tab) => !tab.isSleeping && !protectedTabIds.has(tab.id));
 
   return (
     <>
@@ -82,6 +87,7 @@ export function SidebarContextMenus({
       )}
       {tabGroupMenu && tabGroupMenuGroup && (
         <TabGroupContextMenu
+          canSleepGroup={canSleepTabGroup}
           group={tabGroupMenuGroup}
           left={tabGroupMenu.left}
           moveWorkspaceTargets={getMoveWorkspaceTargets(state.workspaces, activeWorkspace.id)}
@@ -90,6 +96,7 @@ export function SidebarContextMenus({
           onClose={closeMenus}
           onCloseGroup={actions.closeTabGroup}
           onMoveToWorkspace={actions.moveTabGroupToWorkspace}
+          onSleepGroup={actions.sleepTabGroup}
           onToggleCollapsed={actions.toggleTabGroupCollapsed}
           onUngroupGroup={actions.ungroupTabGroup}
           onUpdate={actions.updateTabGroup}

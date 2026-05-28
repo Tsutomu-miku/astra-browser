@@ -43,6 +43,7 @@ export {
   setActiveTabZoom,
   sleepIdleTabs,
   sleepInactiveTabs,
+  sleepTabGroup,
   sleepTab,
   stepActiveTabZoom,
   removeEssential,

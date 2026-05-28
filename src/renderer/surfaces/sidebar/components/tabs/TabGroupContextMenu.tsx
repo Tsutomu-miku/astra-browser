@@ -6,11 +6,13 @@ import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
 interface TabGroupContextMenuProps {
   group: TabGroup;
+  canSleepGroup: boolean;
   left: number;
   moveWorkspaceTargets: MoveWorkspaceTarget[];
   onCloseGroup: (groupId: string) => void;
   onClose: () => void;
   onMoveToWorkspace: (groupId: string, workspaceId: string) => void;
+  onSleepGroup: (groupId: string) => void;
   onToggleCollapsed: (groupId: string) => void;
   onUngroupGroup: (groupId: string) => void;
   onUpdate: (groupId: string, patch: Partial<Pick<TabGroup, "name" | "color">>) => void;
@@ -20,11 +22,13 @@ interface TabGroupContextMenuProps {
 
 export function TabGroupContextMenu({
   group,
+  canSleepGroup,
   left,
   moveWorkspaceTargets,
   onClose,
   onCloseGroup,
   onMoveToWorkspace,
+  onSleepGroup,
   onToggleCollapsed,
   onUngroupGroup,
   onUpdate,
@@ -49,6 +53,9 @@ export function TabGroupContextMenu({
     >
       <button type="button" role="menuitem" onClick={() => run(() => onToggleCollapsed(group.id))}>
         {group.isCollapsed ? "Expand group" : "Collapse group"}
+      </button>
+      <button type="button" role="menuitem" disabled={!canSleepGroup} onClick={() => run(() => onSleepGroup(group.id))}>
+        Sleep group
       </button>
       <label className="tab-group-menu-field">
         <span>Name</span>

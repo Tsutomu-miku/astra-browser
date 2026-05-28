@@ -75,6 +75,7 @@ export interface BrowserStore {
   selectTab: (tabId: string) => void;
   sleepIdleTabs: () => void;
   sleepInactiveTabs: () => void;
+  sleepTabGroup: (groupId: string) => void;
   sleepTab: (tabId: string) => void;
   resetActiveTabZoom: (webview?: WebviewElement) => void;
   resolvePermissionRequest: (decision: "allow" | "block") => void;

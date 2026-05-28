@@ -11,6 +11,7 @@ describe("sidebar tab group context menu", () => {
     const html = renderToStaticMarkup(createElement(TabGroupContextMenu, props()));
 
     expect(html).toContain("Collapse group");
+    expect(html).toContain("Sleep group");
     expect(html).toContain("Name");
     expect(html).toContain("Group color");
     expect(html).toContain("Move group to Work");
@@ -31,6 +32,7 @@ describe("sidebar tab group context menu", () => {
     const onClose = vi.fn();
     const onCloseGroup = vi.fn();
     const onMoveToWorkspace = vi.fn();
+    const onSleepGroup = vi.fn();
     const onToggleCollapsed = vi.fn();
     const onUngroupGroup = vi.fn();
     const onUpdate = vi.fn();
@@ -38,6 +40,7 @@ describe("sidebar tab group context menu", () => {
       onClose,
       onCloseGroup,
       onMoveToWorkspace,
+      onSleepGroup,
       onToggleCollapsed,
       onUngroupGroup,
       onUpdate
@@ -45,6 +48,7 @@ describe("sidebar tab group context menu", () => {
 
     menu.props.onCloseGroup("group");
     menu.props.onMoveToWorkspace("group", "work");
+    menu.props.onSleepGroup("group");
     menu.props.onToggleCollapsed("group");
     menu.props.onUpdate("group", { name: "Planning" });
     menu.props.onUpdate("group", { color: "#f0abfc" });
@@ -52,6 +56,7 @@ describe("sidebar tab group context menu", () => {
 
     expect(onCloseGroup).toHaveBeenCalledWith("group");
     expect(onMoveToWorkspace).toHaveBeenCalledWith("group", "work");
+    expect(onSleepGroup).toHaveBeenCalledWith("group");
     expect(onToggleCollapsed).toHaveBeenCalledWith("group");
     expect(onUpdate).toHaveBeenCalledWith("group", { name: "Planning" });
     expect(onUpdate).toHaveBeenCalledWith("group", { color: "#f0abfc" });
@@ -73,12 +78,14 @@ function group(overrides: Partial<TabGroup> = {}): TabGroup {
 
 function props(overrides: Partial<TabGroupContextMenuProps> = {}): TabGroupContextMenuProps {
   return {
+    canSleepGroup: true,
     group: group(),
     left: 10,
     moveWorkspaceTargets: [{ id: "work", name: "Work" }],
     onClose: vi.fn(),
     onCloseGroup: vi.fn(),
     onMoveToWorkspace: vi.fn(),
+    onSleepGroup: vi.fn(),
     onToggleCollapsed: vi.fn(),
     onUngroupGroup: vi.fn(),
     onUpdate: vi.fn(),

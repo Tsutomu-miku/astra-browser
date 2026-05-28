@@ -2,6 +2,8 @@
   position: fixed;
   z-index: 40;
   width: 184px;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
   display: grid;
   gap: 3px;
   padding: 6px;

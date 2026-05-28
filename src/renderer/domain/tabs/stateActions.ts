@@ -62,6 +62,26 @@ export function sleepTab(state: BrowserState, tabId: string): BrowserState {
   });
 }
 
+export function sleepTabGroup(state: BrowserState, groupId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = draft.workspaces.find((candidate) => candidate.tabGroups.some((group) => group.id === groupId));
+    if (!workspace) return;
+
+    const protectedTabIds = new Set([workspace.activeTabId, ...getSplitTabIds(draft)].filter(Boolean));
+
+    for (const tab of workspace.tabs) {
+      if (tab.groupId !== groupId || tab.isPinned || protectedTabIds.has(tab.id)) {
+        continue;
+      }
+
+      tab.isSleeping = true;
+      tab.isLoading = false;
+      tab.canGoBack = false;
+      tab.canGoForward = false;
+    }
+  });
+}
+
 export function sleepInactiveTabs(state: BrowserState): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);

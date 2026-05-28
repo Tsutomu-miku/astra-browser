@@ -137,6 +137,7 @@ export function useBrowserActions({
       peekCompactChrome();
     },
     sleepInactiveTabs: store.sleepInactiveTabs,
+    sleepTabGroup: store.sleepTabGroup,
     sleepTab: store.sleepTab,
     setActiveTabZoom: (zoomFactor: number) => store.setActiveTabZoom(zoomFactor, activeWebview),
     setSplitLayout: store.setSplitLayout,
