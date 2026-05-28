@@ -23,6 +23,7 @@ function commandActions() {
     closeOtherTabs: vi.fn(),
     closeTabsToLeft: vi.fn(),
     closeTabsToRight: vi.fn(),
+    copyText: vi.fn(),
     deleteWorkspace: vi.fn(),
     duplicateActiveTab: vi.fn(),
     fillSplitView: vi.fn(),
@@ -95,6 +96,8 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Previous tab")).toBe(true);
     expect(commands.some((command) => command.title === "Mute tab")).toBe(true);
     expect(commands.some((command) => command.title === "Preview tab in Glance")).toBe(true);
+    expect(commands.some((command) => command.title === "Copy current URL")).toBe(true);
+    expect(commands.some((command) => command.title === "Copy current page title")).toBe(true);
     expect(commands.some((command) => command.title.startsWith("Move tab to"))).toBe(true);
     expect(commands.some((command) => command.title.includes("in split view"))).toBe(true);
     expect(commands.some((command) => command.title === "Fill split grid")).toBe(true);
@@ -143,5 +146,17 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Peek floating sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Unpin floating sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Unpin floating toolbar")).toBe(true);
+  });
+
+  it("copies current page values from command palette actions", () => {
+    const actions = commandActions();
+    const state = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const commands = buildCommands(state, actions, vi.fn(), defaultChromeState);
+
+    commands.find((command) => command.title === "Copy current URL")?.run();
+    commands.find((command) => command.title === "Copy current page title")?.run();
+
+    expect(actions.copyText).toHaveBeenCalledWith("https://example.com/");
+    expect(actions.copyText).toHaveBeenCalledWith("Example");
   });
 });

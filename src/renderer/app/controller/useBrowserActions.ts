@@ -44,6 +44,9 @@ export function useBrowserActions({
     closeOtherTabs: store.closeOtherTabs,
     closeTabsToLeft: store.closeTabsToLeft,
     closeTabsToRight: store.closeTabsToRight,
+    copyText: (text: string) => {
+      void navigator.clipboard?.writeText(text);
+    },
     deleteWorkspace: store.deleteWorkspace,
     focusAddressBar,
     peekCompactChrome,

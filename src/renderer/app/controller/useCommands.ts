@@ -1,8 +1,9 @@
 import { shortcutLabels } from "../../common/shortcuts/shortcutLabels";
-import { BrowserState, isEssential, isFavorite } from "../../domain/browser";
+import type { BrowserState } from "../../domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../../domain/browser/selectors";
 import type { Panel } from "../../stores/browserStoreTypes";
 import { buildContentCommands } from "../../surfaces/command/model/commandContentEntries";
+import { buildPageCommands } from "../../surfaces/command/model/commandPageEntries";
 import { buildSplitCommands } from "../../surfaces/command/model/commandSplitEntries";
 import type { Command, CommandActions } from "../../surfaces/command/model/commandTypes";
 
@@ -44,6 +45,7 @@ export function buildCommands(
       run: () => actions.moveTabToWorkspace(activeTab.id, candidate.id)
     }));
   const contentCommands = buildContentCommands(state, workspace, actions);
+  const pageCommands = buildPageCommands(state, workspace, activeTab, actions);
   const splitCommands = buildSplitCommands(state, workspace, activeTab, actions);
   const tabGroupCommands = workspace.tabGroups.map((group) => ({
     title: group.isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`,
@@ -87,38 +89,12 @@ export function buildCommands(
       run: actions.newTab
     },
     {
-      title: isFavorite(workspace, activeTab.url) ? "Remove favorite" : "Add favorite",
-      subtitle: activeTab.url,
-      shortcut: shortcutLabels.favorite,
-      run: actions.toggleActiveTabFavorite
-    },
-    {
-      title: isEssential(state, activeTab.url) ? "Remove essential" : "Add essential",
-      subtitle: "Show this page across Spaces",
-      run: actions.toggleActiveTabEssential
-    },
-    {
       title: "Reopen closed tab",
       subtitle: workspace.closedTabs[0]?.title ?? "No closed tabs in this workspace",
       shortcut: shortcutLabels.restoreClosedTab,
       run: actions.restoreLastClosedTab
     },
-    {
-      title: activeTab.isPinned ? "Unpin tab" : "Pin tab",
-      subtitle: activeTab.url,
-      run: actions.toggleActiveTabPinned
-    },
-    {
-      title: activeTab.isMuted ? "Unmute tab" : "Mute tab",
-      subtitle: activeTab.url,
-      shortcut: shortcutLabels.mute,
-      run: actions.toggleActiveTabMuted
-    },
-    {
-      title: "Preview tab in Glance",
-      subtitle: activeTab.url,
-      run: () => actions.openGlance(activeTab.url, activeTab.title)
-    },
+    ...pageCommands,
     ...splitCommands,
     {
       title: "Zoom in",

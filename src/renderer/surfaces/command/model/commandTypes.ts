@@ -19,6 +19,7 @@ export interface CommandActions {
   closeOtherTabs: (tabId?: string) => void;
   closeTabsToLeft: (tabId?: string) => void;
   closeTabsToRight: (tabId?: string) => void;
+  copyText: (text: string) => void;
   deleteWorkspace: (workspaceId: string) => void;
   duplicateActiveTab: () => void;
   fillSplitView: () => void;
