@@ -1,4 +1,5 @@
 import type { SplitLayout } from "../../../stores/browserStoreTypes";
+import type { WebviewAction } from "../../../types/browser-ui";
 
 export interface Command {
   title: string;
@@ -36,6 +37,7 @@ export interface CommandActions {
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
   restoreClosedTab: (closedIndex: number) => void;
   restoreLastClosedTab: () => void;
+  runWebviewAction: (action: WebviewAction) => void;
   selectAdjacentTab: (direction: 1 | -1) => void;
   selectTab: (tabId: string) => void;
   setSplitLayout: (layout: SplitLayout) => void;

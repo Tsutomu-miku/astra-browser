@@ -40,6 +40,7 @@ function commandActions() {
     openUrlInActiveWorkspace: vi.fn(),
     restoreClosedTab: vi.fn(),
     restoreLastClosedTab: vi.fn(),
+    runWebviewAction: vi.fn(),
     selectAdjacentTab: vi.fn(),
     resetActiveTabZoom: vi.fn(),
     selectTab: vi.fn(),
@@ -122,6 +123,8 @@ describe("buildCommands", () => {
     expect(commands.find((command) => command.title === "Enter compact mode")?.shortcut).toBe("Ctrl/Cmd+Alt+C");
     expect(commands.find((command) => command.title === "Find in page")?.shortcut).toBe("Ctrl/Cmd+F");
     expect(commands.some((command) => command.title === "Show site information")).toBe(true);
+    expect(commands.find((command) => command.title === "Reload page")?.shortcut).toBe("Ctrl/Cmd+R");
+    expect(commands.find((command) => command.title === "Hard reload")?.shortcut).toBe("Ctrl/Cmd+Shift+R");
     expect(commands.some((command) => command.title === "Add essential")).toBe(true);
     expect(commands.some((command) => command.title === "Close other tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Close tabs to the left")).toBe(true);
@@ -175,6 +178,40 @@ describe("buildCommands", () => {
 
     expect(actions.openFind).toHaveBeenCalled();
     expect(setPanel).toHaveBeenCalledWith("site");
+  });
+
+  it("runs navigation commands from command palette actions", () => {
+    const actions = commandActions();
+    const state = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const activeTab = state.workspaces[0].tabs.find((tab) => tab.id === state.workspaces[0].activeTabId)!;
+    activeTab.canGoBack = true;
+    activeTab.canGoForward = true;
+    const commands = buildCommands(state, actions, vi.fn(), defaultChromeState);
+
+    commands.find((command) => command.title === "Back")?.run();
+    commands.find((command) => command.title === "Forward")?.run();
+    commands.find((command) => command.title === "Reload page")?.run();
+    commands.find((command) => command.title === "Hard reload")?.run();
+
+    expect(commands.find((command) => command.title === "Back")?.shortcut).toBe("Alt+Left / Ctrl/Cmd+[");
+    expect(commands.find((command) => command.title === "Forward")?.shortcut).toBe("Alt+Right / Ctrl/Cmd+]");
+    expect(actions.runWebviewAction).toHaveBeenCalledWith("goBack");
+    expect(actions.runWebviewAction).toHaveBeenCalledWith("goForward");
+    expect(actions.runWebviewAction).toHaveBeenCalledWith("reload");
+    expect(actions.runWebviewAction).toHaveBeenCalledWith("reloadIgnoringCache");
+  });
+
+  it("turns the reload command into stop loading while the active tab loads", () => {
+    const actions = commandActions();
+    const state = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const activeTab = state.workspaces[0].tabs.find((tab) => tab.id === state.workspaces[0].activeTabId)!;
+    activeTab.isLoading = true;
+    const commands = buildCommands(state, actions, vi.fn(), defaultChromeState);
+
+    commands.find((command) => command.title === "Stop loading")?.run();
+
+    expect(commands.some((command) => command.title === "Reload page")).toBe(false);
+    expect(actions.runWebviewAction).toHaveBeenCalledWith("stop");
   });
 
   it("sleeps the active tab from command palette actions", () => {

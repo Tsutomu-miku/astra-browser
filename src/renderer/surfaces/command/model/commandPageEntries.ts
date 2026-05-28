@@ -9,8 +9,39 @@ export function buildPageCommands(
   actions: CommandActions
 ): Command[] {
   const pageTitle = activeTab.title || activeTab.url;
+  const navigationCommands: Command[] = [
+    ...(activeTab.canGoBack
+      ? [{
+        title: "Back",
+        subtitle: activeTab.url,
+        shortcut: shortcutLabels.back,
+        run: () => actions.runWebviewAction("goBack")
+      }]
+      : []),
+    ...(activeTab.canGoForward
+      ? [{
+        title: "Forward",
+        subtitle: activeTab.url,
+        shortcut: shortcutLabels.forward,
+        run: () => actions.runWebviewAction("goForward")
+      }]
+      : []),
+    {
+      title: activeTab.isLoading ? "Stop loading" : "Reload page",
+      subtitle: activeTab.url,
+      shortcut: shortcutLabels.reload,
+      run: () => actions.runWebviewAction(activeTab.isLoading ? "stop" : "reload")
+    },
+    {
+      title: "Hard reload",
+      subtitle: "Reload without cache",
+      shortcut: shortcutLabels.hardReload,
+      run: () => actions.runWebviewAction("reloadIgnoringCache")
+    }
+  ];
 
   return [
+    ...navigationCommands,
     {
       title: isFavorite(workspace, activeTab.url) ? "Remove favorite" : "Add favorite",
       subtitle: activeTab.url,
