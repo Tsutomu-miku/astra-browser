@@ -68,6 +68,12 @@ export function SidebarPinnedTabs({
               draggable
               data-dragging={draggingTabId === tab.id}
               data-drop-target={Boolean(draggingTabId && draggingTabId !== tab.id)}
+              onAuxClick={(event) => {
+                if (event.button === 1) {
+                  event.preventDefault();
+                  actions.closeTab(tab.id);
+                }
+              }}
               onClick={(event) => {
                 if (event.altKey) {
                   actions.openGlance(tab.url, tab.title);

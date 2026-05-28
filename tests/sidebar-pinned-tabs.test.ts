@@ -1,4 +1,6 @@
 import { createElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -14,6 +16,7 @@ const dropZoneCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar
 
 function createActions() {
   return {
+    closeTab: vi.fn(),
     openGlance: vi.fn(),
     openTabInSplit: vi.fn(),
     selectTab: vi.fn()
@@ -77,6 +80,35 @@ describe("sidebar pinned tabs", () => {
     expect(html).toContain("Preview");
     expect(html).toContain("Shift");
     expect(html).toContain("Split");
+  });
+
+  it("closes pinned tabs on middle click without selecting first", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarPinnedTabs, {
+        actions,
+        activeTab: { ...createTab("Active", "https://active.example") },
+        draggingTabId: null,
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onPinDrop: vi.fn(),
+        pinnedTabs: [pinned],
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const button = container.querySelector(".pinned-tab-button");
+    button?.dispatchEvent(new MouseEvent("auxclick", { bubbles: true, button: 1 }));
+
+    expect(actions.closeTab).toHaveBeenCalledWith(pinned.id);
+    expect(actions.selectTab).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
   });
 
   it("renders compact status badges for split and muted pinned tabs", () => {

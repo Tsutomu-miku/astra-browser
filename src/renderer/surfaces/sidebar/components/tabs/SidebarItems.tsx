@@ -94,6 +94,12 @@ export function TabRow({
       <button
         className="tab-button"
         type="button"
+        onAuxClick={(event) => {
+          if (event.button === 1) {
+            event.preventDefault();
+            onClose(tab.id);
+          }
+        }}
         onClick={(event) => {
           if (event.altKey) {
             onPreview(tab.url, tab.title);

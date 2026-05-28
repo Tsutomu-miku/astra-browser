@@ -1,4 +1,6 @@
 import { createElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -27,6 +29,38 @@ describe("sidebar item action hints", () => {
     expect(html).toContain("Preview");
     expect(html).toContain("Shift");
     expect(html).toContain("Split");
+  });
+
+  it("closes tab rows on middle click without selecting first", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const onClose = vi.fn();
+    const onSelect = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabRow, {
+        activeTabId: "other-tab",
+        draggingTabId: null,
+        onClose,
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onPreview: vi.fn(),
+        onSelect,
+        onSplit: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tab
+      }));
+    });
+
+    const button = container.querySelector(".tab-button");
+    button?.dispatchEvent(new MouseEvent("auxclick", { bubbles: true, button: 1 }));
+
+    expect(onClose).toHaveBeenCalledWith(tab.id);
+    expect(onSelect).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
   });
 
   it("renders preview and split hints for favorite rows", () => {
