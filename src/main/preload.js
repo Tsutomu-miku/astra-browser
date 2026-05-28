@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld("astraShell", {
   clearBrowsingData: (partitions) => ipcRenderer.invoke("clear-browsing-data", partitions),
   getProfileStorageUsage: (partitions) => ipcRenderer.invoke("get-profile-storage-usage", partitions),
   getVersion: () => ipcRenderer.invoke("app-version"),
+  toggleDevTools: () => ipcRenderer.invoke("toggle-devtools"),
   onDownloadEvent: (listener) => {
     const wrapped = (_event, payload) => listener(payload);
     ipcRenderer.on("download-event", wrapped);

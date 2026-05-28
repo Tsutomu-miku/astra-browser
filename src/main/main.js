@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, session, shell } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { installWindowDiagnostics } = require("./diagnostics");
+const { installWindowDiagnostics, toggleDevTools } = require("./diagnostics");
 
 const APP_ORIGIN = "astra://app";
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
@@ -192,6 +192,12 @@ app.on("web-contents-created", (_event, contents) => {
 });
 
 ipcMain.handle("app-version", () => app.getVersion());
+ipcMain.handle("toggle-devtools", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    toggleDevTools(win);
+  }
+});
 ipcMain.handle("clear-browsing-data", async (_event, partitions) => {
   const targets = getSessionsForClearing(partitions);
   await Promise.all(targets.map(async (targetSession) => {

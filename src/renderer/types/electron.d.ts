@@ -45,6 +45,7 @@ export interface AstraShellApi {
   setProfilePartitions: (partitions: string[]) => Promise<void>;
   setPermissionRules: (rules: PermissionRulePayload[]) => Promise<void>;
   showItemInFolder: (filePath: string) => Promise<void>;
+  toggleDevTools: () => Promise<void>;
 }
 
 declare global {

@@ -72,7 +72,7 @@ export function CommandPalette({ controller }: { controller: BrowserController }
               <button
                 className="command-item"
                 id={`command-option-${index}`}
-                key={`${command.title}-${command.subtitle}`}
+                key={`${index}-${command.title}-${command.subtitle}`}
                 type="button"
                 role="option"
                 aria-selected={index === activeIndex}

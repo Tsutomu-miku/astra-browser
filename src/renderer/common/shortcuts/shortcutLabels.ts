@@ -1,5 +1,6 @@
 export const shortcutLabels = {
   closeTab: "Ctrl/Cmd+W",
+  devTools: "F12 / Ctrl/Cmd+Shift+I",
   downloads: "Ctrl/Cmd+Shift+Y",
   favorite: "Ctrl/Cmd+D",
   focusAddress: "Ctrl/Cmd+L",

@@ -46,6 +46,7 @@ export interface CommandActions {
   toggleCompactMode: () => void;
   toggleFloatingSidebar: () => void;
   toggleFloatingToolbar: () => void;
+  toggleApplicationDevTools: () => void;
   toggleTabGroupCollapsed: (groupId: string) => void;
   toggleSidebar: () => void;
   toggleSplitMode: () => void;

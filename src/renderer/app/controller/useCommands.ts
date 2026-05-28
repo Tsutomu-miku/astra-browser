@@ -186,6 +186,12 @@ export function buildCommands(
       run: () => setPanel("downloads")
     },
     { title: "Show settings", subtitle: "Homepage, search, and workspace", run: () => setPanel("settings") },
+    {
+      title: "Toggle application DevTools",
+      subtitle: "Inspect the Astra shell",
+      shortcut: shortcutLabels.devTools,
+      run: actions.toggleApplicationDevTools
+    },
     { title: "New workspace", subtitle: "Create a new Space", run: actions.addWorkspace },
     ...workspaceDeleteCommands,
     { title: "Clear browsing data", subtitle: "History, downloads, permissions, cache, and storage", run: actions.clearBrowsingData },

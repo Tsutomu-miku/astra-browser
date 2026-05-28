@@ -87,6 +87,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - History must be available with `Ctrl+H` or `Cmd+H`.
 - Downloads must be available with `Ctrl+Shift+Y` or `Cmd+Shift+Y`.
 - Diagnostics shortcuts must include `F12` and `Ctrl+Shift+I` for application DevTools in development and packaged builds.
+- Application DevTools must also be available from the command palette for keyboard-first diagnostics.
 
 ### Compact Mode And Chrome
 

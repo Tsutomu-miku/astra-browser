@@ -128,6 +128,9 @@ export function useBrowserActions({
     toggleCompactMode: store.toggleCompactMode,
     toggleFloatingSidebar: store.toggleFloatingSidebar,
     toggleFloatingToolbar: store.toggleFloatingToolbar,
+    toggleApplicationDevTools: () => {
+      void window.astraShell?.toggleDevTools();
+    },
     toggleTabGroupCollapsed: store.toggleTabGroupCollapsed,
     toggleTabEssential: store.toggleTabEssential,
     toggleTabFavorite: store.toggleTabFavorite,

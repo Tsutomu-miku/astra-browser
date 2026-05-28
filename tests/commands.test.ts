@@ -50,6 +50,7 @@ function commandActions() {
     toggleCompactMode: vi.fn(),
     toggleFloatingSidebar: vi.fn(),
     toggleFloatingToolbar: vi.fn(),
+    toggleApplicationDevTools: vi.fn(),
     toggleTabGroupCollapsed: vi.fn(),
     toggleSidebar: vi.fn(),
     toggleSplitMode: vi.fn(),
@@ -103,6 +104,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Clear browsing data")).toBe(true);
     expect(commands.some((command) => command.title === "Clear current profile data")).toBe(true);
     expect(commands.some((command) => command.title === "Clear history")).toBe(true);
+    expect(commands.find((command) => command.title === "Toggle application DevTools")?.shortcut).toBe("F12 / Ctrl/Cmd+Shift+I");
     expect(commands.some((command) => command.title === "Delete workspace")).toBe(true);
     expect(commands.some((command) => command.title === "New workspace")).toBe(true);
     expect(commands.some((command) => command.title === "Enter compact mode")).toBe(true);

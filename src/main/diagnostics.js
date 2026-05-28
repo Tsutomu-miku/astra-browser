@@ -73,5 +73,6 @@ function formatConsoleMessage(args) {
 }
 
 module.exports = {
-  installWindowDiagnostics
+  installWindowDiagnostics,
+  toggleDevTools
 };
