@@ -1,0 +1,18 @@
+.pinned-tabs[data-drop-target="true"],
+.favorites[data-drop-target="true"] {
+  min-height: 42px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 38%, transparent);
+  border-radius: 8px;
+  padding: 6px;
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.035));
+}
+
+.sidebar-drop-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  align-self: center;
+  justify-self: center;
+  color: color-mix(in srgb, var(--accent) 64%, white);
+  font-size: 11px;
+  font-weight: 760;
+}

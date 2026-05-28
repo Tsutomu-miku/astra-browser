@@ -67,6 +67,28 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     setDraggingTabId(null);
   };
 
+  const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || event.dataTransfer.getData("text/plain");
+
+  const handlePinDrop = (event: DragEvent<HTMLElement>) => {
+    const tabId = getDroppedTabId(event);
+    const tab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
+    if (!tab) return;
+
+    event.preventDefault();
+    if (!tab.isPinned) actions.toggleTabPinned(tab.id);
+    setDraggingTabId(null);
+  };
+
+  const handleFavoriteDrop = (event: DragEvent<HTMLElement>) => {
+    const tabId = getDroppedTabId(event);
+    const tab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
+    if (!tab) return;
+
+    event.preventDefault();
+    if (!isFavorite(activeWorkspace, tab.url)) actions.toggleTabFavorite(tab.id);
+    setDraggingTabId(null);
+  };
+
   useEffect(() => {
     setTabQuery("");
     setActiveSearchIndex(0);
@@ -189,8 +211,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           closedTabs={activeWorkspace.closedTabs}
           draggingTabId={draggingTabId}
           filteredItems={filteredItems}
+          onFavoriteDrop={handleFavoriteDrop}
           splitTabIds={state.splitTabIds}
           onQuickEntryContextMenu={openQuickEntryMenu}
+          onPinDrop={handlePinDrop}
           onTabContextMenu={openTabMenu}
           onTabDrop={handleTabDrop}
           setDraggingTabId={setDraggingTabId}

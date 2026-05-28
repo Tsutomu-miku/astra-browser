@@ -17,6 +17,7 @@ export function SidebarPinnedTabs({
   isCollapsed = false,
   onTabContextMenu,
   onTabDrop,
+  onPinDrop,
   onToggle,
   pinnedTabs,
   setDraggingTabId,
@@ -29,17 +30,29 @@ export function SidebarPinnedTabs({
   isCollapsed?: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  onPinDrop: (event: DragEvent<HTMLElement>) => void;
   onToggle?: () => void;
   pinnedTabs: BrowserTab[];
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
 }) {
-  if (pinnedTabs.length === 0) return null;
+  if (pinnedTabs.length === 0 && !draggingTabId) return null;
 
   return (
     <section className="sidebar-section">
       <SidebarSectionHeader count={pinnedTabs.length} isCollapsed={isCollapsed} title="Pinned" onToggle={onToggle} />
-      {!isCollapsed && <nav className="pinned-tabs" aria-label="Pinned tabs">
+      {!isCollapsed && <nav
+        className="pinned-tabs"
+        aria-label="Pinned tabs"
+        data-drop-target={Boolean(draggingTabId)}
+        onDragOver={(event) => {
+          if (draggingTabId) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+          }
+        }}
+        onDrop={onPinDrop}
+      >
         {pinnedTabs.map((tab) => {
           const statusBadges = getTabStatusBadges(tab, splitTabIds);
 
@@ -85,6 +98,9 @@ export function SidebarPinnedTabs({
             </button>
           );
         })}
+        {pinnedTabs.length === 0 && draggingTabId && (
+          <p className="sidebar-drop-empty">Drop to pin</p>
+        )}
       </nav>}
     </section>
   );

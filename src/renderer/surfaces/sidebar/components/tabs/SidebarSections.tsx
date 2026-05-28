@@ -19,6 +19,8 @@ export function SidebarSections({
   closedTabs,
   draggingTabId,
   filteredItems,
+  onFavoriteDrop,
+  onPinDrop,
   onTabContextMenu,
   onTabDrop,
   onQuickEntryContextMenu,
@@ -31,6 +33,8 @@ export function SidebarSections({
   closedTabs: ClosedTab[];
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
+  onFavoriteDrop: (event: DragEvent<HTMLElement>) => void;
+  onPinDrop: (event: DragEvent<HTMLElement>) => void;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
@@ -92,11 +96,12 @@ export function SidebarSections({
         splitTabIds={splitTabIds}
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}
+        onPinDrop={onPinDrop}
         onToggle={() => toggleSection("pinned")}
         setDraggingTabId={setDraggingTabId}
       />
 
-      {filteredItems.favorites.length > 0 && (
+      {(filteredItems.favorites.length > 0 || Boolean(draggingTabId)) && (
         <section className="sidebar-section">
           <SidebarSectionHeader
             count={filteredItems.favorites.length}
@@ -104,7 +109,18 @@ export function SidebarSections({
             title="Favorites"
             onToggle={() => toggleSection("favorites")}
           />
-          {!isSectionCollapsed("favorites") && <nav className="favorites" aria-label="Favorites">
+          {!isSectionCollapsed("favorites") && <nav
+            className="favorites"
+            aria-label="Favorites"
+            data-drop-target={Boolean(draggingTabId)}
+            onDragOver={(event) => {
+              if (draggingTabId) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy";
+              }
+            }}
+            onDrop={onFavoriteDrop}
+          >
             {filteredItems.favorites.map((favorite) => (
               <FavoriteButton
                 key={favorite.id}
@@ -118,6 +134,9 @@ export function SidebarSections({
                 onPreview={actions.openGlance}
               />
             ))}
+            {filteredItems.favorites.length === 0 && draggingTabId && (
+              <p className="sidebar-drop-empty">Drop to favorite</p>
+            )}
           </nav>}
         </section>
       )}
