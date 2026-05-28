@@ -8,6 +8,7 @@ import {
   clearWorkspaceBrowsingData,
   closeActiveTab,
   closeOtherTabs,
+  closeTabGroup,
   closeTabsToLeft,
   closeTabsToRight,
   closeTab,
@@ -16,6 +17,7 @@ import {
   duplicateTab,
   fillSplitView,
   focusSplitPane,
+  assignTabToGroup,
   groupActiveTab,
   moveTabToWorkspace,
   openTabInSplit,
@@ -225,6 +227,38 @@ describe("domain actions", () => {
     expect(nextWorkspace.tabs.map((tab) => tab.title)).toEqual(["Second", "Third"]);
     expect(getActiveTab(nextWorkspace).title).toBe("Second");
     expect(nextWorkspace.closedTabs.map((tab) => tab.title).slice(0, 2)).toEqual(["First", "New Tab"]);
+  });
+
+  it("closes a tab group into recently closed and keeps the nearest tab active", () => {
+    const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.test", "Docs"));
+    const group = getActiveWorkspace(grouped).tabGroups[0];
+    const withNews = openUrlInActiveWorkspace(grouped, "news.test", "News");
+    const newsTab = getActiveTab(getActiveWorkspace(withNews));
+    const assigned = assignTabToGroup(withNews, newsTab.id, group.id);
+    const withThird = openUrlInActiveWorkspace(assigned, "third.test", "Third");
+    const selectedGroupTab = selectTab(withThird, newsTab.id);
+    const closed = closeTabGroup(selectedGroupTab, group.id);
+    const workspace = getActiveWorkspace(closed);
+
+    expect(workspace.tabGroups).toHaveLength(0);
+    expect(workspace.tabs.map((tab) => tab.title)).toEqual(["New Tab", "Third"]);
+    expect(getActiveTab(workspace).title).toBe("Third");
+    expect(workspace.closedTabs.map((tab) => tab.title).slice(0, 2)).toEqual(["News", "Docs"]);
+  });
+
+  it("replaces the last open tab when closing its tab group", () => {
+    const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.test", "Docs"));
+    const group = getActiveWorkspace(grouped).tabGroups[0];
+    const defaultTab = getActiveWorkspace(grouped).tabs.find((tab) => tab.title === "New Tab")!;
+    const onlyGroup = closeTab(grouped, defaultTab.id);
+    const closed = closeTabGroup(onlyGroup, group.id);
+    const workspace = getActiveWorkspace(closed);
+
+    expect(workspace.tabs).toHaveLength(1);
+    expect(getActiveTab(workspace).title).toBe("New Tab");
+    expect(workspace.tabGroups).toHaveLength(0);
+    expect(workspace.closedTabs[0].title).toBe("Docs");
+    expect(closed.splitMode).toBe(false);
   });
 
   it("duplicates the active tab next to the original", () => {

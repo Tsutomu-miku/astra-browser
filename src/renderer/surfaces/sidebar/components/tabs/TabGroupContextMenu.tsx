@@ -6,6 +6,7 @@ import { TAB_GROUP_COLOR_SWATCHES } from "../../../../domain/tabs/groups";
 interface TabGroupContextMenuProps {
   group: TabGroup;
   left: number;
+  onCloseGroup: (groupId: string) => void;
   onClose: () => void;
   onToggleCollapsed: (groupId: string) => void;
   onUngroupGroup: (groupId: string) => void;
@@ -18,6 +19,7 @@ export function TabGroupContextMenu({
   group,
   left,
   onClose,
+  onCloseGroup,
   onToggleCollapsed,
   onUngroupGroup,
   onUpdate,
@@ -67,6 +69,9 @@ export function TabGroupContextMenu({
         ))}
       </div>
       <span className="tab-context-menu-separator" />
+      <button type="button" role="menuitem" onClick={() => run(() => onCloseGroup(group.id))}>
+        Close group
+      </button>
       <button className="danger" type="button" role="menuitem" onClick={() => run(() => onUngroupGroup(group.id))}>
         Ungroup {tabCount} {tabCount === 1 ? "tab" : "tabs"}
       </button>

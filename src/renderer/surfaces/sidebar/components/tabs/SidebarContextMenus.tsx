@@ -87,6 +87,7 @@ export function SidebarContextMenus({
           tabCount={tabGroupMenuTabCount}
           top={tabGroupMenu.top}
           onClose={closeMenus}
+          onCloseGroup={actions.closeTabGroup}
           onToggleCollapsed={actions.toggleTabGroupCollapsed}
           onUngroupGroup={actions.ungroupTabGroup}
           onUpdate={actions.updateTabGroup}

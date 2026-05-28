@@ -42,6 +42,10 @@ export function useBrowserActions({
     groupActiveTab: store.groupActiveTab,
     groupTab: store.groupTab,
     closeOtherTabs: store.closeOtherTabs,
+    closeTabGroup: (groupId: string) => {
+      store.closeTabGroup(groupId);
+      peekCompactChrome();
+    },
     closeTabsToLeft: store.closeTabsToLeft,
     closeTabsToRight: store.closeTabsToRight,
     copyText: (text: string) => {

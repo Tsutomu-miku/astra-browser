@@ -35,6 +35,7 @@ export interface BrowserStore {
   clearWorkspaceBrowsingData: (workspaceId: string) => void;
   closeActiveTab: () => void;
   closeOtherTabs: (tabId?: string) => void;
+  closeTabGroup: (groupId: string) => void;
   closeTabsToLeft: (tabId?: string) => void;
   closeTabsToRight: (tabId?: string) => void;
   closeTab: (tabId: string) => void;

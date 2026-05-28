@@ -13,6 +13,7 @@ describe("sidebar tab group context menu", () => {
     expect(html).toContain("Collapse group");
     expect(html).toContain("Name");
     expect(html).toContain("Group color");
+    expect(html).toContain("Close group");
     expect(html).toContain("Ungroup 2 tabs");
     expect(html).toContain(TAB_GROUP_COLOR_SWATCHES[0]);
   });
@@ -27,21 +28,25 @@ describe("sidebar tab group context menu", () => {
 
   it("wires group update and ungroup callbacks", () => {
     const onClose = vi.fn();
+    const onCloseGroup = vi.fn();
     const onToggleCollapsed = vi.fn();
     const onUngroupGroup = vi.fn();
     const onUpdate = vi.fn();
     const menu = createElement(TabGroupContextMenu, props({
       onClose,
+      onCloseGroup,
       onToggleCollapsed,
       onUngroupGroup,
       onUpdate
     }));
 
+    menu.props.onCloseGroup("group");
     menu.props.onToggleCollapsed("group");
     menu.props.onUpdate("group", { name: "Planning" });
     menu.props.onUpdate("group", { color: "#f0abfc" });
     menu.props.onUngroupGroup("group");
 
+    expect(onCloseGroup).toHaveBeenCalledWith("group");
     expect(onToggleCollapsed).toHaveBeenCalledWith("group");
     expect(onUpdate).toHaveBeenCalledWith("group", { name: "Planning" });
     expect(onUpdate).toHaveBeenCalledWith("group", { color: "#f0abfc" });
@@ -66,6 +71,7 @@ function props(overrides: Partial<TabGroupContextMenuProps> = {}): TabGroupConte
     group: group(),
     left: 10,
     onClose: vi.fn(),
+    onCloseGroup: vi.fn(),
     onToggleCollapsed: vi.fn(),
     onUngroupGroup: vi.fn(),
     onUpdate: vi.fn(),

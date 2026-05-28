@@ -1,4 +1,5 @@
 export {
+  closeTabGroup,
   closeOtherTabs,
   closeTabsToLeft,
   closeTabsToRight

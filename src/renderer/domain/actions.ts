@@ -20,6 +20,7 @@ export {
   assignTabToGroup,
   closeActiveTab,
   closeOtherTabs,
+  closeTabGroup,
   closeTabsToLeft,
   closeTabsToRight,
   closeTab,
