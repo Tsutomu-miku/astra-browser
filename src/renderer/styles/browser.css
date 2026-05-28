@@ -352,7 +352,7 @@
   right: 18px;
   z-index: 15;
   display: grid;
-  grid-template-columns: minmax(180px, 260px) 32px 32px 32px;
+  grid-template-columns: minmax(180px, 260px) 32px 32px minmax(58px, auto) 32px;
   align-items: center;
   gap: 6px;
   padding: 8px;
@@ -376,6 +376,19 @@
 
 .find-bar input:focus {
   border-color: color-mix(in srgb, var(--accent) 65%, white);
+}
+
+.find-status {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.find-status.is-empty {
+  color: #fda4af;
 }
 
 .permission-prompt {

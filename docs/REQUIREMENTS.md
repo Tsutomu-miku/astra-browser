@@ -168,6 +168,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 ### History, Downloads, Find, And Zoom
 
 - Find in page must use Chromium webview search and support next/previous match shortcuts.
+- Find in page must show current match counts and no-match feedback from Chromium search results.
 - Per-tab zoom controls must use Chromium webview zoom.
 - Browsing history must be searchable.
 - History entries must support single-entry removal and full clearing.

@@ -37,6 +37,30 @@ export function useBrowserController() {
     useBrowserStore.getState().setAddressValue(activeTab.url);
   }, [activeTab.url]);
 
+  useEffect(() => {
+    if (!activeWebview) return;
+
+    const onFoundInPage = (event: Event) => {
+      const result = (event as {
+        result?: {
+          activeMatchOrdinal?: number;
+          finalUpdate?: boolean;
+          matches?: number;
+        };
+      }).result;
+
+      if (!result) return;
+      store.setFindResult({
+        activeMatchOrdinal: result.activeMatchOrdinal ?? 0,
+        finalUpdate: Boolean(result.finalUpdate),
+        matches: result.matches ?? 0
+      });
+    };
+
+    activeWebview.addEventListener("found-in-page", onFoundInPage);
+    return () => activeWebview.removeEventListener("found-in-page", onFoundInPage);
+  }, [activeWebview, store]);
+
   useBrowserEffects({
     ingestDownload: store.ingestDownload,
     ingestPermissionRequest: store.ingestPermissionRequest,
@@ -58,6 +82,7 @@ export function useBrowserController() {
     compactMode: store.compactMode,
     findOpen: store.findOpen,
     findQuery: store.findQuery,
+    findResult: store.findResult,
     floatingSidebarOpen: store.floatingSidebarOpen,
     floatingToolbarOpen: store.floatingToolbarOpen,
     glance: store.glance,

@@ -58,11 +58,16 @@ export function useBrowserActions({
       activeWebview?.stopFindInPage?.("clearSelection");
       store.setFindOpen(false);
       store.setFindQuery("");
+      store.setFindResult(null);
     },
     findInPage: (query: string, forward = true) => {
       store.setFindQuery(query);
       if (query.trim()) {
+        store.setFindResult(null);
         activeWebview?.findInPage?.(query, { findNext: true, forward });
+      } else {
+        store.setFindResult(null);
+        activeWebview?.stopFindInPage?.("clearSelection");
       }
     },
     moveTabToWorkspace: store.moveTabToWorkspace,

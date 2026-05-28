@@ -6,6 +6,12 @@ import type { PermissionRequestEvent } from "../types/electron";
 export type Panel = "history" | "downloads" | "settings" | "site" | null;
 export type SplitLayout = "grid" | "horizontal" | "vertical";
 
+export interface FindResultState {
+  activeMatchOrdinal: number;
+  finalUpdate: boolean;
+  matches: number;
+}
+
 export interface BrowserStore {
   addressValue: string;
   commandOpen: boolean;
@@ -13,6 +19,7 @@ export interface BrowserStore {
   compactMode: boolean;
   findOpen: boolean;
   findQuery: string;
+  findResult: FindResultState | null;
   floatingSidebarOpen: boolean;
   floatingToolbarOpen: boolean;
   panel: Panel;
@@ -74,6 +81,7 @@ export interface BrowserStore {
   setCommandQuery: (query: string) => void;
   setFindOpen: (open: boolean) => void;
   setFindQuery: (query: string) => void;
+  setFindResult: (result: FindResultState | null) => void;
   setPanel: (panel: Panel) => void;
   setSplitLayout: (layout: SplitLayout) => void;
   setSitePermission: (profileId: string, origin: string, permission: string, decision: "allow" | "block") => void;

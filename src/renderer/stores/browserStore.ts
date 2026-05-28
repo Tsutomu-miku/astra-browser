@@ -84,6 +84,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   compactMode: false,
   findOpen: false,
   findQuery: "",
+  findResult: null,
   floatingSidebarOpen: false,
   floatingToolbarOpen: false,
   panel: null,
@@ -203,6 +204,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   setCommandQuery: (commandQuery) => set({ commandQuery }),
   setFindOpen: (findOpen) => set({ findOpen }),
   setFindQuery: (findQuery) => set({ findQuery }),
+  setFindResult: (findResult) => set({ findResult }),
   setPanel: (panel) => set({ panel }),
   setSplitLayout: (splitLayout) => set({ splitLayout }),
   setSitePermission: (profileId, origin, permission, decision) =>

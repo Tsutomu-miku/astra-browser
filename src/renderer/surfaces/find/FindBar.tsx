@@ -2,9 +2,11 @@ import { KeyboardEvent } from "react";
 import { FiChevronDown, FiChevronUp, FiX } from "react-icons/fi";
 
 import type { BrowserController } from "../../app/controller/types";
+import { getFindStatusLabel } from "./findStatus";
 
 export function FindBar({ controller }: { controller: BrowserController }) {
-  const { actions, findQuery } = controller;
+  const { actions, findQuery, findResult } = controller;
+  const statusLabel = getFindStatusLabel(findQuery, findResult);
 
   function close() {
     actions.closeFind();
@@ -37,6 +39,9 @@ export function FindBar({ controller }: { controller: BrowserController }) {
       />
       <button className="icon-button" title="Previous match" type="button" onClick={() => search(findQuery, false)}><FiChevronUp /></button>
       <button className="icon-button" title="Next match" type="button" onClick={() => search(findQuery, true)}><FiChevronDown /></button>
+      <span className={`find-status ${statusLabel === "No matches" ? "is-empty" : ""}`} aria-live="polite">
+        {statusLabel}
+      </span>
       <button className="icon-button" title="Close find" type="button" onClick={close}><FiX /></button>
     </aside>
   );
