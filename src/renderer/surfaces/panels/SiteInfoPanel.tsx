@@ -1,16 +1,11 @@
-import type { ReactNode } from "react";
-import { FiShield, FiSliders, FiUser, FiX } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 
 import { getUrlIdentity } from "../../domain/browser/urlIdentity";
-import {
-  COMMON_SITE_PERMISSIONS,
-  getOriginFromUrl,
-  getPermissionLabel,
-  getPermissionRule
-} from "../../domain/permissions/sitePermissions";
-import type { SitePermissionDecision } from "../../domain/browser/types";
+import { getOriginFromUrl } from "../../domain/permissions/sitePermissions";
 import type { BrowserController } from "../../app/controller/types";
-import { getSecurityDescription, getSitePermissionSummary } from "./model/siteInfoState";
+import { getSitePermissionSummary } from "./model/siteInfoState";
+import { PermissionList } from "./site/components/PermissionList";
+import { SiteSummary } from "./site/components/SiteSummary";
 
 export function SiteInfoPanel({ controller }: { controller: BrowserController }) {
   const { actions, activeTab, activeWorkspace, setPanel, state } = controller;
@@ -24,82 +19,31 @@ export function SiteInfoPanel({ controller }: { controller: BrowserController })
         <h2>Site</h2>
         <button className="icon-button" title="Close site info" type="button" onClick={() => setPanel(null)}><FiX /></button>
       </header>
-      <section className="site-summary">
-        <span className={`site-security is-${identity.security}`}>{identity.label}</span>
-        <span className="site-origin">{origin ?? activeTab.url}</span>
-        <div className="site-summary-grid">
-          <SummaryItem icon={<FiShield />} label="Security" value={getSecurityDescription(identity.security)} />
-          <SummaryItem icon={<FiUser />} label="Profile" value={`${activeWorkspace.profileName} profile`} />
-          <SummaryItem icon={<FiSliders />} label="Permissions" value={permissionSummary.label} />
-        </div>
-        {origin && permissionSummary.totalCount > 0 && (
-          <button
-            className="site-clear-permissions"
-            type="button"
-            onClick={() => actions.clearSitePermissionsForOrigin(activeWorkspace.profileId, origin)}
-          >
-            Reset permissions for this site
-          </button>
-        )}
-      </section>
+      <SiteSummary
+        identityLabel={identity.label}
+        origin={origin}
+        permissionSummary={permissionSummary}
+        profileName={activeWorkspace.profileName}
+        security={identity.security}
+        url={activeTab.url}
+        onCopyOrigin={() => {
+          if (origin) actions.copyText(origin);
+        }}
+        onResetPermissions={() => {
+          if (origin) actions.clearSitePermissionsForOrigin(activeWorkspace.profileId, origin);
+        }}
+      />
       {origin ? (
-        <section className="permission-list" aria-label="Site permissions">
-          {COMMON_SITE_PERMISSIONS.map((permission) => (
-            <PermissionRow
-              key={permission}
-              decision={getPermissionRule(state.sitePermissions, activeWorkspace.profileId, origin, permission)?.decision}
-              label={getPermissionLabel(permission)}
-              onClear={() => actions.clearSitePermission(activeWorkspace.profileId, origin, permission)}
-              onSet={(decision) => actions.setSitePermission(activeWorkspace.profileId, origin, permission, decision)}
-            />
-          ))}
-        </section>
+        <PermissionList
+          origin={origin}
+          profileId={activeWorkspace.profileId}
+          rules={state.sitePermissions}
+          onClear={(permission) => actions.clearSitePermission(activeWorkspace.profileId, origin, permission)}
+          onSet={(permission, decision) => actions.setSitePermission(activeWorkspace.profileId, origin, permission, decision)}
+        />
       ) : (
         <p className="empty-state">Permissions are available for http and https pages.</p>
       )}
     </aside>
-  );
-}
-
-function SummaryItem({
-  icon,
-  label,
-  value
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <article className="site-summary-item">
-      <span className="site-summary-icon">{icon}</span>
-      <span className="site-summary-copy">
-        <span>{label}</span>
-        <strong>{value}</strong>
-      </span>
-    </article>
-  );
-}
-
-function PermissionRow({
-  decision,
-  label,
-  onClear,
-  onSet
-}: {
-  decision?: SitePermissionDecision;
-  label: string;
-  onClear: () => void;
-  onSet: (decision: SitePermissionDecision) => void;
-}) {
-  return (
-    <article className="permission-row">
-      <span className="permission-name">{label}</span>
-      <div className="permission-choice">
-        <button type="button" aria-pressed={!decision} onClick={onClear}>Ask</button>
-        <button type="button" aria-pressed={decision === "allow"} onClick={() => onSet("allow")}>Allow</button>
-        <button type="button" aria-pressed={decision === "block"} onClick={() => onSet("block")}>Block</button>
-      </div>
-    </article>
   );
 }

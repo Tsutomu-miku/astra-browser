@@ -223,6 +223,30 @@ h2 {
   white-space: nowrap;
 }
 
+.site-summary-actions {
+  display: flex;
+}
+
+.site-summary-action {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: var(--control);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.site-summary-action:hover,
+.site-summary-action:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+  background: var(--panel-soft);
+}
+
 .site-summary-grid {
   display: grid;
   gap: 8px;

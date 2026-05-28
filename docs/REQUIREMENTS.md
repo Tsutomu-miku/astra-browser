@@ -155,6 +155,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The address area must show loading, host, and basic security state.
 - The site information panel must expose per-origin permission controls.
 - The site information panel must summarize connection security, active Space profile scope, and custom permission decisions.
+- The site information panel must support copying the current site origin when an origin is available.
 - The site information panel must reset all custom permissions for the current origin and active Space profile.
 - Permission decisions must be scoped to the current workspace Chromium profile.
 - Chromium permission prompts must support camera, microphone, location, notifications, and similar web capabilities.
