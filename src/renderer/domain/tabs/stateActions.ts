@@ -127,6 +127,19 @@ export function removeWorkspaceFavorite(state: BrowserState, url: string): Brows
   });
 }
 
+export function reorderEssential(
+  state: BrowserState,
+  essentialId: string,
+  targetEssentialId: string,
+  placement: TabDropPlacement
+): BrowserState {
+  if (essentialId === targetEssentialId) return state;
+
+  return updateBrowserState(state, (draft) => {
+    reorderFavoriteList(draft.essentials, essentialId, targetEssentialId, placement);
+  });
+}
+
 export function reorderWorkspaceFavorite(
   state: BrowserState,
   favoriteId: string,
@@ -137,15 +150,24 @@ export function reorderWorkspaceFavorite(
 
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
-    const fromIndex = workspace.favorites.findIndex((favorite) => favorite.id === favoriteId);
-    const targetIndex = workspace.favorites.findIndex((favorite) => favorite.id === targetFavoriteId);
-    if (fromIndex < 0 || targetIndex < 0) return;
-
-    const [favorite] = workspace.favorites.splice(fromIndex, 1);
-    const droppedOnIndex = workspace.favorites.findIndex((candidate) => candidate.id === targetFavoriteId);
-    const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
-    workspace.favorites.splice(insertIndex, 0, favorite);
+    reorderFavoriteList(workspace.favorites, favoriteId, targetFavoriteId, placement);
   });
+}
+
+function reorderFavoriteList(
+  favorites: Array<{ id: string }>,
+  favoriteId: string,
+  targetFavoriteId: string,
+  placement: TabDropPlacement
+) {
+  const fromIndex = favorites.findIndex((favorite) => favorite.id === favoriteId);
+  const targetIndex = favorites.findIndex((favorite) => favorite.id === targetFavoriteId);
+  if (fromIndex < 0 || targetIndex < 0) return;
+
+  const [favorite] = favorites.splice(fromIndex, 1);
+  const droppedOnIndex = favorites.findIndex((candidate) => candidate.id === targetFavoriteId);
+  const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
+  favorites.splice(insertIndex, 0, favorite);
 }
 
 export function toggleActiveTabEssential(state: BrowserState): BrowserState {

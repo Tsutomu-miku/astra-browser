@@ -20,7 +20,7 @@ import { SidebarSections } from "./components/tabs/SidebarSections";
 import { TabContextMenu } from "./components/tabs/TabContextMenu";
 import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus";
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
-import { useSidebarFavoriteDrag } from "./hooks/useSidebarFavoriteDrag";
+import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "./model/tabContextMenuState";
 import {
   clampSidebarSearchIndex,
@@ -55,12 +55,17 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     ? searchTargets[clampSidebarSearchIndex(activeSearchIndex, searchTargets.length)]
     : undefined;
   const {
+    draggingEssentialId,
     draggingFavoriteId,
+    handleEssentialDragStart,
+    handleEssentialDrop,
+    handleEssentialReorderDrop,
     handleFavoriteDragStart,
     handleFavoriteDrop,
     handleFavoriteReorderDrop,
+    setDraggingEssentialId,
     setDraggingFavoriteId
-  } = useSidebarFavoriteDrag({ actions, activeWorkspace, draggingTabId, setDraggingTabId });
+  } = useSidebarQuickEntryDrag({ actions, activeWorkspace, draggingTabId, setDraggingTabId, state });
 
   const handleTabDrop = (event: DragEvent<HTMLElement>, targetTabId: string) => {
     event.preventDefault();
@@ -207,9 +212,13 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           activeSearchTarget={activeSearchTarget}
           activeTab={activeTab}
           closedTabs={activeWorkspace.closedTabs}
+          draggingEssentialId={draggingEssentialId}
           draggingFavoriteId={draggingFavoriteId}
           draggingTabId={draggingTabId}
           filteredItems={filteredItems}
+          onEssentialDragStart={handleEssentialDragStart}
+          onEssentialDrop={handleEssentialDrop}
+          onEssentialReorderDrop={handleEssentialReorderDrop}
           onFavoriteDragStart={handleFavoriteDragStart}
           onFavoriteDrop={handleFavoriteDrop}
           onFavoriteReorderDrop={handleFavoriteReorderDrop}
@@ -218,6 +227,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onPinDrop={handlePinDrop}
           onTabContextMenu={openTabMenu}
           onTabDrop={handleTabDrop}
+          setDraggingEssentialId={setDraggingEssentialId}
           setDraggingFavoriteId={setDraggingFavoriteId}
           setDraggingTabId={setDraggingTabId}
         />

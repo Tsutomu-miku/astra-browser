@@ -17,9 +17,13 @@ export function SidebarSections({
   activeSearchTarget,
   activeTab,
   closedTabs,
+  draggingEssentialId,
   draggingFavoriteId,
   draggingTabId,
   filteredItems,
+  onEssentialDragStart,
+  onEssentialDrop,
+  onEssentialReorderDrop,
   onFavoriteDragStart,
   onFavoriteDrop,
   onFavoriteReorderDrop,
@@ -27,6 +31,7 @@ export function SidebarSections({
   onTabContextMenu,
   onTabDrop,
   onQuickEntryContextMenu,
+  setDraggingEssentialId,
   setDraggingFavoriteId,
   setDraggingTabId,
   splitTabIds
@@ -35,9 +40,13 @@ export function SidebarSections({
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
   closedTabs: ClosedTab[];
+  draggingEssentialId: string | null;
   draggingFavoriteId: string | null;
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
+  onEssentialDragStart: (event: DragEvent<HTMLButtonElement>, essentialId: string) => void;
+  onEssentialDrop: (event: DragEvent<HTMLElement>) => void;
+  onEssentialReorderDrop: (event: DragEvent<HTMLElement>, targetEssentialId: string) => void;
   onFavoriteDragStart: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
   onFavoriteDrop: (event: DragEvent<HTMLElement>) => void;
   onFavoriteReorderDrop: (event: DragEvent<HTMLElement>, targetFavoriteId: string) => void;
@@ -45,6 +54,7 @@ export function SidebarSections({
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
@@ -68,7 +78,7 @@ export function SidebarSections({
 
   return (
     <>
-      {filteredItems.essentials.length > 0 && (
+      {(filteredItems.essentials.length > 0 || Boolean(draggingTabId)) && (
         <section className="sidebar-section">
           <SidebarSectionHeader
             count={filteredItems.essentials.length}
@@ -76,20 +86,39 @@ export function SidebarSections({
             title="Essentials"
             onToggle={() => toggleSection("essentials")}
           />
-          {!isSectionCollapsed("essentials") && <nav className="essentials" aria-label="Essentials">
+          {!isSectionCollapsed("essentials") && <nav
+            className="essentials"
+            aria-label="Essentials"
+            data-drop-target={Boolean(draggingTabId)}
+            onDragOver={(event) => {
+              if (draggingTabId) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy";
+              }
+            }}
+            onDrop={onEssentialDrop}
+          >
             {filteredItems.essentials.map((essential) => (
               <FavoriteButton
                 key={essential.id}
+                draggable
+                draggingQuickEntryId={draggingEssentialId}
                 favorite={essential}
                 id={`sidebar-search-essential-${essential.id}`}
                 isActive={isSidebarUrlActive(activeTab.url, essential.url)}
                 isSearchSelected={activeSearchTarget?.type === "essential" && activeSearchTarget.id === essential.id}
                 onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "essential")}
+                onDragStart={onEssentialDragStart}
+                onDragEnd={() => setDraggingEssentialId(null)}
+                onDrop={onEssentialReorderDrop}
                 onOpen={actions.openUrlInActiveWorkspace}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}
               />
             ))}
+            {filteredItems.essentials.length === 0 && draggingTabId && (
+              <p className="sidebar-drop-empty">Drop to essential</p>
+            )}
           </nav>}
         </section>
       )}
@@ -133,7 +162,7 @@ export function SidebarSections({
               <FavoriteButton
                 key={favorite.id}
                 draggable
-                draggingFavoriteId={draggingFavoriteId}
+                draggingQuickEntryId={draggingFavoriteId}
                 favorite={favorite}
                 id={`sidebar-search-favorite-${favorite.id}`}
                 isActive={isSidebarUrlActive(activeTab.url, favorite.url)}

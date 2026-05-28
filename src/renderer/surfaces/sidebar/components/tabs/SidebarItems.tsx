@@ -223,7 +223,7 @@ export function TabRow({
 
 export function FavoriteButton({
   draggable = false,
-  draggingFavoriteId = null,
+  draggingQuickEntryId = null,
   favorite,
   id,
   isActive = false,
@@ -237,7 +237,7 @@ export function FavoriteButton({
   onPreview
 }: {
   draggable?: boolean;
-  draggingFavoriteId?: string | null;
+  draggingQuickEntryId?: string | null;
   favorite: Favorite;
   id?: string;
   isActive?: boolean;
@@ -259,18 +259,18 @@ export function FavoriteButton({
       aria-current={isActive}
       aria-selected={isSearchSelected}
       draggable={draggable}
-      data-dragging={draggable && draggingFavoriteId === favorite.id}
-      data-drop-target={draggable && Boolean(draggingFavoriteId && draggingFavoriteId !== favorite.id)}
+      data-dragging={draggable && draggingQuickEntryId === favorite.id}
+      data-drop-target={draggable && Boolean(draggingQuickEntryId && draggingQuickEntryId !== favorite.id)}
       onDragStart={draggable && onDragStart ? (event) => onDragStart(event, favorite.id) : undefined}
       onDragEnd={draggable ? onDragEnd : undefined}
       onDragOver={(event) => {
-        if (draggingFavoriteId && draggingFavoriteId !== favorite.id) {
+        if (draggingQuickEntryId && draggingQuickEntryId !== favorite.id) {
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
         }
       }}
       onDrop={(event) => {
-        if (draggingFavoriteId && draggingFavoriteId !== favorite.id) onDrop?.(event, favorite.id);
+        if (draggingQuickEntryId && draggingQuickEntryId !== favorite.id) onDrop?.(event, favorite.id);
       }}
       onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
       onClick={(event) => {

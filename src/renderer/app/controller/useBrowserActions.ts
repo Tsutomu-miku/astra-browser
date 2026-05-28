@@ -105,6 +105,7 @@ export function useBrowserActions({
     removeWorkspaceFavorite: store.removeWorkspaceFavorite,
     removeTabFromSplit: store.removeTabFromSplit,
     replaceBrowserState: store.replaceBrowserState,
+    reorderEssential: store.reorderEssential,
     reorderWorkspace: store.reorderWorkspace,
     reorderWorkspaceFavorite: store.reorderWorkspaceFavorite,
     reorderTab: store.reorderTab,

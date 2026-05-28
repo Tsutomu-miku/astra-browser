@@ -33,6 +33,7 @@ import {
   reorderWorkspace,
   reorderTab,
   removeWorkspaceFavorite,
+  reorderEssential,
   reorderWorkspaceFavorite,
   resetActiveTabZoom,
   restoreClosedTab,
@@ -173,6 +174,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     saveBrowserState(state);
     set({ state, addressValue: getActiveUrl(state), permissionRequest: null });
   },
+  reorderEssential: (essentialId, targetEssentialId, placement) =>
+    update(set, (state) => reorderEssential(state, essentialId, targetEssentialId, placement)),
   reorderWorkspace: (workspaceId, targetWorkspaceId, placement) =>
     update(set, (state) => reorderWorkspace(state, workspaceId, targetWorkspaceId, placement)),
   reorderWorkspaceFavorite: (favoriteId, targetFavoriteId, placement) =>
