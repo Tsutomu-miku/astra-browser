@@ -1,11 +1,11 @@
 import type { DragEvent, MouseEvent } from "react";
-import { FiLoader } from "react-icons/fi";
 
-import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
+import type { BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
 import { FavoriteButton, SidebarSectionHeader, TabGroupSection, TabRow } from "./SidebarItems";
+import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
 
 export function SidebarSections({
   actions,
@@ -24,7 +24,7 @@ export function SidebarSections({
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
-  onTabDrop: (event: DragEvent<HTMLDivElement>, targetTabId: string) => void;
+  onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
 }) {
@@ -52,36 +52,16 @@ export function SidebarSections({
         </section>
       )}
 
-      {filteredItems.pinnedTabs.length > 0 && (
-        <section className="sidebar-section">
-          <SidebarSectionHeader count={filteredItems.pinnedTabs.length} title="Pinned" />
-          <nav className="pinned-tabs" aria-label="Pinned tabs">
-            {filteredItems.pinnedTabs.map((tab) => (
-              <button
-                className="pinned-tab-button"
-                key={tab.id}
-                id={`sidebar-search-tab-${tab.id}`}
-                title={tab.title || tab.url}
-                type="button"
-                aria-current={tab.id === activeTab.id}
-                aria-selected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
-                onClick={(event) => {
-                  if (event.altKey) {
-                    actions.openGlance(tab.url, tab.title);
-                  } else if (event.shiftKey) {
-                    actions.openTabInSplit(tab.id);
-                  } else {
-                    actions.selectTab(tab.id);
-                  }
-                }}
-                onContextMenu={(event) => onTabContextMenu(event, tab)}
-              >
-                {tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}
-              </button>
-            ))}
-          </nav>
-        </section>
-      )}
+      <SidebarPinnedTabs
+        actions={actions}
+        activeSearchTarget={activeSearchTarget}
+        activeTab={activeTab}
+        draggingTabId={draggingTabId}
+        pinnedTabs={filteredItems.pinnedTabs}
+        onTabContextMenu={onTabContextMenu}
+        onTabDrop={onTabDrop}
+        setDraggingTabId={setDraggingTabId}
+      />
 
       {filteredItems.favorites.length > 0 && (
         <section className="sidebar-section">

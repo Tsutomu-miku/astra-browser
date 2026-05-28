@@ -57,7 +57,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     ? searchTargets[clampSidebarSearchIndex(activeSearchIndex, searchTargets.length)]
     : undefined;
 
-  const handleTabDrop = (event: DragEvent<HTMLDivElement>, targetTabId: string) => {
+  const handleTabDrop = (event: DragEvent<HTMLElement>, targetTabId: string) => {
     event.preventDefault();
     if (!draggingTabId || draggingTabId === targetTabId) {
       setDraggingTabId(null);

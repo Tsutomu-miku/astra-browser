@@ -43,6 +43,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar tab context menus must support opening, split-view targeting, duplication, pinning, muting, and closing.
 - Sidebar tab context menus must support adding or removing a tab from Space favorites and global Essentials.
 - Sidebar tab rows must expose compact visual status badges for split-view, muted, and sleeping states.
+- Pinned tabs must participate in sidebar drag-and-drop reordering.
 - Users must be able to close other tabs, close tabs to the left, and close tabs to the right from command palette and sidebar tab context menu flows.
 - Users must be able to cycle tabs with keyboard shortcuts or the command palette.
 

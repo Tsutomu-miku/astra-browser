@@ -37,7 +37,7 @@ export function TabGroupSection({
   onAssignTab: (tabId: string, groupId: string) => void;
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
-  onDrop: (event: DragEvent<HTMLDivElement>, targetTabId: string) => void;
+  onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
@@ -128,7 +128,7 @@ export function TabRow({
   draggingTabId: string | null;
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
-  onDrop: (event: DragEvent<HTMLDivElement>, targetTabId: string) => void;
+  onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;

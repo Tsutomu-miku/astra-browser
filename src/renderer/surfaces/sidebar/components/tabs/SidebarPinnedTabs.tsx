@@ -1,0 +1,76 @@
+import type { DragEvent, MouseEvent } from "react";
+import { FiLoader } from "react-icons/fi";
+
+import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
+import type { BrowserController } from "../../../../app/controller/types";
+import type { SidebarSearchTarget } from "../../sidebarFiltering";
+import { SidebarSectionHeader } from "./SidebarItems";
+
+export function SidebarPinnedTabs({
+  actions,
+  activeSearchTarget,
+  activeTab,
+  draggingTabId,
+  onTabContextMenu,
+  onTabDrop,
+  pinnedTabs,
+  setDraggingTabId
+}: {
+  actions: BrowserController["actions"];
+  activeSearchTarget?: SidebarSearchTarget;
+  activeTab: BrowserTab;
+  draggingTabId: string | null;
+  onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
+  onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  pinnedTabs: BrowserTab[];
+  setDraggingTabId: (tabId: string | null) => void;
+}) {
+  if (pinnedTabs.length === 0) return null;
+
+  return (
+    <section className="sidebar-section">
+      <SidebarSectionHeader count={pinnedTabs.length} title="Pinned" />
+      <nav className="pinned-tabs" aria-label="Pinned tabs">
+        {pinnedTabs.map((tab) => (
+          <button
+            className="pinned-tab-button"
+            key={tab.id}
+            id={`sidebar-search-tab-${tab.id}`}
+            title={tab.title || tab.url}
+            type="button"
+            aria-current={tab.id === activeTab.id}
+            aria-selected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
+            draggable
+            data-dragging={draggingTabId === tab.id}
+            data-drop-target={Boolean(draggingTabId && draggingTabId !== tab.id)}
+            onClick={(event) => {
+              if (event.altKey) {
+                actions.openGlance(tab.url, tab.title);
+              } else if (event.shiftKey) {
+                actions.openTabInSplit(tab.id);
+              } else {
+                actions.selectTab(tab.id);
+              }
+            }}
+            onContextMenu={(event) => onTabContextMenu(event, tab)}
+            onDragStart={(event) => {
+              setDraggingTabId(tab.id);
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("text/plain", tab.id);
+            }}
+            onDragEnd={() => setDraggingTabId(null)}
+            onDragOver={(event) => {
+              if (draggingTabId && draggingTabId !== tab.id) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+              }
+            }}
+            onDrop={(event) => onTabDrop(event, tab.id)}
+          >
+            {tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}
+          </button>
+        ))}
+      </nav>
+    </section>
+  );
+}
