@@ -3,6 +3,7 @@ export const shortcutLabels = {
   devTools: "F12 / Ctrl/Cmd+Shift+I",
   downloads: "Ctrl/Cmd+Shift+Y",
   favorite: "Ctrl/Cmd+D",
+  find: "Ctrl/Cmd+F",
   focusAddress: "Ctrl/Cmd+L",
   history: "Ctrl/Cmd+H",
   mute: "Ctrl/Cmd+M",

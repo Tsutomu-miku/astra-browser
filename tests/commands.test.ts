@@ -32,6 +32,7 @@ function commandActions() {
     groupTab: vi.fn(),
     moveTabToWorkspace: vi.fn(),
     openGlance: vi.fn(),
+    openFind: vi.fn(),
     peekCompactChrome: vi.fn(),
     openTabInSplit: vi.fn(),
     openUrlInSplit: vi.fn(),
@@ -117,6 +118,8 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Pin floating sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Pin floating toolbar")).toBe(true);
     expect(commands.find((command) => command.title === "Enter compact mode")?.shortcut).toBe("Ctrl/Cmd+Alt+C");
+    expect(commands.find((command) => command.title === "Find in page")?.shortcut).toBe("Ctrl/Cmd+F");
+    expect(commands.some((command) => command.title === "Show site information")).toBe(true);
     expect(commands.some((command) => command.title === "Add essential")).toBe(true);
     expect(commands.some((command) => command.title === "Close other tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Close tabs to the left")).toBe(true);
@@ -158,5 +161,17 @@ describe("buildCommands", () => {
 
     expect(actions.copyText).toHaveBeenCalledWith("https://example.com/");
     expect(actions.copyText).toHaveBeenCalledWith("Example");
+  });
+
+  it("opens page tools from command palette actions", () => {
+    const actions = commandActions();
+    const setPanel = vi.fn();
+    const commands = buildCommands(createDefaultState(), actions, setPanel, defaultChromeState);
+
+    commands.find((command) => command.title === "Find in page")?.run();
+    commands.find((command) => command.title === "Show site information")?.run();
+
+    expect(actions.openFind).toHaveBeenCalled();
+    expect(setPanel).toHaveBeenCalledWith("site");
   });
 });

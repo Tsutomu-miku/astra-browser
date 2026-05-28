@@ -147,6 +147,17 @@ export function buildCommands(
       run: actions.focusAddressBar
     },
     {
+      title: "Find in page",
+      subtitle: "Search within the active webview",
+      shortcut: shortcutLabels.find,
+      run: actions.openFind
+    },
+    {
+      title: "Show site information",
+      subtitle: activeTab.url,
+      run: () => setPanel("site")
+    },
+    {
       title: "Next tab",
       subtitle: "Select the next tab",
       shortcut: shortcutLabels.nextTab,

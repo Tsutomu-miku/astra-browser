@@ -70,6 +70,10 @@ export function useBrowserActions({
         activeWebview?.stopFindInPage?.("clearSelection");
       }
     },
+    openFind: () => {
+      store.setFindOpen(true);
+      store.setFindResult(null);
+    },
     moveTabToWorkspace: store.moveTabToWorkspace,
     focusSplitPane: (tabId: string) => {
       store.focusSplitPane(tabId);
