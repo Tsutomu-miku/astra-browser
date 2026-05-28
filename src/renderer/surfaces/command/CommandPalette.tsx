@@ -14,7 +14,8 @@ export function CommandPalette({ controller }: { controller: BrowserController }
   const { actions, commandQuery, commands, setCommandOpen, setCommandQuery } = controller;
   const visibleCommands = getVisibleCommands(commands, commandQuery, {
     open: (query) => actions.openUrlInActiveWorkspace(query, query),
-    openInSplit: (query) => actions.openUrlInSplit(query, query)
+    openInSplit: (query) => actions.openUrlInSplit(query, query),
+    preview: (query) => actions.openGlance(query, query)
   });
   const displayedCommands = useMemo(() => visibleCommands.slice(0, 12), [visibleCommands]);
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);

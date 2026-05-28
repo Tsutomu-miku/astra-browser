@@ -10,6 +10,7 @@ describe("CommandPalette shortcut hints", () => {
     const html = renderToStaticMarkup(createElement(CommandPalette, {
       controller: {
         actions: {
+          openGlance: vi.fn(),
           openUrlInActiveWorkspace: vi.fn(),
           openUrlInSplit: vi.fn()
         },

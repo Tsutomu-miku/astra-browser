@@ -3,6 +3,7 @@ import type { Command } from "./commandTypes";
 export interface QueryCommandActions {
   open: (query: string) => void;
   openInSplit: (query: string) => void;
+  preview: (query: string) => void;
 }
 
 export function getVisibleCommands(
@@ -23,7 +24,8 @@ export function getVisibleCommands(
     title: getQueryTitle(query),
     subtitle: isLikelyUrl(query) ? "Open address" : "Search with selected engine",
     run: () => queryActions.open(query.trim()),
-    runInSplit: () => queryActions.openInSplit(query.trim())
+    runInSplit: () => queryActions.openInSplit(query.trim()),
+    runPreview: () => queryActions.preview(query.trim())
   };
 
   if (isLikelyUrl(query) || !hasStrongCommandMatch(filteredCommands, normalizedQuery)) {

@@ -19,7 +19,8 @@ const commands: Command[] = [
 describe("getVisibleCommands", () => {
   const queryActions = () => ({
     open: vi.fn(),
-    openInSplit: vi.fn()
+    openInSplit: vi.fn(),
+    preview: vi.fn()
   });
 
   it("returns normal commands for an empty query", () => {
@@ -39,11 +40,13 @@ describe("getVisibleCommands", () => {
     const visible = getVisibleCommands(commands, "example.com", actions);
     visible[0].run();
     visible[0].runInSplit?.();
+    visible[0].runPreview?.();
 
     expect(visible[0].title).toBe("Open example.com");
     expect(visible[0].subtitle).toBe("Open address");
     expect(actions.open).toHaveBeenCalledWith("example.com");
     expect(actions.openInSplit).toHaveBeenCalledWith("example.com");
+    expect(actions.preview).toHaveBeenCalledWith("example.com");
   });
 
   it("keeps fuzzy app command matches after the query command", () => {
