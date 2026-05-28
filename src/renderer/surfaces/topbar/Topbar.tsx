@@ -21,8 +21,8 @@ import { getUrlIdentity } from "../../domain/browser/urlIdentity";
 import { formatZoomPercent } from "../../domain/browser/zoom";
 import type { BrowserController } from "../../app/controller/types";
 import { useOmniboxController } from "../../app/controller/useOmniboxController";
+import { getReloadButtonState } from "../../common/navigation/reloadButtonState";
 import { getOmniboxActionHints } from "../../common/omnibox/omniboxActions";
-import { getReloadButtonState } from "./model/navigationButtonState";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWebview, activeWorkspace, actions, addressValue, compactMode, floatingToolbarOpen, setAddressValue, setPanel, state } = controller;

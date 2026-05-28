@@ -1,4 +1,4 @@
-import type { WebviewAction } from "../../../types/browser-ui";
+import type { WebviewAction } from "../../types/browser-ui";
 
 export interface ReloadButtonState {
   action: WebviewAction;

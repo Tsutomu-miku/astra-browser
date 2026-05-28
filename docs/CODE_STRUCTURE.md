@@ -12,7 +12,7 @@ src/main
 
 src/renderer/common
   Cross-surface interaction models and reusable renderer helpers
-  navigation/    Shared list navigation math
+  navigation/    Shared list navigation math and navigation control state
   omnibox/       Address/start-page suggestion and submit rules
   shortcuts/     Keyboard parsing and shared shortcut target ordering
 

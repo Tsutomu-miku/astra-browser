@@ -83,16 +83,6 @@
   background: white;
 }
 
-.glance-header .is-spinning {
-  animation: glance-spin 900ms linear infinite;
-}
-
-@keyframes glance-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 1080px) {
   .glance-backdrop {
     padding: 40px 28px;

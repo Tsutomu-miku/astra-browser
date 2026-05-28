@@ -102,7 +102,13 @@ export function GlancePanel({ controller }: { controller: BrowserController }) {
             actions.navigateActiveTab(previewUrl);
             closeGlance();
           }}
-          onRefresh={() => webviewRef.current?.reload?.()}
+          onRefresh={() => {
+            if (navigation.isLoading) {
+              webviewRef.current?.stop?.();
+            } else {
+              webviewRef.current?.reload?.();
+            }
+          }}
           onSplit={() => {
             actions.openUrlInSplit(previewUrl, title);
             closeGlance();

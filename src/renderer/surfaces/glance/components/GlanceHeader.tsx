@@ -7,6 +7,8 @@ import {
   FiX
 } from "react-icons/fi";
 
+import { getReloadButtonState } from "../../../common/navigation/reloadButtonState";
+
 export interface GlanceNavigationState {
   canGoBack: boolean;
   canGoForward: boolean;
@@ -34,6 +36,8 @@ export function GlanceHeader({
   title: string;
   url: string;
 }) {
+  const reloadButton = getReloadButtonState(navigation.isLoading);
+
   return (
     <header className="glance-header">
       <div className="glance-nav" aria-label="Glance navigation">
@@ -55,8 +59,8 @@ export function GlanceHeader({
         >
           <FiArrowRight />
         </button>
-        <button className="icon-button" title="Reload" type="button" onClick={onRefresh}>
-          <FiRefreshCw className={navigation.isLoading ? "is-spinning" : undefined} />
+        <button className="icon-button" title={reloadButton.label} type="button" aria-label={reloadButton.label} onClick={onRefresh}>
+          {navigation.isLoading ? <FiX /> : <FiRefreshCw />}
         </button>
       </div>
       <div className="glance-title-block">

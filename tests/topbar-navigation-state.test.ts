@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { getReloadButtonState } from "../src/renderer/surfaces/topbar/model/navigationButtonState";
+import { getReloadButtonState } from "../src/renderer/common/navigation/reloadButtonState";
 
-describe("topbar navigation state", () => {
+describe("reload button state", () => {
   it("uses reload while the active tab is idle", () => {
     expect(getReloadButtonState(false)).toEqual({
       action: "reload",
