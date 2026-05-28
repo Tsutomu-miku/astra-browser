@@ -79,7 +79,7 @@ export function SidebarContextMenus({
           top={quickEntryMenu.top}
           onClose={closeMenus}
           onCopyText={actions.copyText}
-          onOpen={actions.openUrlInActiveWorkspace}
+          onOpen={actions.navigateActiveTab}
           onOpenInSplit={actions.openUrlInSplit}
           onPreview={actions.openGlance}
           onRemove={quickEntryMenu.kind === "essential" ? actions.removeEssential : actions.removeWorkspaceFavorite}
