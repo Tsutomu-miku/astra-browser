@@ -1,7 +1,7 @@
 import type { CSSProperties, DragEvent, MouseEvent } from "react";
 import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icons/fi";
 
-import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../../../domain/browser";
+import { getHostInitial, type BrowserTab, type ClosedTab, type Favorite, type TabGroup } from "../../../../domain/browser";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
@@ -262,6 +262,34 @@ export function FavoriteButton({
       <span className="favorite-icon">{getHostInitial(favorite.url)}</span>
       <span className="favorite-title">{favorite.title}</span>
       <SidebarItemActionHints />
+    </button>
+  );
+}
+
+export function ClosedTabButton({
+  closedIndex,
+  tab,
+  onRestore
+}: {
+  closedIndex: number;
+  tab: ClosedTab;
+  onRestore: (closedIndex: number) => void;
+}) {
+  const title = tab.title || tab.url;
+
+  return (
+    <button
+      className="closed-tab-button"
+      type="button"
+      title={`Restore ${title}`}
+      onClick={() => onRestore(closedIndex)}
+    >
+      <span className="closed-tab-icon">{getHostInitial(tab.url)}</span>
+      <span className="closed-tab-main">
+        <span className="closed-tab-title">{title}</span>
+        <span className="closed-tab-url">{tab.url}</span>
+      </span>
+      <span className="closed-tab-action">Restore</span>
     </button>
   );
 }

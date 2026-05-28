@@ -186,6 +186,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           actions={actions}
           activeSearchTarget={activeSearchTarget}
           activeTab={activeTab}
+          closedTabs={activeWorkspace.closedTabs}
           draggingTabId={draggingTabId}
           filteredItems={filteredItems}
           splitTabIds={state.splitTabIds}

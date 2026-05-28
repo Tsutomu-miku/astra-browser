@@ -1,18 +1,21 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
 
-import type { BrowserTab, Favorite } from "../../../../domain/browser";
+import type { BrowserTab, ClosedTab, Favorite } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
-import { FavoriteButton, SidebarSectionHeader, TabGroupSection, TabRow } from "./SidebarItems";
+import { ClosedTabButton, FavoriteButton, SidebarSectionHeader, TabGroupSection, TabRow } from "./SidebarItems";
 import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
 
-type SidebarSectionId = "essentials" | "favorites" | "pinned" | "tabs";
+const SIDEBAR_RECENTLY_CLOSED_LIMIT = 4;
+
+type SidebarSectionId = "essentials" | "favorites" | "pinned" | "recentlyClosed" | "tabs";
 
 export function SidebarSections({
   actions,
   activeSearchTarget,
   activeTab,
+  closedTabs,
   draggingTabId,
   filteredItems,
   onTabContextMenu,
@@ -24,6 +27,7 @@ export function SidebarSections({
   actions: BrowserController["actions"];
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
+  closedTabs: ClosedTab[];
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
@@ -36,9 +40,11 @@ export function SidebarSections({
     essentials: false,
     favorites: false,
     pinned: false,
+    recentlyClosed: false,
     tabs: false
   });
   const tabCount = filteredItems.groupedTabs.reduce((total, entry) => total + entry.tabs.length, 0) + filteredItems.regularTabs.length;
+  const recentlyClosedTabs = closedTabs.slice(0, SIDEBAR_RECENTLY_CLOSED_LIMIT);
   const isSectionCollapsed = (sectionId: SidebarSectionId) => !filteredItems.isFiltering && collapsedSections[sectionId];
   const toggleSection = (sectionId: SidebarSectionId) => {
     setCollapsedSections((current) => ({
@@ -109,6 +115,27 @@ export function SidebarSections({
                 onOpen={actions.openUrlInActiveWorkspace}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}
+              />
+            ))}
+          </nav>}
+        </section>
+      )}
+
+      {!filteredItems.isFiltering && recentlyClosedTabs.length > 0 && (
+        <section className="sidebar-section">
+          <SidebarSectionHeader
+            count={recentlyClosedTabs.length}
+            isCollapsed={isSectionCollapsed("recentlyClosed")}
+            title="Recently Closed"
+            onToggle={() => toggleSection("recentlyClosed")}
+          />
+          {!isSectionCollapsed("recentlyClosed") && <nav className="recently-closed-tabs" aria-label="Recently closed tabs">
+            {recentlyClosedTabs.map((tab, index) => (
+              <ClosedTabButton
+                key={`${tab.url}-${tab.closedAt}`}
+                closedIndex={index}
+                tab={tab}
+                onRestore={actions.restoreClosedTab}
               />
             ))}
           </nav>}

@@ -410,7 +410,8 @@ h1 {
 }
 
 .essentials,
-.favorites {
+.favorites,
+.recently-closed-tabs {
   display: grid;
   gap: 6px;
 }
@@ -550,6 +551,7 @@ h1 {
 }
 
 .favorite-icon,
+.closed-tab-icon,
 .tab-favicon {
   display: grid;
   place-items: center;
@@ -571,6 +573,72 @@ h1 {
   width: 22px;
   height: 22px;
   font-size: 11px;
+}
+
+.closed-tab-button {
+  min-width: 0;
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 130ms ease,
+    border-color 130ms ease;
+}
+
+.closed-tab-button:hover,
+.closed-tab-button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+  background: var(--panel-soft);
+  outline: none;
+}
+
+.closed-tab-icon {
+  width: 22px;
+  height: 22px;
+  color: color-mix(in srgb, var(--muted) 84%, white);
+  font-size: 11px;
+}
+
+.closed-tab-main {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.closed-tab-title,
+.closed-tab-url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.closed-tab-title {
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.closed-tab-url {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.closed-tab-action {
+  border-radius: 999px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 780;
 }
 
 .tabs {

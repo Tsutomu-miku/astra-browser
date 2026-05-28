@@ -41,6 +41,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sleeping tabs must expose a direct wake action from the sidebar tab context menu.
 - Active tabs, split-view tabs, and pinned tabs must be protected from bulk sleep.
 - Users must be able to close tabs directly from the sidebar with recently closed recovery.
+- The sidebar must expose a compact recently closed section for restoring the active Space's latest closed tabs.
 - Users must be able to duplicate the active tab.
 - Users must be able to reorder sidebar tabs by drag and drop.
 - Users must be able to move tabs between Spaces from the command palette or by dragging onto Space buttons.
