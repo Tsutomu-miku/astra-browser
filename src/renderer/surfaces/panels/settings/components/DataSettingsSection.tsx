@@ -1,17 +1,21 @@
 import type { ChangeEvent, RefObject } from "react";
 
 import type { WorkspaceStorageUsage } from "../../../../app/controller/useProfileStorageUsage";
+import type { MemorySaverState } from "../model/memorySaverState";
+import { MemorySaverSection } from "./MemorySaverSection";
 import { ProfileStorageSection } from "./ProfileStorageSection";
 
 export function DataSettingsSection({
   dataSummary,
   importInputRef,
   importStatus,
+  memorySaver,
   onClearBrowsingData,
   onClearProfile,
   onExportBackup,
   onImportBackup,
   onRefreshProfileStorage,
+  onSleepInactiveTabs,
   profileStorageEntries,
   profileStorageError,
   profileStorageStatus
@@ -19,11 +23,13 @@ export function DataSettingsSection({
   dataSummary: string;
   importInputRef: RefObject<HTMLInputElement | null>;
   importStatus: string | null;
+  memorySaver: MemorySaverState;
   onClearBrowsingData: () => void;
   onClearProfile: (workspaceId: string) => void;
   onExportBackup: () => void;
   onImportBackup: (event: ChangeEvent<HTMLInputElement>) => void;
   onRefreshProfileStorage: () => void;
+  onSleepInactiveTabs: () => void;
   profileStorageEntries: WorkspaceStorageUsage[];
   profileStorageError: string | null;
   profileStorageStatus: string;
@@ -37,6 +43,7 @@ export function DataSettingsSection({
         </div>
         <button className="toolbar-button" type="button" onClick={onClearBrowsingData}>Clear</button>
       </section>
+      <MemorySaverSection memorySaver={memorySaver} onSleepInactiveTabs={onSleepInactiveTabs} />
       <section className="settings-section" aria-label="Browser backup">
         <div className="section-copy">
           <span>Browser backup</span>

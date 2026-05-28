@@ -77,6 +77,30 @@
   gap: 8px;
 }
 
+.memory-saver-metrics {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.memory-saver-metrics span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px;
+  background: #11151d;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.memory-saver-metrics strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
 .profile-storage-row {
   min-width: 0;
   display: grid;

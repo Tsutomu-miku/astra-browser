@@ -5,8 +5,10 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { createDefaultState } from "../src/renderer/domain/browser";
+import { getMemorySaverState } from "../src/renderer/surfaces/panels/settings/model/memorySaverState";
 import { DataSettingsSection } from "../src/renderer/surfaces/panels/settings/components/DataSettingsSection";
 import { GlobalSettingsSection } from "../src/renderer/surfaces/panels/settings/components/GlobalSettingsSection";
+import { MemorySaverSection } from "../src/renderer/surfaces/panels/settings/components/MemorySaverSection";
 import { SettingsSectionNav } from "../src/renderer/surfaces/panels/settings/components/SettingsSectionNav";
 import { SpaceSettingsSection } from "../src/renderer/surfaces/panels/settings/components/SpaceSettingsSection";
 import { WorkspaceManagementSection } from "../src/renderer/surfaces/panels/settings/components/WorkspaceManagementSection";
@@ -50,11 +52,19 @@ describe("settings panel sections", () => {
       dataSummary: "2 history · 1 downloads · 0 permissions",
       importInputRef: createRef<HTMLInputElement>(),
       importStatus: null,
+      memorySaver: {
+        mountedWebviews: 3,
+        protectedTabs: 1,
+        reclaimableTabs: 2,
+        sleepingTabs: 0,
+        summary: "2 releasable · 0 sleeping · 1 protected"
+      },
       onClearBrowsingData: vi.fn(),
       onClearProfile: vi.fn(),
       onExportBackup: vi.fn(),
       onImportBackup: vi.fn(),
       onRefreshProfileStorage: vi.fn(),
+      onSleepInactiveTabs: vi.fn(),
       profileStorageEntries: [],
       profileStorageError: null,
       profileStorageStatus: "ready"
@@ -67,14 +77,75 @@ describe("settings panel sections", () => {
     }));
 
     expect(dataHtml).toContain('aria-label="Data settings"');
+    expect(dataHtml).toContain("Memory Saver");
+    expect(dataHtml).toContain("Sleep inactive tabs");
     expect(dataHtml).toContain("Browser backup");
     expect(workspaceHtml).toContain('aria-label="Workspace management"');
     expect(workspaceHtml).toContain("2 spaces");
+  });
+
+  it("summarizes active Space memory saver state", () => {
+    const state = createDefaultState();
+    const workspace = state.workspaces[0];
+    workspace.activeTabId = workspace.tabs[0].id;
+    workspace.tabs.push({
+      ...workspace.tabs[0],
+      id: "background",
+      title: "Background",
+      url: "https://background.example",
+      isPinned: false,
+      isSleeping: false
+    }, {
+      ...workspace.tabs[0],
+      id: "pinned",
+      title: "Pinned",
+      url: "https://pinned.example",
+      isPinned: true,
+      isSleeping: false
+    }, {
+      ...workspace.tabs[0],
+      id: "sleeping",
+      title: "Sleeping",
+      url: "https://sleeping.example",
+      isPinned: false,
+      isSleeping: true
+    });
+    state.splitTabIds = ["pinned"];
+    state.splitTabId = "pinned";
+    state.splitMode = true;
+
+    expect(getMemorySaverState(workspace, state)).toEqual({
+      mountedWebviews: 3,
+      protectedTabs: 2,
+      reclaimableTabs: 1,
+      sleepingTabs: 1,
+      summary: "1 releasable · 1 sleeping · 2 protected"
+    });
+  });
+
+  it("renders memory saver controls with releasable tab counts", () => {
+    const onSleepInactiveTabs = vi.fn();
+    const html = renderToStaticMarkup(createElement(MemorySaverSection, {
+      memorySaver: {
+        mountedWebviews: 4,
+        protectedTabs: 2,
+        reclaimableTabs: 1,
+        sleepingTabs: 1,
+        summary: "1 releasable · 1 sleeping · 2 protected"
+      },
+      onSleepInactiveTabs
+    }));
+
+    expect(html).toContain('aria-label="Memory saver"');
+    expect(html).toContain("1 releasable · 1 sleeping · 2 protected");
+    expect(html).toContain("<strong>4</strong>");
+    expect(html).not.toContain("disabled");
   });
 
   it("styles the settings section navigation", () => {
     expect(panelsSettingsCss).toContain(".settings-section-nav");
     expect(panelsSettingsCss).toContain(".settings-section-tab[aria-pressed=\"true\"]");
     expect(panelsSettingsCss).toContain(".settings-pane");
+    expect(panelsSettingsCss).toContain(".memory-saver-metrics");
   });
 });

@@ -9,11 +9,13 @@ import { GlobalSettingsSection } from "./settings/components/GlobalSettingsSecti
 import { SettingsSectionNav } from "./settings/components/SettingsSectionNav";
 import { SpaceSettingsSection } from "./settings/components/SpaceSettingsSection";
 import { WorkspaceManagementSection } from "./settings/components/WorkspaceManagementSection";
+import { getMemorySaverState } from "./settings/model/memorySaverState";
 import type { SettingsSectionId } from "./settings/model/settingsSections";
 
 export function SettingsPanel({ controller }: { controller: BrowserController }) {
   const { actions, activeWorkspace, setPanel, state } = controller;
   const profileStorage = useProfileStorageUsage(state.workspaces);
+  const memorySaver = getMemorySaverState(activeWorkspace, state);
   const [activeSection, setActiveSection] = useState<SettingsSectionId>("global");
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
@@ -63,6 +65,7 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
             dataSummary={getDataSummary(state.history.length, state.downloads.length, state.sitePermissions.length)}
             importInputRef={importInputRef}
             importStatus={importStatus}
+            memorySaver={memorySaver}
             onClearBrowsingData={actions.clearBrowsingData}
             onClearProfile={(workspaceId) => {
               actions.clearWorkspaceBrowsingData(workspaceId);
@@ -71,6 +74,7 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
             onExportBackup={exportBackup}
             onImportBackup={importBackup}
             onRefreshProfileStorage={profileStorage.refresh}
+            onSleepInactiveTabs={actions.sleepInactiveTabs}
             profileStorageEntries={profileStorage.entries}
             profileStorageError={profileStorage.error}
             profileStorageStatus={profileStorage.status}
