@@ -95,6 +95,7 @@ describe("buildCommands", () => {
     expect(commands.find((command) => command.title === "Reset zoom")?.shortcut).toBe("Ctrl/Cmd+0");
     expect(commands.some((command) => command.title === "Sleep inactive tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Disable Memory Saver")).toBe(true);
+    expect(commands.some((command) => command.title === "Set Memory Saver to 15 minutes")).toBe(true);
     expect(commands.some((command) => command.title === "Sleep current tab")).toBe(true);
     expect(commands.some((command) => command.title === "Duplicate tab")).toBe(true);
     expect(commands.some((command) => command.title === "Group tab")).toBe(true);
@@ -249,6 +250,30 @@ describe("buildCommands", () => {
     expect(disabledCommands.find((command) => command.title === "Enable Memory Saver")?.subtitle).toBe("Keep background tabs awake until manually slept");
     expect(actions.updateSettings).toHaveBeenCalledWith({ memorySaverEnabled: false });
     expect(actions.updateSettings).toHaveBeenCalledWith({ memorySaverEnabled: true });
+  });
+
+  it("sets Memory Saver delay from command palette actions", () => {
+    const actions = commandActions();
+    const state = createDefaultState();
+    state.settings.memorySaverEnabled = false;
+    const commands = buildCommands(state, actions, vi.fn(), defaultChromeState);
+
+    commands.find((command) => command.title === "Set Memory Saver to 15 minutes")?.run();
+
+    expect(commands.find((command) => command.title === "Set Memory Saver to 15 minutes")?.subtitle).toBe("Also enables automatic idle tab sleeping");
+    expect(actions.updateSettings).toHaveBeenCalledWith({
+      memorySaverEnabled: true,
+      memorySaverIdleMinutes: 15
+    });
+  });
+
+  it("omits the current Memory Saver delay command", () => {
+    const state = createDefaultState();
+    state.settings.memorySaverIdleMinutes = 15;
+    const commands = buildCommands(state, commandActions(), vi.fn(), defaultChromeState);
+
+    expect(commands.some((command) => command.title === "Set Memory Saver to 15 minutes")).toBe(false);
+    expect(commands.find((command) => command.title === "Set Memory Saver to 30 minutes")?.subtitle).toBe("Auto-sleep idle tabs after 30 minutes");
   });
 
   it("hides the current tab sleep command when focus has nowhere to move", () => {

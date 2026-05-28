@@ -1,4 +1,5 @@
 import { shortcutLabels } from "../../common/shortcuts/shortcutLabels";
+import { memorySaverIdleMinuteOptions } from "../../common/memory/memorySaverSettings";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
 import type { BrowserState } from "../../domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../../domain/browser/selectors";
@@ -49,6 +50,18 @@ export function buildCommands(
   const pageCommands = buildPageCommands(state, workspace, activeTab, actions);
   const splitCommands = buildSplitCommands(state, workspace, activeTab, actions);
   const memorySaver = getMemorySaverState(workspace, state);
+  const memorySaverDelayCommands = memorySaverIdleMinuteOptions
+    .filter((minutes) => minutes !== memorySaver.sleepAfterMinutes)
+    .map((minutes) => ({
+      title: `Set Memory Saver to ${minutes} minutes`,
+      subtitle: memorySaver.sleepEnabled
+        ? `Auto-sleep idle tabs after ${minutes} minutes`
+        : "Also enables automatic idle tab sleeping",
+      run: () => actions.updateSettings({
+        memorySaverEnabled: true,
+        memorySaverIdleMinutes: minutes
+      })
+    }));
   const tabGroupCommands = workspace.tabGroups.map((group) => ({
     title: group.isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`,
     subtitle: "Tab group",
@@ -132,6 +145,7 @@ export function buildCommands(
         : "Keep background tabs awake until manually slept",
       run: () => actions.updateSettings({ memorySaverEnabled: !memorySaver.sleepEnabled })
     },
+    ...memorySaverDelayCommands,
     {
       title: sidebarCommandTitle,
       subtitle: chromeState.sidebarCollapsed || chromeState.compactMode ? "Restore sidebar controls" : "Enter focus mode",

@@ -1,3 +1,4 @@
+import { memorySaverIdleMinuteOptions } from "../../../../common/memory/memorySaverSettings";
 import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
 
 export function MemorySaverSection({
@@ -39,7 +40,7 @@ export function MemorySaverSection({
             disabled={!memorySaver.sleepEnabled}
             onChange={(event) => onUpdateMemorySaver({ memorySaverIdleMinutes: Number(event.target.value) })}
           >
-            {[5, 15, 30, 60].map((minutes) => (
+            {memorySaverIdleMinuteOptions.map((minutes) => (
               <option key={minutes} value={minutes}>{minutes} min</option>
             ))}
           </select>
