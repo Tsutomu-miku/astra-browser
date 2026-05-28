@@ -109,6 +109,7 @@ export interface BrowserStore {
   toggleTabPinned: (tabId: string) => void;
   toggleSidebar: () => void;
   toggleSplitMode: () => void;
+  unpinTabToRegularPosition: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   ungroupActiveTab: () => void;
   ungroupTab: (tabId: string) => void;
   ungroupTabGroup: (groupId: string) => void;

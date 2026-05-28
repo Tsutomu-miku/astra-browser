@@ -33,7 +33,8 @@ export {
   openUrlInSplit,
   removeTabFromSplit,
   reorderTab,
-  toggleSplitMode
+  toggleSplitMode,
+  unpinTabToRegularPosition
 } from "./layoutActions";
 export {
   selectAdjacentTab,

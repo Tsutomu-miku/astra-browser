@@ -53,7 +53,8 @@ import {
   toggleTabFavorite,
   toggleTabMuted,
   toggleTabPinned,
-  toggleSplitMode
+  toggleSplitMode,
+  unpinTabToRegularPosition
 } from "../src/renderer/domain/actions";
 import { createDefaultState, createFavorite } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
@@ -376,6 +377,21 @@ describe("domain actions", () => {
 
     expect(titles.slice(-2)).toEqual(["Third", "First"]);
     expect(getActiveTab(getActiveWorkspace(reordered)).title).toBe("Third");
+  });
+
+  it("unpins dragged pinned tabs when placing them in the regular tab list", () => {
+    const withFirst = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const withSecond = openUrlInActiveWorkspace(withFirst, "second.test", "Second");
+    const workspace = getActiveWorkspace(withSecond);
+    const first = workspace.tabs.find((tab) => tab.title === "First")!;
+    const second = workspace.tabs.find((tab) => tab.title === "Second")!;
+    const pinned = toggleTabPinned(withSecond, first.id);
+    const unpinned = unpinTabToRegularPosition(pinned, first.id, second.id, "after");
+    const tabs = getActiveWorkspace(unpinned).tabs;
+    const moved = tabs.find((tab) => tab.id === first.id)!;
+
+    expect(moved.isPinned).toBe(false);
+    expect(tabs.map((tab) => tab.title).slice(-2)).toEqual(["Second", "First"]);
   });
 
   it("reorders workspaces while preserving the active workspace", () => {

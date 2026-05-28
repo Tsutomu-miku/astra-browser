@@ -34,6 +34,32 @@ export function reorderTab(
   });
 }
 
+export function unpinTabToRegularPosition(
+  state: BrowserState,
+  tabId: string,
+  targetTabId: string,
+  placement: TabDropPlacement
+): BrowserState {
+  if (tabId === targetTabId) return state;
+
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const fromIndex = workspace.tabs.findIndex((tab) => tab.id === tabId);
+    const targetIndex = workspace.tabs.findIndex((tab) => tab.id === targetTabId);
+    if (fromIndex < 0 || targetIndex < 0) return;
+
+    const tab = workspace.tabs[fromIndex];
+    const targetTab = workspace.tabs[targetIndex];
+    if (!tab.isPinned || targetTab.isPinned) return;
+
+    const [unpinningTab] = workspace.tabs.splice(fromIndex, 1);
+    unpinningTab.isPinned = false;
+    const droppedOnIndex = workspace.tabs.findIndex((candidate) => candidate.id === targetTabId);
+    const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
+    workspace.tabs.splice(insertIndex, 0, unpinningTab);
+  });
+}
+
 export function moveTabToWorkspace(state: BrowserState, tabId: string, workspaceId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const source = draft.workspaces.find((workspace) => workspace.tabs.some((tab) => tab.id === tabId));

@@ -62,6 +62,7 @@ export {
   toggleTabMuted,
   toggleTabPinned,
   toggleSplitMode,
+  unpinTabToRegularPosition,
   ungroupActiveTab,
   ungroupTab,
   ungroupTabGroup,

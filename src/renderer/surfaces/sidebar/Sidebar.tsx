@@ -20,6 +20,7 @@ import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
+import { getSidebarTabDropIntent } from "./model/sidebarTabDropIntent";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -94,7 +95,14 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
 
     const rect = event.currentTarget.getBoundingClientRect();
     const placement = event.clientY > rect.top + rect.height / 2 ? "after" : "before";
-    actions.reorderTab(draggingTabId, targetTabId, placement);
+    const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === draggingTabId);
+    const targetTab = activeWorkspace.tabs.find((candidate) => candidate.id === targetTabId);
+    const intent = getSidebarTabDropIntent(draggedTab, targetTab);
+    if (intent.type === "unpinToRegularPosition") {
+      actions.unpinTabToRegularPosition(draggingTabId, targetTabId, placement);
+    } else {
+      actions.reorderTab(draggingTabId, targetTabId, placement);
+    }
     setDraggingTabId(null);
   };
 
