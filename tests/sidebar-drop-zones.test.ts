@@ -1,5 +1,7 @@
 import { createElement } from "react";
+import { act } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
@@ -277,6 +279,163 @@ describe("sidebar section drop zones", () => {
     expect(html).toContain('class="tab-group-header"');
     expect(html).toContain('draggable="true"');
     expect(html).toContain('data-dragging="true"');
+  });
+
+  it("temporarily reveals collapsed tab drop sections while dragging a tab", () => {
+    const activeTab = createTab("Docs", "https://docs.example");
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const essential = createFavorite("Calendar", "https://calendar.example");
+    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    const baseProps = {
+      actions: createActions(),
+      activeTab,
+      closedTabs: [],
+      draggingEssentialId: null,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      filteredItems: {
+        essentials: [essential],
+        favorites: [favorite],
+        groupedTabs: [],
+        hasMatches: true,
+        isFiltering: false,
+        pinnedTabs: [pinned],
+        regularTabs: [activeTab]
+      },
+      onEssentialDragStart: vi.fn(),
+      onEssentialDrop: vi.fn(),
+      onEssentialReorderDrop: vi.fn(),
+      onFavoriteDragStart: vi.fn(),
+      onFavoriteDrop: vi.fn(),
+      onFavoriteReorderDrop: vi.fn(),
+      onClosedTabContextMenu: vi.fn(),
+      onTabGroupContextMenu: vi.fn(),
+      onPinDrop: vi.fn(),
+      onQuickEntryContextMenu: vi.fn(),
+      onTabContextMenu: vi.fn(),
+      onTabDrop: vi.fn(),
+      setDraggingEssentialId: vi.fn(),
+      setDraggingFavoriteId: vi.fn(),
+      setDraggingGroupId: vi.fn(),
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
+    };
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        ...baseProps,
+        draggingTabId: null
+      }));
+    });
+    act(() => {
+      container.querySelectorAll(".sidebar-section-header-button").forEach((button) => {
+        button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+    });
+
+    expect(container.querySelector(".essentials")).toBeNull();
+    expect(container.querySelector(".pinned-tabs")).toBeNull();
+    expect(container.querySelector(".favorites")).toBeNull();
+    expect(container.querySelector(".tabs")).toBeNull();
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        ...baseProps,
+        draggingTabId: activeTab.id
+      }));
+    });
+
+    expect(container.querySelector(".essentials")).not.toBeNull();
+    expect(container.querySelector(".pinned-tabs")).not.toBeNull();
+    expect(container.querySelector(".favorites")).not.toBeNull();
+    expect(container.querySelector(".tabs")).not.toBeNull();
+
+    act(() => root.unmount());
+  });
+
+  it("temporarily reveals collapsed quick-entry sections while reordering them", () => {
+    const activeTab = createTab("Docs", "https://docs.example");
+    const firstEssential = createFavorite("Calendar", "https://calendar.example");
+    const secondEssential = createFavorite("Mail", "https://mail.example");
+    const firstFavorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const secondFavorite = createFavorite("Chromium", "https://www.chromium.org");
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    const baseProps = {
+      actions: createActions(),
+      activeTab,
+      closedTabs: [],
+      draggingGroupId: null,
+      draggingTabId: null,
+      filteredItems: {
+        essentials: [firstEssential, secondEssential],
+        favorites: [firstFavorite, secondFavorite],
+        groupedTabs: [],
+        hasMatches: true,
+        isFiltering: false,
+        pinnedTabs: [],
+        regularTabs: [activeTab]
+      },
+      onEssentialDragStart: vi.fn(),
+      onEssentialDrop: vi.fn(),
+      onEssentialReorderDrop: vi.fn(),
+      onFavoriteDragStart: vi.fn(),
+      onFavoriteDrop: vi.fn(),
+      onFavoriteReorderDrop: vi.fn(),
+      onClosedTabContextMenu: vi.fn(),
+      onTabGroupContextMenu: vi.fn(),
+      onPinDrop: vi.fn(),
+      onQuickEntryContextMenu: vi.fn(),
+      onTabContextMenu: vi.fn(),
+      onTabDrop: vi.fn(),
+      setDraggingEssentialId: vi.fn(),
+      setDraggingFavoriteId: vi.fn(),
+      setDraggingGroupId: vi.fn(),
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
+    };
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        ...baseProps,
+        draggingEssentialId: null,
+        draggingFavoriteId: null
+      }));
+    });
+    act(() => {
+      container.querySelectorAll(".sidebar-section-header-button").forEach((button) => {
+        button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+    });
+
+    expect(container.querySelector(".essentials")).toBeNull();
+    expect(container.querySelector(".favorites")).toBeNull();
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        ...baseProps,
+        draggingEssentialId: firstEssential.id,
+        draggingFavoriteId: null
+      }));
+    });
+
+    expect(container.querySelector(".essentials")).not.toBeNull();
+    expect(container.querySelector(".favorites")).toBeNull();
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        ...baseProps,
+        draggingEssentialId: null,
+        draggingFavoriteId: firstFavorite.id
+      }));
+    });
+
+    expect(container.querySelector(".essentials")).toBeNull();
+    expect(container.querySelector(".favorites")).not.toBeNull();
+
+    act(() => root.unmount());
   });
 });
 

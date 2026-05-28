@@ -3,6 +3,7 @@ import { useState, type DragEvent, type MouseEvent } from "react";
 import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
+import { hasSidebarSectionDragReveal, type SidebarSectionId } from "../../model/sidebarSectionState";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
 import { FavoriteButton, SidebarSectionHeader, TabRow } from "./SidebarItems";
@@ -11,8 +12,6 @@ import { TabGroupSection } from "./TabGroupSection";
 import { TabOrganizationDropTargets } from "./TabOrganizationDropTargets";
 
 const SIDEBAR_RECENTLY_CLOSED_LIMIT = 4;
-
-type SidebarSectionId = "essentials" | "favorites" | "pinned" | "recentlyClosed" | "tabs";
 
 export function SidebarSections({
   actions,
@@ -84,7 +83,15 @@ export function SidebarSections({
   const canUngroupDraggedTab = Boolean(
     draggingTabId && filteredItems.groupedTabs.some((entry) => entry.tabs.some((tab) => tab.id === draggingTabId))
   );
-  const isSectionCollapsed = (sectionId: SidebarSectionId) => !filteredItems.isFiltering && collapsedSections[sectionId];
+  const isSectionCollapsed = (sectionId: SidebarSectionId) => (
+    !filteredItems.isFiltering &&
+    !hasSidebarSectionDragReveal(sectionId, {
+      essentialId: draggingEssentialId,
+      favoriteId: draggingFavoriteId,
+      tabId: draggingTabId
+    }) &&
+    collapsedSections[sectionId]
+  );
   const toggleSection = (sectionId: SidebarSectionId) => {
     setCollapsedSections((current) => ({
       ...current,
