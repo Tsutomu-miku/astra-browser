@@ -1,6 +1,6 @@
 {
   "name": "astra-browser",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "private": true,
   "description": "A Chromium-based browser inspired by Zen and Arc.",
   "author": {
@@ -15,7 +15,7 @@
     "clean:release": "node scripts/clean-release.mjs",
     "clean:package-output": "node scripts/clean-package-output.mjs",
     "package": "pnpm clean:release && pnpm build && electron-builder --publish never && pnpm clean:package-output",
-    "package:all": "pnpm clean:release && pnpm build && electron-builder --mac --win --linux --publish never && pnpm clean:package-output",
+    "package:all": "pnpm clean:release && pnpm build && electron-builder --mac dmg zip --x64 --publish never && electron-builder --mac dmg zip --arm64 --publish never && electron-builder --win portable --x64 --arm64 --publish never && electron-builder --linux AppImage deb tar.gz --x64 --publish never && pnpm clean:package-output",
     "package:mac": "pnpm clean:release && pnpm build && electron-builder --mac dmg zip --publish never && pnpm clean:package-output",
     "package:mac:arm64": "pnpm clean:release && pnpm build && electron-builder --mac dmg zip --arm64 --publish never && pnpm clean:package-output",
     "package:mac:x64": "pnpm clean:release && pnpm build && electron-builder --mac dmg zip --x64 --publish never && pnpm clean:package-output",

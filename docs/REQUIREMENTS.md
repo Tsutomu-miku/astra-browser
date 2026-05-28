@@ -223,6 +223,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Local package scripts must clean stale release output before building new artifacts.
 - Default macOS packaging must build the current architecture, while release packaging must build x64 and arm64 artifacts as separate jobs and upload assets by architecture and package type.
 - Local all-architecture macOS packaging must run x64 and arm64 as separate Electron Builder invocations instead of producing a universal package.
+- Full local multi-platform packaging must also invoke macOS x64 and arm64 package builds separately so ZIP and DMG outputs stay architecture-specific.
 - Package scripts must remove unpacked Electron Builder staging directories from `release/` after distributable artifacts are written.
 - Application package metadata must include author email and Linux maintainer information for DEB builds.
 - GitHub Releases must publish all platform artifacts for version-matching tags.

@@ -10,6 +10,9 @@ describe("package configuration", () => {
     expect(packageJson.scripts["package:mac:x64"]).not.toContain("--arm64");
     expect(packageJson.scripts["package:mac:arm64"]).toContain("--arm64");
     expect(packageJson.scripts["package:mac:arm64"]).not.toContain("--x64");
+    expect(packageJson.scripts["package:all"]).toContain("electron-builder --mac dmg zip --x64");
+    expect(packageJson.scripts["package:all"]).toContain("electron-builder --mac dmg zip --arm64");
+    expect(packageJson.scripts["package:all"]).not.toContain("electron-builder --mac --win --linux");
     expect(packageJson.build.mac.artifactName).toContain("${arch}");
   });
 
