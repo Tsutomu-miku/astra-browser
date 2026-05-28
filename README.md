@@ -51,6 +51,7 @@ pnpm package:all
 - `pnpm check` runs source validation, TypeScript, tests, and production build.
 - `pnpm package:win`, `pnpm package:mac`, and `pnpm package:linux` create Electron Builder artifacts in `release/`.
 - `pnpm package:all` invokes all configured platform targets from one command when the host platform supports them.
+- Package scripts build artifacts only; GitHub Release publishing is handled by the release workflow after artifacts are uploaded.
 
 ## Releases
 

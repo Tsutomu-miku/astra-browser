@@ -3,17 +3,20 @@
   "version": "0.1.6",
   "private": true,
   "description": "A Chromium-based browser inspired by Zen and Arc.",
-  "author": "Tsutomu-miku",
+  "author": {
+    "name": "Tsutomu-miku",
+    "email": "Tsutomu-miku@users.noreply.github.com"
+  },
   "main": "src/main/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
     "start": "pnpm build && electron .",
     "build": "vite build",
-    "package": "pnpm build && electron-builder",
-    "package:all": "pnpm build && electron-builder --mac --win --linux",
-    "package:mac": "pnpm build && electron-builder --mac dmg zip --x64 --arm64",
-    "package:linux": "pnpm build && electron-builder --linux AppImage deb tar.gz --x64",
-    "package:win": "pnpm build && electron-builder --win portable --x64 --arm64",
+    "package": "pnpm build && electron-builder --publish never",
+    "package:all": "pnpm build && electron-builder --mac --win --linux --publish never",
+    "package:mac": "pnpm build && electron-builder --mac dmg zip --x64 --arm64 --publish never",
+    "package:linux": "pnpm build && electron-builder --linux AppImage deb tar.gz --x64 --publish never",
+    "package:win": "pnpm build && electron-builder --win portable --x64 --arm64 --publish never",
     "typecheck": "tsc --noEmit",
     "lint": "node scripts/check-sources.mjs",
     "test": "vitest run",
@@ -89,6 +92,7 @@
     },
     "linux": {
       "category": "Network",
+      "maintainer": "Tsutomu-miku <Tsutomu-miku@users.noreply.github.com>",
       "target": [
         {
           "target": "AppImage",
