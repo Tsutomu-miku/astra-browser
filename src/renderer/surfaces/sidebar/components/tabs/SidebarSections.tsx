@@ -127,7 +127,7 @@ export function SidebarSections({
                 onDragStart={onEssentialDragStart}
                 onDragEnd={() => setDraggingEssentialId(null)}
                 onDrop={onEssentialReorderDrop}
-                onOpen={actions.openUrlInActiveWorkspace}
+                onOpen={actions.navigateActiveTab}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}
               />

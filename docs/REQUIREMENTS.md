@@ -73,6 +73,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to pin tabs per Space.
 - Users must be able to drag sidebar tabs into Pinned to pin them in the active Space.
 - Users must have global Essentials visible across Spaces for core pages.
+- Clicking a global Essential from the sidebar must navigate the current tab instead of creating a new tab.
 - Users must be able to drag sidebar tabs into Essentials to save them as global quick entries.
 - Users must be able to reorder global Essentials directly from the sidebar with drag and drop.
 - Users must have Space-local favorites for quick access.
