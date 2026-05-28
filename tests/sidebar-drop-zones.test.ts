@@ -44,9 +44,48 @@ describe("sidebar section drop zones", () => {
     expect(html).toContain("Drop to pin");
     expect(html).toContain("Drop to essential");
     expect(html).toContain("Drop to favorite");
+    expect(html).toContain("New group");
     expect(html).toContain('aria-label="Pinned tabs"');
     expect(html).toContain('aria-label="Essentials"');
     expect(html).toContain('aria-label="Favorites"');
+    expect(html).toContain('aria-label="Create new group from dragged tab"');
+  });
+
+  it("does not offer a new group target for dragged pinned tabs", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const html = renderToStaticMarkup(createElement(SidebarSections, {
+      actions: createActions(),
+      activeTab: pinned,
+      closedTabs: [],
+      draggingEssentialId: null,
+      draggingFavoriteId: null,
+      draggingTabId: pinned.id,
+      filteredItems: {
+        essentials: [],
+        favorites: [],
+        groupedTabs: [],
+        hasMatches: true,
+        isFiltering: false,
+        pinnedTabs: [pinned],
+        regularTabs: []
+      },
+      onEssentialDragStart: vi.fn(),
+      onEssentialDrop: vi.fn(),
+      onEssentialReorderDrop: vi.fn(),
+      onFavoriteDragStart: vi.fn(),
+      onFavoriteDrop: vi.fn(),
+      onFavoriteReorderDrop: vi.fn(),
+      onPinDrop: vi.fn(),
+      onQuickEntryContextMenu: vi.fn(),
+      onTabContextMenu: vi.fn(),
+      onTabDrop: vi.fn(),
+      setDraggingEssentialId: vi.fn(),
+      setDraggingFavoriteId: vi.fn(),
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
+    }));
+
+    expect(html).not.toContain("New group");
   });
 
   it("marks Essentials as reorderable drop targets while dragging an Essential", () => {
@@ -136,6 +175,7 @@ function createActions() {
   return {
     assignTabToGroup: vi.fn(),
     closeTab: vi.fn(),
+    groupTab: vi.fn(),
     openGlance: vi.fn(),
     openTabInSplit: vi.fn(),
     openUrlInActiveWorkspace: vi.fn(),

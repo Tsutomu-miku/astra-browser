@@ -37,3 +37,22 @@
     inset 3px 0 0 color-mix(in srgb, var(--accent) 82%, white),
     inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
 }
+
+.tab-group-drop-target {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 42%, transparent);
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.05));
+  color: color-mix(in srgb, var(--accent) 70%, white);
+  font-size: 11px;
+  font-weight: 780;
+}
+
+.tab-group-drop-target svg {
+  width: 14px;
+  height: 14px;
+}

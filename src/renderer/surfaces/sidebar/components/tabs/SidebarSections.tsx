@@ -1,4 +1,5 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
+import { FiFolderPlus } from "react-icons/fi";
 
 import type { BrowserTab, ClosedTab, Favorite } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
@@ -68,6 +69,9 @@ export function SidebarSections({
   });
   const tabCount = filteredItems.groupedTabs.reduce((total, entry) => total + entry.tabs.length, 0) + filteredItems.regularTabs.length;
   const recentlyClosedTabs = closedTabs.slice(0, SIDEBAR_RECENTLY_CLOSED_LIMIT);
+  const canCreateGroupFromDraggedTab = Boolean(
+    draggingTabId && filteredItems.regularTabs.some((tab) => tab.id === draggingTabId)
+  );
   const isSectionCollapsed = (sectionId: SidebarSectionId) => !filteredItems.isFiltering && collapsedSections[sectionId];
   const toggleSection = (sectionId: SidebarSectionId) => {
     setCollapsedSections((current) => ({
@@ -214,6 +218,27 @@ export function SidebarSections({
           onToggle={() => toggleSection("tabs")}
         />
         {!isSectionCollapsed("tabs") && <nav className="tabs" aria-label="Tabs">
+          {!filteredItems.isFiltering && canCreateGroupFromDraggedTab && (
+            <div
+              className="tab-group-drop-target"
+              role="button"
+              aria-label="Create new group from dragged tab"
+              data-drop-target="true"
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
+                if (tabId) actions.groupTab(tabId);
+                setDraggingTabId(null);
+              }}
+            >
+              <FiFolderPlus />
+              <span>New group</span>
+            </div>
+          )}
           {filteredItems.groupedTabs.map(({ group, tabs }) => (
             <TabGroupSection
               key={group.id}
