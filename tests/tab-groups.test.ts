@@ -11,6 +11,7 @@ import {
   toggleTabGroupCollapsed,
   ungroupActiveTab,
   ungroupTab,
+  ungroupTabGroup,
   updateTabGroup
 } from "../src/renderer/domain/actions";
 import { createDefaultState, normalizeState } from "../src/renderer/domain/browser";
@@ -79,6 +80,21 @@ describe("tab groups", () => {
     const assigned = assignTabToGroup(second, secondTab.id, group.id);
 
     expect(getGroupedTabs(getActiveWorkspace(assigned))[0].tabs.map((tab) => tab.title)).toEqual(["Docs", "News"]);
+  });
+
+  it("ungroups every tab in a group without changing selection", () => {
+    const first = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
+    const group = getActiveWorkspace(first).tabGroups[0];
+    const opened = openUrlInActiveWorkspace(first, "news.example", "News");
+    const secondTab = getActiveTab(getActiveWorkspace(opened));
+    const second = assignTabToGroup(opened, secondTab.id, group.id);
+    const activeBefore = getActiveTab(getActiveWorkspace(second));
+    const ungrouped = ungroupTabGroup(second, group.id);
+    const workspace = getActiveWorkspace(ungrouped);
+
+    expect(workspace.tabGroups).toHaveLength(0);
+    expect(workspace.tabs.filter((tab) => tab.groupId === group.id)).toHaveLength(0);
+    expect(getActiveTab(workspace).id).toBe(activeBefore.id);
   });
 
   it("updates tab group name and color with normalized fallbacks", () => {

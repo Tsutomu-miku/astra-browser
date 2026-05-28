@@ -1,6 +1,6 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
 
-import type { BrowserTab, ClosedTab, Favorite } from "../../../../domain/browser";
+import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
@@ -29,6 +29,7 @@ export function SidebarSections({
   onFavoriteDrop,
   onFavoriteReorderDrop,
   onClosedTabContextMenu,
+  onTabGroupContextMenu,
   onPinDrop,
   onTabContextMenu,
   onTabDrop,
@@ -56,6 +57,7 @@ export function SidebarSections({
   onPinDrop: (event: DragEvent<HTMLElement>) => void;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
+  onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
@@ -247,6 +249,7 @@ export function SidebarSections({
               onClose={actions.closeTab}
               onContextMenu={onTabContextMenu}
               onDrop={onTabDrop}
+              onGroupContextMenu={onTabGroupContextMenu}
               onPreview={actions.openGlance}
               onSelect={actions.selectTab}
               onSplit={actions.openTabInSplit}

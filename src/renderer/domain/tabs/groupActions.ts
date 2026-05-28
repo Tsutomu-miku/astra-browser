@@ -40,6 +40,21 @@ export function ungroupTab(state: BrowserState, tabId?: string): BrowserState {
   });
 }
 
+export function ungroupTabGroup(state: BrowserState, groupId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const group = workspace.tabGroups.find((candidate) => candidate.id === groupId);
+    if (!group) return;
+
+    workspace.tabs.forEach((tab) => {
+      if (tab.groupId === group.id) {
+        tab.groupId = null;
+      }
+    });
+    pruneEmptyTabGroups(workspace);
+  });
+}
+
 export function assignTabToGroup(state: BrowserState, tabId: string, groupId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);

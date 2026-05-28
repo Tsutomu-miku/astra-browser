@@ -105,6 +105,7 @@ export interface BrowserStore {
   toggleSplitMode: () => void;
   ungroupActiveTab: () => void;
   ungroupTab: (tabId: string) => void;
+  ungroupTabGroup: (groupId: string) => void;
   zoomIn: (webview?: WebviewElement) => void;
   zoomOut: (webview?: WebviewElement) => void;
   updateSettings: (patch: Partial<BrowserState["settings"]>) => void;

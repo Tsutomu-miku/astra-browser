@@ -4,7 +4,8 @@ import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } fro
 import { ClosedTabContextMenu } from "./ClosedTabContextMenu";
 import { QuickEntryContextMenu } from "./QuickEntryContextMenu";
 import { TabContextMenu } from "./TabContextMenu";
-import type { ClosedTabMenuState, QuickEntryMenuState, TabMenuState } from "./useSidebarContextMenus";
+import { TabGroupContextMenu } from "./TabGroupContextMenu";
+import type { ClosedTabMenuState, QuickEntryMenuState, TabGroupMenuState, TabMenuState } from "./useSidebarContextMenus";
 
 export function SidebarContextMenus({
   actions,
@@ -13,6 +14,7 @@ export function SidebarContextMenus({
   closeMenus,
   quickEntryMenu,
   state,
+  tabGroupMenu,
   tabMenu
 }: {
   actions: BrowserController["actions"];
@@ -21,8 +23,16 @@ export function SidebarContextMenus({
   closeMenus: () => void;
   quickEntryMenu: QuickEntryMenuState | null;
   state: BrowserState;
+  tabGroupMenu: TabGroupMenuState | null;
   tabMenu: TabMenuState | null;
 }) {
+  const tabGroupMenuGroup = tabGroupMenu
+    ? activeWorkspace.tabGroups.find((group) => group.id === tabGroupMenu.groupId)
+    : undefined;
+  const tabGroupMenuTabCount = tabGroupMenuGroup
+    ? activeWorkspace.tabs.filter((tab) => tab.groupId === tabGroupMenuGroup.id && !tab.isPinned).length
+    : 0;
+
   return (
     <>
       {tabMenu && (
@@ -68,6 +78,18 @@ export function SidebarContextMenus({
           onOpenInSplit={actions.openUrlInSplit}
           onPreview={actions.openGlance}
           onRemove={quickEntryMenu.kind === "essential" ? actions.removeEssential : actions.removeWorkspaceFavorite}
+        />
+      )}
+      {tabGroupMenu && tabGroupMenuGroup && (
+        <TabGroupContextMenu
+          group={tabGroupMenuGroup}
+          left={tabGroupMenu.left}
+          tabCount={tabGroupMenuTabCount}
+          top={tabGroupMenu.top}
+          onClose={closeMenus}
+          onToggleCollapsed={actions.toggleTabGroupCollapsed}
+          onUngroupGroup={actions.ungroupTabGroup}
+          onUpdate={actions.updateTabGroup}
         />
       )}
       {closedTabMenu && (

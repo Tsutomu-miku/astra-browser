@@ -156,6 +156,7 @@ export function useBrowserActions({
     toggleSplitMode: store.toggleSplitMode,
     ungroupActiveTab: store.ungroupActiveTab,
     ungroupTab: store.ungroupTab,
+    ungroupTabGroup: store.ungroupTabGroup,
     updateSettings: store.updateSettings,
     updateTabGroup: store.updateTabGroup,
     updateTab: store.updateTab,

@@ -1,6 +1,6 @@
 import type { BrowserTab, TabGroup, Workspace } from "../browser/types";
 
-const GROUP_COLORS = ["#7dd3fc", "#f0abfc", "#86efac", "#fda4af", "#fde68a", "#c4b5fd"];
+export const TAB_GROUP_COLOR_SWATCHES = ["#7dd3fc", "#f0abfc", "#86efac", "#fda4af", "#fde68a", "#c4b5fd"];
 
 export function normalizeTabGroupColor(value: unknown, index = 0): string {
   return isHexColor(value) ? value : getGroupColor(index);
@@ -55,5 +55,5 @@ function createId(): string {
 }
 
 function getGroupColor(index: number): string {
-  return GROUP_COLORS[index % GROUP_COLORS.length];
+  return TAB_GROUP_COLOR_SWATCHES[index % TAB_GROUP_COLOR_SWATCHES.length];
 }

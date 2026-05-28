@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent } from "react";
 
-import type { BrowserTab, ClosedTab, Favorite } from "../../../../domain/browser";
+import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
 
 export interface TabMenuState {
   left: number;
@@ -22,13 +22,21 @@ export interface ClosedTabMenuState {
   top: number;
 }
 
+export interface TabGroupMenuState {
+  groupId: string;
+  left: number;
+  top: number;
+}
+
 export function useSidebarContextMenus() {
   const [tabMenu, setTabMenu] = useState<TabMenuState | null>(null);
   const [quickEntryMenu, setQuickEntryMenu] = useState<QuickEntryMenuState | null>(null);
   const [closedTabMenu, setClosedTabMenu] = useState<ClosedTabMenuState | null>(null);
+  const [tabGroupMenu, setTabGroupMenu] = useState<TabGroupMenuState | null>(null);
 
   function closeMenus() {
     setClosedTabMenu(null);
+    setTabGroupMenu(null);
     setTabMenu(null);
     setQuickEntryMenu(null);
   }
@@ -36,6 +44,7 @@ export function useSidebarContextMenus() {
   function openTabMenu(event: MouseEvent, tab: BrowserTab) {
     event.preventDefault();
     setClosedTabMenu(null);
+    setTabGroupMenu(null);
     setQuickEntryMenu(null);
     setTabMenu({
       left: Math.min(event.clientX, window.innerWidth - 190),
@@ -47,6 +56,7 @@ export function useSidebarContextMenus() {
   function openQuickEntryMenu(event: MouseEvent, item: Favorite, kind: QuickEntryMenuState["kind"]) {
     event.preventDefault();
     setClosedTabMenu(null);
+    setTabGroupMenu(null);
     setTabMenu(null);
     setQuickEntryMenu({
       item,
@@ -59,6 +69,7 @@ export function useSidebarContextMenus() {
   function openClosedTabMenu(event: MouseEvent, tab: ClosedTab, closedIndex: number) {
     event.preventDefault();
     setQuickEntryMenu(null);
+    setTabGroupMenu(null);
     setTabMenu(null);
     setClosedTabMenu({
       closedIndex,
@@ -68,8 +79,20 @@ export function useSidebarContextMenus() {
     });
   }
 
+  function openTabGroupMenu(event: MouseEvent, group: TabGroup) {
+    event.preventDefault();
+    setClosedTabMenu(null);
+    setQuickEntryMenu(null);
+    setTabMenu(null);
+    setTabGroupMenu({
+      groupId: group.id,
+      left: Math.min(event.clientX, window.innerWidth - 224),
+      top: Math.min(event.clientY, window.innerHeight - 260)
+    });
+  }
+
   useEffect(() => {
-    if (!closedTabMenu && !tabMenu && !quickEntryMenu) return;
+    if (!closedTabMenu && !tabGroupMenu && !tabMenu && !quickEntryMenu) return;
 
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeMenus();
@@ -85,15 +108,17 @@ export function useSidebarContextMenus() {
       window.removeEventListener("keydown", closeOnEscape);
       window.removeEventListener("scroll", closeMenus, true);
     };
-  }, [closedTabMenu, quickEntryMenu, tabMenu]);
+  }, [closedTabMenu, quickEntryMenu, tabGroupMenu, tabMenu]);
 
   return {
     closedTabMenu,
     closeMenus,
     openClosedTabMenu,
     openQuickEntryMenu,
+    openTabGroupMenu,
     openTabMenu,
     quickEntryMenu,
+    tabGroupMenu,
     tabMenu
   };
 }

@@ -19,6 +19,7 @@ export {
   toggleTabGroupCollapsed,
   ungroupActiveTab,
   ungroupTab,
+  ungroupTabGroup,
   updateTabGroup
 } from "./groupActions";
 export {

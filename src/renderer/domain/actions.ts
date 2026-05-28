@@ -60,6 +60,7 @@ export {
   toggleSplitMode,
   ungroupActiveTab,
   ungroupTab,
+  ungroupTabGroup,
   updateTabGroup,
   updateTab,
   type TabDropPlacement

@@ -34,7 +34,17 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
   const [tabQuery, setTabQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
-  const { closedTabMenu, closeMenus, openClosedTabMenu, openQuickEntryMenu, openTabMenu, quickEntryMenu, tabMenu } = useSidebarContextMenus();
+  const {
+    closedTabMenu,
+    closeMenus,
+    openClosedTabMenu,
+    openQuickEntryMenu,
+    openTabGroupMenu,
+    openTabMenu,
+    quickEntryMenu,
+    tabGroupMenu,
+    tabMenu
+  } = useSidebarContextMenus();
   const pinnedTabs = activeWorkspace.tabs.filter((tab) => tab.isPinned);
   const groupedTabs = getGroupedTabs(activeWorkspace);
   const groupedTabIds = new Set(groupedTabs.flatMap((entry) => entry.tabs.map((tab) => tab.id)));
@@ -220,6 +230,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onFavoriteDrop={handleFavoriteDrop}
           onFavoriteReorderDrop={handleFavoriteReorderDrop}
           onClosedTabContextMenu={openClosedTabMenu}
+          onTabGroupContextMenu={openTabGroupMenu}
           splitTabIds={state.splitTabIds}
           onQuickEntryContextMenu={openQuickEntryMenu}
           onPinDrop={handlePinDrop}
@@ -250,6 +261,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         closeMenus={closeMenus}
         quickEntryMenu={quickEntryMenu}
         state={state}
+        tabGroupMenu={tabGroupMenu}
         tabMenu={tabMenu}
       />
     </aside>

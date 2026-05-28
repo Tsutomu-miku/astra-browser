@@ -50,6 +50,7 @@ export function TabGroupSection({
   onAssignTab,
   onClose,
   onContextMenu,
+  onGroupContextMenu,
   onDrop,
   onPreview,
   onSelect,
@@ -67,6 +68,7 @@ export function TabGroupSection({
   onAssignTab: (tabId: string, groupId: string) => void;
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
+  onGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
@@ -85,6 +87,7 @@ export function TabGroupSection({
       <div
         className="tab-group-header"
         data-drop-target={Boolean(draggingTabId)}
+        onContextMenu={(event) => onGroupContextMenu(event, group)}
         onDragOver={(event) => {
           if (draggingTabId) event.preventDefault();
         }}
