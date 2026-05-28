@@ -11,6 +11,7 @@ interface TabContextMenuProps {
   onCloseOtherTabs: (tabId: string) => void;
   onCloseTabsToLeft: (tabId: string) => void;
   onCloseTabsToRight: (tabId: string) => void;
+  onCopyText: (text: string) => void;
   onDuplicate: (tabId: string) => void;
   onGroupTab: (tabId: string) => void;
   onMoveToGroup: (tabId: string, groupId: string) => void;
@@ -40,6 +41,7 @@ export function TabContextMenu({
   onCloseOtherTabs,
   onCloseTabsToLeft,
   onCloseTabsToRight,
+  onCopyText,
   onDuplicate,
   onGroupTab,
   onMoveToGroup,
@@ -74,6 +76,8 @@ export function TabContextMenu({
       <button type="button" role="menuitem" onClick={() => run(() => onOpenGlance(tab.url, tab.title))}>Preview in Glance</button>
       <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</button>
       <button type="button" role="menuitem" onClick={() => run(() => onDuplicate(tab.id))}>Duplicate</button>
+      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(tab.url))}>Copy URL</button>
+      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(tab.title || tab.url))}>Copy title</button>
       <button
         type="button"
         role="menuitem"

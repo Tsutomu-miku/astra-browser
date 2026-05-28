@@ -48,6 +48,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to move tabs between Spaces from the command palette or by dragging onto Space buttons.
 - Users must be able to move tabs between Spaces from the sidebar tab context menu.
 - Sidebar tab context menus must support opening, split-view targeting, duplication, pinning, muting, and closing.
+- Sidebar tab context menus must support copying the tab URL and title without selecting the tab.
 - Sidebar tab context menus must support adding or removing a tab from Space favorites and global Essentials.
 - Sidebar tab rows must expose compact visual status badges for split-view, muted, and sleeping states.
 - Pinned tab buttons must expose compact visual status badges for split-view, muted, and sleeping states.

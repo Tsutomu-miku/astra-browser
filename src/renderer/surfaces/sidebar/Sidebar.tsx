@@ -246,6 +246,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onCloseOtherTabs={actions.closeOtherTabs}
           onCloseTabsToLeft={actions.closeTabsToLeft}
           onCloseTabsToRight={actions.closeTabsToRight}
+          onCopyText={actions.copyText}
           onDuplicate={actions.duplicateTab}
           onGroupTab={actions.groupTab}
           onMoveToGroup={actions.assignTabToGroup}

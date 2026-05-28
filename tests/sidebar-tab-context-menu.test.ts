@@ -19,10 +19,34 @@ describe("sidebar tab context menu", () => {
     expect(html).toContain("Wake tab");
     expect(html).not.toContain("Sleep tab");
   });
+
+  it("copies tab page details from the sidebar context menu", () => {
+    const onClose = vi.fn();
+    const onCopyText = vi.fn();
+    const tab = createTab("Docs", "https://docs.example");
+    const menu = createElement(TabContextMenu, {
+      ...menuProps(false),
+      onClose,
+      onCopyText,
+      tab
+    });
+    menu.props.onCopyText(tab.url);
+    menu.props.onCopyText(tab.title || tab.url);
+
+    const html = renderToStaticMarkup(menu);
+    expect(html).toContain("Copy URL");
+    expect(html).toContain("Copy title");
+    expect(onCopyText).toHaveBeenCalledWith("https://docs.example");
+    expect(onCopyText).toHaveBeenCalledWith("Docs");
+  });
 });
 
 function renderMenu(isSleeping: boolean): string {
-  return renderToStaticMarkup(createElement(TabContextMenu, {
+  return renderToStaticMarkup(createElement(TabContextMenu, menuProps(isSleeping)));
+}
+
+function menuProps(isSleeping: boolean) {
+  return {
     cleanupState: {
       canCloseOtherTabs: true,
       canCloseTabsToLeft: false,
@@ -40,6 +64,7 @@ function renderMenu(isSleeping: boolean): string {
     onCloseTab: vi.fn(),
     onCloseTabsToLeft: vi.fn(),
     onCloseTabsToRight: vi.fn(),
+    onCopyText: vi.fn(),
     onDuplicate: vi.fn(),
     onGroupTab: vi.fn(),
     onMoveToGroup: vi.fn(),
@@ -60,5 +85,5 @@ function renderMenu(isSleeping: boolean): string {
     tabIsEssential: false,
     tabIsFavorite: false,
     top: 20
-  }));
+  };
 }
