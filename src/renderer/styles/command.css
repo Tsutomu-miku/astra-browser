@@ -46,7 +46,7 @@
 .command-item {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   border: 0;
@@ -56,6 +56,37 @@
   color: var(--text);
   cursor: pointer;
   text-align: left;
+}
+
+.command-kind {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  color: color-mix(in srgb, var(--muted) 80%, white);
+}
+
+.command-kind svg {
+  width: 15px;
+  height: 15px;
+}
+
+.command-kind.is-tab,
+.command-kind.is-space {
+  color: color-mix(in srgb, var(--accent) 72%, white);
+}
+
+.command-kind.is-split,
+.command-kind.is-history,
+.command-kind.is-closed {
+  color: #9fd6ff;
+}
+
+.command-kind.is-memory {
+  color: #a7e6b6;
 }
 
 .command-copy {

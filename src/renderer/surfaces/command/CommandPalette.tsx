@@ -1,14 +1,40 @@
 import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-import { FiX } from "react-icons/fi";
+import {
+  FiArchive,
+  FiBox,
+  FiClock,
+  FiCommand,
+  FiColumns,
+  FiGlobe,
+  FiLayers,
+  FiMoon,
+  FiSearch,
+  FiSidebar,
+  FiX
+} from "react-icons/fi";
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import type { BrowserController } from "../../app/controller/types";
 import { getCommandActionHints, getCommandRunner } from "./model/commandIntent";
+import { getCommandPresentation, type CommandPresentationIcon } from "./model/commandPresentation";
 import { getVisibleCommands } from "./model/commandSearch";
 import {
   clampCommandIndex,
   getNextCommandIndex
 } from "./model/commandPaletteSelection";
+
+const commandIcons: Record<CommandPresentationIcon, typeof FiCommand> = {
+  chrome: FiSidebar,
+  closed: FiArchive,
+  content: FiBox,
+  history: FiClock,
+  memory: FiMoon,
+  page: FiGlobe,
+  search: FiSearch,
+  space: FiLayers,
+  split: FiColumns,
+  tab: FiCommand
+};
 
 export function CommandPalette({ controller }: { controller: BrowserController }) {
   const { actions, commandQuery, commands, setCommandOpen, setCommandQuery } = controller;
@@ -68,6 +94,8 @@ export function CommandPalette({ controller }: { controller: BrowserController }
         <div className="command-list" role="listbox" aria-label="Commands">
           {displayedCommands.map((command, index) => {
             const actionHints = getCommandActionHints(command);
+            const presentation = getCommandPresentation(command);
+            const CommandIcon = commandIcons[presentation.icon];
             const hasCommandMeta = Boolean(command.shortcut) || actionHints.length > 0;
             return (
               <button
@@ -89,6 +117,9 @@ export function CommandPalette({ controller }: { controller: BrowserController }
                 }}
                 onMouseEnter={() => setActiveCommandIndex(index)}
               >
+                <span className={`command-kind is-${presentation.icon}`} aria-label={presentation.label}>
+                  <CommandIcon />
+                </span>
                 <span className="command-copy">
                   <span className="command-title">{command.title}</span>
                   <span className="command-subtitle">{command.subtitle}</span>
