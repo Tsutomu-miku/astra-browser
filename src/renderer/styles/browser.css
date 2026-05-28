@@ -264,7 +264,11 @@
   top: 10px;
   left: 50%;
   z-index: 6;
-  display: inline-flex;
+  max-width: min(420px, calc(100% - 24px));
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 24px;
+  grid-template-columns: 24px auto minmax(70px, 160px);
   align-items: center;
   gap: 3px;
   height: 30px;
@@ -289,19 +293,56 @@
 }
 
 .split-pane-handle,
+.split-pane-state,
+.split-pane-title,
 .split-pane-overlay button {
-  width: 24px;
   height: 24px;
-  display: grid;
-  place-items: center;
   border: 0;
   border-radius: 999px;
   color: var(--text);
 }
 
+.split-pane-handle,
+.split-pane-overlay button:not(.split-pane-title) {
+  width: 24px;
+  display: grid;
+  place-items: center;
+}
+
 .split-pane-handle {
   color: var(--muted);
   cursor: default;
+}
+
+.split-pane-state,
+.split-pane-title {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.split-pane-state {
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.065);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.split-pane-state.is-active {
+  background: color-mix(in srgb, var(--accent) 22%, rgba(255, 255, 255, 0.08));
+  color: color-mix(in srgb, var(--accent) 62%, white);
+}
+
+.split-pane-title {
+  overflow: hidden;
+  padding: 0 8px;
+  color: color-mix(in srgb, var(--text) 88%, var(--muted));
+  font-size: 11px;
+  font-weight: 760;
+  text-overflow: ellipsis;
 }
 
 .split-pane-overlay button {
@@ -317,6 +358,11 @@
   background: rgba(255, 255, 255, 0.12);
   color: white;
   outline: none;
+}
+
+.split-pane-overlay button.split-pane-title {
+  justify-content: flex-start;
+  max-width: 160px;
 }
 
 .split-pane-overlay button[aria-pressed="true"] {

@@ -5,17 +5,36 @@ import type { BrowserController } from "../../../app/controller/types";
 export function SplitPaneOverlay({
   controller,
   isPrimary,
-  tabId
+  tabId,
+  title
 }: {
   controller: BrowserController;
   isPrimary: boolean;
   tabId: string;
+  title: string;
 }) {
   const { actions, splitLayout } = controller;
+  const paneTitle = title.trim() || "Untitled pane";
 
   return (
-    <div className="split-pane-overlay" aria-label="Split pane controls">
+    <div className="split-pane-overlay" aria-label={`${paneTitle} split pane controls`}>
       <span className="split-pane-handle" title="Split pane"><FiMoreHorizontal /></span>
+      <span className={`split-pane-state ${isPrimary ? "is-active" : ""}`}>
+        {isPrimary ? "Active" : "Split"}
+      </span>
+      {isPrimary ? (
+        <span className="split-pane-title" title={paneTitle}>{paneTitle}</span>
+      ) : (
+        <button
+          className="split-pane-title"
+          type="button"
+          title={`Make ${paneTitle} active`}
+          aria-label={`Make ${paneTitle} active pane`}
+          onClick={() => actions.focusSplitPane(tabId)}
+        >
+          {paneTitle}
+        </button>
+      )}
       {!isPrimary && (
         <button
           type="button"

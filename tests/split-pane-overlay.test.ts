@@ -11,13 +11,31 @@ describe("split pane overlay", () => {
       createElement(SplitPaneOverlay, {
         controller: createController("grid"),
         isPrimary: true,
-        tabId: "tab-1"
+        tabId: "tab-1",
+        title: "Docs"
       })
     );
 
+    expect(markup).toContain("Docs");
+    expect(markup).toContain("Active");
     expect(layoutButton(markup, "Horizontal split layout")).toContain('aria-pressed="false"');
     expect(layoutButton(markup, "Vertical split layout")).toContain('aria-pressed="false"');
     expect(layoutButton(markup, "Grid split layout")).toContain('aria-pressed="true"');
+  });
+
+  it("makes secondary pane titles directly activatable", () => {
+    const markup = renderToStaticMarkup(
+      createElement(SplitPaneOverlay, {
+        controller: createController("horizontal"),
+        isPrimary: false,
+        tabId: "tab-2",
+        title: "Reference"
+      })
+    );
+
+    expect(markup).toContain("Split");
+    expect(markup).toContain('aria-label="Make Reference active pane"');
+    expect(markup).toContain('class="split-pane-title"');
   });
 });
 

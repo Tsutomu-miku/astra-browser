@@ -133,6 +133,7 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
                   <SplitPaneOverlay
                     isPrimary={tab.id === activeTab.id}
                     tabId={tab.id}
+                    title={tab.title || tab.url}
                     controller={controller}
                   />
                 )}
