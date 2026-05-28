@@ -255,10 +255,6 @@ h1 {
 .sidebar-section-header {
   min-width: 0;
   height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   padding: 0 3px;
   color: var(--muted);
   font-size: 10px;
@@ -267,14 +263,55 @@ h1 {
   letter-spacing: 0;
 }
 
-.sidebar-section-header span:first-child {
+.sidebar-section-header-button,
+.sidebar-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sidebar-section-header-button {
+  width: 100%;
+  min-width: 0;
+  height: 18px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+
+.sidebar-section-header-button:hover,
+.sidebar-section-header-button:focus-visible {
+  color: var(--text);
+}
+
+.sidebar-section-title {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sidebar-section-title svg {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+}
+
+.sidebar-section-title span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sidebar-section-header span:last-child {
+.sidebar-section-count {
   min-width: 16px;
   height: 16px;
   display: grid;

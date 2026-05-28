@@ -14,8 +14,10 @@ export function SidebarPinnedTabs({
   activeSearchTarget,
   activeTab,
   draggingTabId,
+  isCollapsed = false,
   onTabContextMenu,
   onTabDrop,
+  onToggle,
   pinnedTabs,
   setDraggingTabId,
   splitTabIds
@@ -24,8 +26,10 @@ export function SidebarPinnedTabs({
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
   draggingTabId: string | null;
+  isCollapsed?: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  onToggle?: () => void;
   pinnedTabs: BrowserTab[];
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
@@ -34,8 +38,8 @@ export function SidebarPinnedTabs({
 
   return (
     <section className="sidebar-section">
-      <SidebarSectionHeader count={pinnedTabs.length} title="Pinned" />
-      <nav className="pinned-tabs" aria-label="Pinned tabs">
+      <SidebarSectionHeader count={pinnedTabs.length} isCollapsed={isCollapsed} title="Pinned" onToggle={onToggle} />
+      {!isCollapsed && <nav className="pinned-tabs" aria-label="Pinned tabs">
         {pinnedTabs.map((tab) => {
           const statusBadges = getTabStatusBadges(tab, splitTabIds);
 
@@ -81,7 +85,7 @@ export function SidebarPinnedTabs({
             </button>
           );
         })}
-      </nav>
+      </nav>}
     </section>
   );
 }

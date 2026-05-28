@@ -1,16 +1,44 @@
 import type { CSSProperties, DragEvent, MouseEvent } from "react";
-import { FiLoader, FiMoon, FiX } from "react-icons/fi";
+import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icons/fi";
 
 import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../../../domain/browser";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
 
-export function SidebarSectionHeader({ count, title }: { count: number; title: string }) {
+export function SidebarSectionHeader({
+  count,
+  isCollapsed = false,
+  onToggle,
+  title
+}: {
+  count: number;
+  isCollapsed?: boolean;
+  onToggle?: () => void;
+  title: string;
+}) {
+  const content = (
+    <>
+      <span className="sidebar-section-title">
+        {onToggle && (isCollapsed ? <FiChevronRight /> : <FiChevronDown />)}
+        <span>{title}</span>
+      </span>
+      <span className="sidebar-section-count">{count}</span>
+    </>
+  );
+
   return (
     <header className="sidebar-section-header">
-      <span>{title}</span>
-      <span>{count}</span>
+      {onToggle ? (
+        <button
+          className="sidebar-section-header-button"
+          type="button"
+          aria-expanded={!isCollapsed}
+          onClick={onToggle}
+        >
+          {content}
+        </button>
+      ) : content}
     </header>
   );
 }

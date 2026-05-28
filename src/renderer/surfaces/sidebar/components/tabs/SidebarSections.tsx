@@ -1,4 +1,4 @@
-import type { DragEvent, MouseEvent } from "react";
+import { useState, type DragEvent, type MouseEvent } from "react";
 
 import type { BrowserTab, Favorite } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
@@ -6,6 +6,8 @@ import { isSidebarUrlActive } from "../../model/sidebarItemState";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
 import { FavoriteButton, SidebarSectionHeader, TabGroupSection, TabRow } from "./SidebarItems";
 import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
+
+type SidebarSectionId = "essentials" | "favorites" | "pinned" | "tabs";
 
 export function SidebarSections({
   actions,
@@ -30,14 +32,32 @@ export function SidebarSections({
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
 }) {
+  const [collapsedSections, setCollapsedSections] = useState<Record<SidebarSectionId, boolean>>({
+    essentials: false,
+    favorites: false,
+    pinned: false,
+    tabs: false
+  });
   const tabCount = filteredItems.groupedTabs.reduce((total, entry) => total + entry.tabs.length, 0) + filteredItems.regularTabs.length;
+  const isSectionCollapsed = (sectionId: SidebarSectionId) => !filteredItems.isFiltering && collapsedSections[sectionId];
+  const toggleSection = (sectionId: SidebarSectionId) => {
+    setCollapsedSections((current) => ({
+      ...current,
+      [sectionId]: !current[sectionId]
+    }));
+  };
 
   return (
     <>
       {filteredItems.essentials.length > 0 && (
         <section className="sidebar-section">
-          <SidebarSectionHeader count={filteredItems.essentials.length} title="Essentials" />
-          <nav className="essentials" aria-label="Essentials">
+          <SidebarSectionHeader
+            count={filteredItems.essentials.length}
+            isCollapsed={isSectionCollapsed("essentials")}
+            title="Essentials"
+            onToggle={() => toggleSection("essentials")}
+          />
+          {!isSectionCollapsed("essentials") && <nav className="essentials" aria-label="Essentials">
             {filteredItems.essentials.map((essential) => (
               <FavoriteButton
                 key={essential.id}
@@ -51,7 +71,7 @@ export function SidebarSections({
                 onPreview={actions.openGlance}
               />
             ))}
-          </nav>
+          </nav>}
         </section>
       )}
 
@@ -60,17 +80,24 @@ export function SidebarSections({
         activeSearchTarget={activeSearchTarget}
         activeTab={activeTab}
         draggingTabId={draggingTabId}
+        isCollapsed={isSectionCollapsed("pinned")}
         pinnedTabs={filteredItems.pinnedTabs}
         splitTabIds={splitTabIds}
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}
+        onToggle={() => toggleSection("pinned")}
         setDraggingTabId={setDraggingTabId}
       />
 
       {filteredItems.favorites.length > 0 && (
         <section className="sidebar-section">
-          <SidebarSectionHeader count={filteredItems.favorites.length} title="Favorites" />
-          <nav className="favorites" aria-label="Favorites">
+          <SidebarSectionHeader
+            count={filteredItems.favorites.length}
+            isCollapsed={isSectionCollapsed("favorites")}
+            title="Favorites"
+            onToggle={() => toggleSection("favorites")}
+          />
+          {!isSectionCollapsed("favorites") && <nav className="favorites" aria-label="Favorites">
             {filteredItems.favorites.map((favorite) => (
               <FavoriteButton
                 key={favorite.id}
@@ -84,13 +111,18 @@ export function SidebarSections({
                 onPreview={actions.openGlance}
               />
             ))}
-          </nav>
+          </nav>}
         </section>
       )}
 
       <section className="sidebar-section tabs-section">
-        <SidebarSectionHeader count={tabCount} title="Tabs" />
-        <nav className="tabs" aria-label="Tabs">
+        <SidebarSectionHeader
+          count={tabCount}
+          isCollapsed={isSectionCollapsed("tabs")}
+          title="Tabs"
+          onToggle={() => toggleSection("tabs")}
+        />
+        {!isSectionCollapsed("tabs") && <nav className="tabs" aria-label="Tabs">
           {filteredItems.groupedTabs.map(({ group, tabs }) => (
             <TabGroupSection
               key={group.id}
@@ -132,7 +164,7 @@ export function SidebarSections({
           {filteredItems.isFiltering && !filteredItems.hasMatches && (
             <p className="sidebar-empty">No matching tabs</p>
           )}
-        </nav>
+        </nav>}
       </section>
     </>
   );

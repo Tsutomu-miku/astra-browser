@@ -94,6 +94,26 @@ describe("sidebar pinned tabs", () => {
     expect(html).toContain('class="pinned-tab-status-badge is-muted"');
   });
 
+  it("collapses pinned tab contents behind the section header", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const html = renderToStaticMarkup(createElement(SidebarPinnedTabs, {
+      actions: createActions(),
+      activeTab: pinned,
+      draggingTabId: null,
+      isCollapsed: true,
+      onTabContextMenu: vi.fn(),
+      onTabDrop: vi.fn(),
+      onToggle: vi.fn(),
+      pinnedTabs: [pinned],
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
+    }));
+
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("Pinned");
+    expect(html).not.toContain('aria-label="Pinned tabs"');
+  });
+
   it("styles pinned tab drag and drop states", () => {
     expect(sidebarCss).toContain('.pinned-tab-button[data-dragging="true"]');
     expect(sidebarCss).toContain('.pinned-tab-button[data-drop-target="true"]');
@@ -104,6 +124,12 @@ describe("sidebar pinned tabs", () => {
     expect(sidebarCss).toContain(".pinned-tab-status-badges");
     expect(sidebarCss).toContain(".pinned-tab-status-badge.is-split");
     expect(sidebarCss).toContain(".pinned-tab-status-badge.is-muted");
+  });
+
+  it("styles collapsible section headers", () => {
+    expect(sidebarCss).toContain(".sidebar-section-header-button");
+    expect(sidebarCss).toContain(".sidebar-section-header-button:focus-visible");
+    expect(sidebarCss).toContain(".sidebar-section-title svg");
   });
 
   it("styles pinned tab action hints as hover and focus floaters", () => {

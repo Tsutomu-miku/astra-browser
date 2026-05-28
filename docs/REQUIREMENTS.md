@@ -63,6 +63,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must have Space-local favorites for quick access.
 - Sidebar Essentials and favorites must support context menus for opening, Glance preview, split opening, and removing the entry.
 - Sidebar Essentials, pinned tabs, favorites, and tabs must be visually separated into scannable sections.
+- Sidebar sections must be individually collapsible, while filtering must reveal matching contents even when a section was collapsed.
 - Sidebar quick entries must show active-page state when the current tab matches an Essential or favorite.
 - Users must be able to toggle the current page as a favorite with `Ctrl+D`, `Cmd+D`, `Ctrl+Shift+D`, or `Cmd+Shift+D`.
 - Sidebar search must filter global Essentials plus tabs, tab groups, pinned tabs, and favorites inside the active Space.
