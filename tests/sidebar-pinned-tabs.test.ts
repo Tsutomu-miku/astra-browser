@@ -9,6 +9,7 @@ import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarPinnedTabs } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs";
 
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
+const actionHintCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-action-hints.css"), "utf8");
 
 function createActions() {
   return {
@@ -52,9 +53,34 @@ describe("sidebar pinned tabs", () => {
     expect(html).toContain('data-dragging="true"');
   });
 
+  it("renders preview and split hints for pinned tab buttons", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const html = renderToStaticMarkup(createElement(SidebarPinnedTabs, {
+      actions: createActions(),
+      activeTab: pinned,
+      draggingTabId: null,
+      onTabContextMenu: vi.fn(),
+      onTabDrop: vi.fn(),
+      pinnedTabs: [pinned],
+      setDraggingTabId: vi.fn()
+    }));
+
+    expect(html).toContain('class="sidebar-item-action-hints"');
+    expect(html).toContain("Alt");
+    expect(html).toContain("Preview");
+    expect(html).toContain("Shift");
+    expect(html).toContain("Split");
+  });
+
   it("styles pinned tab drag and drop states", () => {
     expect(sidebarCss).toContain('.pinned-tab-button[data-dragging="true"]');
     expect(sidebarCss).toContain('.pinned-tab-button[data-drop-target="true"]');
     expect(sidebarCss).toContain("cursor: grabbing");
+  });
+
+  it("styles pinned tab action hints as hover and focus floaters", () => {
+    expect(actionHintCss).toContain(".pinned-tab-button .sidebar-item-action-hints");
+    expect(actionHintCss).toContain(".pinned-tab-button:hover .sidebar-item-action-hints");
+    expect(actionHintCss).toContain(".pinned-tab-button:focus-visible .sidebar-item-action-hints");
   });
 });

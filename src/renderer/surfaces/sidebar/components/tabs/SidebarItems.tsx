@@ -3,6 +3,7 @@ import { FiColumns, FiLoader, FiMoon, FiVolumeX, FiX } from "react-icons/fi";
 
 import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../../../domain/browser";
 import { getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
+import { SidebarItemActionHints } from "./SidebarItemActionHints";
 
 export function SidebarSectionHeader({ count, title }: { count: number; title: string }) {
   return (
@@ -245,20 +246,5 @@ export function FavoriteButton({
       <span className="favorite-title">{favorite.title}</span>
       <SidebarItemActionHints />
     </button>
-  );
-}
-
-function SidebarItemActionHints() {
-  return (
-    <span className="sidebar-item-action-hints" aria-label="Alt Preview, Shift Split">
-      <span className="sidebar-item-action-hint is-preview">
-        <kbd>Alt</kbd>
-        <span>Preview</span>
-      </span>
-      <span className="sidebar-item-action-hint is-split">
-        <kbd>Shift</kbd>
-        <span>Split</span>
-      </span>
-    </span>
   );
 }

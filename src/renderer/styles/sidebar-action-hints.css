@@ -23,6 +23,25 @@
   transform: translate(0, -50%);
 }
 
+.pinned-tab-button .sidebar-item-action-hints {
+  top: calc(100% + 6px);
+  right: 50%;
+  z-index: 5;
+  padding: 5px 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 8px;
+  background: rgba(11, 12, 15, 0.94);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+  transform: translate(50%, -2px);
+  pointer-events: none;
+}
+
+.pinned-tab-button:hover .sidebar-item-action-hints,
+.pinned-tab-button:focus-visible .sidebar-item-action-hints {
+  opacity: 1;
+  transform: translate(50%, 0);
+}
+
 .sidebar-item-action-hint {
   min-width: 0;
   display: inline-flex;

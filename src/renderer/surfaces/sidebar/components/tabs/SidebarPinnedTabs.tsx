@@ -4,6 +4,7 @@ import { FiLoader } from "react-icons/fi";
 import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import type { SidebarSearchTarget } from "../../sidebarFiltering";
+import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarSectionHeader } from "./SidebarItems";
 
 export function SidebarPinnedTabs({
@@ -67,7 +68,8 @@ export function SidebarPinnedTabs({
             }}
             onDrop={(event) => onTabDrop(event, tab.id)}
           >
-            {tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}
+            <span className="pinned-tab-icon">{tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}</span>
+            <SidebarItemActionHints />
           </button>
         ))}
       </nav>
