@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
-import { FiChevronLeft, FiChevronRight, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiTrash2, FiUnlock } from "react-icons/fi";
 
 import type { Workspace } from "../../../../domain/browser";
 import {
@@ -13,8 +13,10 @@ import {
 
 export function WorkspaceStrip({
   activeWorkspaceId,
+  compactMode,
   draggingTabId,
   draggingWorkspaceId,
+  floatingSidebarOpen,
   onDragEnd,
   onDragOver,
   onDragStart,
@@ -28,8 +30,10 @@ export function WorkspaceStrip({
   workspaces
 }: {
   activeWorkspaceId: string;
+  compactMode: boolean;
   draggingTabId: string | null;
   draggingWorkspaceId: string | null;
+  floatingSidebarOpen: boolean;
   onDragEnd: () => void;
   onDragOver: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
   onDragStart: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
@@ -44,6 +48,9 @@ export function WorkspaceStrip({
 }) {
   const [menu, setMenu] = useState<{ left: number; top: number; workspaceId: string } | null>(null);
   const menuWorkspace = menu ? workspaces.find((workspace) => workspace.id === menu.workspaceId) : undefined;
+  const sidebarToggleLabel = compactMode
+    ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
+    : sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar";
 
   useEffect(() => {
     if (!menu) return;
@@ -124,11 +131,13 @@ export function WorkspaceStrip({
       </button>
       <button
         className="workspace-button sidebar-toggle"
-        title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        title={sidebarToggleLabel}
         type="button"
+        aria-label={sidebarToggleLabel}
+        aria-pressed={compactMode ? floatingSidebarOpen : undefined}
         onClick={onToggleSidebar}
       >
-        {sidebarCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
+        {compactMode ? floatingSidebarOpen ? <FiLock /> : <FiUnlock /> : sidebarCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
       </button>
       {menu && menuWorkspace && (
         <WorkspaceContextMenu

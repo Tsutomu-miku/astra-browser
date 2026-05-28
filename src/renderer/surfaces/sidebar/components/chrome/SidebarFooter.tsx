@@ -3,10 +3,12 @@ import {
   FiColumns,
   FiDownload,
   FiGrid,
+  FiLock,
   FiMinimize2,
   FiSettings,
   FiSidebar,
-  FiSquare
+  FiSquare,
+  FiUnlock
 } from "react-icons/fi";
 
 import type { BrowserController } from "../../../../app/controller/types";
@@ -14,16 +16,22 @@ import type { BrowserController } from "../../../../app/controller/types";
 export function SidebarFooter({
   actions,
   compactMode,
+  floatingSidebarOpen,
   setPanel,
   splitLayout,
   splitMode
 }: {
   actions: BrowserController["actions"];
   compactMode: boolean;
+  floatingSidebarOpen: boolean;
   setPanel: BrowserController["setPanel"];
   splitLayout: BrowserController["splitLayout"];
   splitMode: boolean;
 }) {
+  const sidebarToggleLabel = compactMode
+    ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
+    : "Focus sidebar";
+
   return (
     <footer className="sidebar-footer">
       {splitMode && (
@@ -54,7 +62,16 @@ export function SidebarFooter({
           </button>
         </div>
       )}
-      <button className="icon-button" title="Focus sidebar" type="button" onClick={actions.toggleSidebar}><FiSidebar /></button>
+      <button
+        className="icon-button"
+        title={sidebarToggleLabel}
+        type="button"
+        aria-label={sidebarToggleLabel}
+        aria-pressed={compactMode ? floatingSidebarOpen : undefined}
+        onClick={actions.toggleSidebar}
+      >
+        {compactMode ? floatingSidebarOpen ? <FiLock /> : <FiUnlock /> : <FiSidebar />}
+      </button>
       <button className="icon-button" title="Compact mode" type="button" aria-pressed={compactMode} onClick={actions.toggleCompactMode}><FiMinimize2 /></button>
       <button className="icon-button" title="Split view" type="button" aria-pressed={splitMode} onClick={actions.toggleSplitMode}><FiSquare /></button>
       <button className="icon-button" title="History" type="button" onClick={() => setPanel("history")}><FiClock /></button>

@@ -181,8 +181,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       <section className="traffic-space" aria-hidden="true" />
       <WorkspaceStrip
         activeWorkspaceId={activeWorkspace.id}
+        compactMode={compactMode}
         draggingTabId={draggingTabId}
         draggingWorkspaceId={draggingWorkspaceId}
+        floatingSidebarOpen={floatingSidebarOpen}
         sidebarCollapsed={sidebarCollapsed}
         workspaces={state.workspaces}
         onDragEnd={() => setDraggingWorkspaceId(null)}
@@ -225,7 +227,14 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         />
       </section>
 
-      <SidebarFooter actions={actions} compactMode={compactMode} setPanel={setPanel} splitLayout={controller.splitLayout} splitMode={state.splitMode} />
+      <SidebarFooter
+        actions={actions}
+        compactMode={compactMode}
+        floatingSidebarOpen={floatingSidebarOpen}
+        setPanel={setPanel}
+        splitLayout={controller.splitLayout}
+        splitMode={state.splitMode}
+      />
       {tabMenu && (
         <TabContextMenu
           left={tabMenu.left}

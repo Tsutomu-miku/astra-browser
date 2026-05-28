@@ -97,6 +97,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Compact mode must briefly peek browser chrome after tab changes.
 - Compact mode must expose a top-edge peek target for temporarily showing the toolbar.
 - Compact mode must expose a visible control for pinning or unpinning the floating toolbar.
+- Compact mode must expose a visible control for pinning or unpinning the floating sidebar.
 - Compact mode must support persistent floating sidebar and floating toolbar shortcuts.
 - Compact mode must leave content as the primary visual surface.
 
