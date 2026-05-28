@@ -97,6 +97,8 @@ describe("sidebar section drop zones", () => {
     }));
 
     expect(html).not.toContain("New group");
+    expect(html).toContain('class="tabs"');
+    expect(html).toContain('data-drop-target="true"');
   });
 
   it("offers an Ungroup target for dragged grouped tabs", () => {

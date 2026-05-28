@@ -20,7 +20,7 @@ import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
-import { getSidebarTabDropIntent } from "./model/sidebarTabDropIntent";
+import { getSidebarTabDropIntent, getSidebarTabsAreaDropIntent } from "./model/sidebarTabDropIntent";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -88,6 +88,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
 
   const handleTabDrop = (event: DragEvent<HTMLElement>, targetTabId: string) => {
     event.preventDefault();
+    event.stopPropagation();
     if (!draggingTabId || draggingTabId === targetTabId) {
       setDraggingTabId(null);
       return;
@@ -103,6 +104,17 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     } else {
       actions.reorderTab(draggingTabId, targetTabId, placement);
     }
+    setDraggingTabId(null);
+  };
+
+  const handleTabsDrop = (event: DragEvent<HTMLElement>) => {
+    const tabId = getDroppedTabId(event);
+    const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
+    const intent = getSidebarTabsAreaDropIntent(draggedTab);
+    if (intent.type !== "unpinToRegularEnd") return;
+
+    event.preventDefault();
+    actions.unpinTabToRegularEnd(tabId);
     setDraggingTabId(null);
   };
 
@@ -226,6 +238,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onPinDrop={handlePinDrop}
           onTabContextMenu={openTabMenu}
           onTabDrop={handleTabDrop}
+          onTabsDrop={handleTabsDrop}
           setDraggingEssentialId={setDraggingEssentialId}
           setDraggingFavoriteId={setDraggingFavoriteId}
           setDraggingGroupId={setDraggingGroupId}

@@ -6,10 +6,9 @@ import { isSidebarUrlActive } from "../../model/sidebarItemState";
 import { hasSidebarSectionDragReveal, type SidebarSectionId } from "../../model/sidebarSectionState";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
-import { FavoriteButton, SidebarSectionHeader, TabRow } from "./SidebarItems";
+import { FavoriteButton, SidebarSectionHeader } from "./SidebarItems";
 import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
-import { TabGroupSection } from "./TabGroupSection";
-import { TabOrganizationDropTargets } from "./TabOrganizationDropTargets";
+import { SidebarTabsSection } from "./SidebarTabsSection";
 
 const SIDEBAR_RECENTLY_CLOSED_LIMIT = 4;
 
@@ -34,6 +33,7 @@ export function SidebarSections({
   onPinDrop,
   onTabContextMenu,
   onTabDrop,
+  onTabsDrop = () => undefined,
   onQuickEntryContextMenu,
   setDraggingEssentialId,
   setDraggingFavoriteId,
@@ -62,6 +62,7 @@ export function SidebarSections({
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  onTabsDrop?: (event: DragEvent<HTMLElement>) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
   setDraggingGroupId: (groupId: string | null) => void;
@@ -77,11 +78,8 @@ export function SidebarSections({
   });
   const tabCount = filteredItems.groupedTabs.reduce((total, entry) => total + entry.tabs.length, 0) + filteredItems.regularTabs.length;
   const recentlyClosedTabs = closedTabs.slice(0, SIDEBAR_RECENTLY_CLOSED_LIMIT);
-  const canCreateGroupFromDraggedTab = Boolean(
-    draggingTabId && filteredItems.regularTabs.some((tab) => tab.id === draggingTabId)
-  );
-  const canUngroupDraggedTab = Boolean(
-    draggingTabId && filteredItems.groupedTabs.some((entry) => entry.tabs.some((tab) => tab.id === draggingTabId))
+  const canUnpinDraggedTabToTabs = Boolean(
+    draggingTabId && filteredItems.pinnedTabs.some((tab) => tab.id === draggingTabId)
   );
   const isSectionCollapsed = (sectionId: SidebarSectionId) => (
     !filteredItems.isFiltering &&
@@ -230,70 +228,25 @@ export function SidebarSections({
         </section>
       )}
 
-      <section className="sidebar-section tabs-section">
-        <SidebarSectionHeader
-          count={tabCount}
-          isCollapsed={isSectionCollapsed("tabs")}
-          title="Tabs"
-          onToggle={() => toggleSection("tabs")}
-        />
-        {!isSectionCollapsed("tabs") && <nav className="tabs" aria-label="Tabs">
-          {!filteredItems.isFiltering && (
-            <TabOrganizationDropTargets
-              canCreateGroup={canCreateGroupFromDraggedTab}
-              canUngroup={canUngroupDraggedTab}
-              draggingTabId={draggingTabId}
-              onCreateGroup={actions.groupTab}
-              onUngroupTab={actions.ungroupTab}
-              setDraggingTabId={setDraggingTabId}
-            />
-          )}
-          {filteredItems.groupedTabs.map(({ group, tabs }) => (
-            <TabGroupSection
-              key={group.id}
-              activeTab={activeTab}
-              draggingGroupId={draggingGroupId}
-              group={group}
-              searchSelectedTabId={activeSearchTarget?.type === "tab" ? activeSearchTarget.id : undefined}
-              splitTabIds={splitTabIds}
-              tabs={tabs}
-              draggingTabId={draggingTabId}
-              onAssignTab={actions.assignTabToGroup}
-              onClose={actions.closeTab}
-              onContextMenu={onTabContextMenu}
-              onDrop={onTabDrop}
-              onGroupContextMenu={onTabGroupContextMenu}
-              onPreview={actions.openGlance}
-              onSelect={actions.selectTab}
-              onSplit={actions.openTabInSplit}
-              onToggle={() => actions.toggleTabGroupCollapsed(group.id)}
-              onUpdate={actions.updateTabGroup}
-              setDraggingTabId={setDraggingTabId}
-              setDraggingGroupId={setDraggingGroupId}
-            />
-          ))}
-          {filteredItems.regularTabs.map((tab) => (
-            <TabRow
-              key={tab.id}
-              activeTabId={activeTab.id}
-              draggingTabId={draggingTabId}
-              splitTabIds={splitTabIds}
-              isSearchSelected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
-              tab={tab}
-              onClose={actions.closeTab}
-              onContextMenu={onTabContextMenu}
-              onDrop={onTabDrop}
-              onPreview={actions.openGlance}
-              onSelect={actions.selectTab}
-              onSplit={actions.openTabInSplit}
-              setDraggingTabId={setDraggingTabId}
-            />
-          ))}
-          {filteredItems.isFiltering && !filteredItems.hasMatches && (
-            <p className="sidebar-empty">No matching tabs</p>
-          )}
-        </nav>}
-      </section>
+      <SidebarTabsSection
+        actions={actions}
+        activeSearchTarget={activeSearchTarget}
+        activeTab={activeTab}
+        canUnpinDraggedTabToTabs={canUnpinDraggedTabToTabs}
+        draggingGroupId={draggingGroupId}
+        draggingTabId={draggingTabId}
+        filteredItems={filteredItems}
+        isCollapsed={isSectionCollapsed("tabs")}
+        splitTabIds={splitTabIds}
+        tabCount={tabCount}
+        onTabContextMenu={onTabContextMenu}
+        onTabDrop={onTabDrop}
+        onTabGroupContextMenu={onTabGroupContextMenu}
+        onTabsDrop={onTabsDrop}
+        onToggle={() => toggleSection("tabs")}
+        setDraggingGroupId={setDraggingGroupId}
+        setDraggingTabId={setDraggingTabId}
+      />
     </>
   );
 }

@@ -63,6 +63,7 @@ import {
   toggleTabMuted,
   toggleTabPinned,
   toggleSplitMode,
+  unpinTabToRegularEnd,
   unpinTabToRegularPosition,
   ungroupActiveTab,
   ungroupTab,
@@ -196,6 +197,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   reorderWorkspaceFavorite: (favoriteId, targetFavoriteId, placement) =>
     update(set, (state) => reorderWorkspaceFavorite(state, favoriteId, targetFavoriteId, placement)),
   reorderTab: (tabId, targetTabId, placement) => update(set, (state) => reorderTab(state, tabId, targetTabId, placement)),
+  unpinTabToRegularEnd: (tabId) => update(set, (state) => unpinTabToRegularEnd(state, tabId)),
   unpinTabToRegularPosition: (tabId, targetTabId, placement) =>
     update(set, (state) => unpinTabToRegularPosition(state, tabId, targetTabId, placement)),
   resetActiveTabZoom: (webview) => update(set, (state) => syncZoom(resetActiveTabZoom(state), webview)),

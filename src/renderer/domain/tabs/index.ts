@@ -34,6 +34,7 @@ export {
   removeTabFromSplit,
   reorderTab,
   toggleSplitMode,
+  unpinTabToRegularEnd,
   unpinTabToRegularPosition
 } from "./layoutActions";
 export {

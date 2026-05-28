@@ -129,6 +129,7 @@ export function useBrowserActions({
     reorderWorkspace: store.reorderWorkspace,
     reorderWorkspaceFavorite: store.reorderWorkspaceFavorite,
     reorderTab: store.reorderTab,
+    unpinTabToRegularEnd: store.unpinTabToRegularEnd,
     unpinTabToRegularPosition: store.unpinTabToRegularPosition,
     resetActiveTabZoom: () => store.resetActiveTabZoom(activeWebview),
     resolvePermissionRequest: store.resolvePermissionRequest,

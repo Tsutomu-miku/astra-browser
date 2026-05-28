@@ -61,6 +61,7 @@ function TabDropTarget({
 }) {
   const handleDrop = (event: DragEvent<HTMLElement>) => {
     event.preventDefault();
+    event.stopPropagation();
     const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
     if (tabId) onDropTab(tabId);
     setDraggingTabId(null);

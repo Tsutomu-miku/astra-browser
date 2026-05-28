@@ -60,6 +60,21 @@ export function unpinTabToRegularPosition(
   });
 }
 
+export function unpinTabToRegularEnd(state: BrowserState, tabId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const fromIndex = workspace.tabs.findIndex((tab) => tab.id === tabId);
+    if (fromIndex < 0) return;
+
+    const tab = workspace.tabs[fromIndex];
+    if (!tab.isPinned) return;
+
+    const [unpinningTab] = workspace.tabs.splice(fromIndex, 1);
+    unpinningTab.isPinned = false;
+    workspace.tabs.push(unpinningTab);
+  });
+}
+
 export function moveTabToWorkspace(state: BrowserState, tabId: string, workspaceId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const source = draft.workspaces.find((workspace) => workspace.tabs.some((tab) => tab.id === tabId));
