@@ -108,6 +108,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Horizontal and vertical two-pane split views must be resizable by pointer and keyboard.
 - Split layout mode must support horizontal, vertical, and grid layouts.
 - Split layout switching must be directly available from the sidebar while split view is active.
+- Split pane overlay controls must show the active split layout.
 - Glance must preview tabs, favorites, and history without replacing the active tab.
 - Glance preview navigation must support open, split, backdrop-close, and Escape-close actions.
 - Glance previews must support in-preview back, forward, and reload controls.

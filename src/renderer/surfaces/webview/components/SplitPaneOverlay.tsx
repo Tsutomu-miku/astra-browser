@@ -11,7 +11,7 @@ export function SplitPaneOverlay({
   isPrimary: boolean;
   tabId: string;
 }) {
-  const { actions } = controller;
+  const { actions, splitLayout } = controller;
 
   return (
     <div className="split-pane-overlay" aria-label="Split pane controls">
@@ -30,6 +30,7 @@ export function SplitPaneOverlay({
         type="button"
         title="Horizontal split layout"
         aria-label="Horizontal split layout"
+        aria-pressed={splitLayout === "horizontal"}
         onClick={() => actions.setSplitLayout("horizontal")}
       >
         <FiColumns />
@@ -38,6 +39,7 @@ export function SplitPaneOverlay({
         type="button"
         title="Vertical split layout"
         aria-label="Vertical split layout"
+        aria-pressed={splitLayout === "vertical"}
         onClick={() => actions.setSplitLayout("vertical")}
       >
         <FiSidebar />
@@ -46,6 +48,7 @@ export function SplitPaneOverlay({
         type="button"
         title="Grid split layout"
         aria-label="Grid split layout"
+        aria-pressed={splitLayout === "grid"}
         onClick={() => actions.setSplitLayout("grid")}
       >
         <FiGrid />
