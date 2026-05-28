@@ -65,11 +65,18 @@ export function buildCommands(
     }]
     : [];
   const compactChromePeekCommands = chromeState.compactMode
-    ? [{
-      title: "Peek floating toolbar",
-      subtitle: "Temporarily reveal compact browser controls",
-      run: actions.peekCompactChrome
-    }]
+    ? [
+      {
+        title: "Peek floating toolbar",
+        subtitle: "Temporarily reveal compact browser controls",
+        run: actions.peekCompactChrome
+      },
+      {
+        title: "Peek floating sidebar",
+        subtitle: "Temporarily reveal compact tabs and Spaces",
+        run: actions.peekCompactChrome
+      }
+    ]
     : [];
 
   return [

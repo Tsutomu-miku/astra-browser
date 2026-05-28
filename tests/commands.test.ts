@@ -110,6 +110,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "New workspace")).toBe(true);
     expect(commands.some((command) => command.title === "Enter compact mode")).toBe(true);
     expect(commands.some((command) => command.title === "Peek floating toolbar")).toBe(false);
+    expect(commands.some((command) => command.title === "Peek floating sidebar")).toBe(false);
     expect(commands.some((command) => command.title === "Pin floating sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Pin floating toolbar")).toBe(true);
     expect(commands.find((command) => command.title === "Enter compact mode")?.shortcut).toBe("Ctrl/Cmd+Alt+C");
@@ -139,6 +140,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Expand sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Exit compact mode")).toBe(true);
     expect(commands.some((command) => command.title === "Peek floating toolbar")).toBe(true);
+    expect(commands.some((command) => command.title === "Peek floating sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Unpin floating sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Unpin floating toolbar")).toBe(true);
   });
