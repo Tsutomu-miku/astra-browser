@@ -151,7 +151,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     } else if (intent.type === "selectTab") {
       actions.selectTab(intent.tabId);
     } else {
-      actions.openUrlInActiveWorkspace(intent.url, intent.title);
+      actions.navigateActiveTab(intent.url);
     }
   }
 

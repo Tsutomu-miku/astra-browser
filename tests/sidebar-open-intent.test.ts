@@ -33,10 +33,10 @@ describe("getSidebarSearchOpenIntent", () => {
     });
   });
 
-  it("opens url-backed targets or sends them to split with Shift", () => {
+  it("navigates url-backed targets in the current tab or sends them to split with Shift", () => {
     expect(getSidebarSearchOpenIntent(favoriteTarget, { altKey: false, shiftKey: false })).toEqual({
       title: "Mail",
-      type: "openUrl",
+      type: "navigateUrl",
       url: "https://mail.example"
     });
     expect(getSidebarSearchOpenIntent(favoriteTarget, { altKey: false, shiftKey: true })).toEqual({
