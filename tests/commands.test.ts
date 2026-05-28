@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { closeActiveTab, openUrlInActiveWorkspace, toggleActiveTabFavorite, toggleSplitMode } from "../src/renderer/domain/actions";
+import { closeActiveTab, openUrlInActiveWorkspace, sleepInactiveTabs, toggleActiveTabFavorite, toggleSplitMode } from "../src/renderer/domain/actions";
 import { createDefaultState } from "../src/renderer/domain/browser";
 import { buildCommands } from "../src/renderer/app/controller/useCommands";
 import type { CommandChromeState } from "../src/renderer/app/controller/useCommands";
@@ -192,5 +192,21 @@ describe("buildCommands", () => {
     const commands = buildCommands(createDefaultState(), commandActions(), vi.fn(), defaultChromeState);
 
     expect(commands.some((command) => command.title === "Sleep current tab")).toBe(false);
+  });
+
+  it("labels sleeping tabs in command palette open-tab entries", () => {
+    const actions = commandActions();
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const slept = sleepInactiveTabs(second);
+    const sleepingTab = slept.workspaces[0].tabs.find((tab) => tab.title === "First")!;
+    const commands = buildCommands(slept, actions, vi.fn(), defaultChromeState);
+    const sleepingCommand = commands.find((command) => command.title === "First");
+
+    expect(sleepingCommand?.subtitle).toBe("Sleeping tab · https://first.test/");
+
+    sleepingCommand?.run();
+
+    expect(actions.selectTab).toHaveBeenCalledWith(sleepingTab.id);
   });
 });

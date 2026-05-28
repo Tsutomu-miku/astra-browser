@@ -23,7 +23,7 @@ export function buildContentCommands(
     })),
     ...workspace.tabs.map((tab) => ({
       title: tab.title || tab.url,
-      subtitle: `Open tab · ${tab.url}`,
+      subtitle: `${tab.isSleeping ? "Sleeping tab" : "Open tab"} · ${tab.url}`,
       run: () => actions.selectTab(tab.id),
       runInSplit: () => actions.openTabInSplit(tab.id),
       runPreview: () => actions.openGlance(tab.url, tab.title)
