@@ -146,6 +146,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - New tab quick entries must visually hint Alt preview and Shift split actions on hover or keyboard focus.
 - New tab Essentials, favorites, and recent history entries must support Alt-click Glance preview and Shift-click split opening.
 - New tab Essentials and favorites must support context menus for opening, Glance preview, split opening, and removing the entry.
+- New tab recent history entries must support context menus for opening, Glance preview, split opening, and removing the entry.
 
 ### Site Identity, Permissions, And Data
 

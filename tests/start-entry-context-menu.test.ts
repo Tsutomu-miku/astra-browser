@@ -4,15 +4,22 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { createFavorite } from "../src/renderer/domain/browser";
-import { StartQuickEntryContextMenu } from "../src/renderer/surfaces/start/components/StartQuickEntryContextMenu";
+import { createFavorite, type HistoryEntry } from "../src/renderer/domain/browser";
+import { StartEntryContextMenu } from "../src/renderer/surfaces/start/components/StartEntryContextMenu";
 import { StartTileGrid } from "../src/renderer/surfaces/start/components/StartTileGrid";
 
 const startContextMenuCss = readFileSync(join(__dirname, "../src/renderer/styles/start-context-menu.css"), "utf8");
+const recentEntry: HistoryEntry = {
+  id: "history_docs",
+  title: "Docs",
+  url: "https://docs.example",
+  visitedAt: 1,
+  workspaceId: "personal"
+};
 
-describe("start quick entry context menu", () => {
+describe("start entry context menu", () => {
   it("renders Essential actions for open, preview, split, and removal", () => {
-    const html = renderToStaticMarkup(createElement(StartQuickEntryContextMenu, {
+    const html = renderToStaticMarkup(createElement(StartEntryContextMenu, {
       item: createFavorite("Docs", "https://docs.example"),
       kind: "essential",
       left: 10,
@@ -32,7 +39,7 @@ describe("start quick entry context menu", () => {
   });
 
   it("renders Favorite removal copy", () => {
-    const html = renderToStaticMarkup(createElement(StartQuickEntryContextMenu, {
+    const html = renderToStaticMarkup(createElement(StartEntryContextMenu, {
       item: createFavorite("Docs", "https://docs.example"),
       kind: "favorite",
       left: 10,
@@ -45,6 +52,22 @@ describe("start quick entry context menu", () => {
     }));
 
     expect(html).toContain("Remove Favorite");
+  });
+
+  it("renders Recent history removal copy", () => {
+    const html = renderToStaticMarkup(createElement(StartEntryContextMenu, {
+      item: recentEntry,
+      kind: "history",
+      left: 10,
+      top: 20,
+      onClose: vi.fn(),
+      onOpen: vi.fn(),
+      onOpenInSplit: vi.fn(),
+      onPreview: vi.fn(),
+      onRemove: vi.fn()
+    }));
+
+    expect(html).toContain("Remove History");
   });
 
   it("keeps tile action hints while supporting contextual management", () => {

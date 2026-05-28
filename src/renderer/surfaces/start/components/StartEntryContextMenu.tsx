@@ -1,6 +1,6 @@
-import type { Favorite } from "../../../domain/browser";
+import type { StartEntryContextMenuItem, StartEntryContextMenuKind } from "./useStartEntryContextMenu";
 
-export function StartQuickEntryContextMenu({
+export function StartEntryContextMenu({
   item,
   kind,
   left,
@@ -11,17 +11,17 @@ export function StartQuickEntryContextMenu({
   onRemove,
   top
 }: {
-  item: Favorite;
-  kind: "essential" | "favorite";
+  item: StartEntryContextMenuItem;
+  kind: StartEntryContextMenuKind;
   left: number;
   onClose: () => void;
   onOpen: (url: string, title?: string) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
-  onRemove: (url: string) => void;
+  onRemove: (item: StartEntryContextMenuItem, kind: StartEntryContextMenuKind) => void;
   top: number;
 }) {
-  const label = kind === "essential" ? "Essential" : "Favorite";
+  const label = kind === "essential" ? "Essential" : kind === "favorite" ? "Favorite" : "History";
   const run = (action: () => void) => {
     action();
     onClose();
@@ -44,7 +44,7 @@ export function StartQuickEntryContextMenu({
         Open in split view
       </button>
       <span className="start-context-menu-separator" />
-      <button type="button" role="menuitem" className="danger" onClick={() => run(() => onRemove(item.url))}>
+      <button type="button" role="menuitem" className="danger" onClick={() => run(() => onRemove(item, kind))}>
         Remove {label}
       </button>
     </div>

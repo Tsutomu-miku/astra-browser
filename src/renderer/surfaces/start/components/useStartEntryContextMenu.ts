@@ -1,22 +1,25 @@
 import { useEffect, useState, type MouseEvent } from "react";
 
-import type { Favorite } from "../../../domain/browser";
+import type { Favorite, HistoryEntry } from "../../../domain/browser";
 
-export interface StartQuickEntryMenuState {
-  item: Favorite;
-  kind: "essential" | "favorite";
+export type StartEntryContextMenuKind = "essential" | "favorite" | "history";
+export type StartEntryContextMenuItem = Pick<Favorite | HistoryEntry, "id" | "title" | "url">;
+
+export interface StartEntryContextMenuState {
+  item: StartEntryContextMenuItem;
+  kind: StartEntryContextMenuKind;
   left: number;
   top: number;
 }
 
-export function useStartQuickEntryMenu() {
-  const [menu, setMenu] = useState<StartQuickEntryMenuState | null>(null);
+export function useStartEntryContextMenu() {
+  const [menu, setMenu] = useState<StartEntryContextMenuState | null>(null);
 
   function closeMenu() {
     setMenu(null);
   }
 
-  function openMenu(event: MouseEvent, item: Favorite, kind: StartQuickEntryMenuState["kind"]) {
+  function openMenu(event: MouseEvent, item: StartEntryContextMenuItem, kind: StartEntryContextMenuKind) {
     event.preventDefault();
     setMenu({
       item,
