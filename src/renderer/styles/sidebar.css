@@ -339,6 +339,39 @@ h1 {
   place-items: center;
 }
 
+.pinned-tab-status-badges {
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  display: inline-flex;
+  gap: 2px;
+}
+
+.pinned-tab-status-badge {
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 999px;
+  background: rgba(9, 10, 13, 0.9);
+  color: var(--muted);
+}
+
+.pinned-tab-status-badge svg {
+  width: 9px;
+  height: 9px;
+}
+
+.pinned-tab-status-badge.is-split {
+  color: color-mix(in srgb, var(--accent) 78%, white);
+}
+
+.pinned-tab-status-badge.is-muted,
+.pinned-tab-status-badge.is-sleeping {
+  color: color-mix(in srgb, var(--muted) 86%, white);
+}
+
 .essentials,
 .favorites {
   display: grid;

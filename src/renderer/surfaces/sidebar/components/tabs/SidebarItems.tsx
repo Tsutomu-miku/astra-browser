@@ -1,9 +1,10 @@
 import type { CSSProperties, DragEvent, MouseEvent } from "react";
-import { FiColumns, FiLoader, FiMoon, FiVolumeX, FiX } from "react-icons/fi";
+import { FiLoader, FiMoon, FiX } from "react-icons/fi";
 
 import { getHostInitial, type BrowserTab, type Favorite, type TabGroup } from "../../../../domain/browser";
-import { getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
+import { getTabStatusBadges } from "../../model/sidebarItemState";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
+import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
 
 export function SidebarSectionHeader({ count, title }: { count: number; title: string }) {
   return (
@@ -175,16 +176,7 @@ export function TabRow({
         <span className="tab-favicon">{tab.isSleeping ? <FiMoon /> : tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}</span>
         <span className="tab-title-stack">
           <span className="tab-title">{tab.title || tab.url}</span>
-          {statusBadges.length > 0 && (
-            <span className="tab-status-badges" aria-label={statusBadges.map((badge) => badge.label).join(", ")}>
-              {statusBadges.map((badge) => (
-                <span className={`tab-status-badge is-${badge.id}`} key={badge.id} title={badge.title}>
-                  <TabStatusIcon badge={badge} />
-                  <span>{badge.label}</span>
-                </span>
-              ))}
-            </span>
-          )}
+          <SidebarTabStatusBadges badges={statusBadges} />
         </span>
         <SidebarItemActionHints />
       </button>
@@ -199,12 +191,6 @@ export function TabRow({
       </button>
     </div>
   );
-}
-
-function TabStatusIcon({ badge }: { badge: TabStatusBadge }) {
-  if (badge.id === "split") return <FiColumns />;
-  if (badge.id === "muted") return <FiVolumeX />;
-  return <FiMoon />;
 }
 
 export function FavoriteButton({

@@ -58,6 +58,7 @@ export function SidebarSections({
         activeTab={activeTab}
         draggingTabId={draggingTabId}
         pinnedTabs={filteredItems.pinnedTabs}
+        splitTabIds={splitTabIds}
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}
         setDraggingTabId={setDraggingTabId}

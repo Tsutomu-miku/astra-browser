@@ -29,7 +29,8 @@ describe("sidebar pinned tabs", () => {
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
       pinnedTabs: [pinned],
-      setDraggingTabId: vi.fn()
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
     }));
 
     expect(html).toContain('aria-label="Pinned tabs"');
@@ -47,7 +48,8 @@ describe("sidebar pinned tabs", () => {
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
       pinnedTabs: [pinned],
-      setDraggingTabId: vi.fn()
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
     }));
 
     expect(html).toContain('data-dragging="true"');
@@ -62,7 +64,8 @@ describe("sidebar pinned tabs", () => {
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
       pinnedTabs: [pinned],
-      setDraggingTabId: vi.fn()
+      setDraggingTabId: vi.fn(),
+      splitTabIds: []
     }));
 
     expect(html).toContain('class="sidebar-item-action-hints"');
@@ -72,10 +75,35 @@ describe("sidebar pinned tabs", () => {
     expect(html).toContain("Split");
   });
 
+  it("renders compact status badges for split and muted pinned tabs", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isMuted: true, isPinned: true };
+    const html = renderToStaticMarkup(createElement(SidebarPinnedTabs, {
+      actions: createActions(),
+      activeTab: pinned,
+      draggingTabId: null,
+      onTabContextMenu: vi.fn(),
+      onTabDrop: vi.fn(),
+      pinnedTabs: [pinned],
+      setDraggingTabId: vi.fn(),
+      splitTabIds: [pinned.id]
+    }));
+
+    expect(html).toContain('class="pinned-tab-status-badges"');
+    expect(html).toContain('aria-label="Split, Muted"');
+    expect(html).toContain('class="pinned-tab-status-badge is-split"');
+    expect(html).toContain('class="pinned-tab-status-badge is-muted"');
+  });
+
   it("styles pinned tab drag and drop states", () => {
     expect(sidebarCss).toContain('.pinned-tab-button[data-dragging="true"]');
     expect(sidebarCss).toContain('.pinned-tab-button[data-drop-target="true"]');
     expect(sidebarCss).toContain("cursor: grabbing");
+  });
+
+  it("styles compact pinned tab status badges", () => {
+    expect(sidebarCss).toContain(".pinned-tab-status-badges");
+    expect(sidebarCss).toContain(".pinned-tab-status-badge.is-split");
+    expect(sidebarCss).toContain(".pinned-tab-status-badge.is-muted");
   });
 
   it("styles pinned tab action hints as hover and focus floaters", () => {
