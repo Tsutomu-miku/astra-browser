@@ -11,6 +11,7 @@ interface TabGroupContextMenuProps {
   moveWorkspaceTargets: MoveWorkspaceTarget[];
   onCloseGroup: (groupId: string) => void;
   onClose: () => void;
+  onDuplicateGroup: (groupId: string) => void;
   onMoveToWorkspace: (groupId: string, workspaceId: string) => void;
   onSleepGroup: (groupId: string) => void;
   onToggleCollapsed: (groupId: string) => void;
@@ -27,6 +28,7 @@ export function TabGroupContextMenu({
   moveWorkspaceTargets,
   onClose,
   onCloseGroup,
+  onDuplicateGroup,
   onMoveToWorkspace,
   onSleepGroup,
   onToggleCollapsed,
@@ -56,6 +58,9 @@ export function TabGroupContextMenu({
       </button>
       <button type="button" role="menuitem" disabled={!canSleepGroup} onClick={() => run(() => onSleepGroup(group.id))}>
         Sleep group
+      </button>
+      <button type="button" role="menuitem" onClick={() => run(() => onDuplicateGroup(group.id))}>
+        Duplicate group
       </button>
       <label className="tab-group-menu-field">
         <span>Name</span>

@@ -1,4 +1,4 @@
-import { BrowserState, getReadableUrlTitle } from "../browser";
+import { BrowserState, createId, getReadableUrlTitle } from "../browser";
 import type { TabGroup } from "../browser/types";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
 import { updateBrowserState } from "../browser/updateState";
@@ -8,6 +8,7 @@ import {
   normalizeTabGroupName,
   pruneEmptyTabGroups
 } from "./groups";
+import { clearSplitView } from "./splitView";
 
 export function groupActiveTab(state: BrowserState): BrowserState {
   return groupTab(state);
@@ -64,6 +65,40 @@ export function assignTabToGroup(state: BrowserState, tabId: string, groupId: st
 
     tab.groupId = group.id;
     pruneEmptyTabGroups(workspace);
+  });
+}
+
+export function duplicateTabGroup(state: BrowserState, groupId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const groupIndex = workspace.tabGroups.findIndex((candidate) => candidate.id === groupId);
+    const group = workspace.tabGroups[groupIndex];
+    const tabs = workspace.tabs.filter((tab) => tab.groupId === groupId);
+    if (!group || tabs.length === 0) return;
+
+    const nextGroup = {
+      ...group,
+      id: createId(),
+      name: `${group.name} Copy`,
+      isCollapsed: false
+    };
+    const lastTabIndex = Math.max(...tabs.map((tab) => workspace.tabs.findIndex((candidate) => candidate.id === tab.id)));
+    const now = Date.now();
+    const copiedTabs = tabs.map((tab) => ({
+      ...tab,
+      id: createId(),
+      groupId: nextGroup.id,
+      canGoBack: false,
+      canGoForward: false,
+      isLoading: false,
+      isSleeping: false,
+      lastActiveAt: now
+    }));
+
+    workspace.tabGroups.splice(groupIndex + 1, 0, nextGroup);
+    workspace.tabs.splice(lastTabIndex + 1, 0, ...copiedTabs);
+    workspace.activeTabId = copiedTabs[0].id;
+    clearSplitView(draft);
   });
 }
 

@@ -44,6 +44,7 @@ export interface BrowserStore {
   deleteWorkspace: (workspaceId: string) => void;
   duplicateActiveTab: () => void;
   duplicateTab: (tabId: string) => void;
+  duplicateTabGroup: (groupId: string) => void;
   fillSplitView: () => void;
   focusSplitPane: (tabId: string) => void;
   groupActiveTab: () => void;

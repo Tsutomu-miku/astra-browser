@@ -12,6 +12,7 @@ describe("sidebar tab group context menu", () => {
 
     expect(html).toContain("Collapse group");
     expect(html).toContain("Sleep group");
+    expect(html).toContain("Duplicate group");
     expect(html).toContain("Name");
     expect(html).toContain("Group color");
     expect(html).toContain("Move group to Work");
@@ -31,6 +32,7 @@ describe("sidebar tab group context menu", () => {
   it("wires group update and ungroup callbacks", () => {
     const onClose = vi.fn();
     const onCloseGroup = vi.fn();
+    const onDuplicateGroup = vi.fn();
     const onMoveToWorkspace = vi.fn();
     const onSleepGroup = vi.fn();
     const onToggleCollapsed = vi.fn();
@@ -39,6 +41,7 @@ describe("sidebar tab group context menu", () => {
     const menu = createElement(TabGroupContextMenu, props({
       onClose,
       onCloseGroup,
+      onDuplicateGroup,
       onMoveToWorkspace,
       onSleepGroup,
       onToggleCollapsed,
@@ -47,6 +50,7 @@ describe("sidebar tab group context menu", () => {
     }));
 
     menu.props.onCloseGroup("group");
+    menu.props.onDuplicateGroup("group");
     menu.props.onMoveToWorkspace("group", "work");
     menu.props.onSleepGroup("group");
     menu.props.onToggleCollapsed("group");
@@ -55,6 +59,7 @@ describe("sidebar tab group context menu", () => {
     menu.props.onUngroupGroup("group");
 
     expect(onCloseGroup).toHaveBeenCalledWith("group");
+    expect(onDuplicateGroup).toHaveBeenCalledWith("group");
     expect(onMoveToWorkspace).toHaveBeenCalledWith("group", "work");
     expect(onSleepGroup).toHaveBeenCalledWith("group");
     expect(onToggleCollapsed).toHaveBeenCalledWith("group");
@@ -84,6 +89,7 @@ function props(overrides: Partial<TabGroupContextMenuProps> = {}): TabGroupConte
     moveWorkspaceTargets: [{ id: "work", name: "Work" }],
     onClose: vi.fn(),
     onCloseGroup: vi.fn(),
+    onDuplicateGroup: vi.fn(),
     onMoveToWorkspace: vi.fn(),
     onSleepGroup: vi.fn(),
     onToggleCollapsed: vi.fn(),

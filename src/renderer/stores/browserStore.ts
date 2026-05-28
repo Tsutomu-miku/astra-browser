@@ -14,6 +14,7 @@ import {
   clearSitePermissionRulesForOrigin,
   duplicateActiveTab,
   duplicateTab,
+  duplicateTabGroup,
   fillSplitView,
   focusSplitPane,
   groupActiveTab,
@@ -131,6 +132,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   deleteWorkspace: (workspaceId) => update(set, (state) => deleteWorkspace(state, workspaceId)),
   duplicateActiveTab: () => update(set, duplicateActiveTab),
   duplicateTab: (tabId) => update(set, (state) => duplicateTab(state, tabId)),
+  duplicateTabGroup: (groupId) => update(set, (state) => duplicateTabGroup(state, groupId)),
   fillSplitView: () => {
     update(set, fillSplitView);
     set({ splitLayout: "grid" });

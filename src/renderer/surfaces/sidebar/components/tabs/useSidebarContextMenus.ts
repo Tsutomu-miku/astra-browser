@@ -85,7 +85,7 @@ export function useSidebarContextMenus() {
     setTabMenu(null);
     setTabGroupMenu({
       groupId: group.id,
-      ...getMenuPosition(event, 224, 430)
+      ...getMenuPosition(event, 224, 462)
     });
   }
 
@@ -123,7 +123,7 @@ export function useSidebarContextMenus() {
 
 function getMenuPosition(event: MouseEvent, width: number, height: number) {
   return {
-    left: Math.max(MENU_EDGE_GAP, Math.min(event.clientX, window.innerWidth - width - MENU_EDGE_GAP)),
-    top: Math.max(MENU_EDGE_GAP, Math.min(event.clientY, window.innerHeight - height - MENU_EDGE_GAP))
+    left: window.scrollX + Math.max(MENU_EDGE_GAP, Math.min(event.clientX, window.innerWidth - width - MENU_EDGE_GAP)),
+    top: window.scrollY + Math.max(MENU_EDGE_GAP, Math.min(event.clientY, window.innerHeight - height - MENU_EDGE_GAP))
   };
 }

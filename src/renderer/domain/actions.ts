@@ -26,6 +26,7 @@ export {
   closeTab,
   duplicateActiveTab,
   duplicateTab,
+  duplicateTabGroup,
   fillSplitView,
   focusSplitPane,
   groupActiveTab,

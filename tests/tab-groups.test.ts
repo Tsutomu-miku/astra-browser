@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   assignTabToGroup,
   closeActiveTab,
+  duplicateTabGroup,
   groupActiveTab,
   groupTab,
   moveTabGroupToWorkspace,
@@ -99,6 +100,26 @@ describe("tab groups", () => {
     expect(target.tabGroups[0]).toMatchObject({ id: group.id, name: group.name, color: group.color });
     expect(target.tabs.filter((tab) => tab.groupId === group.id).map((tab) => tab.title)).toEqual(["Docs", "News"]);
     expect(target.activeTabId).toBe(secondTab.id);
+  });
+
+  it("duplicates a whole tab group next to the source group", () => {
+    const first = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
+    const group = getActiveWorkspace(first).tabGroups[0];
+    const opened = openUrlInActiveWorkspace(first, "news.example", "News");
+    const secondTab = getActiveTab(getActiveWorkspace(opened));
+    const assigned = assignTabToGroup(opened, secondTab.id, group.id);
+    const duplicated = duplicateTabGroup(assigned, group.id);
+    const workspace = getActiveWorkspace(duplicated);
+    const copyGroup = workspace.tabGroups[1];
+    const copiedTabs = workspace.tabs.filter((tab) => tab.groupId === copyGroup.id);
+
+    expect(copyGroup).toMatchObject({ name: `${group.name} Copy`, color: group.color, isCollapsed: false });
+    expect(copiedTabs.map((tab) => tab.title)).toEqual(["Docs", "News"]);
+    expect(copiedTabs.map((tab) => tab.url)).toEqual(["https://docs.example/", "https://news.example/"]);
+    expect(copiedTabs.every((tab) => !tab.isSleeping && !tab.isLoading && !tab.canGoBack && !tab.canGoForward)).toBe(true);
+    expect(workspace.activeTabId).toBe(copiedTabs[0].id);
+    expect(new Set(copiedTabs.map((tab) => tab.id)).has(secondTab.id)).toBe(false);
+    expect(duplicated.splitMode).toBe(false);
   });
 
   it("ungroups every tab in a group without changing selection", () => {

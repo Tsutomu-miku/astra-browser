@@ -58,6 +58,10 @@ export function useBrowserActions({
       store.duplicateTab(tabId);
       peekCompactChrome();
     },
+    duplicateTabGroup: (groupId: string) => {
+      store.duplicateTabGroup(groupId);
+      peekCompactChrome();
+    },
     closeFind: () => {
       activeWebview?.stopFindInPage?.("clearSelection");
       store.setFindOpen(false);

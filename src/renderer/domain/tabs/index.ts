@@ -15,6 +15,7 @@ export {
 } from "./lifecycleActions";
 export {
   assignTabToGroup,
+  duplicateTabGroup,
   groupActiveTab,
   groupTab,
   toggleTabGroupCollapsed,
