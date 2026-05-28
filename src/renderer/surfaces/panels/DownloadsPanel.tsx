@@ -1,10 +1,13 @@
 import { FiX } from "react-icons/fi";
 
 import type { BrowserController } from "../../app/controller/types";
-import { DownloadItem } from "./components/DownloadItem";
+import { DownloadContextMenu } from "./downloads/components/DownloadContextMenu";
+import { DownloadItem } from "./downloads/components/DownloadItem";
+import { useDownloadContextMenu } from "./downloads/components/useDownloadContextMenu";
 
 export function DownloadsPanel({ controller }: { controller: BrowserController }) {
   const { setPanel, state } = controller;
+  const { closeMenu, menu, openDownloadMenu } = useDownloadContextMenu();
 
   return (
     <aside className="downloads-panel">
@@ -15,7 +18,21 @@ export function DownloadsPanel({ controller }: { controller: BrowserController }
       <div className="downloads-list">
         {state.downloads.length === 0
           ? <p className="empty-state">No downloads yet</p>
-          : state.downloads.map((download) => <DownloadItem key={download.id} download={download} />)}
+          : state.downloads.map((download) => (
+            <DownloadItem
+              download={download}
+              key={download.id}
+              onContextMenu={openDownloadMenu}
+            />
+          ))}
+        {menu && (
+          <DownloadContextMenu
+            download={menu.item}
+            left={menu.left}
+            top={menu.top}
+            onClose={closeMenu}
+          />
+        )}
       </div>
     </aside>
   );

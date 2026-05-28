@@ -1,13 +1,21 @@
+import type { MouseEvent } from "react";
 import { FiExternalLink, FiFolder } from "react-icons/fi";
 
-import { formatBytes, type DownloadEntry } from "../../../domain/browser";
+import type { DownloadEntry } from "../../../../domain/browser";
 import { getDownloadActionsState } from "../model/downloadActions";
+import { getDownloadMeta } from "../model/downloadMeta";
 
-export function DownloadItem({ download }: { download: DownloadEntry }) {
+export function DownloadItem({
+  download,
+  onContextMenu
+}: {
+  download: DownloadEntry;
+  onContextMenu: (event: MouseEvent, download: DownloadEntry) => void;
+}) {
   const actionsState = getDownloadActionsState(download);
 
   return (
-    <article className="download-item">
+    <article className="download-item" onContextMenu={(event) => onContextMenu(event, download)}>
       <div className="download-main">
         <span className="download-title">{download.filename}</span>
         <span className="download-meta">{getDownloadMeta(download, actionsState.progress)}</span>
@@ -35,12 +43,4 @@ export function DownloadItem({ download }: { download: DownloadEntry }) {
       <progress className="download-progress" max="100" value={actionsState.progress} />
     </article>
   );
-}
-
-function getDownloadMeta(download: DownloadEntry, progress: number): string {
-  const size = download.totalBytes ? formatBytes(download.totalBytes) : "Unknown size";
-  if (download.state === "completed") return `${size} · Completed`;
-  if (download.state === "interrupted") return `${size} · Interrupted`;
-  if (download.state === "cancelled") return `${size} · Cancelled`;
-  return `${size} · ${progress}%`;
 }

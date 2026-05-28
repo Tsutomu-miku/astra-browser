@@ -104,6 +104,42 @@ h2 {
   align-self: start;
 }
 
+.download-context-menu {
+  position: fixed;
+  z-index: 80;
+  width: 178px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px;
+  background: rgba(20, 22, 29, 0.98);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
+}
+
+.download-context-menu button {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 9px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.download-context-menu button:hover,
+.download-context-menu button:focus-visible {
+  background: var(--panel-soft);
+}
+
+.download-context-menu button:disabled,
+.download-context-menu button:disabled:hover,
+.download-context-menu button:disabled:focus-visible {
+  background: transparent;
+  color: var(--muted);
+  cursor: default;
+  opacity: 0.48;
+}
+
 .settings-form,
 .site-summary,
 .permission-list {

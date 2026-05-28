@@ -1,4 +1,4 @@
-import type { DownloadEntry } from "../../../domain/browser";
+import type { DownloadEntry } from "../../../../domain/browser";
 
 export interface DownloadActionsState {
   canOpen: boolean;
@@ -7,16 +7,16 @@ export interface DownloadActionsState {
 }
 
 export function getDownloadActionsState(download: DownloadEntry): DownloadActionsState {
-  const isCompletedWithPath = download.state === "completed" && Boolean(download.savePath);
-
+  const isCompleteWithPath = download.state === "completed" && Boolean(download.savePath);
   return {
-    canOpen: isCompletedWithPath,
-    canShowInFolder: isCompletedWithPath,
+    canOpen: isCompleteWithPath,
+    canShowInFolder: isCompleteWithPath,
     progress: getDownloadProgress(download)
   };
 }
 
 export function getDownloadProgress(download: DownloadEntry): number {
-  if (!download.totalBytes) return download.state === "completed" ? 100 : 0;
+  if (download.state === "completed") return 100;
+  if (!download.totalBytes) return 0;
   return Math.round((download.receivedBytes / download.totalBytes) * 100);
 }
