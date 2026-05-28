@@ -11,6 +11,7 @@ import {
   FiStar,
   FiVolume2,
   FiVolumeX,
+  FiUnlock,
   FiX,
   FiZap
 } from "react-icons/fi";
@@ -24,7 +25,7 @@ import { getOmniboxActionHints } from "../../common/omnibox/omniboxActions";
 import { getReloadButtonState } from "./model/navigationButtonState";
 
 export function Topbar({ controller }: { controller: BrowserController }) {
-  const { activeTab, activeWebview, activeWorkspace, actions, addressValue, setAddressValue, setPanel, state } = controller;
+  const { activeTab, activeWebview, activeWorkspace, actions, addressValue, compactMode, floatingToolbarOpen, setAddressValue, setPanel, state } = controller;
   const identity = getUrlIdentity(activeTab.url);
   const omnibox = useOmniboxController({ actions, addressValue, setAddressValue, state });
   const reloadButton = getReloadButtonState(activeTab.isLoading);
@@ -105,6 +106,18 @@ export function Topbar({ controller }: { controller: BrowserController }) {
         <span className="topbar-workspace-name">{activeWorkspace.name}</span>
       </button>
       <div className="page-actions" aria-label="Page actions">
+        {compactMode && (
+          <button
+            className="icon-button compact-toolbar-pin"
+            title={floatingToolbarOpen ? "Unpin floating toolbar" : "Pin floating toolbar"}
+            type="button"
+            aria-label={floatingToolbarOpen ? "Unpin floating toolbar" : "Pin floating toolbar"}
+            aria-pressed={floatingToolbarOpen}
+            onClick={actions.toggleFloatingToolbar}
+          >
+            {floatingToolbarOpen ? <FiLock /> : <FiUnlock />}
+          </button>
+        )}
         <button
           className="icon-button"
           title={isFavorite(activeWorkspace, activeTab.url) ? "Remove favorite" : "Add favorite"}
