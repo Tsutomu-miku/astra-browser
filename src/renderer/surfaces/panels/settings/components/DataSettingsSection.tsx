@@ -1,7 +1,7 @@
 import type { ChangeEvent, RefObject } from "react";
 
 import type { WorkspaceStorageUsage } from "../../../../app/controller/useProfileStorageUsage";
-import type { MemorySaverState } from "../model/memorySaverState";
+import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
 import { MemorySaverSection } from "./MemorySaverSection";
 import { ProfileStorageSection } from "./ProfileStorageSection";
 

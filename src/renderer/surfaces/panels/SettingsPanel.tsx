@@ -4,12 +4,12 @@ import { FiX } from "react-icons/fi";
 import { createBrowserStateBackup, parseBrowserStateBackup } from "../../platform/persistence/browserBackup";
 import type { BrowserController } from "../../app/controller/types";
 import { useProfileStorageUsage } from "../../app/controller/useProfileStorageUsage";
+import { getMemorySaverState } from "../../common/memory/memorySaverState";
 import { DataSettingsSection } from "./settings/components/DataSettingsSection";
 import { GlobalSettingsSection } from "./settings/components/GlobalSettingsSection";
 import { SettingsSectionNav } from "./settings/components/SettingsSectionNav";
 import { SpaceSettingsSection } from "./settings/components/SpaceSettingsSection";
 import { WorkspaceManagementSection } from "./settings/components/WorkspaceManagementSection";
-import { getMemorySaverState } from "./settings/model/memorySaverState";
 import type { SettingsSectionId } from "./settings/model/settingsSections";
 
 export function SettingsPanel({ controller }: { controller: BrowserController }) {

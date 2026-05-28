@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { createDefaultState } from "../src/renderer/domain/browser";
-import { getMemorySaverState } from "../src/renderer/surfaces/panels/settings/model/memorySaverState";
+import { getMemorySaverState } from "../src/renderer/common/memory/memorySaverState";
 import { DataSettingsSection } from "../src/renderer/surfaces/panels/settings/components/DataSettingsSection";
 import { GlobalSettingsSection } from "../src/renderer/surfaces/panels/settings/components/GlobalSettingsSection";
 import { MemorySaverSection } from "../src/renderer/surfaces/panels/settings/components/MemorySaverSection";

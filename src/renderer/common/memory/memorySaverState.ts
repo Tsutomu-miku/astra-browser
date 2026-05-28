@@ -1,5 +1,5 @@
-import type { BrowserState, Workspace } from "../../../../domain/browser";
-import { getSplitTabIds } from "../../../../domain/tabs/splitView";
+import type { BrowserState, Workspace } from "../../domain/browser";
+import { getSplitTabIds } from "../../domain/tabs/splitView";
 
 export interface MemorySaverState {
   mountedWebviews: number;

@@ -225,6 +225,13 @@ describe("buildCommands", () => {
     expect(actions.sleepTab).toHaveBeenCalledWith(activeTabId);
   });
 
+  it("summarizes memory saver state for sleep inactive tab commands", () => {
+    const state = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const commands = buildCommands(state, commandActions(), vi.fn(), defaultChromeState);
+
+    expect(commands.find((command) => command.title === "Sleep inactive tabs")?.subtitle).toBe("1 releasable · 0 sleeping · 1 protected");
+  });
+
   it("hides the current tab sleep command when focus has nowhere to move", () => {
     const commands = buildCommands(createDefaultState(), commandActions(), vi.fn(), defaultChromeState);
 

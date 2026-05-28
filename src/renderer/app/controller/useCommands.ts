@@ -1,4 +1,5 @@
 import { shortcutLabels } from "../../common/shortcuts/shortcutLabels";
+import { getMemorySaverState } from "../../common/memory/memorySaverState";
 import type { BrowserState } from "../../domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../../domain/browser/selectors";
 import type { Panel } from "../../stores/browserStoreTypes";
@@ -47,6 +48,7 @@ export function buildCommands(
   const contentCommands = buildContentCommands(state, workspace, actions);
   const pageCommands = buildPageCommands(state, workspace, activeTab, actions);
   const splitCommands = buildSplitCommands(state, workspace, activeTab, actions);
+  const memorySaver = getMemorySaverState(workspace, state);
   const tabGroupCommands = workspace.tabGroups.map((group) => ({
     title: group.isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`,
     subtitle: "Tab group",
@@ -122,7 +124,7 @@ export function buildCommands(
       run: actions.resetActiveTabZoom
     },
     ...sleepCurrentTabCommands,
-    { title: "Sleep inactive tabs", subtitle: "Unload hidden tabs in this Space", run: actions.sleepInactiveTabs },
+    { title: "Sleep inactive tabs", subtitle: memorySaver.summary, run: actions.sleepInactiveTabs },
     {
       title: sidebarCommandTitle,
       subtitle: chromeState.sidebarCollapsed || chromeState.compactMode ? "Restore sidebar controls" : "Enter focus mode",

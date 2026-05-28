@@ -133,6 +133,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 ### Command Palette
 
 - The command palette must support workspace switching, tab cycling, tab grouping, duplicate tabs, sleeping tabs, mute controls, tab cleanup actions, cross-workspace tab moves, tab actions, data clearing, split view, and history search.
+- The command palette must summarize Memory Saver state for sleep-inactive-tabs actions.
 - The command palette must expose page tools such as find in page and site information.
 - The command palette must expose page navigation tools for back, forward, reload, stop-loading, and hard reload.
 - The command palette must include entries for open tabs, Essentials, favorites, history, and recently closed tabs.

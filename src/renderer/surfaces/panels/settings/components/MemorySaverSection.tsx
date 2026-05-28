@@ -1,4 +1,4 @@
-import type { MemorySaverState } from "../model/memorySaverState";
+import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
 
 export function MemorySaverSection({
   memorySaver,
