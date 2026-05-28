@@ -11,5 +11,7 @@ describe("sidebar item action hint styles", () => {
     expect(sidebarCss).toContain(".tab-row:focus-within .sidebar-item-action-hints");
     expect(sidebarCss).toContain(".favorite-button:hover .sidebar-item-action-hints");
     expect(sidebarCss).toContain(".favorite-button:focus-visible .sidebar-item-action-hints");
+    expect(sidebarCss).toContain(".closed-tab-button:hover .sidebar-item-action-hints");
+    expect(sidebarCss).toContain(".closed-tab-button:focus-visible .sidebar-item-action-hints");
   });
 });

@@ -576,6 +576,7 @@ h1 {
 }
 
 .closed-tab-button {
+  position: relative;
   min-width: 0;
   min-height: 34px;
   display: grid;
@@ -639,6 +640,12 @@ h1 {
   color: var(--muted);
   font-size: 10px;
   font-weight: 780;
+  transition: opacity 120ms ease;
+}
+
+.closed-tab-button:hover .closed-tab-action,
+.closed-tab-button:focus-visible .closed-tab-action {
+  opacity: 0;
 }
 
 .tabs {

@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ClosedTab } from "../src/renderer/domain/browser";
-import { ClosedTabButton } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
+import { ClosedTabButton } from "../src/renderer/surfaces/sidebar/components/tabs/ClosedTabButton";
 
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 
@@ -13,6 +13,8 @@ describe("sidebar recently closed tabs", () => {
   it("renders a compact restore action", () => {
     const html = renderToStaticMarkup(createElement(ClosedTabButton, {
       closedIndex: 2,
+      onOpenInSplit: vi.fn(),
+      onPreview: vi.fn(),
       onRestore: vi.fn(),
       tab: closedTab()
     }));
@@ -21,6 +23,10 @@ describe("sidebar recently closed tabs", () => {
     expect(html).toContain("Docs");
     expect(html).toContain("https://docs.example/");
     expect(html).toContain("Restore");
+    expect(html).toContain("Alt");
+    expect(html).toContain("Preview");
+    expect(html).toContain("Shift");
+    expect(html).toContain("Split");
     expect(html).toContain('title="Restore Docs"');
   });
 

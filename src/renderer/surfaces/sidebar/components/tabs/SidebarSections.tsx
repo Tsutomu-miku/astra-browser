@@ -4,7 +4,8 @@ import type { BrowserTab, ClosedTab, Favorite } from "../../../../domain/browser
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
-import { ClosedTabButton, FavoriteButton, SidebarSectionHeader, TabGroupSection, TabRow } from "./SidebarItems";
+import { ClosedTabButton } from "./ClosedTabButton";
+import { FavoriteButton, SidebarSectionHeader, TabGroupSection, TabRow } from "./SidebarItems";
 import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
 
 const SIDEBAR_RECENTLY_CLOSED_LIMIT = 4;
@@ -135,6 +136,8 @@ export function SidebarSections({
                 key={`${tab.url}-${tab.closedAt}`}
                 closedIndex={index}
                 tab={tab}
+                onOpenInSplit={actions.openUrlInSplit}
+                onPreview={actions.openGlance}
                 onRestore={actions.restoreClosedTab}
               />
             ))}

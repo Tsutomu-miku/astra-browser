@@ -18,7 +18,9 @@
 .tab-row:hover .sidebar-item-action-hints,
 .tab-row:focus-within .sidebar-item-action-hints,
 .favorite-button:hover .sidebar-item-action-hints,
-.favorite-button:focus-visible .sidebar-item-action-hints {
+.favorite-button:focus-visible .sidebar-item-action-hints,
+.closed-tab-button:hover .sidebar-item-action-hints,
+.closed-tab-button:focus-visible .sidebar-item-action-hints {
   opacity: 1;
   transform: translate(0, -50%);
 }
