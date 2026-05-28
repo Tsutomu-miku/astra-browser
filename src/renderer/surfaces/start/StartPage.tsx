@@ -4,8 +4,10 @@ import { FiClock, FiStar, FiZap } from "react-icons/fi";
 import { getReadableUrlTitle } from "../../domain/browser";
 import type { BrowserController } from "../../app/controller/types";
 import { StartEntryActionHints } from "./components/StartEntryActionHints";
+import { StartQuickEntryContextMenu } from "./components/StartQuickEntryContextMenu";
 import { StartSearch } from "./components/StartSearch";
 import { StartTileGrid } from "./components/StartTileGrid";
+import { useStartQuickEntryMenu } from "./components/useStartQuickEntryMenu";
 import { getStartOpenIntent } from "./startOpenIntent";
 import { getStartPageContent } from "./startPageContent";
 
@@ -19,6 +21,7 @@ export function StartPage({
   const { actions, activeWorkspace, state } = controller;
   const content = useMemo(() => getStartPageContent(state, activeWorkspace), [activeWorkspace, state]);
   const accentStyle = { "--start-accent": activeWorkspace.accent } as CSSProperties;
+  const { closeMenu, menu, openMenu } = useStartQuickEntryMenu();
 
   function openOrPreview(event: MouseEvent, url: string, title?: string) {
     const intent = getStartOpenIntent(url, title, {
@@ -58,6 +61,8 @@ export function StartPage({
           <StartTileGrid
             emptyText="Essentials will appear across every Space."
             items={content.essentials}
+            kind="essential"
+            onContextMenu={openMenu}
             onOpen={openOrPreview}
           />
         </section>
@@ -70,6 +75,8 @@ export function StartPage({
           <StartTileGrid
             emptyText="Favorites in this Space will appear here."
             items={content.favorites}
+            kind="favorite"
+            onContextMenu={openMenu}
             onOpen={openOrPreview}
           />
         </section>
@@ -97,6 +104,19 @@ export function StartPage({
             ))}
           </div>
         </section>
+        {menu && (
+          <StartQuickEntryContextMenu
+            item={menu.item}
+            kind={menu.kind}
+            left={menu.left}
+            top={menu.top}
+            onClose={closeMenu}
+            onOpen={actions.navigateActiveTab}
+            onOpenInSplit={actions.openUrlInSplit}
+            onPreview={actions.openGlance}
+            onRemove={menu.kind === "essential" ? actions.removeEssential : actions.removeWorkspaceFavorite}
+          />
+        )}
       </div>
     </section>
   );

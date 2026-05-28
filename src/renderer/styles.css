@@ -8,6 +8,7 @@
 @import "./styles/browser.css";
 @import "./styles/topbar.css";
 @import "./styles/start-page.css";
+@import "./styles/start-context-menu.css";
 @import "./styles/glance.css";
 @import "./styles/panels.css";
 @import "./styles/panels-history.css";
