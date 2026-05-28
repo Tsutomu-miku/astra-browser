@@ -6,6 +6,7 @@ export interface Command {
   run: () => void;
   runInSplit?: () => void;
   runPreview?: () => void;
+  shortcut?: string;
 }
 
 export interface CommandActions {

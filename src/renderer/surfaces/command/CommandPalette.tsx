@@ -67,6 +67,7 @@ export function CommandPalette({ controller }: { controller: BrowserController }
         <div className="command-list" role="listbox" aria-label="Commands">
           {displayedCommands.map((command, index) => {
             const actionHints = getCommandActionHints(command);
+            const hasCommandMeta = Boolean(command.shortcut) || actionHints.length > 0;
             return (
               <button
                 className="command-item"
@@ -91,14 +92,26 @@ export function CommandPalette({ controller }: { controller: BrowserController }
                   <span className="command-title">{command.title}</span>
                   <span className="command-subtitle">{command.subtitle}</span>
                 </span>
-                {actionHints.length > 0 && (
-                  <span className="command-action-hints" aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}>
-                    {actionHints.map((hint) => (
-                      <span className={`command-action-hint is-${hint.id}`} key={hint.id}>
-                        <kbd>{hint.modifier}</kbd>
-                        <span>{hint.label}</span>
+                {hasCommandMeta && (
+                  <span className="command-meta">
+                    {command.shortcut && (
+                      <kbd className="command-shortcut" aria-label={`Shortcut ${command.shortcut}`}>
+                        {command.shortcut}
+                      </kbd>
+                    )}
+                    {actionHints.length > 0 && (
+                      <span
+                        className="command-action-hints"
+                        aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}
+                      >
+                        {actionHints.map((hint) => (
+                          <span className={`command-action-hint is-${hint.id}`} key={hint.id}>
+                            <kbd>{hint.modifier}</kbd>
+                            <span>{hint.label}</span>
+                          </span>
+                        ))}
                       </span>
-                    ))}
+                    )}
                   </span>
                 )}
               </button>

@@ -1,3 +1,4 @@
+import { shortcutLabels } from "../../common/shortcuts/shortcutLabels";
 import { BrowserState, isEssential, isFavorite } from "../../domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../../domain/browser/selectors";
 import type { Panel } from "../../stores/browserStoreTypes";
@@ -20,10 +21,16 @@ export function buildCommands(
 ): Command[] {
   const workspace = getActiveWorkspace(state);
   const activeTab = getActiveTab(workspace);
-  const sidebarCommandTitle = chromeState.sidebarCollapsed || chromeState.compactMode ? "Expand sidebar" : "Collapse sidebar";
+  const sidebarCommandTitle = chromeState.sidebarCollapsed || chromeState.compactMode
+    ? "Expand sidebar"
+    : "Collapse sidebar";
   const compactModeCommandTitle = chromeState.compactMode ? "Exit compact mode" : "Enter compact mode";
-  const floatingSidebarCommandTitle = chromeState.floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar";
-  const floatingToolbarCommandTitle = chromeState.floatingToolbarOpen ? "Unpin floating toolbar" : "Pin floating toolbar";
+  const floatingSidebarCommandTitle = chromeState.floatingSidebarOpen
+    ? "Unpin floating sidebar"
+    : "Pin floating sidebar";
+  const floatingToolbarCommandTitle = chromeState.floatingToolbarOpen
+    ? "Unpin floating toolbar"
+    : "Pin floating toolbar";
   const workspaceCommands = state.workspaces.map((candidate) => ({
     title: `Switch to ${candidate.name}`,
     subtitle: "Workspace",
@@ -59,10 +66,16 @@ export function buildCommands(
     : [];
 
   return [
-    { title: "New tab", subtitle: "Open homepage in this workspace", run: actions.newTab },
+    {
+      title: "New tab",
+      subtitle: "Open homepage in this workspace",
+      shortcut: shortcutLabels.newTab,
+      run: actions.newTab
+    },
     {
       title: isFavorite(workspace, activeTab.url) ? "Remove favorite" : "Add favorite",
       subtitle: activeTab.url,
+      shortcut: shortcutLabels.favorite,
       run: actions.toggleActiveTabFavorite
     },
     {
@@ -73,6 +86,7 @@ export function buildCommands(
     {
       title: "Reopen closed tab",
       subtitle: workspace.closedTabs[0]?.title ?? "No closed tabs in this workspace",
+      shortcut: shortcutLabels.restoreClosedTab,
       run: actions.restoreLastClosedTab
     },
     {
@@ -83,6 +97,7 @@ export function buildCommands(
     {
       title: activeTab.isMuted ? "Unmute tab" : "Mute tab",
       subtitle: activeTab.url,
+      shortcut: shortcutLabels.mute,
       run: actions.toggleActiveTabMuted
     },
     {
@@ -91,41 +106,85 @@ export function buildCommands(
       run: () => actions.openGlance(activeTab.url, activeTab.title)
     },
     ...splitCommands,
-    { title: "Zoom in", subtitle: "Increase page zoom", run: actions.zoomIn },
-    { title: "Zoom out", subtitle: "Decrease page zoom", run: actions.zoomOut },
-    { title: "Reset zoom", subtitle: "Return page zoom to 100%", run: actions.resetActiveTabZoom },
+    {
+      title: "Zoom in",
+      subtitle: "Increase page zoom",
+      shortcut: shortcutLabels.zoomIn,
+      run: actions.zoomIn
+    },
+    {
+      title: "Zoom out",
+      subtitle: "Decrease page zoom",
+      shortcut: shortcutLabels.zoomOut,
+      run: actions.zoomOut
+    },
+    {
+      title: "Reset zoom",
+      subtitle: "Return page zoom to 100%",
+      shortcut: shortcutLabels.resetZoom,
+      run: actions.resetActiveTabZoom
+    },
     { title: "Sleep inactive tabs", subtitle: "Unload hidden tabs in this Space", run: actions.sleepInactiveTabs },
     {
       title: sidebarCommandTitle,
       subtitle: chromeState.sidebarCollapsed || chromeState.compactMode ? "Restore sidebar controls" : "Enter focus mode",
+      shortcut: shortcutLabels.toggleSidebar,
       run: actions.toggleSidebar
     },
     {
       title: compactModeCommandTitle,
       subtitle: chromeState.compactMode ? "Restore toolbar and sidebar chrome" : "Hide toolbar and float browser chrome on hover",
+      shortcut: shortcutLabels.toggleCompactMode,
       run: actions.toggleCompactMode
     },
     {
       title: floatingSidebarCommandTitle,
       subtitle: chromeState.floatingSidebarOpen ? "Let the compact sidebar hide automatically" : "Keep the compact sidebar open",
+      shortcut: shortcutLabels.toggleFloatingSidebar,
       run: actions.toggleFloatingSidebar
     },
     {
       title: floatingToolbarCommandTitle,
       subtitle: chromeState.floatingToolbarOpen ? "Let the compact toolbar hide automatically" : "Keep the compact toolbar open",
+      shortcut: shortcutLabels.toggleFloatingToolbar,
       run: actions.toggleFloatingToolbar
     },
-    { title: "Focus address bar", subtitle: "Search or navigate", run: actions.focusAddressBar },
-    { title: "Next tab", subtitle: "Select the next tab", run: () => actions.selectAdjacentTab(1) },
-    { title: "Previous tab", subtitle: "Select the previous tab", run: () => actions.selectAdjacentTab(-1) },
+    {
+      title: "Focus address bar",
+      subtitle: "Search or navigate",
+      shortcut: shortcutLabels.focusAddress,
+      run: actions.focusAddressBar
+    },
+    {
+      title: "Next tab",
+      subtitle: "Select the next tab",
+      shortcut: shortcutLabels.nextTab,
+      run: () => actions.selectAdjacentTab(1)
+    },
+    {
+      title: "Previous tab",
+      subtitle: "Select the previous tab",
+      shortcut: shortcutLabels.previousTab,
+      run: () => actions.selectAdjacentTab(-1)
+    },
     { title: "Duplicate tab", subtitle: activeTab.title || activeTab.url, run: actions.duplicateActiveTab },
     {
       title: activeTab.groupId ? "Ungroup tab" : "Group tab",
       subtitle: activeTab.title || activeTab.url,
       run: activeTab.groupId ? actions.ungroupActiveTab : actions.groupActiveTab
     },
-    { title: "Show history", subtitle: "Open recent browsing", run: () => setPanel("history") },
-    { title: "Show downloads", subtitle: "Open Chromium downloads", run: () => setPanel("downloads") },
+    {
+      title: "Show history",
+      subtitle: "Open recent browsing",
+      shortcut: shortcutLabels.history,
+      run: () => setPanel("history")
+    },
+    {
+      title: "Show downloads",
+      subtitle: "Open Chromium downloads",
+      shortcut: shortcutLabels.downloads,
+      run: () => setPanel("downloads")
+    },
     { title: "Show settings", subtitle: "Homepage, search, and workspace", run: () => setPanel("settings") },
     { title: "New workspace", subtitle: "Create a new Space", run: actions.addWorkspace },
     ...workspaceDeleteCommands,
@@ -135,7 +194,12 @@ export function buildCommands(
     { title: "Close other tabs", subtitle: activeTab.title || activeTab.url, run: actions.closeOtherTabs },
     { title: "Close tabs to the left", subtitle: activeTab.title || activeTab.url, run: actions.closeTabsToLeft },
     { title: "Close tabs to the right", subtitle: activeTab.title || activeTab.url, run: actions.closeTabsToRight },
-    { title: "Close tab", subtitle: activeTab.title || activeTab.url, run: actions.closeActiveTab },
+    {
+      title: "Close tab",
+      subtitle: activeTab.title || activeTab.url,
+      shortcut: shortcutLabels.closeTab,
+      run: actions.closeActiveTab
+    },
     ...moveTabCommands,
     ...tabGroupCommands,
     ...moveToGroupCommands,

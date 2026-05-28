@@ -92,6 +92,27 @@
   font-size: 12px;
 }
 
+.command-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.command-shortcut {
+  min-height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  padding: 4px 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: color-mix(in srgb, var(--muted) 82%, white);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 1;
+}
+
 .command-action-hints {
   display: flex;
   flex-wrap: wrap;

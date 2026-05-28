@@ -1,4 +1,5 @@
 import type { BrowserState, BrowserTab, Workspace } from "../../../domain/browser";
+import { shortcutLabels } from "../../../common/shortcuts/shortcutLabels";
 import type { Command, CommandActions } from "./commandTypes";
 
 export function buildSplitCommands(
@@ -18,6 +19,7 @@ export function buildSplitCommands(
     ? [{
       title: "Unsplit all tabs",
       subtitle: "Close the current split view",
+      shortcut: shortcutLabels.unsplitAll,
       run: actions.toggleSplitMode
     }]
     : [];
@@ -26,27 +28,32 @@ export function buildSplitCommands(
     {
       title: state.splitMode ? "Close split view" : "Open split view",
       subtitle: state.splitMode ? `${state.splitTabIds.length + 1} panes open` : "Show Chromium webviews side by side",
+      shortcut: shortcutLabels.splitToggle,
       run: actions.toggleSplitMode
     },
     ...unsplitCommands,
     {
       title: "Fill split grid",
       subtitle: "Open up to four tabs in Zen-style split view",
+      shortcut: shortcutLabels.splitGrid,
       run: actions.fillSplitView
     },
     {
       title: "Split layout horizontal",
       subtitle: "Arrange split tabs side by side",
+      shortcut: shortcutLabels.splitHorizontal,
       run: () => actions.setSplitLayout("horizontal")
     },
     {
       title: "Split layout vertical",
       subtitle: "Stack split tabs top to bottom",
+      shortcut: shortcutLabels.splitVertical,
       run: () => actions.setSplitLayout("vertical")
     },
     {
       title: "Split layout grid",
       subtitle: "Arrange split tabs in a grid",
+      shortcut: shortcutLabels.splitGrid,
       run: () => actions.setSplitLayout("grid")
     },
     ...splitTabCommands

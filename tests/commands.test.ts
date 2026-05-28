@@ -83,7 +83,9 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.subtitle.startsWith("Recently closed"))).toBe(true);
     expect(commands.some((command) => command.subtitle.startsWith("History"))).toBe(true);
     expect(commands.some((command) => command.title === "Collapse sidebar")).toBe(true);
+    expect(commands.find((command) => command.title === "Collapse sidebar")?.shortcut).toBe("Alt+B");
     expect(commands.some((command) => command.title === "Reset zoom")).toBe(true);
+    expect(commands.find((command) => command.title === "Reset zoom")?.shortcut).toBe("Ctrl/Cmd+0");
     expect(commands.some((command) => command.title === "Sleep inactive tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Duplicate tab")).toBe(true);
     expect(commands.some((command) => command.title === "Group tab")).toBe(true);
@@ -106,6 +108,7 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Enter compact mode")).toBe(true);
     expect(commands.some((command) => command.title === "Pin floating sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Pin floating toolbar")).toBe(true);
+    expect(commands.find((command) => command.title === "Enter compact mode")?.shortcut).toBe("Ctrl/Cmd+Alt+C");
     expect(commands.some((command) => command.title === "Add essential")).toBe(true);
     expect(commands.some((command) => command.title === "Close other tabs")).toBe(true);
     expect(commands.some((command) => command.title === "Close tabs to the left")).toBe(true);
