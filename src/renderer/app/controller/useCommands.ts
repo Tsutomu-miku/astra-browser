@@ -64,6 +64,13 @@ export function buildCommands(
       run: () => actions.deleteWorkspace(workspace.id)
     }]
     : [];
+  const compactChromePeekCommands = chromeState.compactMode
+    ? [{
+      title: "Peek floating toolbar",
+      subtitle: "Temporarily reveal compact browser controls",
+      run: actions.peekCompactChrome
+    }]
+    : [];
 
   return [
     {
@@ -137,6 +144,7 @@ export function buildCommands(
       shortcut: shortcutLabels.toggleCompactMode,
       run: actions.toggleCompactMode
     },
+    ...compactChromePeekCommands,
     {
       title: floatingSidebarCommandTitle,
       subtitle: chromeState.floatingSidebarOpen ? "Let the compact sidebar hide automatically" : "Keep the compact sidebar open",
