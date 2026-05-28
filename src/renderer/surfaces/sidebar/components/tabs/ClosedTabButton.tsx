@@ -1,14 +1,17 @@
 import { getHostInitial, type ClosedTab } from "../../../../domain/browser";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
+import type { MouseEvent } from "react";
 
 export function ClosedTabButton({
   closedIndex,
+  onContextMenu,
   onOpenInSplit,
   onPreview,
   tab,
   onRestore
 }: {
   closedIndex: number;
+  onContextMenu: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
   tab: ClosedTab;
@@ -21,6 +24,7 @@ export function ClosedTabButton({
       className="closed-tab-button"
       type="button"
       title={`Restore ${title}`}
+      onContextMenu={(event) => onContextMenu(event, tab, closedIndex)}
       onClick={(event) => {
         if (event.altKey) {
           onPreview(tab.url, tab.title);

@@ -28,6 +28,7 @@ export function SidebarSections({
   onFavoriteDragStart,
   onFavoriteDrop,
   onFavoriteReorderDrop,
+  onClosedTabContextMenu,
   onPinDrop,
   onTabContextMenu,
   onTabDrop,
@@ -51,6 +52,7 @@ export function SidebarSections({
   onFavoriteDragStart: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
   onFavoriteDrop: (event: DragEvent<HTMLElement>) => void;
   onFavoriteReorderDrop: (event: DragEvent<HTMLElement>, targetFavoriteId: string) => void;
+  onClosedTabContextMenu: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
   onPinDrop: (event: DragEvent<HTMLElement>) => void;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
@@ -204,6 +206,7 @@ export function SidebarSections({
                 key={`${tab.url}-${tab.closedAt}`}
                 closedIndex={index}
                 tab={tab}
+                onContextMenu={onClosedTabContextMenu}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}
                 onRestore={actions.restoreClosedTab}

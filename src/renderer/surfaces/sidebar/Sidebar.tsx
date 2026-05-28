@@ -8,20 +8,17 @@ import {
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
-import { isEssential, isFavorite } from "../../domain/browser";
 import { getGroupedTabs } from "../../domain/tabs/groups";
 import type { BrowserController } from "../../app/controller/types";
 import { SidebarAddress } from "./components/chrome/SidebarAddress";
 import { SidebarFooter } from "./components/chrome/SidebarFooter";
 import { SidebarHeader } from "./components/chrome/SidebarHeader";
 import { SidebarSearchBox } from "./components/chrome/SidebarSearchBox";
-import { QuickEntryContextMenu } from "./components/tabs/QuickEntryContextMenu";
+import { SidebarContextMenus } from "./components/tabs/SidebarContextMenus";
 import { SidebarSections } from "./components/tabs/SidebarSections";
-import { TabContextMenu } from "./components/tabs/TabContextMenu";
 import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus";
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
-import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "./model/tabContextMenuState";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -37,7 +34,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
   const [tabQuery, setTabQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
-  const { closeMenus, openQuickEntryMenu, openTabMenu, quickEntryMenu, setQuickEntryMenu, tabMenu } = useSidebarContextMenus();
+  const { closedTabMenu, closeMenus, openClosedTabMenu, openQuickEntryMenu, openTabMenu, quickEntryMenu, tabMenu } = useSidebarContextMenus();
   const pinnedTabs = activeWorkspace.tabs.filter((tab) => tab.isPinned);
   const groupedTabs = getGroupedTabs(activeWorkspace);
   const groupedTabIds = new Set(groupedTabs.flatMap((entry) => entry.tabs.map((tab) => tab.id)));
@@ -222,6 +219,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onFavoriteDragStart={handleFavoriteDragStart}
           onFavoriteDrop={handleFavoriteDrop}
           onFavoriteReorderDrop={handleFavoriteReorderDrop}
+          onClosedTabContextMenu={openClosedTabMenu}
           splitTabIds={state.splitTabIds}
           onQuickEntryContextMenu={openQuickEntryMenu}
           onPinDrop={handlePinDrop}
@@ -245,51 +243,15 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         splitLayout={controller.splitLayout}
         splitMode={state.splitMode}
       />
-      {tabMenu && (
-        <TabContextMenu
-          left={tabMenu.left}
-          cleanupState={getTabCleanupState(activeWorkspace.tabs, tabMenu.tab.id)}
-          groupMenuState={getTabGroupMenuState(activeWorkspace.tabGroups, tabMenu.tab)}
-          moveWorkspaceTargets={getMoveWorkspaceTargets(state.workspaces, activeWorkspace.id)}
-          tab={tabMenu.tab}
-          top={tabMenu.top}
-          onClose={closeMenus}
-          onCloseTab={actions.closeTab}
-          onCloseOtherTabs={actions.closeOtherTabs}
-          onCloseTabsToLeft={actions.closeTabsToLeft}
-          onCloseTabsToRight={actions.closeTabsToRight}
-          onCopyText={actions.copyText}
-          onDuplicate={actions.duplicateTab}
-          onGroupTab={actions.groupTab}
-          onMoveToGroup={actions.assignTabToGroup}
-          onMoveToWorkspace={actions.moveTabToWorkspace}
-          onOpenGlance={actions.openGlance}
-          onOpenInSplit={actions.openTabInSplit}
-          onSelect={actions.selectTab}
-          onSleepTab={actions.sleepTab}
-          onToggleEssential={actions.toggleTabEssential}
-          onToggleFavorite={actions.toggleTabFavorite}
-          onToggleMuted={actions.toggleTabMuted}
-          onTogglePinned={actions.toggleTabPinned}
-          onUngroupTab={actions.ungroupTab}
-          tabIsEssential={isEssential(state, tabMenu.tab.url)}
-          tabIsFavorite={isFavorite(activeWorkspace, tabMenu.tab.url)}
-        />
-      )}
-      {quickEntryMenu && (
-        <QuickEntryContextMenu
-          item={quickEntryMenu.item}
-          kind={quickEntryMenu.kind}
-          left={quickEntryMenu.left}
-          top={quickEntryMenu.top}
-          onClose={() => setQuickEntryMenu(null)}
-          onCopyText={actions.copyText}
-          onOpen={actions.openUrlInActiveWorkspace}
-          onOpenInSplit={actions.openUrlInSplit}
-          onPreview={actions.openGlance}
-          onRemove={quickEntryMenu.kind === "essential" ? actions.removeEssential : actions.removeWorkspaceFavorite}
-        />
-      )}
+      <SidebarContextMenus
+        actions={actions}
+        activeWorkspace={activeWorkspace}
+        closedTabMenu={closedTabMenu}
+        closeMenus={closeMenus}
+        quickEntryMenu={quickEntryMenu}
+        state={state}
+        tabMenu={tabMenu}
+      />
     </aside>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent } from "react";
 
-import type { BrowserTab, Favorite } from "../../../../domain/browser";
+import type { BrowserTab, ClosedTab, Favorite } from "../../../../domain/browser";
 
 export interface TabMenuState {
   left: number;
@@ -15,17 +15,27 @@ export interface QuickEntryMenuState {
   top: number;
 }
 
+export interface ClosedTabMenuState {
+  closedIndex: number;
+  left: number;
+  tab: ClosedTab;
+  top: number;
+}
+
 export function useSidebarContextMenus() {
   const [tabMenu, setTabMenu] = useState<TabMenuState | null>(null);
   const [quickEntryMenu, setQuickEntryMenu] = useState<QuickEntryMenuState | null>(null);
+  const [closedTabMenu, setClosedTabMenu] = useState<ClosedTabMenuState | null>(null);
 
   function closeMenus() {
+    setClosedTabMenu(null);
     setTabMenu(null);
     setQuickEntryMenu(null);
   }
 
   function openTabMenu(event: MouseEvent, tab: BrowserTab) {
     event.preventDefault();
+    setClosedTabMenu(null);
     setQuickEntryMenu(null);
     setTabMenu({
       left: Math.min(event.clientX, window.innerWidth - 190),
@@ -36,6 +46,7 @@ export function useSidebarContextMenus() {
 
   function openQuickEntryMenu(event: MouseEvent, item: Favorite, kind: QuickEntryMenuState["kind"]) {
     event.preventDefault();
+    setClosedTabMenu(null);
     setTabMenu(null);
     setQuickEntryMenu({
       item,
@@ -45,8 +56,20 @@ export function useSidebarContextMenus() {
     });
   }
 
+  function openClosedTabMenu(event: MouseEvent, tab: ClosedTab, closedIndex: number) {
+    event.preventDefault();
+    setQuickEntryMenu(null);
+    setTabMenu(null);
+    setClosedTabMenu({
+      closedIndex,
+      left: Math.min(event.clientX, window.innerWidth - 206),
+      tab,
+      top: Math.min(event.clientY, window.innerHeight - 170)
+    });
+  }
+
   useEffect(() => {
-    if (!tabMenu && !quickEntryMenu) return;
+    if (!closedTabMenu && !tabMenu && !quickEntryMenu) return;
 
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeMenus();
@@ -62,14 +85,15 @@ export function useSidebarContextMenus() {
       window.removeEventListener("keydown", closeOnEscape);
       window.removeEventListener("scroll", closeMenus, true);
     };
-  }, [quickEntryMenu, tabMenu]);
+  }, [closedTabMenu, quickEntryMenu, tabMenu]);
 
   return {
+    closedTabMenu,
     closeMenus,
+    openClosedTabMenu,
     openQuickEntryMenu,
     openTabMenu,
     quickEntryMenu,
-    setQuickEntryMenu,
     tabMenu
   };
 }
