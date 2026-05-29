@@ -67,7 +67,10 @@ export function restoreClosedTab(state: BrowserState, closedIndex: number): Brow
     const [closed] = workspace.closedTabs.splice(closedIndex, 1);
     if (!closed) return;
 
-    const tab = createTab(closed.title, closed.url);
+    const tab = {
+      ...createTab(closed.title, closed.url),
+      ...(closed.faviconUrl ? { faviconUrl: closed.faviconUrl } : {})
+    };
     workspace.tabs.push(tab);
     workspace.activeTabId = tab.id;
     clearSplitView(draft);
@@ -93,7 +96,10 @@ export function restoreClosedTabToWorkspace(
     const [closed] = source.closedTabs.splice(closedIndex, 1);
     if (!closed) return;
 
-    const tab = createTab(closed.title, closed.url);
+    const tab = {
+      ...createTab(closed.title, closed.url),
+      ...(closed.faviconUrl ? { faviconUrl: closed.faviconUrl } : {})
+    };
     target.tabs.push(tab);
     target.activeTabId = tab.id;
     draft.activeWorkspaceId = target.id;

@@ -65,6 +65,9 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
       tab.id = tab.id ?? createId();
       tab.url = normalizeAddress(tab.url || getHomepageUrl(state), state.settings.searchEngine);
       tab.title = tab.title || getReadableUrlTitle(tab.url);
+      if (typeof tab.faviconUrl !== "string" || tab.faviconUrl.trim().length === 0) {
+        delete tab.faviconUrl;
+      }
       tab.groupId = isKnownTabGroup(workspace.tabGroups, tab.groupId) ? tab.groupId : null;
       tab.canGoBack = Boolean(tab.canGoBack);
       tab.canGoForward = Boolean(tab.canGoForward);
@@ -147,11 +150,15 @@ export function normalizeClosedTabs(closedTabs: Array<Partial<ClosedTab> | null>
 
   return closedTabs
     .filter((tab): tab is Partial<ClosedTab> & { url: string } => Boolean(tab?.url))
-    .map((tab) => ({
-      title: tab.title || getReadableUrlTitle(tab.url),
-      url: normalizeAddress(tab.url),
-      closedAt: Number(tab.closedAt) || Date.now()
-    }))
+    .map((tab) => {
+      const url = normalizeAddress(tab.url);
+      return {
+        title: tab.title || getReadableUrlTitle(url),
+        url,
+        ...(typeof tab.faviconUrl === "string" && tab.faviconUrl.trim() ? { faviconUrl: tab.faviconUrl } : {}),
+        closedAt: Number(tab.closedAt) || Date.now()
+      };
+    })
     .slice(0, 25);
 }
 

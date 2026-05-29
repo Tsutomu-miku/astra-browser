@@ -1,10 +1,10 @@
 import { type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
-import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icons/fi";
+import { FiChevronDown, FiChevronRight, FiX } from "react-icons/fi";
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
-import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
+import { type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getQuickEntryAccessibilityLabel, type QuickEntryKind } from "../../model/quickEntryItemState";
 import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
@@ -12,6 +12,7 @@ import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivat
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
+import { SidebarItemIcon } from "./SidebarItemIcon";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
 
 export function SidebarSectionHeader({
@@ -113,6 +114,7 @@ export function TabRow({
     writeSidebarTabDragPayload(event.dataTransfer, tab.id);
     event.dataTransfer.effectAllowed = "move";
   };
+  const iconStatus = tab.isLoading ? "loading" : tab.isSleeping ? "sleeping" : undefined;
 
   return (
     <div
@@ -178,7 +180,7 @@ export function TabRow({
           }
         }}
       >
-        <span className="tab-favicon">{tab.isSleeping ? <FiMoon /> : tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}</span>
+        <SidebarItemIcon className="tab-favicon" faviconUrl={tab.faviconUrl} status={iconStatus} url={tab.url} />
         <span className="tab-title-stack">
           <span className="tab-title">{tab.title || tab.url}</span>
           <SidebarTabStatusBadges badges={statusBadges} />
@@ -269,6 +271,7 @@ export function FavoriteButton({
 
     onOpenInSplit(favorite.url, favorite.title);
   };
+  const iconStatus = tabStatusBadges.some((badge) => badge.id === "sleeping") ? "sleeping" : undefined;
 
   return (
     <button
@@ -328,7 +331,7 @@ export function FavoriteButton({
         }
       }}
     >
-      <span className="favorite-icon">{getHostInitial(favorite.url)}</span>
+      <SidebarItemIcon className="favorite-icon" status={iconStatus} url={favorite.url} />
       {tabStatusBadges.length > 0 ? (
         <span className="favorite-title-stack">
           <span className="favorite-title">{favorite.title}</span>

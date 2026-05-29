@@ -100,7 +100,10 @@ export function restoreClosedTabToNewWorkspace(state: BrowserState, closedIndex:
     const [closed] = source.closedTabs.splice(closedIndex, 1);
     if (!closed) return;
 
-    const tab = createTab(closed.title, closed.url);
+    const tab = {
+      ...createTab(closed.title, closed.url),
+      ...(closed.faviconUrl ? { faviconUrl: closed.faviconUrl } : {})
+    };
     const workspace = createWorkspace(draft, {
       name: closed.title || getReadableUrlTitle(closed.url),
       tabs: [tab],

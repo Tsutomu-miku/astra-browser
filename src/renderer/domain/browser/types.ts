@@ -10,6 +10,7 @@ export interface BrowserTab {
   id: string;
   title: string;
   url: string;
+  faviconUrl?: string;
   groupId: string | null;
   canGoBack: boolean;
   canGoForward: boolean;
@@ -24,6 +25,7 @@ export interface BrowserTab {
 export interface ClosedTab {
   title: string;
   url: string;
+  faviconUrl?: string;
   closedAt: number;
 }
 

@@ -11,6 +11,7 @@ export function createTab(title: string, url: string): BrowserTab {
     id: createId(),
     title,
     url,
+    faviconUrl: undefined,
     groupId: null,
     canGoBack: false,
     canGoForward: false,

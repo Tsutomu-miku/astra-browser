@@ -1,9 +1,8 @@
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
-import { FiLoader } from "react-icons/fi";
 
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
-import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
+import { type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
@@ -14,6 +13,7 @@ import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { getSidebarSearchTargetElementId, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarSectionHeader } from "./SidebarItems";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
+import { SidebarItemIcon } from "./SidebarItemIcon";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
 
 export function SidebarPinnedTabs({
@@ -76,6 +76,7 @@ export function SidebarPinnedTabs({
             statusBadges,
             tab
           });
+          const iconStatus = tab.isLoading ? "loading" : tab.isSleeping ? "sleeping" : undefined;
 
           return (
             <button
@@ -142,7 +143,7 @@ export function SidebarPinnedTabs({
                 onTabDrop(event, tab.id, "horizontal");
               }}
             >
-              <span className="pinned-tab-icon">{tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}</span>
+              <SidebarItemIcon className="pinned-tab-icon" faviconUrl={tab.faviconUrl} status={iconStatus} url={tab.url} />
               <SidebarTabStatusBadges badges={statusBadges} variant="pinned" />
               <SidebarItemActionHints />
             </button>

@@ -116,9 +116,10 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
               onWebviewReady={registerWebview}
               onWebviewRemoved={removeWebview}
               onLoadingChange={(isLoading, navigationState) => actions.updateTab(tab.id, { isLoading, ...navigationState })}
+              onFaviconChange={(faviconUrl) => actions.updateTab(tab.id, { faviconUrl })}
               onTitleChange={(title) => actions.updateTab(tab.id, { title })}
               onNavigate={(url) => {
-                actions.updateTab(tab.id, { url });
+                actions.updateTab(tab.id, { url, faviconUrl: undefined });
                 actions.recordHistory(tab.id, url);
               }}
             />

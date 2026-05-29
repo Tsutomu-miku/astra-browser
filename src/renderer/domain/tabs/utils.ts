@@ -8,6 +8,7 @@ export function prependClosedTabs(workspace: Workspace, tabs: BrowserTab[]) {
     ...tabs.map((tab) => ({
       title: tab.title || getReadableUrlTitle(tab.url),
       url: tab.url,
+      ...(tab.faviconUrl ? { faviconUrl: tab.faviconUrl } : {}),
       closedAt: Date.now()
     })).reverse(),
     ...workspace.closedTabs

@@ -11,6 +11,7 @@ import type { WebviewElement } from "../../../types/browser-ui";
 export function BrowserWebview({
   isVisible,
   onLoadingChange,
+  onFaviconChange,
   onNavigate,
   onTitleChange,
   onWebviewReady,
@@ -20,6 +21,7 @@ export function BrowserWebview({
 }: {
   isVisible: boolean;
   onLoadingChange: (isLoading: boolean, navigationState: NavigationState) => void;
+  onFaviconChange: (faviconUrl: string | undefined) => void;
   onNavigate: (url: string) => void;
   onTitleChange: (title: string) => void;
   onWebviewReady: (tabId: string, webview: WebviewElement) => void;
@@ -31,14 +33,15 @@ export function BrowserWebview({
   const readyRef = useRef(false);
   const latestRef = useRef({
     onLoadingChange,
+    onFaviconChange,
     onNavigate,
     onTitleChange,
     tab
   });
 
   useEffect(() => {
-    latestRef.current = { onLoadingChange, onNavigate, onTitleChange, tab };
-  }, [onLoadingChange, onNavigate, onTitleChange, tab]);
+    latestRef.current = { onLoadingChange, onFaviconChange, onNavigate, onTitleChange, tab };
+  }, [onLoadingChange, onFaviconChange, onNavigate, onTitleChange, tab]);
 
   useEffect(() => {
     const webview = ref.current;
@@ -51,6 +54,10 @@ export function BrowserWebview({
     const onStop = () => latestRef.current.onLoadingChange(false, readNavigationState());
     const onTitle = (event: Event) => {
       latestRef.current.onTitleChange((event as { title?: string }).title ?? latestRef.current.tab.title);
+    };
+    const onFavicon = (event: Event) => {
+      const [faviconUrl] = (event as { favicons?: string[] }).favicons ?? [];
+      latestRef.current.onFaviconChange(faviconUrl);
     };
     const onNav = (event: Event) => {
       latestRef.current.onNavigate((event as { url?: string }).url ?? latestRef.current.tab.url);
@@ -67,6 +74,7 @@ export function BrowserWebview({
     webview.addEventListener("did-start-loading", onStart);
     webview.addEventListener("did-stop-loading", onStop);
     webview.addEventListener("page-title-updated", onTitle);
+    webview.addEventListener("page-favicon-updated", onFavicon);
     webview.addEventListener("did-navigate", onNav);
     webview.addEventListener("did-navigate-in-page", onNav);
 
@@ -77,6 +85,7 @@ export function BrowserWebview({
       webview.removeEventListener("did-start-loading", onStart);
       webview.removeEventListener("did-stop-loading", onStop);
       webview.removeEventListener("page-title-updated", onTitle);
+      webview.removeEventListener("page-favicon-updated", onFavicon);
       webview.removeEventListener("did-navigate", onNav);
       webview.removeEventListener("did-navigate-in-page", onNav);
     };

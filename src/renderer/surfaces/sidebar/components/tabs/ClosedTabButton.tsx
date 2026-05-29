@@ -1,8 +1,9 @@
-import { getHostInitial, type ClosedTab } from "../../../../domain/browser";
+import { type ClosedTab } from "../../../../domain/browser";
 import { getClosedTabAccessibilityLabel } from "../../model/closedTabItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
+import { SidebarItemIcon } from "./SidebarItemIcon";
 import type { DragEvent, MouseEvent } from "react";
 
 export function ClosedTabButton({
@@ -57,7 +58,7 @@ export function ClosedTabButton({
         }
       }}
     >
-      <span className="closed-tab-icon">{getHostInitial(tab.url)}</span>
+      <SidebarItemIcon className="closed-tab-icon" faviconUrl={tab.faviconUrl} url={tab.url} />
       <span className="closed-tab-main">
         <span className="closed-tab-title">{title}</span>
         <span className="closed-tab-url">{tab.url}</span>
