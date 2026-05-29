@@ -15,6 +15,7 @@ import {
 
 import type { BrowserController } from "../../../../app/controller/types";
 import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
+import { handleSidebarFooterFocusNavigation } from "../../model/sidebarFooterFocusNavigation";
 
 export function SidebarFooter({
   actions,
@@ -56,7 +57,7 @@ export function SidebarFooter({
   }
 
   return (
-    <footer className="sidebar-footer">
+    <footer className="sidebar-footer" onKeyDown={handleSidebarFooterFocusNavigation}>
       {splitMode && (
         <div className="sidebar-split-layout" aria-label="Split layout">
           <button
@@ -107,7 +108,16 @@ export function SidebarFooter({
       >
         {compactMode ? floatingSidebarOpen ? <FiLock /> : <FiUnlock /> : <FiSidebar />}
       </button>
-      <button className="icon-button" title="Compact mode" type="button" aria-pressed={compactMode} onClick={actions.toggleCompactMode}><FiMinimize2 /></button>
+      <button
+        className="icon-button"
+        title="Compact mode"
+        type="button"
+        aria-label="Compact mode"
+        aria-pressed={compactMode}
+        onClick={actions.toggleCompactMode}
+      >
+        <FiMinimize2 />
+      </button>
       <button
         className="icon-button"
         title="Split view"
@@ -125,9 +135,9 @@ export function SidebarFooter({
       >
         <FiSquare />
       </button>
-      <button className="icon-button" title="History" type="button" onClick={() => setPanel("history")}><FiClock /></button>
-      <button className="icon-button" title="Downloads" type="button" onClick={() => setPanel("downloads")}><FiDownload /></button>
-      <button className="icon-button" title="Settings" type="button" onClick={() => setPanel("settings")}><FiSettings /></button>
+      <button className="icon-button" title="History" type="button" aria-label="History" onClick={() => setPanel("history")}><FiClock /></button>
+      <button className="icon-button" title="Downloads" type="button" aria-label="Downloads" onClick={() => setPanel("downloads")}><FiDownload /></button>
+      <button className="icon-button" title="Settings" type="button" aria-label="Settings" onClick={() => setPanel("settings")}><FiSettings /></button>
     </footer>
   );
 }

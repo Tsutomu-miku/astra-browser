@@ -1,16 +1,20 @@
 import type { KeyboardEvent } from "react";
 
-import { getNextListIndex, isListNavigationKey } from "../navigation/listNavigation";
+import { getNextListIndex, type ListNavigationKey } from "../navigation/listNavigation";
+
+export type FocusableListOrientation = "horizontal" | "vertical";
 
 export function handleFocusableListNavigation(
   event: KeyboardEvent<HTMLElement>,
-  selector: string
+  selector: string,
+  orientation: FocusableListOrientation = "vertical"
 ): boolean {
+  const navigationKey = getNavigationKey(event.key, orientation);
   if (
     event.altKey ||
     event.ctrlKey ||
     event.metaKey ||
-    !isListNavigationKey(event.key) ||
+    !navigationKey ||
     isEditableTarget(event.target)
   ) {
     return false;
@@ -24,8 +28,20 @@ export function handleFocusableListNavigation(
 
   const activeItem = findActiveFocusableItem(items, document.activeElement);
   const activeIndex = Math.max(0, activeItem ? items.indexOf(activeItem) : -1);
-  items[getNextListIndex(activeIndex, items.length, event.key)]?.focus();
+  items[getNextListIndex(activeIndex, items.length, navigationKey)]?.focus();
   return true;
+}
+
+function getNavigationKey(key: string, orientation: FocusableListOrientation): ListNavigationKey | null {
+  if (key === "Home" || key === "End") return key;
+  if (orientation === "vertical") {
+    if (key === "ArrowDown" || key === "ArrowUp") return key;
+    return null;
+  }
+
+  if (key === "ArrowRight") return "ArrowDown";
+  if (key === "ArrowLeft") return "ArrowUp";
+  return null;
 }
 
 function getFocusableItems(root: HTMLElement, selector: string): HTMLElement[] {

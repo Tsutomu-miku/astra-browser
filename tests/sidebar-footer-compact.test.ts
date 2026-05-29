@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -31,6 +33,18 @@ describe("sidebar footer compact controls", () => {
 
     expect(html).toContain('aria-label="Split view"');
     expect(html).toContain('data-drop-target="true"');
+  });
+
+  it("labels icon-only footer controls", () => {
+    const html = renderFooter({
+      compactMode: false,
+      floatingSidebarOpen: false
+    });
+
+    expect(html).toContain('aria-label="Compact mode"');
+    expect(html).toContain('aria-label="History"');
+    expect(html).toContain('aria-label="Downloads"');
+    expect(html).toContain('aria-label="Settings"');
   });
 
   it("does not mark the split button as a target for the active tab", () => {
@@ -92,6 +106,67 @@ describe("sidebar footer compact controls", () => {
     expect(sidebarCss).toContain(".sidebar-memory-saver");
     expect(sidebarCss).toContain(".sidebar-memory-saver:disabled");
   });
+
+  it("moves focus through footer controls with ArrowLeft, ArrowRight, Home, and End", () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarFooter, footerProps({
+        compactMode: false,
+        floatingSidebarOpen: false,
+        memorySaver: {
+          mountedWebviews: 5,
+          protectedTabs: 2,
+          reclaimableTabs: 3,
+          sleepAfterMinutes: 30,
+          sleepEnabled: true,
+          sleepingTabs: 0,
+          summary: "3 releasable · 0 sleeping · 2 protected"
+        }
+      })));
+    });
+
+    const buttons = container.querySelectorAll<HTMLButtonElement>(".sidebar-footer button");
+    buttons[0]?.focus();
+
+    act(() => {
+      buttons[0]?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "ArrowRight"
+      }));
+    });
+    expect(document.activeElement).toBe(buttons[1]);
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "End"
+      }));
+    });
+    expect(document.activeElement).toBe(buttons[buttons.length - 1]);
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Settings");
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "ArrowLeft"
+      }));
+    });
+    expect(document.activeElement).toBe(buttons[buttons.length - 2]);
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "Home"
+      }));
+    });
+    expect(document.activeElement).toBe(buttons[0]);
+
+    act(() => root.unmount());
+    container.remove();
+  });
 });
 
 function renderFooter({
@@ -115,7 +190,29 @@ function renderFooter({
   floatingSidebarOpen: boolean;
   memorySaver?: Parameters<typeof SidebarFooter>[0]["memorySaver"];
 }) {
-  return renderToStaticMarkup(createElement(SidebarFooter, {
+  return renderToStaticMarkup(createElement(SidebarFooter, footerProps({
+    activeTabId,
+    compactMode,
+    draggingTabId,
+    floatingSidebarOpen,
+    memorySaver
+  })));
+}
+
+function footerProps({
+  activeTabId = "active-tab",
+  compactMode,
+  draggingTabId = null,
+  floatingSidebarOpen,
+  memorySaver
+}: {
+  activeTabId?: string;
+  compactMode: boolean;
+  draggingTabId?: string | null;
+  floatingSidebarOpen: boolean;
+  memorySaver: Parameters<typeof SidebarFooter>[0]["memorySaver"];
+}) {
+  return {
     actions: {
       openTabInSplit: vi.fn(),
       setSplitLayout: vi.fn(),
@@ -133,5 +230,5 @@ function renderFooter({
     setDraggingTabId: vi.fn(),
     splitLayout: "horizontal",
     splitMode: false
-  }));
+  } satisfies Parameters<typeof SidebarFooter>[0];
 }
