@@ -21,6 +21,7 @@ import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
+import { handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
 import { getSidebarTabDropIntent, getSidebarTabsAreaDropIntent } from "./model/sidebarTabDropIntent";
 import {
   clampSidebarSearchIndex,
@@ -243,7 +244,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         onUpdateWorkspace={actions.updateWorkspaceById}
       />
 
-      <section className="tab-stack">
+      <section className="tab-stack" onKeyDown={handleSidebarFocusNavigation}>
         <SidebarHeader workspaceName={activeWorkspace.name} onNewTab={actions.newTab} />
         <SidebarAddress controller={controller} />
         <SidebarSearchBox
