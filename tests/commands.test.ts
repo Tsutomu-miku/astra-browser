@@ -33,6 +33,7 @@ function commandActions() {
     groupActiveTab: vi.fn(),
     groupTab: vi.fn(),
     moveTabToWorkspace: vi.fn(),
+    navigateActiveTab: vi.fn(),
     openGlance: vi.fn(),
     openFind: vi.fn(),
     peekCompactChrome: vi.fn(),

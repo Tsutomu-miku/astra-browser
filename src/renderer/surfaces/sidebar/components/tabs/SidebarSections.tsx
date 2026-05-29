@@ -2,7 +2,7 @@ import { useState, type DragEvent, type MouseEvent } from "react";
 
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
-import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
+import { resolveFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarFavoriteActive, isSidebarUrlActive } from "../../model/sidebarItemState";
 import { hasSidebarSectionDragReveal, type SidebarSectionId } from "../../model/sidebarSectionState";
@@ -102,10 +102,7 @@ export function SidebarSections({
     }));
   };
   const openFavorite = (favorite: Favorite) => {
-    const tab = workspaceTabs.find((candidate) => (
-      candidate.id === favorite.tabId ||
-      (!favorite.tabId && candidate.url === favorite.url)
-    ));
+    const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
     tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(favorite.url, favorite.title);
   };
 

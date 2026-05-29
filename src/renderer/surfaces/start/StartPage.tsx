@@ -1,7 +1,7 @@
 import { useMemo, type CSSProperties, type MouseEvent } from "react";
 import { FiClock, FiStar, FiZap } from "react-icons/fi";
 
-import { getReadableUrlTitle } from "../../domain/browser";
+import { getReadableUrlTitle, resolveFavoriteTab } from "../../domain/browser";
 import type { Favorite } from "../../domain/browser";
 import type { StartEntryContextMenuItem } from "./components/useStartEntryContextMenu";
 import type { BrowserController } from "../../app/controller/types";
@@ -25,15 +25,17 @@ export function StartPage({
   const accentStyle = { "--start-accent": activeWorkspace.accent } as CSSProperties;
   const { closeMenu, menu, openMenu } = useStartEntryContextMenu();
 
-  function runQuickEntry(item: Favorite | StartEntryContextMenuItem) {
-    const tab = activeWorkspace.tabs.find((candidate) => (
-      candidate.id === item.tabId ||
-      (!item.tabId && candidate.url === item.url)
-    ));
-    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(item.url, item.title);
+  function runStartEntry(item: Favorite | StartEntryContextMenuItem, kind: "essential" | "favorite" | "history") {
+    if (kind === "favorite") {
+      const tab = resolveFavoriteTab(activeWorkspace, item);
+      tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(item.url, item.title);
+      return;
+    }
+
+    actions.navigateActiveTab(item.url);
   }
 
-  function openQuickEntry(event: MouseEvent, item: Favorite) {
+  function openQuickEntry(event: MouseEvent, item: Favorite, kind: "essential" | "favorite") {
     const intent = getStartOpenIntent(item.url, item.title, {
       altKey: event.altKey,
       shiftKey: event.shiftKey
@@ -44,7 +46,7 @@ export function StartPage({
     } else if (intent.type === "split") {
       actions.openUrlInSplit(intent.url, intent.title);
     } else {
-      runQuickEntry(item);
+      runStartEntry(item, kind);
     }
   }
 
@@ -137,7 +139,7 @@ export function StartPage({
             left={menu.left}
             top={menu.top}
             onClose={closeMenu}
-            onOpen={runQuickEntry}
+            onOpen={runStartEntry}
             onOpenInSplit={actions.openUrlInSplit}
             onPreview={actions.openGlance}
             onRemove={(item, kind) => {

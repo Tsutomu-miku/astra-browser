@@ -3,7 +3,7 @@ import {
   getNextListIndex,
   type ListNavigationKey
 } from "../../common/navigation/listNavigation";
-import type { BrowserTab, Favorite, TabGroup } from "../../domain/browser";
+import { resolveFavoriteTab, type BrowserTab, type Favorite, type TabGroup } from "../../domain/browser";
 
 export interface SidebarGroupEntry {
   group: TabGroup;
@@ -86,7 +86,7 @@ export function getSidebarSearchTargets(input: SidebarFilterResult): SidebarSear
     ...input.favorites.map((favorite) => ({
       type: "favorite" as const,
       id: favorite.id,
-      tabId: favorite.tabId ?? workspaceTabs.find((tab) => tab.url === favorite.url)?.id,
+      tabId: resolveFavoriteTab({ tabs: workspaceTabs }, favorite)?.id,
       title: favorite.title,
       url: favorite.url
     })),

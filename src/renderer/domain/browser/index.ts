@@ -1,6 +1,7 @@
 export { DEFAULT_URL, INTERNAL_NEW_TAB_URL, SEARCH_ENGINES } from "./constants";
 export { createDefaultState, createFavorite, createId, createTab, getNextWorkspaceAccent } from "./factory";
 export { formatBytes } from "./formatting";
+export { resolveFavoriteTab } from "./favorites";
 export { isInternalNewTabUrl, isInternalPageUrl } from "./internalPages";
 export {
   getHomepageUrl,

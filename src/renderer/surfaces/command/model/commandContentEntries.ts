@@ -1,4 +1,4 @@
-import type { BrowserState, Workspace } from "../../../domain/browser";
+import { resolveFavoriteTab, type BrowserState, type Workspace } from "../../../domain/browser";
 import type { Command, CommandActions } from "./commandTypes";
 
 export function buildContentCommands(
@@ -6,29 +6,25 @@ export function buildContentCommands(
   workspace: Workspace,
   actions: CommandActions
 ): Command[] {
-  const openQuickEntry = (url: string, title: string, tabId?: string) => {
-    const tab = workspace.tabs.find((candidate) => (
-      candidate.id === tabId ||
-      (!tabId && candidate.url === url)
-    ));
-    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(url, title);
-  };
-
   return [
     ...state.essentials.map((essential) => ({
       title: essential.title,
       subtitle: `Essential · ${essential.url}`,
-      run: () => openQuickEntry(essential.url, essential.title, essential.tabId),
+      run: () => actions.navigateActiveTab(essential.url),
       runInSplit: () => actions.openUrlInSplit(essential.url, essential.title),
       runPreview: () => actions.openGlance(essential.url, essential.title)
     })),
-    ...workspace.favorites.map((favorite) => ({
-      title: favorite.title,
-      subtitle: `Favorite · ${favorite.url}`,
-      run: () => openQuickEntry(favorite.url, favorite.title, favorite.tabId),
-      runInSplit: () => actions.openUrlInSplit(favorite.url, favorite.title),
-      runPreview: () => actions.openGlance(favorite.url, favorite.title)
-    })),
+    ...workspace.favorites.map((favorite) => {
+      const tab = resolveFavoriteTab(workspace, favorite);
+
+      return {
+        title: favorite.title,
+        subtitle: `Favorite · ${favorite.url}`,
+        run: () => tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(favorite.url, favorite.title),
+        runInSplit: () => actions.openUrlInSplit(favorite.url, favorite.title),
+        runPreview: () => actions.openGlance(favorite.url, favorite.title)
+      };
+    }),
     ...workspace.tabs.map((tab) => ({
       title: tab.title || tab.url,
       subtitle: `${getOpenTabCommandLabel(tab.id, workspace.activeTabId, tab.isSleeping)} · ${tab.url}`,

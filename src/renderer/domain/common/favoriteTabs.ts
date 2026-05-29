@@ -2,6 +2,7 @@ import {
   createTab,
   getReadableUrlTitle,
   getWorkspaceHomepageUrl,
+  resolveFavoriteTab,
   type BrowserState,
   type BrowserTab,
   type Favorite,
@@ -49,9 +50,7 @@ function detachFavoriteBackingTab(
   workspace: Workspace,
   favorite: Favorite
 ): BrowserTab | null {
-  const tab =
-    (favorite.tabId ? workspace.tabs.find((candidate) => candidate.id === favorite.tabId) : null) ??
-    workspace.tabs.find((candidate) => candidate.url === favorite.url);
+  const tab = resolveFavoriteTab(workspace, favorite);
 
   return tab ? detachTabFromWorkspace(state, workspace, tab.id) : null;
 }

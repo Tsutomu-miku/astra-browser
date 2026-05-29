@@ -1,4 +1,4 @@
-import { isEssential, isTabFavorite, type BrowserState, type Favorite, type Workspace } from "../../../../domain/browser";
+import { isEssential, isTabFavorite, resolveFavoriteTab, type BrowserState, type Favorite, type Workspace } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "../../model/tabContextMenuState";
 import { ClosedTabContextMenu } from "./ClosedTabContextMenu";
@@ -38,9 +38,7 @@ export function SidebarContextMenus({
     : 0;
   const canSleepTabGroup = tabGroupTabs.some((tab) => !tab.isSleeping && !protectedTabIds.has(tab.id));
   const openQuickEntry = (item: Favorite) => {
-    const tab =
-      (item.tabId ? activeWorkspace.tabs.find((candidate) => candidate.id === item.tabId) : null) ??
-      activeWorkspace.tabs.find((candidate) => candidate.url === item.url);
+    const tab = resolveFavoriteTab(activeWorkspace, item);
     tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(item.url, item.title);
   };
 

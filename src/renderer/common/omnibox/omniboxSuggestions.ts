@@ -1,4 +1,4 @@
-import type { BrowserState } from "../../domain/browser";
+import { resolveFavoriteTab, type BrowserState } from "../../domain/browser";
 import { getActiveWorkspace } from "../../domain/browser/selectors";
 
 export type OmniboxSuggestion =
@@ -34,7 +34,7 @@ export function buildOmniboxSuggestions(state: BrowserState, query: string): Omn
     ...workspace.favorites.map((favorite) => ({
       type: "favorite" as const,
       id: `favorite-${favorite.id}`,
-      tabId: favorite.tabId ?? workspace.tabs.find((tab) => tab.url === favorite.url)?.id,
+      tabId: resolveFavoriteTab(workspace, favorite)?.id,
       title: favorite.title,
       subtitle: `Favorite · ${favorite.url}`,
       url: favorite.url

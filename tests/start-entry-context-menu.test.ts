@@ -94,7 +94,7 @@ describe("start entry context menu", () => {
 
     container.querySelector("button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(onOpen).toHaveBeenCalledWith(favorite);
+    expect(onOpen).toHaveBeenCalledWith(favorite, "favorite");
 
     act(() => root.unmount());
   });

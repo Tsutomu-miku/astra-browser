@@ -42,6 +42,20 @@ describe("buildOmniboxSuggestions", () => {
     expect(suggestions.some((suggestion) => suggestion.type === "history" && suggestion.title === "Docs")).toBe(true);
   });
 
+  it("falls back to URL when a Favorite tab id is stale", () => {
+    const opened = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const tab = getActiveTab(getActiveWorkspace(opened));
+    getActiveWorkspace(opened).favorites.push(createFavorite("Docs Favorite", tab.url, "missing-tab"));
+
+    const favoriteSuggestion = buildOmniboxSuggestions(opened, "docs")
+      .find((suggestion) => suggestion.type === "favorite");
+
+    expect(favoriteSuggestion).toMatchObject({
+      tabId: tab.id,
+      type: "favorite"
+    });
+  });
+
   it("prioritizes essentials for empty-start suggestions", () => {
     const state = createDefaultState();
     const workspace = getActiveWorkspace(state);

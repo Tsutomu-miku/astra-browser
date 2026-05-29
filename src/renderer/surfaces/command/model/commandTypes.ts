@@ -30,6 +30,7 @@ export interface CommandActions {
   groupActiveTab: () => void;
   groupTab: (tabId: string) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
+  navigateActiveTab: (url: string) => void;
   openGlance: (url: string, title?: string) => void;
   openFind: () => void;
   peekCompactChrome: () => void;

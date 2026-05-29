@@ -96,6 +96,24 @@ describe("sidebar filtering", () => {
     });
   });
 
+  it("falls back by URL for stale Favorite tab ids in search targets", () => {
+    const favorite = createFavorite("Docs", "https://docs.example", "missing-tab");
+    const favoriteTab = createTab("Docs Tab", favorite.url);
+    const result = filterSidebarItems({
+      essentials: [],
+      favorites: [favorite],
+      groupedTabs: [],
+      pinnedTabs: [],
+      regularTabs: [],
+      workspaceTabs: [favoriteTab]
+    }, "");
+
+    expect(getSidebarSearchTargets(result).find((target) => target.type === "favorite")).toMatchObject({
+      tabId: favoriteTab.id,
+      type: "favorite"
+    });
+  });
+
   it("clamps and wraps keyboard search selection", () => {
     expect(clampSidebarSearchIndex(-1, 3)).toBe(0);
     expect(clampSidebarSearchIndex(5, 3)).toBe(2);
