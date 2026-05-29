@@ -304,6 +304,8 @@ describe("sidebar pinned tabs", () => {
     expect(dropZoneCss).toContain('.essentials .favorite-button[data-drop-placement]::before');
     expect(dropZoneCss).toContain('.essentials[data-drop-target="true"]');
     expect(dropZoneCss).toContain('.favorites[data-drop-target="true"]');
+    expect(dropZoneCss).toContain('[data-active-drop-target="true"]');
+    expect(dropZoneCss).toContain('.tabs[data-drop-target="true"]');
     expect(dropZoneCss).toContain('.favorite-button[data-dragging="true"]');
     expect(dropZoneCss).toContain('.favorite-button[data-drop-target="true"]');
     expect(dropZoneCss).toContain(".tab-organization-drop-target");

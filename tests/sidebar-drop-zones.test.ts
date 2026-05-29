@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
+import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
@@ -57,6 +58,65 @@ describe("sidebar section drop zones", () => {
     expect(html).toContain('aria-label="Essentials"');
     expect(html).toContain('aria-label="Favorites"');
     expect(html).toContain('aria-label="Create new group from dragged tab"');
+  });
+
+  it("shows inline drop labels and marks hovered drop zones as active", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const onFavoriteDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab: tab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: tab.id,
+        filteredItems: {
+          essentials: [],
+          favorites: [favorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [tab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop,
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    expect(container.textContent).toContain("Drop to add");
+    expect(container.textContent).toContain("Drop to pin");
+
+    const favorites = container.querySelector<HTMLElement>(".favorites")!;
+    favorites.dispatchEvent(createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
+    expect(favorites.dataset.activeDropTarget).toBe("true");
+
+    favorites.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
+    expect(favorites.dataset.activeDropTarget).toBeUndefined();
+    expect(onFavoriteDrop).toHaveBeenCalled();
+
+    act(() => root.unmount());
   });
 
   it("does not offer a new group target for dragged pinned tabs", () => {
@@ -493,4 +553,17 @@ function createActions() {
     toggleTabGroupCollapsed: vi.fn(),
     updateTabGroup: vi.fn()
   } as unknown as BrowserController["actions"];
+}
+
+function createDragEvent(type: string, dragData: Record<string, string>) {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: {
+      dropEffect: "none",
+      effectAllowed: "all",
+      getData: vi.fn((dataType: string) => dragData[dataType] ?? ""),
+      setData: vi.fn()
+    }
+  });
+  return event;
 }

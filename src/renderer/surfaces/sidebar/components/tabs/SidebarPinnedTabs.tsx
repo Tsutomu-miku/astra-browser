@@ -42,21 +42,40 @@ export function SidebarPinnedTabs({
   splitTabIds: string[];
 }) {
   if (pinnedTabs.length === 0 && !draggingTabId) return null;
+  const isTabDragging = Boolean(draggingTabId);
 
   return (
     <section className="sidebar-section">
-      <SidebarSectionHeader count={pinnedTabs.length} isCollapsed={isCollapsed} title="Pinned" onToggle={onToggle} />
+      <SidebarSectionHeader
+        count={pinnedTabs.length}
+        dropLabel={isTabDragging ? "Drop to pin" : undefined}
+        isCollapsed={isCollapsed}
+        title="Pinned"
+        onToggle={onToggle}
+      />
       {!isCollapsed && <nav
         className="pinned-tabs"
         aria-label="Pinned tabs"
         data-drop-target={Boolean(draggingTabId)}
+        onDragEnter={(event) => {
+          if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
+            event.currentTarget.dataset.activeDropTarget = "true";
+          }
+        }}
         onDragOver={(event) => {
           if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "copy";
+            event.currentTarget.dataset.activeDropTarget = "true";
           }
         }}
-        onDrop={onPinDrop}
+        onDragLeave={(event) => {
+          delete event.currentTarget.dataset.activeDropTarget;
+        }}
+        onDrop={(event) => {
+          delete event.currentTarget.dataset.activeDropTarget;
+          onPinDrop(event);
+        }}
       >
         {pinnedTabs.map((tab) => {
           const statusBadges = getTabStatusBadges(tab, splitTabIds);

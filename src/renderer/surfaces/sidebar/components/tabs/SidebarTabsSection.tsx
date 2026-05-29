@@ -69,6 +69,7 @@ export function SidebarTabsSection({
     <section className="sidebar-section tabs-section">
       <SidebarSectionHeader
         count={tabCount}
+        dropLabel={canUnpinDraggedTabToTabs ? "Drop to unpin" : undefined}
         isCollapsed={isCollapsed}
         title="Tabs"
         onToggle={onToggle}
@@ -77,6 +78,12 @@ export function SidebarTabsSection({
         className="tabs"
         aria-label="Tabs"
         data-drop-target={canUnpinDraggedTabToTabs}
+        onDragEnter={(event) => {
+          const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+          if (draggedTabId && filteredItems.pinnedTabs.some((tab) => tab.id === draggedTabId)) {
+            event.currentTarget.dataset.activeDropTarget = "true";
+          }
+        }}
         onDragOver={(event) => {
           const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
           const canUnpinDraggedTab = Boolean(
@@ -85,9 +92,16 @@ export function SidebarTabsSection({
           if (canUnpinDraggedTab) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
+            event.currentTarget.dataset.activeDropTarget = "true";
           }
         }}
-        onDrop={onTabsDrop}
+        onDragLeave={(event) => {
+          delete event.currentTarget.dataset.activeDropTarget;
+        }}
+        onDrop={(event) => {
+          delete event.currentTarget.dataset.activeDropTarget;
+          onTabsDrop(event);
+        }}
       >
         {!filteredItems.isFiltering && (
           <TabOrganizationDropTargets

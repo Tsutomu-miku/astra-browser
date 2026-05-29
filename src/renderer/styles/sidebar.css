@@ -352,15 +352,28 @@ h1 {
   white-space: nowrap;
 }
 
-.sidebar-section-count {
+.sidebar-section-count,
+.sidebar-section-drop-label {
   min-width: 16px;
   height: 16px;
   display: grid;
   place-items: center;
   border-radius: 999px;
+  font-size: 10px;
+}
+
+.sidebar-section-count {
   background: rgba(255, 255, 255, 0.07);
   color: color-mix(in srgb, var(--muted) 82%, white);
-  font-size: 10px;
+}
+
+.sidebar-section-drop-label {
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, rgba(255, 255, 255, 0.06));
+  color: color-mix(in srgb, var(--accent) 70%, white);
+  font-weight: 780;
+  white-space: nowrap;
 }
 
 .pinned-tabs {

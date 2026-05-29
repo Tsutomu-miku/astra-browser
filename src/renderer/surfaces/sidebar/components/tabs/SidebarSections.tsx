@@ -109,6 +109,7 @@ export function SidebarSections({
         <section className="sidebar-section">
           <SidebarSectionHeader
             count={filteredItems.essentials.length}
+            dropLabel={draggingTabId ? "Drop to add" : undefined}
             isCollapsed={isSectionCollapsed("essentials")}
             title="Essentials"
             onToggle={() => toggleSection("essentials")}
@@ -117,13 +118,25 @@ export function SidebarSections({
             className="essentials"
             aria-label="Essentials"
             data-drop-target={Boolean(draggingTabId)}
+            onDragEnter={(event) => {
+              if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
+                event.currentTarget.dataset.activeDropTarget = "true";
+              }
+            }}
             onDragOver={(event) => {
               if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "copy";
+                event.currentTarget.dataset.activeDropTarget = "true";
               }
             }}
-            onDrop={onEssentialDrop}
+            onDragLeave={(event) => {
+              delete event.currentTarget.dataset.activeDropTarget;
+            }}
+            onDrop={(event) => {
+              delete event.currentTarget.dataset.activeDropTarget;
+              onEssentialDrop(event);
+            }}
           >
             {filteredItems.essentials.map((essential) => (
               <FavoriteButton
@@ -171,6 +184,7 @@ export function SidebarSections({
         <section className="sidebar-section">
           <SidebarSectionHeader
             count={filteredItems.favorites.length}
+            dropLabel={draggingTabId ? "Drop to add" : undefined}
             isCollapsed={isSectionCollapsed("favorites")}
             title="Favorites"
             onToggle={() => toggleSection("favorites")}
@@ -179,13 +193,25 @@ export function SidebarSections({
             className="favorites"
             aria-label="Favorites"
             data-drop-target={Boolean(draggingTabId)}
+            onDragEnter={(event) => {
+              if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
+                event.currentTarget.dataset.activeDropTarget = "true";
+              }
+            }}
             onDragOver={(event) => {
               if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "copy";
+                event.currentTarget.dataset.activeDropTarget = "true";
               }
             }}
-            onDrop={onFavoriteDrop}
+            onDragLeave={(event) => {
+              delete event.currentTarget.dataset.activeDropTarget;
+            }}
+            onDrop={(event) => {
+              delete event.currentTarget.dataset.activeDropTarget;
+              onFavoriteDrop(event);
+            }}
           >
             {filteredItems.favorites.map((favorite) => (
               <FavoriteButton

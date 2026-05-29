@@ -1,11 +1,23 @@
 .pinned-tabs[data-drop-target="true"],
 .essentials[data-drop-target="true"],
-.favorites[data-drop-target="true"] {
+.favorites[data-drop-target="true"],
+.tabs[data-drop-target="true"] {
   min-height: 42px;
   border: 1px dashed color-mix(in srgb, var(--accent) 38%, transparent);
   border-radius: 8px;
   padding: 6px;
   background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.035));
+}
+
+.pinned-tabs[data-active-drop-target="true"],
+.essentials[data-active-drop-target="true"],
+.favorites[data-active-drop-target="true"],
+.tabs[data-active-drop-target="true"] {
+  border-color: color-mix(in srgb, var(--accent) 64%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.06));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .sidebar-drop-empty {

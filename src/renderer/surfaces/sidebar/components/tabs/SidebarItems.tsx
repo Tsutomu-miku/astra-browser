@@ -15,11 +15,13 @@ import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
 
 export function SidebarSectionHeader({
   count,
+  dropLabel,
   isCollapsed = false,
   onToggle,
   title
 }: {
   count: number;
+  dropLabel?: string;
   isCollapsed?: boolean;
   onToggle?: () => void;
   title: string;
@@ -39,7 +41,11 @@ export function SidebarSectionHeader({
         {onToggle && (isCollapsed ? <FiChevronRight /> : <FiChevronDown />)}
         <span>{title}</span>
       </span>
-      <span className="sidebar-section-count">{count}</span>
+      {dropLabel ? (
+        <span className="sidebar-section-drop-label">{dropLabel}</span>
+      ) : (
+        <span className="sidebar-section-count">{count}</span>
+      )}
     </>
   );
 

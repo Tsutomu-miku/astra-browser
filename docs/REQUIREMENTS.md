@@ -54,6 +54,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to reorder sidebar tabs by drag and drop.
 - Sidebar tab drag-and-drop must remain reliable across tab rows, Pinned, tab groups, Essentials, Favorites, Spaces, New Space, and Split drop targets even when drag state is recovered from the native drag payload instead of React state.
 - Sidebar drag reordering must show a before/after insertion indicator for tabs, pinned tabs, Essentials, favorites, and Spaces.
+- Sidebar drag targets must show inline section-level drop labels and an active hover state so the destination is obvious before releasing.
 - Users must be able to move tabs between Spaces from the command palette or by dragging onto Space buttons.
 - Users must be able to drag sidebar tabs onto the New Space button to create a Space from that tab.
 - Sidebar Space context menus must support switching, renaming, recoloring, deleting, and keyboard opening via `ContextMenu` or `Shift+F10`.
