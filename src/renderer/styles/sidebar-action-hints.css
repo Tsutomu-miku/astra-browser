@@ -28,24 +28,6 @@
   transform: translateX(0);
 }
 
-.pinned-tab-button .sidebar-item-action-hints {
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 3px;
-  z-index: 5;
-  max-width: none;
-  gap: 3px;
-  justify-content: center;
-  transform: translateY(2px);
-}
-
-.pinned-tab-button:hover .sidebar-item-action-hints,
-.pinned-tab-button:focus-visible .sidebar-item-action-hints {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .sidebar-item-action-hint {
   width: 20px;
   height: 20px;

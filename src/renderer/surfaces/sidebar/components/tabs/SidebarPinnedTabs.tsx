@@ -10,7 +10,6 @@ import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivat
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { getSidebarSearchTargetElementId, type SidebarSearchTarget } from "../../sidebarFiltering";
-import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarSectionHeader } from "./SidebarItems";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
 
@@ -138,7 +137,6 @@ export function SidebarPinnedTabs({
             >
               <span className="pinned-tab-icon">{tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}</span>
               <SidebarTabStatusBadges badges={statusBadges} variant="pinned" />
-              <SidebarItemActionHints />
             </button>
           );
         })}
