@@ -40,6 +40,10 @@ src/renderer/platform
   Renderer-side adapters for APIs outside pure product rules
   persistence/   localStorage state persistence and import/export backup helpers
 
+src/renderer/common
+  Cross-surface renderer interaction and layout helpers
+  layout/        Shared UI sizing/clamping rules used by store state and surfaces
+
 src/renderer/stores
   Zustand state container and typed action facade
   browserStore.ts       Runtime state implementation and side effects

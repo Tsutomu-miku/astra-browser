@@ -25,6 +25,7 @@ export interface BrowserStore {
   panel: Panel;
   permissionRequest: PermissionRequestEvent | null;
   sidebarCollapsed: boolean;
+  sidebarWidth: number;
   splitLayout: SplitLayout;
   state: BrowserState;
   glance: { title: string; url: string } | null;
@@ -96,6 +97,7 @@ export interface BrowserStore {
   setFindQuery: (query: string) => void;
   setFindResult: (result: FindResultState | null) => void;
   setPanel: (panel: Panel) => void;
+  setSidebarWidth: (width: number) => void;
   setSplitLayout: (layout: SplitLayout) => void;
   setSitePermission: (profileId: string, origin: string, permission: string, decision: "allow" | "block") => void;
   switchWorkspace: (workspaceId: string) => void;

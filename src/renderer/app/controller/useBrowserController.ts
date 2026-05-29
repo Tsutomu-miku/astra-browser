@@ -103,7 +103,9 @@ export function useBrowserController() {
     setFindOpen: store.setFindOpen,
     setFindQuery: store.setFindQuery,
     setPanel: store.setPanel,
+    setSidebarWidth: store.setSidebarWidth,
     sidebarCollapsed: store.sidebarCollapsed,
+    sidebarWidth: store.sidebarWidth,
     splitLayout: store.splitLayout,
     state: store.state
   };

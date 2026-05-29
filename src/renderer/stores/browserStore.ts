@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import { SIDEBAR_DEFAULT_WIDTH, clampSidebarWidth } from "../common/layout/sidebarSizing";
 import {
   addTab,
   assignTabToGroup,
@@ -106,6 +107,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   panel: null,
   permissionRequest: null,
   sidebarCollapsed: false,
+  sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
   splitLayout: "horizontal",
   state: initialState,
   glance: null,
@@ -246,6 +248,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   setFindQuery: (findQuery) => set({ findQuery }),
   setFindResult: (findResult) => set({ findResult }),
   setPanel: (panel) => set({ panel }),
+  setSidebarWidth: (width) => set({ sidebarWidth: clampSidebarWidth(width) }),
   setSplitLayout: (splitLayout) => set({ splitLayout }),
   setSitePermission: (profileId, origin, permission, decision) =>
     update(set, (state) => setSitePermission(state, { profileId, origin, permission, decision })),
