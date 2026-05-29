@@ -69,7 +69,7 @@ Acceptance:
 - Adding a tab to Favorites records the tab relationship.
 - Removing a Favorite does not close the tab unless a separate close action is used.
 
-Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, tab drag payloads, and tab accessibility labels while staying in the Favorites folder. Tab-backed Favorites no longer use a separate Favorite drag payload; moving them across Spaces follows the normal tab move path and preserves their Favorites folder membership in the destination Space. Sidebar, Start page, omnibox, command palette, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
+Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, tab drag payloads, and tab accessibility labels while staying in the Favorites folder. Tab-backed Favorites no longer use a separate Favorite drag payload; moving them across Spaces follows the normal tab move path and preserves their Favorites folder membership in the destination Space. Sidebar, Start page, omnibox, command palette, keyboard number shortcuts, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
 
 Small requirements:
 

@@ -168,7 +168,7 @@ For tab-related features, requirements must specify object identity. In particul
 ### Keyboard Shortcuts
 
 - The browser must support keyboard-first tab, Space, command, split, navigation, zoom, find, history, downloads, favorite, mute, and address workflows.
-- Direct tab selection must support Zen-style `Alt+1` through `Alt+8`, ordered by Essentials, pinned tabs, then regular tabs.
+- Direct tab selection must support Zen-style `Alt+1` through `Alt+8`, ordered by Essentials, pinned tabs, tab-backed Favorites, then regular tabs.
 - Number shortcuts targeting Essentials must navigate the current tab instead of opening a new tab.
 - Last-tab selection must support `Alt+9` using the sidebar's visual tab order, including grouped-tab order and excluding tabs hidden inside collapsed groups.
 - Space cycling must support `Ctrl+Alt+Q` and `Ctrl+Alt+E`.

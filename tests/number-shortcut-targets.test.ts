@@ -7,8 +7,12 @@ import {
 } from "../src/renderer/common/shortcuts/numberShortcutTargets";
 import { createFavorite, createTab, type TabGroup, type Workspace } from "../src/renderer/domain/browser";
 
-function workspaceWithTabs(tabs: Workspace["tabs"], tabGroups: Workspace["tabGroups"] = []): Pick<Workspace, "tabs" | "tabGroups"> {
-  return { tabGroups, tabs };
+function workspaceWithTabs(
+  tabs: Workspace["tabs"],
+  tabGroups: Workspace["tabGroups"] = [],
+  favorites: Workspace["favorites"] = []
+): Pick<Workspace, "favorites" | "tabs" | "tabGroups"> {
+  return { favorites, tabGroups, tabs };
 }
 
 describe("getNumberShortcutTarget", () => {
@@ -54,6 +58,46 @@ describe("getNumberShortcutTarget", () => {
       lastRegular.id
     ]);
     expect(getNumberShortcutTarget([], workspace, 1)).toEqual({ type: "tab", tabId: groupedInFirstGroup.id });
+  });
+
+  it("orders tab-backed Favorites after pinned tabs and excludes them from regular folders", () => {
+    const pinned = { ...createTab("Pinned", "https://pinned.example"), isPinned: true };
+    const favoriteTab = createTab("Favorite", "https://favorite.example");
+    const groupedFavoriteTab = { ...createTab("Grouped Favorite", "https://grouped-favorite.example"), groupId: "group" };
+    const grouped = { ...createTab("Grouped", "https://grouped.example"), groupId: "group" };
+    const regular = createTab("Docs", "https://docs.example");
+    const workspace = workspaceWithTabs(
+      [regular, favoriteTab, grouped, pinned, groupedFavoriteTab],
+      [tabGroup("group", "Group")],
+      [
+        createFavorite("Favorite", favoriteTab.url, favoriteTab.id),
+        createFavorite("Grouped Favorite", groupedFavoriteTab.url, groupedFavoriteTab.id)
+      ]
+    );
+
+    expect(getNumberShortcutTabs(workspace).map((tab) => tab.id)).toEqual([
+      pinned.id,
+      favoriteTab.id,
+      groupedFavoriteTab.id,
+      grouped.id,
+      regular.id
+    ]);
+    expect(getNumberShortcutTarget([], workspace, 1)).toEqual({ type: "tab", tabId: favoriteTab.id });
+  });
+
+  it("uses URL fallback for legacy Favorites in number shortcut visual order", () => {
+    const matchingTab = createTab("Legacy Favorite", "https://legacy.example");
+    const regular = createTab("Docs", "https://docs.example");
+    const workspace = workspaceWithTabs(
+      [regular, matchingTab],
+      [],
+      [createFavorite("Legacy Favorite", matchingTab.url)]
+    );
+
+    expect(getNumberShortcutTabs(workspace).map((tab) => tab.id)).toEqual([
+      matchingTab.id,
+      regular.id
+    ]);
   });
 
   it("skips tabs hidden inside collapsed groups for visual-order shortcuts", () => {
