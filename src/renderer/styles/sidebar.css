@@ -453,6 +453,7 @@ h1 {
 }
 
 .tab-row {
+  position: relative;
   min-height: 38px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 28px;

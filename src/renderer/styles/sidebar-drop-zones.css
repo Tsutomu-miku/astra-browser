@@ -38,6 +38,54 @@
     inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
+.tab-row[data-drop-placement]::before,
+.favorites .favorite-button[data-drop-placement]::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  z-index: 2;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 88%, white);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  pointer-events: none;
+}
+
+.tab-row[data-drop-placement="before"]::before,
+.favorites .favorite-button[data-drop-placement="before"]::before {
+  top: -4px;
+}
+
+.tab-row[data-drop-placement="after"]::before,
+.favorites .favorite-button[data-drop-placement="after"]::before {
+  bottom: -4px;
+}
+
+.essentials .favorite-button[data-drop-placement]::before,
+.pinned-tab-button[data-drop-placement]::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  z-index: 3;
+  width: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 88%, white);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  pointer-events: none;
+}
+
+.essentials .favorite-button[data-drop-placement="before"]::before,
+.pinned-tab-button[data-drop-placement="before"]::before {
+  left: -4px;
+}
+
+.essentials .favorite-button[data-drop-placement="after"]::before,
+.pinned-tab-button[data-drop-placement="after"]::before {
+  right: -4px;
+}
+
 .tab-organization-drop-target {
   min-height: 36px;
   display: flex;

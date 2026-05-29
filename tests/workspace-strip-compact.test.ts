@@ -214,6 +214,12 @@ describe("workspace strip compact controls", () => {
     expect(workspaceCss).toContain("outline: none");
     expect(workspaceCss).toContain("0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent)");
   });
+
+  it("styles Space drag insertion indicators", () => {
+    expect(workspaceCss).toContain(".workspace-button[data-drop-placement]::before");
+    expect(workspaceCss).toContain('.workspace-button[data-drop-placement="before"]::before');
+    expect(workspaceCss).toContain('.workspace-button[data-drop-placement="after"]::before');
+  });
 });
 
 function renderStrip({

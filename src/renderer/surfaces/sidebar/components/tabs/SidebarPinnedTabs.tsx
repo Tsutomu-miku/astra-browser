@@ -1,6 +1,7 @@
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { FiLoader } from "react-icons/fi";
 
+import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
@@ -31,7 +32,7 @@ export function SidebarPinnedTabs({
   draggingTabId: string | null;
   isCollapsed?: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
-  onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
   onPinDrop: (event: DragEvent<HTMLElement>) => void;
   onToggle?: () => void;
   pinnedTabs: BrowserTab[];
@@ -103,9 +104,14 @@ export function SidebarPinnedTabs({
                 if (draggingTabId && draggingTabId !== tab.id) {
                   event.preventDefault();
                   event.dataTransfer.dropEffect = "move";
+                  updateDropPlacement(event.currentTarget, event, "horizontal");
                 }
               }}
-              onDrop={(event) => onTabDrop(event, tab.id)}
+              onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
+              onDrop={(event) => {
+                clearDropPlacement(event.currentTarget);
+                onTabDrop(event, tab.id, "horizontal");
+              }}
             >
               <span className="pinned-tab-icon">{tab.isLoading ? <FiLoader /> : getHostInitial(tab.url)}</span>
               <SidebarTabStatusBadges badges={statusBadges} variant="pinned" />

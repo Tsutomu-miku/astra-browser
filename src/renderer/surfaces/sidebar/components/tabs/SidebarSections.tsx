@@ -1,5 +1,6 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
 
+import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
@@ -55,16 +56,16 @@ export function SidebarSections({
   filteredItems: SidebarFilterResult;
   onEssentialDragStart: (event: DragEvent<HTMLButtonElement>, essentialId: string) => void;
   onEssentialDrop: (event: DragEvent<HTMLElement>) => void;
-  onEssentialReorderDrop: (event: DragEvent<HTMLElement>, targetEssentialId: string) => void;
+  onEssentialReorderDrop: (event: DragEvent<HTMLElement>, targetEssentialId: string, axis: DropAxis) => void;
   onFavoriteDragStart: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
   onFavoriteDrop: (event: DragEvent<HTMLElement>) => void;
-  onFavoriteReorderDrop: (event: DragEvent<HTMLElement>, targetFavoriteId: string) => void;
+  onFavoriteReorderDrop: (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis) => void;
   onClosedTabContextMenu: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
   onPinDrop: (event: DragEvent<HTMLElement>) => void;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
-  onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
   onTabsDrop?: (event: DragEvent<HTMLElement>) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
@@ -132,6 +133,7 @@ export function SidebarSections({
                 id={`sidebar-search-essential-${essential.id}`}
                 isActive={isSidebarUrlActive(activeTab.url, essential.url)}
                 isSearchSelected={activeSearchTarget?.type === "essential" && activeSearchTarget.id === essential.id}
+                dropAxis="horizontal"
                 onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "essential")}
                 onDragStart={onEssentialDragStart}
                 onDragEnd={() => setDraggingEssentialId(null)}

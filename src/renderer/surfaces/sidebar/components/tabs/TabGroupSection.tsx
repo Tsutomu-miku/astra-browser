@@ -1,5 +1,6 @@
 import type { CSSProperties, DragEvent, MouseEvent } from "react";
 
+import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { TabRow } from "./SidebarItems";
@@ -33,7 +34,7 @@ export function TabGroupSection({
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
-  onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  onDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;

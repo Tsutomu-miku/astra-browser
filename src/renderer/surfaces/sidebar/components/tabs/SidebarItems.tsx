@@ -1,6 +1,7 @@
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icons/fi";
 
+import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
@@ -54,6 +55,7 @@ export function TabRow({
   onPreview,
   onSelect,
   onSplit,
+  dropAxis = "vertical",
   setDraggingTabId,
   isSearchSelected = false,
   splitTabIds,
@@ -67,6 +69,7 @@ export function TabRow({
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
+  dropAxis?: DropAxis;
   setDraggingTabId: (tabId: string | null) => void;
   isSearchSelected?: boolean;
   splitTabIds: string[];
@@ -81,9 +84,17 @@ export function TabRow({
       aria-selected={isSearchSelected}
       data-dragging={draggingTabId === tab.id}
       onDragOver={(event) => {
-        if (draggingTabId && draggingTabId !== tab.id) event.preventDefault();
+        if (draggingTabId && draggingTabId !== tab.id) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+          updateDropPlacement(event.currentTarget, event, dropAxis);
+        }
       }}
-      onDrop={(event) => onDrop(event, tab.id)}
+      onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
+      onDrop={(event) => {
+        clearDropPlacement(event.currentTarget);
+        onDrop(event, tab.id);
+      }}
       onContextMenu={(event) => onContextMenu(event, tab)}
     >
       <button
@@ -152,7 +163,8 @@ export function FavoriteButton({
   onOpen,
   onOpenInSplit,
   onContextMenu,
-  onPreview
+  onPreview,
+  dropAxis = "vertical"
 }: {
   draggable?: boolean;
   draggingQuickEntryId?: string | null;
@@ -163,10 +175,11 @@ export function FavoriteButton({
   onContextMenu?: (event: MouseEvent, favorite: Favorite) => void;
   onDragEnd?: () => void;
   onDragStart?: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
-  onDrop?: (event: DragEvent<HTMLElement>, targetFavoriteId: string) => void;
+  onDrop?: (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis) => void;
   onOpen: (url: string, title?: string) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
+  dropAxis?: DropAxis;
 }) {
   return (
     <button
@@ -185,10 +198,13 @@ export function FavoriteButton({
         if (draggingQuickEntryId && draggingQuickEntryId !== favorite.id) {
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
+          updateDropPlacement(event.currentTarget, event, dropAxis);
         }
       }}
+      onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
       onDrop={(event) => {
-        if (draggingQuickEntryId && draggingQuickEntryId !== favorite.id) onDrop?.(event, favorite.id);
+        clearDropPlacement(event.currentTarget);
+        if (draggingQuickEntryId && draggingQuickEntryId !== favorite.id) onDrop?.(event, favorite.id, dropAxis);
       }}
       onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
       onKeyDown={(event) => {

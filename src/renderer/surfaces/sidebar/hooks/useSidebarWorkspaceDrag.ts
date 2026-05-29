@@ -1,5 +1,6 @@
 import { useState, type DragEvent } from "react";
 
+import { getPointerDropPlacement } from "../../../common/drag-drop/dropPlacement";
 import type { BrowserController } from "../../../app/controller/types";
 
 type SidebarWorkspaceDragActions = Pick<
@@ -48,8 +49,7 @@ export function useSidebarWorkspaceDrag({
   const handleWorkspaceDrop = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
     event.preventDefault();
     if (draggingWorkspaceId && draggingWorkspaceId !== workspaceId) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      const placement = event.clientY > rect.top + rect.height / 2 ? "after" : "before";
+      const placement = getPointerDropPlacement(event.currentTarget, event, "vertical");
       actions.reorderWorkspace(draggingWorkspaceId, workspaceId, placement);
       setDraggingWorkspaceId(null);
       return;

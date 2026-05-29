@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type M
 import { FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiTrash2, FiUnlock } from "react-icons/fi";
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
+import { clearDropPlacement, updateDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { Workspace } from "../../../../domain/browser";
 import {
   WORKSPACE_ACCENT_SWATCHES,
@@ -126,8 +127,17 @@ export function WorkspaceStrip({
           )}
           onDragStart={(event) => onDragStart(event, workspace.id)}
           onDragEnd={onDragEnd}
-          onDragOver={(event) => onDragOver(event, workspace.id)}
-          onDrop={(event) => onDrop(event, workspace.id)}
+          onDragOver={(event) => {
+            onDragOver(event, workspace.id);
+            if (draggingWorkspaceId && workspace.id !== draggingWorkspaceId) {
+              updateDropPlacement(event.currentTarget, event, "vertical");
+            }
+          }}
+          onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
+          onDrop={(event) => {
+            clearDropPlacement(event.currentTarget);
+            onDrop(event, workspace.id);
+          }}
           onContextMenu={(event) => openWorkspaceMenu(event, workspace.id)}
           onKeyDown={openSidebarKeyboardContextMenu}
           onClick={() => onSelect(workspace.id)}

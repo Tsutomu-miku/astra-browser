@@ -1,5 +1,6 @@
 import { useState, type DragEvent } from "react";
 
+import { getPointerDropPlacement, type DropAxis } from "../../../common/drag-drop/dropPlacement";
 import type { BrowserController } from "../../../app/controller/types";
 import { isEssential, isFavorite, type BrowserState, type Workspace } from "../../../domain/browser";
 
@@ -65,14 +66,14 @@ export function useSidebarQuickEntryDrag({
     event.dataTransfer.setData("text/favorite-id", favoriteId);
   };
 
-  const handleEssentialReorderDrop = (event: DragEvent<HTMLElement>, targetEssentialId: string) => {
+  const handleEssentialReorderDrop = (event: DragEvent<HTMLElement>, targetEssentialId: string, axis: DropAxis = "vertical") => {
     const essentialId = getDroppedQuickEntryId(event, draggingEssentialId, "text/essential-id");
-    runQuickEntryReorder(event, essentialId, targetEssentialId, actions.reorderEssential, setDraggingEssentialId);
+    runQuickEntryReorder(event, essentialId, targetEssentialId, axis, actions.reorderEssential, setDraggingEssentialId);
   };
 
-  const handleFavoriteReorderDrop = (event: DragEvent<HTMLElement>, targetFavoriteId: string) => {
+  const handleFavoriteReorderDrop = (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis = "vertical") => {
     const favoriteId = getDroppedQuickEntryId(event, draggingFavoriteId, "text/favorite-id");
-    runQuickEntryReorder(event, favoriteId, targetFavoriteId, actions.reorderWorkspaceFavorite, setDraggingFavoriteId);
+    runQuickEntryReorder(event, favoriteId, targetFavoriteId, axis, actions.reorderWorkspaceFavorite, setDraggingFavoriteId);
   };
 
   function getDroppedTab(event: DragEvent<HTMLElement>) {
@@ -98,6 +99,7 @@ function runQuickEntryReorder(
   event: DragEvent<HTMLElement>,
   quickEntryId: string,
   targetQuickEntryId: string,
+  axis: DropAxis,
   reorder: (quickEntryId: string, targetQuickEntryId: string, placement: "before" | "after") => void,
   clearDraggingId: (quickEntryId: string | null) => void
 ) {
@@ -108,8 +110,7 @@ function runQuickEntryReorder(
     return;
   }
 
-  const rect = event.currentTarget.getBoundingClientRect();
-  const placement = event.clientY > rect.top + rect.height / 2 ? "after" : "before";
+  const placement = getPointerDropPlacement(event.currentTarget, event, axis);
   reorder(quickEntryId, targetQuickEntryId, placement);
   clearDraggingId(null);
 }

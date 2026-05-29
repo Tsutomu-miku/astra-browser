@@ -1,5 +1,6 @@
 import type { DragEvent, MouseEvent } from "react";
 
+import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
@@ -35,7 +36,7 @@ export function SidebarTabsSection({
   filteredItems: SidebarFilterResult;
   isCollapsed: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
-  onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabsDrop: (event: DragEvent<HTMLElement>) => void;
   onToggle: () => void;
