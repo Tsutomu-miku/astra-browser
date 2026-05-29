@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import { hasSidebarSectionDragReveal } from "../src/renderer/surfaces/sidebar/model/sidebarSectionState";
 
 describe("sidebar section state", () => {
-  it("reveals tab drop sections while dragging a tab", () => {
+  it("keeps drop sections collapsed while dragging a tab", () => {
     const dragging = { essentialId: null, favoriteId: null, tabId: "tab" };
 
-    expect(hasSidebarSectionDragReveal("essentials", dragging)).toBe(true);
-    expect(hasSidebarSectionDragReveal("pinned", dragging)).toBe(true);
-    expect(hasSidebarSectionDragReveal("favorites", dragging)).toBe(true);
-    expect(hasSidebarSectionDragReveal("tabs", dragging)).toBe(true);
+    expect(hasSidebarSectionDragReveal("essentials", dragging)).toBe(false);
+    expect(hasSidebarSectionDragReveal("pinned", dragging)).toBe(false);
+    expect(hasSidebarSectionDragReveal("favorites", dragging)).toBe(false);
+    expect(hasSidebarSectionDragReveal("tabs", dragging)).toBe(false);
     expect(hasSidebarSectionDragReveal("recentlyClosed", dragging)).toBe(false);
   });
 

@@ -278,7 +278,7 @@ describe("sidebar pinned tabs", () => {
     expect(html).not.toContain('aria-label="Pinned tabs"');
   });
 
-  it("renders an empty pinned drop target while a tab is dragging", () => {
+  it("does not render an empty pinned drop target while a tab is dragging", () => {
     const activeTab = createTab("Mail", "https://mail.example");
     const html = renderToStaticMarkup(createElement(SidebarPinnedTabs, {
       actions: createActions(),
@@ -292,28 +292,17 @@ describe("sidebar pinned tabs", () => {
       splitTabIds: []
     }));
 
-    expect(html).toContain('aria-label="Pinned tabs"');
-    expect(html).toContain('data-drop-target="true"');
-    expect(html).toContain("Drop to pin");
+    expect(html).toBe("");
   });
 
   it("styles pinned tab drag and drop states", () => {
     expect(sidebarCss).toContain('.pinned-tab-button[data-dragging="true"]');
     expect(sidebarCss).toContain('.pinned-tab-button[data-drop-target="true"]');
-    expect(dropZoneCss).toContain('.pinned-tabs[data-drop-target="true"]');
     expect(dropZoneCss).toContain('.pinned-tab-button[data-drop-placement]::before');
     expect(dropZoneCss).toContain('.tab-row[data-drop-placement]::before');
     expect(dropZoneCss).toContain('.essentials .favorite-button[data-drop-placement]::before');
-    expect(dropZoneCss).toContain('.essentials[data-drop-target="true"]');
-    expect(dropZoneCss).toContain('.favorites[data-drop-target="true"]');
-    expect(dropZoneCss).toContain('[data-active-drop-target="true"]');
-    expect(dropZoneCss).toContain('.tabs[data-drop-target="true"]');
     expect(dropZoneCss).toContain('.favorite-button[data-dragging="true"]');
     expect(dropZoneCss).toContain('.favorite-button[data-drop-target="true"]');
-    expect(dropZoneCss).toContain(".tab-organization-drop-target");
-    expect(dropZoneCss).toContain("font: inherit");
-    expect(dropZoneCss).toContain("cursor: pointer");
-    expect(dropZoneCss).toContain(".sidebar-drop-empty");
     expect(sidebarCss).toContain("cursor: grabbing");
   });
 

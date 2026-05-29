@@ -8,20 +8,17 @@ import type { BrowserController } from "../../../../app/controller/types";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarSectionHeader, TabRow } from "./SidebarItems";
 import { TabGroupSection } from "./TabGroupSection";
-import { TabOrganizationDropTargets } from "./TabOrganizationDropTargets";
 
 export function SidebarTabsSection({
   actions,
   activeSearchTarget,
   activeTab,
-  canUnpinDraggedTabToTabs,
   draggingGroupId,
   draggingTabId,
   filteredItems,
   isCollapsed,
   onTabContextMenu,
   onTabDrop,
-  onTabPointerDrop,
   onTabGroupContextMenu,
   onTabsDrop,
   onToggle,
@@ -33,14 +30,12 @@ export function SidebarTabsSection({
   actions: BrowserController["actions"];
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
-  canUnpinDraggedTabToTabs: boolean;
   draggingGroupId: string | null;
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
   isCollapsed: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
-  onTabPointerDrop: (tabId: string, clientX: number, clientY: number) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabsDrop: (event: DragEvent<HTMLElement>) => void;
   onToggle: () => void;
@@ -49,12 +44,6 @@ export function SidebarTabsSection({
   splitTabIds: string[];
   tabCount: number;
 }) {
-  const canCreateGroupFromDraggedTab = Boolean(
-    draggingTabId && filteredItems.regularTabs.some((tab) => tab.id === draggingTabId)
-  );
-  const canUngroupDraggedTab = Boolean(
-    draggingTabId && filteredItems.groupedTabs.some((entry) => entry.tabs.some((tab) => tab.id === draggingTabId))
-  );
   const onGroupDrop = (event: DragEvent<HTMLElement>, targetGroupId: string) => {
     event.preventDefault();
     event.stopPropagation();
@@ -71,7 +60,6 @@ export function SidebarTabsSection({
     <section className="sidebar-section tabs-section">
       <SidebarSectionHeader
         count={tabCount}
-        dropLabel={canUnpinDraggedTabToTabs ? "Drop to unpin" : undefined}
         isCollapsed={isCollapsed}
         title="Tabs"
         onToggle={onToggle}
@@ -79,11 +67,10 @@ export function SidebarTabsSection({
       {!isCollapsed && <nav
         className="tabs"
         aria-label="Tabs"
-        data-drop-target={canUnpinDraggedTabToTabs}
         onDragEnter={(event) => {
           const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
           if (draggedTabId && filteredItems.pinnedTabs.some((tab) => tab.id === draggedTabId)) {
-            event.currentTarget.dataset.activeDropTarget = "true";
+            event.preventDefault();
           }
         }}
         onDragOver={(event) => {
@@ -94,27 +81,10 @@ export function SidebarTabsSection({
           if (canUnpinDraggedTab) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
-            event.currentTarget.dataset.activeDropTarget = "true";
           }
         }}
-        onDragLeave={(event) => {
-          delete event.currentTarget.dataset.activeDropTarget;
-        }}
-        onDrop={(event) => {
-          delete event.currentTarget.dataset.activeDropTarget;
-          onTabsDrop(event);
-        }}
+        onDrop={onTabsDrop}
       >
-        {!filteredItems.isFiltering && (
-          <TabOrganizationDropTargets
-            canCreateGroup={canCreateGroupFromDraggedTab}
-            canUngroup={canUngroupDraggedTab}
-            draggingTabId={draggingTabId}
-            onCreateGroup={actions.groupTab}
-            onUngroupTab={actions.ungroupTab}
-            setDraggingTabId={setDraggingTabId}
-          />
-        )}
         {filteredItems.groupedTabs.map(({ group, tabs }) => (
           <TabGroupSection
             key={group.id}
@@ -131,7 +101,6 @@ export function SidebarTabsSection({
             onDrop={onTabDrop}
             onGroupDrop={onGroupDrop}
             onGroupContextMenu={onTabGroupContextMenu}
-            onPointerDrop={onTabPointerDrop}
             onPreview={actions.openGlance}
             onSelect={actions.selectTab}
             onSplit={actions.openTabInSplit}
@@ -153,7 +122,6 @@ export function SidebarTabsSection({
             onClose={actions.closeTab}
             onContextMenu={onTabContextMenu}
             onDrop={onTabDrop}
-            onPointerDrop={onTabPointerDrop}
             onPreview={actions.openGlance}
             onSelect={actions.selectTab}
             onSplit={actions.openTabInSplit}

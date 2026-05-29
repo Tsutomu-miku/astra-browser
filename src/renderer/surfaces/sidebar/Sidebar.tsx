@@ -120,104 +120,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     }
   };
 
-  const addTabToEssential = (tabId: string) => {
-    const tab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
-    if (!tab) return;
-
-    if (!state.essentials.some((essential) => essential.url === tab.url)) actions.toggleTabEssential(tab.id);
-  };
-
-  const addTabToFavorite = (tabId: string) => {
-    const tab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
-    if (!tab) return;
-
-    if (!activeWorkspace.favorites.some((favorite) => favorite.url === tab.url)) actions.toggleTabFavorite(tab.id);
-  };
-
-  const handleTabPointerDrop = (tabId: string, clientX: number, clientY: number) => {
-    const target = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
-    if (!target) {
-      setDraggingTabId(null);
-      return;
-    }
-    const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
-
-    const targetWorkspaceButton = target.closest<HTMLElement>(".workspace-button[data-workspace-id]");
-    const targetWorkspaceId = targetWorkspaceButton?.dataset.workspaceId;
-    if (targetWorkspaceId && targetWorkspaceId !== activeWorkspace.id) {
-      actions.moveTabToWorkspace(tabId, targetWorkspaceId);
-      setDraggingTabId(null);
-      return;
-    }
-
-    if (target.closest(".workspace-new-button")) {
-      actions.moveTabToNewWorkspace(tabId);
-      setDraggingTabId(null);
-      return;
-    }
-
-    if (target.closest("[data-sidebar-split-button]")) {
-      if (tabId !== activeTab.id) actions.openTabInSplit(tabId);
-      setDraggingTabId(null);
-      return;
-    }
-
-    const organizationTarget = target.closest<HTMLElement>("[data-tab-organization-target]");
-    if (organizationTarget?.dataset.tabOrganizationTarget === "create-group") {
-      actions.groupTab(tabId);
-      setDraggingTabId(null);
-      return;
-    }
-
-    if (organizationTarget?.dataset.tabOrganizationTarget === "ungroup") {
-      actions.ungroupTab(tabId);
-      setDraggingTabId(null);
-      return;
-    }
-
-    const targetRow = target.closest<HTMLElement>(".tab-row[data-tab-id]");
-    const targetTabId = targetRow?.dataset.tabId;
-    if (targetRow && targetTabId && targetTabId !== tabId) {
-      placeTab(tabId, targetTabId, getPointerDropPlacement(targetRow, { clientX, clientY }));
-      setDraggingTabId(null);
-      return;
-    }
-
-    const targetGroupHeader = target.closest<HTMLElement>(".tab-group-header[data-group-id]");
-    const targetGroupId = targetGroupHeader?.dataset.groupId;
-    if (targetGroupId) {
-      actions.assignTabToGroup(tabId, targetGroupId);
-      setDraggingTabId(null);
-      return;
-    }
-
-    if (target.closest(".favorites")) {
-      addTabToFavorite(tabId);
-      setDraggingTabId(null);
-      return;
-    }
-
-    if (target.closest(".essentials")) {
-      addTabToEssential(tabId);
-      setDraggingTabId(null);
-      return;
-    }
-
-    if (target.closest(".pinned-tabs")) {
-      if (draggedTab && !draggedTab.isPinned) actions.toggleTabPinned(draggedTab.id);
-      setDraggingTabId(null);
-      return;
-    }
-
-    if (target.closest(".tabs")) {
-      if (draggedTab?.isPinned) actions.unpinTabToRegularEnd(tabId);
-      setDraggingTabId(null);
-      return;
-    }
-
-    setDraggingTabId(null);
-  };
-
   const handleTabsDrop = (event: DragEvent<HTMLElement>) => {
     const tabId = getDroppedTabId(event);
     const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
@@ -402,7 +304,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onPinDrop={handlePinDrop}
           onTabContextMenu={openTabMenu}
           onTabDrop={handleTabDrop}
-          onTabPointerDrop={handleTabPointerDrop}
           onTabsDrop={handleTabsDrop}
           setDraggingEssentialId={setDraggingEssentialId}
           setDraggingFavoriteId={setDraggingFavoriteId}

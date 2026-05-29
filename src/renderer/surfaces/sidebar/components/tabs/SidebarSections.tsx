@@ -36,7 +36,6 @@ export function SidebarSections({
   onPinDrop,
   onTabContextMenu,
   onTabDrop,
-  onTabPointerDrop = () => undefined,
   onTabsDrop = () => undefined,
   onQuickEntryContextMenu,
   setDraggingEssentialId,
@@ -69,7 +68,6 @@ export function SidebarSections({
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
-  onTabPointerDrop?: (tabId: string, clientX: number, clientY: number) => void;
   onTabsDrop?: (event: DragEvent<HTMLElement>) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
@@ -88,9 +86,6 @@ export function SidebarSections({
   });
   const tabCount = filteredItems.groupedTabs.reduce((total, entry) => total + entry.tabs.length, 0) + filteredItems.regularTabs.length;
   const recentlyClosedTabs = closedTabs.slice(0, SIDEBAR_RECENTLY_CLOSED_LIMIT);
-  const canUnpinDraggedTabToTabs = Boolean(
-    draggingTabId && filteredItems.pinnedTabs.some((tab) => tab.id === draggingTabId)
-  );
   const isSectionCollapsed = (sectionId: SidebarSectionId) => (
     !filteredItems.isFiltering &&
     !hasSidebarSectionDragReveal(sectionId, {
@@ -116,11 +111,10 @@ export function SidebarSections({
 
   return (
     <>
-      {(filteredItems.essentials.length > 0 || Boolean(draggingTabId)) && (
+      {filteredItems.essentials.length > 0 && (
         <section className="sidebar-section">
           <SidebarSectionHeader
             count={filteredItems.essentials.length}
-            dropLabel={draggingTabId ? "Drop to add" : undefined}
             isCollapsed={isSectionCollapsed("essentials")}
             title="Essentials"
             onToggle={() => toggleSection("essentials")}
@@ -128,26 +122,18 @@ export function SidebarSections({
           {!isSectionCollapsed("essentials") && <nav
             className="essentials"
             aria-label="Essentials"
-            data-drop-target={Boolean(draggingTabId)}
             onDragEnter={(event) => {
               if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
-                event.currentTarget.dataset.activeDropTarget = "true";
+                event.preventDefault();
               }
             }}
             onDragOver={(event) => {
               if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "copy";
-                event.currentTarget.dataset.activeDropTarget = "true";
               }
             }}
-            onDragLeave={(event) => {
-              delete event.currentTarget.dataset.activeDropTarget;
-            }}
-            onDrop={(event) => {
-              delete event.currentTarget.dataset.activeDropTarget;
-              onEssentialDrop(event);
-            }}
+            onDrop={onEssentialDrop}
           >
             {filteredItems.essentials.map((essential) => (
               <FavoriteButton
@@ -169,9 +155,6 @@ export function SidebarSections({
                 onPreview={actions.openGlance}
               />
             ))}
-            {filteredItems.essentials.length === 0 && draggingTabId && (
-              <p className="sidebar-drop-empty">Drop to essential</p>
-            )}
           </nav>}
         </section>
       )}
@@ -191,11 +174,10 @@ export function SidebarSections({
         setDraggingTabId={setDraggingTabId}
       />
 
-      {(filteredItems.favorites.length > 0 || Boolean(draggingTabId)) && (
+      {filteredItems.favorites.length > 0 && (
         <section className="sidebar-section">
           <SidebarSectionHeader
             count={filteredItems.favorites.length}
-            dropLabel={draggingTabId ? "Drop to add" : undefined}
             isCollapsed={isSectionCollapsed("favorites")}
             title="Favorites"
             onToggle={() => toggleSection("favorites")}
@@ -203,26 +185,18 @@ export function SidebarSections({
           {!isSectionCollapsed("favorites") && <nav
             className="favorites"
             aria-label="Favorites"
-            data-drop-target={Boolean(draggingTabId)}
             onDragEnter={(event) => {
               if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
-                event.currentTarget.dataset.activeDropTarget = "true";
+                event.preventDefault();
               }
             }}
             onDragOver={(event) => {
               if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "copy";
-                event.currentTarget.dataset.activeDropTarget = "true";
               }
             }}
-            onDragLeave={(event) => {
-              delete event.currentTarget.dataset.activeDropTarget;
-            }}
-            onDrop={(event) => {
-              delete event.currentTarget.dataset.activeDropTarget;
-              onFavoriteDrop(event);
-            }}
+            onDrop={onFavoriteDrop}
           >
             {filteredItems.favorites.map((favorite) => (
               <FavoriteButton
@@ -243,9 +217,6 @@ export function SidebarSections({
                 onPreview={actions.openGlance}
               />
             ))}
-            {filteredItems.favorites.length === 0 && draggingTabId && (
-              <p className="sidebar-drop-empty">Drop to favorite</p>
-            )}
           </nav>}
         </section>
       )}
@@ -285,7 +256,6 @@ export function SidebarSections({
         actions={actions}
         activeSearchTarget={activeSearchTarget}
         activeTab={activeTab}
-        canUnpinDraggedTabToTabs={canUnpinDraggedTabToTabs}
         draggingGroupId={draggingGroupId}
         draggingTabId={draggingTabId}
         filteredItems={filteredItems}
@@ -294,7 +264,6 @@ export function SidebarSections({
         tabCount={tabCount}
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}
-        onTabPointerDrop={onTabPointerDrop}
         onTabGroupContextMenu={onTabGroupContextMenu}
         onTabsDrop={onTabsDrop}
         onToggle={() => toggleSection("tabs")}

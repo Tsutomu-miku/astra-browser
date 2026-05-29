@@ -8,10 +8,9 @@ import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarD
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
-import { TabOrganizationDropTargets } from "../src/renderer/surfaces/sidebar/components/tabs/TabOrganizationDropTargets";
 
 describe("sidebar section drop zones", () => {
-  it("shows Pinned, Essentials, and Favorites drop targets while dragging a regular tab", () => {
+  it("does not render explicit tab drag target regions while dragging a regular tab", () => {
     const tab = createTab("Docs", "https://docs.example");
     const html = renderToStaticMarkup(createElement(SidebarSections, {
       actions: createActions(),
@@ -49,18 +48,15 @@ describe("sidebar section drop zones", () => {
       splitTabIds: []
     }));
 
-    expect(html).toContain("Drop to pin");
-    expect(html).toContain("Drop to essential");
-    expect(html).toContain("Drop to favorite");
-    expect(html).toContain("New group");
+    expect(html).not.toContain("Drop to");
+    expect(html).not.toContain("New group");
     expect(html).not.toContain("Ungroup tab");
-    expect(html).toContain('aria-label="Pinned tabs"');
-    expect(html).toContain('aria-label="Essentials"');
-    expect(html).toContain('aria-label="Favorites"');
-    expect(html).toContain('aria-label="Create new group from dragged tab"');
+    expect(html).not.toContain('aria-label="Pinned tabs"');
+    expect(html).not.toContain('aria-label="Essentials"');
+    expect(html).not.toContain('aria-label="Favorites"');
   });
 
-  it("shows inline drop labels and marks hovered drop zones as active", () => {
+  it("accepts tab drops on existing Favorites without marking a visible target area", () => {
     const tab = createTab("Docs", "https://docs.example");
     const favorite = createFavorite("MDN", "https://developer.mozilla.org");
     const onFavoriteDrop = vi.fn();
@@ -105,15 +101,16 @@ describe("sidebar section drop zones", () => {
       }));
     });
 
-    expect(container.textContent).toContain("Drop to add");
-    expect(container.textContent).toContain("Drop to pin");
+    expect(container.textContent).not.toContain("Drop to");
 
     const favorites = container.querySelector<HTMLElement>(".favorites")!;
-    favorites.dispatchEvent(createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
-    expect(favorites.dataset.activeDropTarget).toBe("true");
+    const dragOverEvent = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id });
+    favorites.dispatchEvent(dragOverEvent);
+    expect(dragOverEvent.defaultPrevented).toBe(true);
+    expect(favorites.dataset.activeDropTarget).toBeUndefined();
+    expect(favorites.dataset.dropTarget).toBeUndefined();
 
     favorites.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
-    expect(favorites.dataset.activeDropTarget).toBeUndefined();
     expect(onFavoriteDrop).toHaveBeenCalled();
 
     act(() => root.unmount());
@@ -172,7 +169,7 @@ describe("sidebar section drop zones", () => {
     act(() => root.unmount());
   });
 
-  it("does not offer a new group target for dragged pinned tabs", () => {
+  it("does not offer tab organization target areas while dragging pinned tabs", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const html = renderToStaticMarkup(createElement(SidebarSections, {
       actions: createActions(),
@@ -211,11 +208,12 @@ describe("sidebar section drop zones", () => {
     }));
 
     expect(html).not.toContain("New group");
+    expect(html).not.toContain("Ungroup tab");
     expect(html).toContain('class="tabs"');
-    expect(html).toContain('data-drop-target="true"');
+    expect(html).not.toContain('data-drop-target="true"');
   });
 
-  it("offers an Ungroup target for dragged grouped tabs", () => {
+  it("does not offer tab organization target areas while dragging grouped tabs", () => {
     const grouped = { ...createTab("Docs", "https://docs.example"), groupId: "group" };
     const html = renderToStaticMarkup(createElement(SidebarSections, {
       actions: createActions(),
@@ -256,46 +254,8 @@ describe("sidebar section drop zones", () => {
       splitTabIds: []
     }));
 
-    expect(html).toContain("Ungroup tab");
-    expect(html).toContain('type="button"');
-    expect(html).toContain('aria-label="Remove dragged tab from group"');
-    expect(html).toContain('tabindex="0"');
+    expect(html).not.toContain("Ungroup tab");
     expect(html).not.toContain("New group");
-  });
-
-  it("activates and cancels tab organization targets from the keyboard", () => {
-    const onCreateGroup = vi.fn();
-    const onUngroupTab = vi.fn();
-    const setDraggingTabId = vi.fn();
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(createElement(TabOrganizationDropTargets, {
-        canCreateGroup: true,
-        canUngroup: true,
-        draggingTabId: "tab-1",
-        onCreateGroup,
-        onUngroupTab,
-        setDraggingTabId
-      }));
-    });
-
-    const targets = container.querySelectorAll<HTMLElement>(".tab-organization-drop-target");
-    expect(targets[0]?.tagName).toBe("BUTTON");
-    expect(targets[0]?.getAttribute("tabindex")).toBe("0");
-
-    act(() => {
-      targets[0]?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
-      targets[1]?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: " " }));
-      targets[0]?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Escape" }));
-    });
-
-    expect(onCreateGroup).toHaveBeenCalledWith("tab-1");
-    expect(onUngroupTab).toHaveBeenCalledWith("tab-1");
-    expect(setDraggingTabId).toHaveBeenCalledWith(null);
-
-    act(() => root.unmount());
   });
 
   it("marks Essentials as reorderable drop targets while dragging an Essential", () => {
@@ -434,7 +394,7 @@ describe("sidebar section drop zones", () => {
     expect(html).toContain('data-dragging="true"');
   });
 
-  it("temporarily reveals collapsed tab drop sections while dragging a tab", () => {
+  it("keeps collapsed sections hidden while dragging a tab", () => {
     const activeTab = createTab("Docs", "https://docs.example");
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const essential = createFavorite("Calendar", "https://calendar.example");
@@ -500,10 +460,10 @@ describe("sidebar section drop zones", () => {
       }));
     });
 
-    expect(container.querySelector(".essentials")).not.toBeNull();
-    expect(container.querySelector(".pinned-tabs")).not.toBeNull();
-    expect(container.querySelector(".favorites")).not.toBeNull();
-    expect(container.querySelector(".tabs")).not.toBeNull();
+    expect(container.querySelector(".essentials")).toBeNull();
+    expect(container.querySelector(".pinned-tabs")).toBeNull();
+    expect(container.querySelector(".favorites")).toBeNull();
+    expect(container.querySelector(".tabs")).toBeNull();
 
     act(() => root.unmount());
   });

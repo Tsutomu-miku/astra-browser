@@ -8,8 +8,7 @@ export function hasSidebarSectionDragReveal(
     tabId: string | null;
   }
 ) {
-  if (sectionId === "essentials") return Boolean(dragging.tabId || dragging.essentialId);
-  if (sectionId === "favorites") return Boolean(dragging.tabId || dragging.favoriteId);
-  if (sectionId === "pinned" || sectionId === "tabs") return Boolean(dragging.tabId);
+  if (sectionId === "essentials") return Boolean(dragging.essentialId);
+  if (sectionId === "favorites") return Boolean(dragging.favoriteId);
   return false;
 }

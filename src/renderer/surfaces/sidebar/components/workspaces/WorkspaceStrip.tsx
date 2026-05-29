@@ -143,7 +143,6 @@ export function WorkspaceStrip({
             aria-current={isActive}
             data-dragging={draggingWorkspaceId === workspace.id}
             data-drop-target={isDropTarget}
-            data-workspace-id={workspace.id}
             onDragStart={(event) => onDragStart(event, workspace.id)}
             onDragEnd={onDragEnd}
             onDragOver={(event) => {
@@ -172,7 +171,6 @@ export function WorkspaceStrip({
         type="button"
         aria-label={getNewWorkspaceAccessibilityLabel(Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId))}
         data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId)}
-        data-new-workspace-button="true"
         onDragOver={(event) => {
           if (draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
             event.preventDefault();

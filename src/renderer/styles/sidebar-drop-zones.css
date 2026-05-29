@@ -1,35 +1,3 @@
-.pinned-tabs[data-drop-target="true"],
-.essentials[data-drop-target="true"],
-.favorites[data-drop-target="true"],
-.tabs[data-drop-target="true"] {
-  min-height: 42px;
-  border: 1px dashed color-mix(in srgb, var(--accent) 38%, transparent);
-  border-radius: 8px;
-  padding: 6px;
-  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.035));
-}
-
-.pinned-tabs[data-active-drop-target="true"],
-.essentials[data-active-drop-target="true"],
-.favorites[data-active-drop-target="true"],
-.tabs[data-active-drop-target="true"] {
-  border-color: color-mix(in srgb, var(--accent) 64%, transparent);
-  background: color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.06));
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent),
-    inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
-}
-
-.sidebar-drop-empty {
-  grid-column: 1 / -1;
-  margin: 0;
-  align-self: center;
-  justify-self: center;
-  color: color-mix(in srgb, var(--accent) 64%, white);
-  font-size: 11px;
-  font-weight: 760;
-}
-
 .favorite-button[draggable="true"] {
   cursor: grab;
 }
@@ -96,27 +64,4 @@
 .essentials .favorite-button[data-drop-placement="after"]::before,
 .pinned-tab-button[data-drop-placement="after"]::before {
   right: -4px;
-}
-
-.tab-organization-drop-target {
-  width: 100%;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  border: 1px dashed color-mix(in srgb, var(--accent) 42%, transparent);
-  border-radius: 8px;
-  padding: 7px 10px;
-  background: color-mix(in srgb, var(--accent) 12%, rgba(255, 255, 255, 0.05));
-  color: color-mix(in srgb, var(--accent) 70%, white);
-  font-size: 11px;
-  font-weight: 780;
-}
-
-.tab-organization-drop-target svg {
-  width: 14px;
-  height: 14px;
 }

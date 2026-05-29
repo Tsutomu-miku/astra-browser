@@ -180,7 +180,6 @@ export function SidebarFooter({
         aria-label={splitButtonLabel}
         aria-pressed={splitMode}
         data-drop-target={canDropSplitItem}
-        data-sidebar-split-button="true"
         onClick={actions.toggleSplitMode}
         onDragOver={(event) => {
           const source = getSidebarSplitDropSource({
