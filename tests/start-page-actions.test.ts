@@ -31,6 +31,30 @@ describe("StartPage actions", () => {
     act(() => root.unmount());
   });
 
+  it("opens tab-backed Favorites in split by tab id from tiles and context menus", () => {
+    const { activeWorkspace, favorite, state } = createStateWithDuplicateFavoriteUrl();
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(StartPage, {
+        controller: createController(state, activeWorkspace, actions),
+        isVisible: false
+      }));
+    });
+
+    clickFavoriteTile(container, favorite.title, { shiftKey: true });
+    openFavoriteContextMenu(container, favorite.title);
+    clickMenuButton(container, "Open in split view");
+
+    expect(actions.openTabInSplit).toHaveBeenCalledTimes(2);
+    expect(actions.openTabInSplit).toHaveBeenCalledWith(favorite.tabId);
+    expect(actions.openUrlInSplit).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("removes Favorite context-menu items by id", () => {
     const { activeWorkspace, favorite, state } = createStateWithDuplicateFavoriteUrl();
     const actions = createActions();
@@ -105,6 +129,17 @@ function openFavoriteContextMenu(container: HTMLElement, title: string) {
       button: 2,
       clientX: 16,
       clientY: 24
+    }));
+  });
+}
+
+function clickFavoriteTile(container: HTMLElement, title: string, options: MouseEventInit = {}) {
+  const tile = Array.from(container.querySelectorAll<HTMLButtonElement>(".start-tile"))
+    .find((button) => button.textContent?.includes(title));
+  act(() => {
+    tile?.dispatchEvent(new MouseEvent("click", {
+      bubbles: true,
+      ...options
     }));
   });
 }

@@ -34,7 +34,11 @@ export function getOmniboxAction(
         ? { type: "openUrlInSplit", title: suggestion.title, url: suggestion.url }
         : { type: "navigateActiveTab", value: suggestion.url };
     case "favorite":
-      if (openInSplit) return { type: "openUrlInSplit", title: suggestion.title, url: suggestion.url };
+      if (openInSplit) {
+        return suggestion.tabId
+          ? { type: "openTabInSplit", tabId: suggestion.tabId }
+          : { type: "openUrlInSplit", title: suggestion.title, url: suggestion.url };
+      }
       return suggestion.tabId
         ? { type: "selectTab", tabId: suggestion.tabId }
         : { type: "openUrlInActiveWorkspace", title: suggestion.title, url: suggestion.url };

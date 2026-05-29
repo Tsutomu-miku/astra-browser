@@ -69,7 +69,7 @@ Acceptance:
 - Adding a tab to Favorites records the tab relationship.
 - Removing a Favorite does not close the tab unless a separate close action is used.
 
-Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites use tab actions, tab split behavior, tab status badges, tab close cleanup, and tab accessibility labels while staying in the Favorites folder. Full cross-surface QA is still needed.
+Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites use tab actions, tab split behavior, tab status badges, tab close cleanup, and tab accessibility labels while staying in the Favorites folder. Sidebar, Start page, omnibox, and command palette split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
 
 Small requirements:
 
@@ -156,7 +156,7 @@ Progress: partially implemented. Row action hints reserve stable inline space, p
 - Tabs, tab-backed Favorites, Essentials, history, and recently closed rows can be sent to split view without duplicating existing tab-backed pages.
 - Glance previews can open, split, close, navigate, reload, and copy URL.
 
-Progress: partially implemented. Sidebar click, keyboard, and drag-to-split paths now keep tab-backed Favorites on tab identity while URL-only entries still use URL split.
+Progress: partially implemented. Sidebar, Start page, omnibox, and command palette split paths now keep tab-backed Favorites on tab identity while URL-only entries still use URL split.
 
 ### P1-3 Command Palette And Omnibox
 
@@ -207,7 +207,7 @@ Progress: started.
 | Pinned tabs | Partial | Pin/unpin and drag behavior exist; should be reviewed with Favorite-as-tab model. |
 | Tab groups | Partial | Grouping, context menus, drag targets exist; needs integrated DnD QA. |
 | Essentials | Partial | Global quick entries exist; semantics intentionally remain URL-entry based for now. |
-| Split and Glance | Partial | Core interactions exist; needs integrated QA with tab-backed Favorites. |
+| Split and Glance | Partial | Core interactions exist; tab-backed Favorites use tab identity across sidebar, Start, omnibox, and command palette split paths; needs integrated QA. |
 | Command palette | Partial | Broad command coverage exists; object semantics need continued alignment. |
 | Memory management | Partial | Sleeping and Memory Saver exist; lifecycle QA should continue. |
 | Packaging | Mostly done | Multi-platform scripts and release workflow exist; artifact size should keep being monitored. |

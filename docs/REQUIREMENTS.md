@@ -76,6 +76,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Tab-backed Sidebar Favorites must use tab-level context menus and close shortcuts; legacy URL Favorites must keep quick-entry context menus.
 - Tab-backed Sidebar Favorites must expose tab-level active, split, muted, and sleeping state in accessible labels and compact badges.
 - Tab-backed Sidebar Favorites must send the matching tab to split view instead of creating a duplicate URL split; legacy URL Favorites may open a URL split.
+- Tab-backed Favorites from Start page, omnibox, and command palette split actions must send the matching tab to split view instead of creating a duplicate URL split.
 - Closing a tab-backed Favorite must close the tab and remove that tab from the Favorites folder; legacy URL Favorites must not be removed just because a matching URL tab closes.
 - Sidebar tab rows must expose compact visual status badges for split-view, muted, and sleeping states.
 - Pinned tab buttons must expose compact visual status badges for split-view, muted, and sleeping states.

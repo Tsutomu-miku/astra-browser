@@ -21,7 +21,7 @@ export function buildContentCommands(
         title: favorite.title,
         subtitle: `Favorite · ${favorite.url}`,
         run: () => tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(favorite.url, favorite.title),
-        runInSplit: () => actions.openUrlInSplit(favorite.url, favorite.title),
+        runInSplit: () => tab ? actions.openTabInSplit(tab.id) : actions.openUrlInSplit(favorite.url, favorite.title),
         runPreview: () => actions.openGlance(favorite.url, favorite.title)
       };
     }),

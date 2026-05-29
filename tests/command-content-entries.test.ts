@@ -28,6 +28,25 @@ describe("command content entries", () => {
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
   });
 
+  it("opens tab-backed Favorites in split by tab identity", () => {
+    const state = createDefaultState();
+    const mailTab = createTab("Mail", "https://mail.example");
+    const favorite = createFavorite("Mail", mailTab.url, mailTab.id);
+    const workspace = {
+      ...state.workspaces[0],
+      favorites: [favorite],
+      tabs: [mailTab]
+    };
+    const actions = createActions();
+
+    buildContentCommands(state, workspace, actions)
+      .find((command) => command.subtitle.startsWith("Favorite"))
+      ?.runInSplit?.();
+
+    expect(actions.openTabInSplit).toHaveBeenCalledWith(mailTab.id);
+    expect(actions.openUrlInSplit).not.toHaveBeenCalled();
+  });
+
   it("falls back by URL when a Favorite tab id is stale", () => {
     const state = createDefaultState();
     const docsTab = createTab("Docs", "https://docs.example");
@@ -52,12 +71,15 @@ function createActions() {
   return {
     navigateActiveTab: vi.fn(),
     openGlance: vi.fn(),
+    openTabInSplit: vi.fn(),
     openUrlInActiveWorkspace: vi.fn(),
     openUrlInSplit: vi.fn(),
     selectTab: vi.fn()
   } as unknown as CommandActions & {
     navigateActiveTab: ReturnType<typeof vi.fn>;
+    openTabInSplit: ReturnType<typeof vi.fn>;
     openUrlInActiveWorkspace: ReturnType<typeof vi.fn>;
+    openUrlInSplit: ReturnType<typeof vi.fn>;
     selectTab: ReturnType<typeof vi.fn>;
   };
 }

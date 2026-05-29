@@ -64,9 +64,13 @@ describe("getOmniboxAction", () => {
       url: "https://legacy.example"
     });
     expect(getOmniboxAction(favoriteSuggestion, "", true)).toEqual({
-      title: "Docs",
+      tabId: "tab-favorite-1",
+      type: "openTabInSplit"
+    });
+    expect(getOmniboxAction(legacyFavoriteSuggestion, "", true)).toEqual({
+      title: "Legacy",
       type: "openUrlInSplit",
-      url: "https://docs.example"
+      url: "https://legacy.example"
     });
   });
 

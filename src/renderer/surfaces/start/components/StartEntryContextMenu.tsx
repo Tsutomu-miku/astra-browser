@@ -16,7 +16,7 @@ export function StartEntryContextMenu({
   left: number;
   onClose: () => void;
   onOpen: (item: StartEntryContextMenuItem, kind: StartEntryContextMenuKind) => void;
-  onOpenInSplit: (url: string, title?: string) => void;
+  onOpenInSplit: (item: StartEntryContextMenuItem, kind: StartEntryContextMenuKind) => void;
   onPreview: (url: string, title?: string) => void;
   onRemove: (item: StartEntryContextMenuItem, kind: StartEntryContextMenuKind) => void;
   top: number;
@@ -40,7 +40,7 @@ export function StartEntryContextMenu({
       <button type="button" role="menuitem" onClick={() => run(() => onPreview(item.url, item.title))}>
         Preview in Glance
       </button>
-      <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(item.url, item.title))}>
+      <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(item, kind))}>
         Open in split view
       </button>
       <span className="start-context-menu-separator" />

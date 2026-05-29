@@ -35,6 +35,16 @@ export function StartPage({
     actions.navigateActiveTab(item.url);
   }
 
+  function runStartEntryInSplit(item: Favorite | StartEntryContextMenuItem, kind: "essential" | "favorite" | "history") {
+    if (kind === "favorite") {
+      const tab = resolveFavoriteTab(activeWorkspace, item);
+      tab ? actions.openTabInSplit(tab.id) : actions.openUrlInSplit(item.url, item.title);
+      return;
+    }
+
+    actions.openUrlInSplit(item.url, item.title);
+  }
+
   function openQuickEntry(event: MouseEvent, item: Favorite, kind: "essential" | "favorite") {
     const intent = getStartOpenIntent(item.url, item.title, {
       altKey: event.altKey,
@@ -44,7 +54,7 @@ export function StartPage({
     if (intent.type === "preview") {
       actions.openGlance(intent.url, intent.title);
     } else if (intent.type === "split") {
-      actions.openUrlInSplit(intent.url, intent.title);
+      runStartEntryInSplit(item, kind);
     } else {
       runStartEntry(item, kind);
     }
@@ -140,7 +150,7 @@ export function StartPage({
             top={menu.top}
             onClose={closeMenu}
             onOpen={runStartEntry}
-            onOpenInSplit={actions.openUrlInSplit}
+            onOpenInSplit={runStartEntryInSplit}
             onPreview={actions.openGlance}
             onRemove={(item, kind) => {
               if (kind === "history") {
