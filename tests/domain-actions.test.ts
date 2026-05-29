@@ -714,6 +714,16 @@ describe("domain actions", () => {
     expect(getActiveTab(getActiveWorkspace(selected)).isSleeping).toBe(false);
   });
 
+  it("keeps Memory Saver manual sleep as a no-op when no tabs can be released", () => {
+    const state = createDefaultState();
+    getActiveWorkspace(state).activeTabId = getActiveWorkspace(state).tabs[0].id;
+    const withBackground = openUrlInActiveWorkspace(state, "docs.test", "Docs");
+    const slept = sleepInactiveTabs(withBackground);
+
+    expect(sleepInactiveTabs(state)).toBe(state);
+    expect(sleepInactiveTabs(slept)).toBe(slept);
+  });
+
   it("sleeps a selected tab by moving focus to a neighbor", () => {
     const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
     const second = openUrlInActiveWorkspace(first, "second.test", "Second");

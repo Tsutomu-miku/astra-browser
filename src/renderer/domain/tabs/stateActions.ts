@@ -83,12 +83,20 @@ export function sleepTabGroup(state: BrowserState, groupId: string): BrowserStat
 }
 
 export function sleepInactiveTabs(state: BrowserState): BrowserState {
+  const workspace = getActiveWorkspace(state);
+  const visibleTabIds = new Set([workspace.activeTabId, ...getSplitTabIds(state)].filter(Boolean));
+  const sleepableTabIds = workspace.tabs
+    .filter((tab) => !tab.isSleeping && !tab.isPinned && !visibleTabIds.has(tab.id))
+    .map((tab) => tab.id);
+
+  if (sleepableTabIds.length === 0) return state;
+
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
-    const visibleTabIds = new Set([workspace.activeTabId, ...getSplitTabIds(draft)].filter(Boolean));
+    const sleepableTabs = new Set(sleepableTabIds);
 
     for (const tab of workspace.tabs) {
-      if (!visibleTabIds.has(tab.id) && !tab.isPinned) {
+      if (sleepableTabs.has(tab.id)) {
         tab.isSleeping = true;
         tab.isLoading = false;
         tab.canGoBack = false;
