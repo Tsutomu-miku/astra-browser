@@ -42,6 +42,64 @@ Going forward, product requirements that touch tabs must specify:
 - P1: Experience completeness. Important for daily use, but the app remains understandable without it.
 - P2: Expansion and long-term platform work.
 
+## Execution Policy
+
+Work should move by priority bands, not by whichever small bug is easiest to isolate.
+
+1. Finish P0 requirements until the browser's core object model, drag/drop semantics, memory safety, persistence, and packaging are reliable enough for daily dogfooding.
+2. Then focus P1 requirements in large experience batches: Arc/Zen sidebar polish, iconography, interaction states, Split/Glance workflows, command/omnibox parity, and daily-use settings/history/downloads.
+3. Defer P2 work until the active P0/P1 batch has no known blocking gaps. P2 items should be fixed in batches, not as one-off distractions.
+
+When a P0/P1 implementation reveals architecture that cannot support the target behavior cleanly, prefer a contained refactor over stacking compatibility branches.
+
+## Current Execution Batches
+
+### Batch 1: P0 Stabilization
+
+Status: active.
+
+- P0-2 Tab identity and cross-surface Favorite semantics.
+- P0-3 Sidebar drag-and-drop semantics and Electron manual QA.
+- P0-6 Memory safety baseline, especially webview sleep/wake lifecycle and protected tabs.
+- P0-5 Packaging baseline, including per-arch macOS artifacts and Linux metadata.
+
+Exit criteria:
+
+- Full automated suite and production build pass.
+- Manual Electron QA covers tab reorder, folder moves, Space/New Space drops, Split drops, sleep/wake, and package artifact smoke checks.
+- No known P0 behavior requires a user workaround.
+
+### Batch 2: P1 Arc/Zen Experience
+
+Status: next.
+
+- Sidebar visual hierarchy: spacing, density, section rhythm, active state, collapsed state, and recently closed placement.
+- Iconography: consistent symbolic icons for actions and status, clear favicon fallbacks, no placeholder-looking controls in primary chrome.
+- Interaction states: hover, pressed, focus-visible, drag, split-target, sleeping, muted, active, search-selected, and disabled states must feel deliberate and not cover row titles.
+- Compact chrome: floating sidebar/topbar reveal, pin/unpin controls, address field behavior, and content-first layout.
+- Split and Glance: visible affordances, no duplicate tab-backed splits, predictable pane focus, and polished controls.
+- Command palette, omnibox, sidebar search, and start page: same object semantics and modifier hints.
+
+Exit criteria:
+
+- Sidebar can be scanned and operated without native tooltips, overlapping hints, or ambiguous icons.
+- Keyboard and pointer interactions expose the same primary, preview, and split actions.
+- Targeted visual/state tests cover the main sidebar controls and row variants.
+
+### Batch 3: P1 Daily Browser Completeness
+
+Status: queued.
+
+- Settings, permissions, history, downloads, find, zoom, and browsing data flows.
+- Profile-scoped permission/storage clarity.
+- Command palette coverage for daily browser operations.
+
+### Batch 4: P2 Expansion
+
+Status: deferred.
+
+- Native Chromium integration, extensions, sync, advanced history, browser automation APIs, plugin/theme ecosystem, and mobile support.
+
 ## P0 Requirements
 
 ### P0-1 Browser Shell And Persistence
@@ -151,11 +209,23 @@ Progress: partially implemented.
 ### P1-1 Arc/Zen Sidebar Experience
 
 - Sidebar sections should visually align with Arc-style hierarchy: Essentials, Pinned, Favorites, groups, regular tabs, recently closed.
+- Sidebar iconography should use consistent symbolic action/status icons, clear favicon fallbacks, and restrained primary chrome controls.
 - Hover affordances must not cover row titles.
+- Hover, pressed, focus-visible, active, selected, drag, drop-target, sleeping, muted, split, and disabled states must be visually distinct and quiet.
 - Section collapse, search reveal, and drag reveal must feel predictable.
 - Keyboard focus navigation must work across sections and context menus.
 
 Progress: partially implemented. Row action hints reserve stable inline space, pinned tab hints reveal inside the icon tile, status badges, list controls, Space rail controls, sidebar chrome controls, and sidebar menu swatches avoid native title tooltips, hover/focus no longer overlays or squeezes row titles, and close controls reveal on keyboard focus without using absolute overlays. Collapsed sidebar sections now stay collapsed during tab, Essential, and Favorite drags; search filtering is the only automatic section reveal path. Current tab folders now render before Recently Closed so the sidebar scans as Essentials, Pinned, Favorites, Tabs, then recovery. Tab group keyboard context menus open from the group toggle while group-name editing fields keep text-editing context menu keys. Essential context-menu Open now navigates the active tab instead of selecting or creating a tab.
+
+Small requirements:
+
+- P1-1.1 Sidebar section rhythm and density align with Arc/Zen-style vertical browsing.
+- P1-1.2 Primary sidebar and footer icons are consistent, discoverable, and do not rely on text labels inside cramped controls.
+- P1-1.3 Favicon and fallback icons distinguish tabs, pinned tabs, Essentials, Favorites, groups, recently closed rows, and internal pages.
+- P1-1.4 Row action hints reserve space and never obscure title text.
+- P1-1.5 Active, search-selected, split, muted, sleeping, hover, focus, pressed, disabled, dragging, and drop-target states are visually distinct.
+- P1-1.6 Collapsed and compact sidebar reveal behavior is predictable and content-first.
+- P1-1.7 Sidebar visual QA includes desktop and narrow widths for text fitting and icon clarity.
 
 ### P1-2 Split View And Glance
 
