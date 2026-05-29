@@ -49,7 +49,7 @@ describe("workspace strip state", () => {
     expect(getNewWorkspaceAccessibilityLabel(true)).toBe("Drop to create New Space");
   });
 
-  it("marks workspace drop targets from sidebar drag state", () => {
+  it("does not mark workspace drop targets while dragging a tab", () => {
     expect(getWorkspaceDropTargetState({
       activeWorkspaceId: "personal",
       draggingClosedTabIndex: null,
@@ -58,7 +58,7 @@ describe("workspace strip state", () => {
       draggingTabId: "tab",
       draggingWorkspaceId: null,
       workspaceId: "work"
-    })).toBe(true);
+    })).toBe(false);
     expect(getWorkspaceDropTargetState({
       activeWorkspaceId: "personal",
       draggingClosedTabIndex: null,
@@ -68,6 +68,27 @@ describe("workspace strip state", () => {
       draggingWorkspaceId: null,
       workspaceId: "personal"
     })).toBe(false);
+  });
+
+  it("marks workspace drop targets for cross-Space drag types that need visible destinations", () => {
+    expect(getWorkspaceDropTargetState({
+      activeWorkspaceId: "personal",
+      draggingClosedTabIndex: null,
+      draggingFavoriteId: null,
+      draggingGroupId: "group",
+      draggingTabId: null,
+      draggingWorkspaceId: null,
+      workspaceId: "work"
+    })).toBe(true);
+    expect(getWorkspaceDropTargetState({
+      activeWorkspaceId: "personal",
+      draggingClosedTabIndex: 0,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      draggingTabId: null,
+      draggingWorkspaceId: null,
+      workspaceId: "personal"
+    })).toBe(true);
   });
 
   it("maps wheel movement to workspace cycle direction", () => {

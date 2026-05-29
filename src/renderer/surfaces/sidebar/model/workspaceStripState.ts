@@ -65,7 +65,6 @@ export function getWorkspaceDropTargetState({
     (draggingGroupId && !isActive) ||
     draggingClosedTabIndex !== null ||
     (draggingFavoriteId && !isActive) ||
-    (draggingTabId && !isActive) ||
     (draggingWorkspaceId && workspaceId !== draggingWorkspaceId)
   );
 }

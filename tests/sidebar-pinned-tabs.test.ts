@@ -24,7 +24,7 @@ function createActions() {
 }
 
 describe("sidebar pinned tabs", () => {
-  it("renders pinned tab buttons as draggable reorder targets", () => {
+  it("renders pinned tab buttons as draggable reorder items without target-area highlights", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const html = renderToStaticMarkup(createElement(SidebarPinnedTabs, {
       actions: createActions(),
@@ -43,7 +43,7 @@ describe("sidebar pinned tabs", () => {
     expect(html).not.toContain('title="Mail"');
     expect(html).toContain(`id="sidebar-search-tab-${pinned.id}"`);
     expect(html).toContain('draggable="true"');
-    expect(html).toContain('data-drop-target="true"');
+    expect(html).not.toContain('data-drop-target="true"');
   });
 
   it("marks the dragged pinned tab", () => {
@@ -297,7 +297,6 @@ describe("sidebar pinned tabs", () => {
 
   it("styles pinned tab drag and drop states", () => {
     expect(sidebarCss).toContain('.pinned-tab-button[data-dragging="true"]');
-    expect(sidebarCss).toContain('.pinned-tab-button[data-drop-target="true"]');
     expect(dropZoneCss).toContain('.pinned-tab-button[data-drop-placement]::before');
     expect(dropZoneCss).toContain('.tab-row[data-drop-placement]::before');
     expect(dropZoneCss).toContain('.essentials .favorite-button[data-drop-placement]::before');

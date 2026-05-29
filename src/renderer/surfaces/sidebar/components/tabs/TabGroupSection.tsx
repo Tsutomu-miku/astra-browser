@@ -68,7 +68,7 @@ export function TabGroupSection({
         draggable
         data-group-id={group.id}
         data-dragging={draggingGroupId === group.id}
-        data-drop-target={Boolean(draggingTabId || (draggingGroupId && draggingGroupId !== group.id))}
+        data-drop-target={Boolean(draggingGroupId && draggingGroupId !== group.id)}
         onContextMenu={(event) => onGroupContextMenu(event, group)}
         onKeyDown={openSidebarKeyboardContextMenu}
         onDragStart={(event) => {

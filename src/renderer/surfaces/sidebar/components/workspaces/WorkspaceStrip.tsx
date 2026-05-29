@@ -169,8 +169,8 @@ export function WorkspaceStrip({
         className="workspace-button workspace-new-button"
         title="New Space"
         type="button"
-        aria-label={getNewWorkspaceAccessibilityLabel(Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId))}
-        data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId)}
+        aria-label={getNewWorkspaceAccessibilityLabel(Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId))}
+        data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId)}
         onDragOver={(event) => {
           if (draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
             event.preventDefault();

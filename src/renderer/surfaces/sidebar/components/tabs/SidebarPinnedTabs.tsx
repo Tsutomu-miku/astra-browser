@@ -87,7 +87,6 @@ export function SidebarPinnedTabs({
               aria-selected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
               draggable
               data-dragging={draggingTabId === tab.id}
-              data-drop-target={Boolean(draggingTabId && draggingTabId !== tab.id)}
               onAuxClick={(event) => {
                 if (event.button === 1) {
                   event.preventDefault();

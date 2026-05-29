@@ -27,7 +27,7 @@ describe("sidebar footer compact controls", () => {
     expect(pinned).toContain('aria-pressed="true"');
   });
 
-  it("marks the split button as a tab drop target while dragging another tab", () => {
+  it("keeps tab split drops visually quiet while dragging another tab", () => {
     const html = renderFooter({
       compactMode: false,
       draggingTabId: "other-tab",
@@ -35,7 +35,7 @@ describe("sidebar footer compact controls", () => {
     });
 
     expect(html).toContain('aria-label="Split view, drop Docs here"');
-    expect(html).toContain('data-drop-target="true"');
+    expect(html).toContain('data-drop-target="false"');
   });
 
   it("marks the split button as a drop target for sidebar URL entries", () => {
@@ -50,6 +50,11 @@ describe("sidebar footer compact controls", () => {
       draggingFavoriteId: "favorite",
       floatingSidebarOpen: false
     })).toContain('aria-label="Split view, drop Design here"');
+    expect(renderFooter({
+      compactMode: false,
+      draggingFavoriteId: "favorite",
+      floatingSidebarOpen: false
+    })).toContain('data-drop-target="true"');
 
     expect(renderFooter({
       compactMode: false,

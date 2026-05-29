@@ -76,7 +76,7 @@ export function SidebarFooter({
     favorites,
     tabs
   });
-  const canDropSplitItem = Boolean(splitDropSource);
+  const showSplitDropTarget = Boolean(splitDropSource && splitDropSource.type !== "tab");
   const splitButtonLabel = splitDropSource
     ? `Split view, drop ${splitDropSource.title || "item"} here`
     : "Split view";
@@ -179,7 +179,7 @@ export function SidebarFooter({
         type="button"
         aria-label={splitButtonLabel}
         aria-pressed={splitMode}
-        data-drop-target={canDropSplitItem}
+        data-drop-target={showSplitDropTarget}
         onClick={actions.toggleSplitMode}
         onDragOver={(event) => {
           const source = getSidebarSplitDropSource({
