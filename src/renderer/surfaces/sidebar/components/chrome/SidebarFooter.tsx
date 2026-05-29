@@ -15,44 +15,99 @@ import {
 
 import type { BrowserController } from "../../../../app/controller/types";
 import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
+import type { ClosedTab, Favorite, BrowserTab } from "../../../../domain/browser";
 import { handleSidebarFooterFocusNavigation } from "../../model/sidebarFooterFocusNavigation";
+import { getSidebarSplitDropSource } from "../../model/sidebarSplitDropTarget";
 
 export function SidebarFooter({
   actions,
   activeTabId,
+  closedTabs,
   compactMode,
+  draggingClosedTabIndex,
+  draggingEssentialId,
+  draggingFavoriteId,
   draggingTabId,
+  essentials,
+  favorites,
   floatingSidebarOpen,
   memorySaver,
   setPanel,
+  setDraggingClosedTabIndex,
+  setDraggingEssentialId,
+  setDraggingFavoriteId,
   setDraggingTabId,
   splitLayout,
-  splitMode
+  splitMode,
+  tabs
 }: {
   actions: BrowserController["actions"];
   activeTabId: string;
+  closedTabs: ClosedTab[];
   compactMode: boolean;
+  draggingClosedTabIndex: number | null;
+  draggingEssentialId: string | null;
+  draggingFavoriteId: string | null;
   draggingTabId: string | null;
+  essentials: Favorite[];
+  favorites: Favorite[];
   floatingSidebarOpen: boolean;
   memorySaver: MemorySaverState;
   setPanel: BrowserController["setPanel"];
+  setDraggingClosedTabIndex: (closedTabIndex: number | null) => void;
+  setDraggingEssentialId: (essentialId: string | null) => void;
+  setDraggingFavoriteId: (favoriteId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
   splitLayout: BrowserController["splitLayout"];
   splitMode: boolean;
+  tabs: BrowserTab[];
 }) {
   const sidebarToggleLabel = compactMode
     ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
     : "Focus sidebar";
-  const canDropSplitTab = Boolean(draggingTabId && draggingTabId !== activeTabId);
+  const splitDropSource = getSidebarSplitDropSource({
+    activeTabId,
+    closedTabs,
+    draggingClosedTabIndex,
+    draggingEssentialId,
+    draggingFavoriteId,
+    draggingTabId,
+    essentials,
+    favorites,
+    tabs
+  });
+  const canDropSplitItem = Boolean(splitDropSource);
+  const splitButtonLabel = splitDropSource
+    ? `Split view, drop ${splitDropSource.title || "item"} here`
+    : "Split view";
   const memorySaverLabel = memorySaver.sleepingTabs > 0
     ? `${memorySaver.sleepingTabs} asleep`
     : `${memorySaver.reclaimableTabs} ready`;
   const memorySaverMode = memorySaver.sleepEnabled ? `Auto ${memorySaver.sleepAfterMinutes}m` : "Manual";
 
   function dropTabIntoSplit(event: DragEvent<HTMLButtonElement>) {
+    const source = getSidebarSplitDropSource({
+      activeTabId,
+      closedTabs,
+      draggingClosedTabIndex,
+      draggingEssentialId,
+      draggingFavoriteId,
+      draggingTabId,
+      essentials,
+      favorites,
+      tabs
+    }, (type) => event.dataTransfer.getData(type));
+    if (!source) return;
+
     event.preventDefault();
-    const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
-    if (tabId && tabId !== activeTabId) actions.openTabInSplit(tabId);
+    if (source.type === "tab") {
+      actions.openTabInSplit(source.tabId);
+    } else {
+      actions.openUrlInSplit(source.url, source.title);
+    }
+    setDraggingClosedTabIndex(null);
+    setDraggingEssentialId(null);
+    setDraggingFavoriteId(null);
     setDraggingTabId(null);
   }
 
@@ -122,12 +177,23 @@ export function SidebarFooter({
         className="icon-button"
         title="Split view"
         type="button"
-        aria-label="Split view"
+        aria-label={splitButtonLabel}
         aria-pressed={splitMode}
-        data-drop-target={canDropSplitTab}
+        data-drop-target={canDropSplitItem}
         onClick={actions.toggleSplitMode}
         onDragOver={(event) => {
-          if (!canDropSplitTab) return;
+          const source = getSidebarSplitDropSource({
+            activeTabId,
+            closedTabs,
+            draggingClosedTabIndex,
+            draggingEssentialId,
+            draggingFavoriteId,
+            draggingTabId,
+            essentials,
+            favorites,
+            tabs
+          }, (type) => event.dataTransfer.getData(type));
+          if (!source) return;
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
         }}

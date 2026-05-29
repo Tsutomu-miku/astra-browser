@@ -307,14 +307,24 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       <SidebarFooter
         actions={actions}
         activeTabId={activeTab.id}
+        closedTabs={activeWorkspace.closedTabs}
         compactMode={compactMode}
+        draggingClosedTabIndex={draggingClosedTabIndex}
+        draggingEssentialId={draggingEssentialId}
+        draggingFavoriteId={draggingFavoriteId}
         draggingTabId={draggingTabId}
+        essentials={state.essentials}
+        favorites={activeWorkspace.favorites}
         floatingSidebarOpen={floatingSidebarOpen}
         memorySaver={memorySaver}
         setPanel={setPanel}
+        setDraggingClosedTabIndex={setDraggingClosedTabIndex}
+        setDraggingEssentialId={setDraggingEssentialId}
+        setDraggingFavoriteId={setDraggingFavoriteId}
         setDraggingTabId={setDraggingTabId}
         splitLayout={controller.splitLayout}
         splitMode={state.splitMode}
+        tabs={activeWorkspace.tabs}
       />
       <SidebarResizeHandle
         isCollapsed={sidebarCollapsed || compactMode}

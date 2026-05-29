@@ -7,6 +7,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { BrowserController } from "../src/renderer/app/controller/types";
+import { createFavorite, createTab } from "../src/renderer/domain/browser";
+import { getSidebarSplitDropSource } from "../src/renderer/surfaces/sidebar/model/sidebarSplitDropTarget";
 import { SidebarFooter } from "../src/renderer/surfaces/sidebar/components/chrome/SidebarFooter";
 
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
@@ -31,8 +33,80 @@ describe("sidebar footer compact controls", () => {
       floatingSidebarOpen: false
     });
 
-    expect(html).toContain('aria-label="Split view"');
+    expect(html).toContain('aria-label="Split view, drop Docs here"');
     expect(html).toContain('data-drop-target="true"');
+  });
+
+  it("marks the split button as a drop target for sidebar URL entries", () => {
+    expect(renderFooter({
+      compactMode: false,
+      draggingEssentialId: "essential",
+      floatingSidebarOpen: false
+    })).toContain('aria-label="Split view, drop Inbox here"');
+
+    expect(renderFooter({
+      compactMode: false,
+      draggingFavoriteId: "favorite",
+      floatingSidebarOpen: false
+    })).toContain('aria-label="Split view, drop Design here"');
+
+    expect(renderFooter({
+      compactMode: false,
+      draggingClosedTabIndex: 0,
+      floatingSidebarOpen: false
+    })).toContain('aria-label="Split view, drop Closed Docs here"');
+  });
+
+  it("opens dropped sidebar URL entries in split view", () => {
+    const actions = createActions();
+    const setDraggingEssentialId = vi.fn();
+    const setDraggingFavoriteId = vi.fn();
+    const setDraggingClosedTabIndex = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarFooter, footerProps({
+        actions,
+        compactMode: false,
+        draggingFavoriteId: "favorite",
+        floatingSidebarOpen: false,
+        memorySaver: defaultMemorySaver(),
+        setDraggingClosedTabIndex,
+        setDraggingEssentialId,
+        setDraggingFavoriteId
+      })));
+    });
+
+    const splitButton = container.querySelector<HTMLButtonElement>('[aria-pressed="false"][data-drop-target="true"]')!;
+    act(() => {
+      splitButton.dispatchEvent(createDragEvent("drop"));
+    });
+
+    expect(actions.openUrlInSplit).toHaveBeenCalledWith("https://design.example", "Design");
+    expect(setDraggingClosedTabIndex).toHaveBeenCalledWith(null);
+    expect(setDraggingEssentialId).toHaveBeenCalledWith(null);
+    expect(setDraggingFavoriteId).toHaveBeenCalledWith(null);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it("resolves split drop sources from drag state or data transfer", () => {
+    const state = splitDropState();
+
+    expect(getSidebarSplitDropSource({ ...state, draggingTabId: "other-tab" })).toEqual({
+      tabId: "other-tab",
+      title: "Docs",
+      type: "tab"
+    });
+    expect(getSidebarSplitDropSource({ ...state, draggingTabId: "active-tab" })).toBeNull();
+    expect(getSidebarSplitDropSource({ ...state }, (type) => type === "text/favorite-id" ? "favorite" : "")).toEqual({
+      title: "Design",
+      type: "url",
+      url: "https://design.example"
+    });
   });
 
   it("labels icon-only footer controls", () => {
@@ -172,6 +246,9 @@ describe("sidebar footer compact controls", () => {
 function renderFooter({
   activeTabId = "active-tab",
   compactMode,
+  draggingClosedTabIndex = null,
+  draggingEssentialId = null,
+  draggingFavoriteId = null,
   draggingTabId = null,
   floatingSidebarOpen,
   memorySaver = {
@@ -186,6 +263,9 @@ function renderFooter({
 }: {
   activeTabId?: string;
   compactMode: boolean;
+  draggingClosedTabIndex?: number | null;
+  draggingEssentialId?: string | null;
+  draggingFavoriteId?: string | null;
   draggingTabId?: string | null;
   floatingSidebarOpen: boolean;
   memorySaver?: Parameters<typeof SidebarFooter>[0]["memorySaver"];
@@ -193,6 +273,9 @@ function renderFooter({
   return renderToStaticMarkup(createElement(SidebarFooter, footerProps({
     activeTabId,
     compactMode,
+    draggingClosedTabIndex,
+    draggingEssentialId,
+    draggingFavoriteId,
     draggingTabId,
     floatingSidebarOpen,
     memorySaver
@@ -200,35 +283,119 @@ function renderFooter({
 }
 
 function footerProps({
+  actions = createActions(),
   activeTabId = "active-tab",
+  closedTabs = [{ closedAt: 1, title: "Closed Docs", url: "https://closed.example" }],
   compactMode,
+  draggingClosedTabIndex = null,
+  draggingEssentialId = null,
+  draggingFavoriteId = null,
   draggingTabId = null,
+  essentials = [{ ...createFavorite("Inbox", "https://inbox.example"), id: "essential" }],
+  favorites = [{ ...createFavorite("Design", "https://design.example"), id: "favorite" }],
   floatingSidebarOpen,
-  memorySaver
+  memorySaver,
+  setDraggingClosedTabIndex = vi.fn(),
+  setDraggingEssentialId = vi.fn(),
+  setDraggingFavoriteId = vi.fn(),
+  setDraggingTabId = vi.fn(),
+  tabs = [
+    { ...createTab("Active", "https://active.example"), id: "active-tab" },
+    { ...createTab("Docs", "https://docs.example"), id: "other-tab" }
+  ]
 }: {
+  actions?: BrowserController["actions"];
   activeTabId?: string;
+  closedTabs?: Parameters<typeof SidebarFooter>[0]["closedTabs"];
   compactMode: boolean;
+  draggingClosedTabIndex?: number | null;
+  draggingEssentialId?: string | null;
+  draggingFavoriteId?: string | null;
   draggingTabId?: string | null;
+  essentials?: Parameters<typeof SidebarFooter>[0]["essentials"];
+  favorites?: Parameters<typeof SidebarFooter>[0]["favorites"];
   floatingSidebarOpen: boolean;
   memorySaver: Parameters<typeof SidebarFooter>[0]["memorySaver"];
+  setDraggingClosedTabIndex?: (closedTabIndex: number | null) => void;
+  setDraggingEssentialId?: (essentialId: string | null) => void;
+  setDraggingFavoriteId?: (favoriteId: string | null) => void;
+  setDraggingTabId?: (tabId: string | null) => void;
+  tabs?: Parameters<typeof SidebarFooter>[0]["tabs"];
 }) {
   return {
-    actions: {
-      openTabInSplit: vi.fn(),
-      setSplitLayout: vi.fn(),
-      sleepInactiveTabs: vi.fn(),
-      toggleCompactMode: vi.fn(),
-      toggleSidebar: vi.fn(),
-      toggleSplitMode: vi.fn()
-    } as unknown as BrowserController["actions"],
+    actions,
     activeTabId,
+    closedTabs,
     compactMode,
+    draggingClosedTabIndex,
+    draggingEssentialId,
+    draggingFavoriteId,
     draggingTabId,
+    essentials,
+    favorites,
     floatingSidebarOpen,
     memorySaver,
     setPanel: vi.fn(),
-    setDraggingTabId: vi.fn(),
+    setDraggingClosedTabIndex,
+    setDraggingEssentialId,
+    setDraggingFavoriteId,
+    setDraggingTabId,
     splitLayout: "horizontal",
-    splitMode: false
+    splitMode: false,
+    tabs
   } satisfies Parameters<typeof SidebarFooter>[0];
+}
+
+function createActions() {
+  return {
+    openTabInSplit: vi.fn(),
+    openUrlInSplit: vi.fn(),
+    setSplitLayout: vi.fn(),
+    sleepInactiveTabs: vi.fn(),
+    toggleCompactMode: vi.fn(),
+    toggleSidebar: vi.fn(),
+    toggleSplitMode: vi.fn()
+  } as unknown as BrowserController["actions"];
+}
+
+function defaultMemorySaver() {
+  return {
+    mountedWebviews: 1,
+    protectedTabs: 1,
+    reclaimableTabs: 0,
+    sleepAfterMinutes: 30,
+    sleepEnabled: true,
+    sleepingTabs: 0,
+    summary: "0 releasable · 0 sleeping · 1 protected"
+  };
+}
+
+function splitDropState() {
+  return {
+    activeTabId: "active-tab",
+    closedTabs: [{ closedAt: 1, title: "Closed Docs", url: "https://closed.example" }],
+    draggingClosedTabIndex: null,
+    draggingEssentialId: null,
+    draggingFavoriteId: null,
+    draggingTabId: null,
+    essentials: [{ ...createFavorite("Inbox", "https://inbox.example"), id: "essential" }],
+    favorites: [{ ...createFavorite("Design", "https://design.example"), id: "favorite" }],
+    tabs: [
+      { ...createTab("Active", "https://active.example"), id: "active-tab" },
+      { ...createTab("Docs", "https://docs.example"), id: "other-tab" }
+    ]
+  };
+}
+
+function createDragEvent(type: string) {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: {
+      dropEffect: "none",
+      effectAllowed: "all",
+      getData: vi.fn(() => ""),
+      setData: vi.fn()
+    }
+  });
+  return event;
 }
