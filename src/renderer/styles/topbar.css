@@ -260,13 +260,50 @@
   white-space: nowrap;
 }
 
+.address-input-shell {
+  position: relative;
+  min-width: 0;
+  height: 34px;
+  display: grid;
+  align-items: center;
+}
+
+.address-autocomplete {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 6px;
+  color: var(--muted);
+  font: inherit;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.address-autocomplete-prefix {
+  color: transparent;
+  white-space: pre;
+}
+
+.address-autocomplete-suffix {
+  min-width: 0;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+  text-overflow: ellipsis;
+}
+
 #addressInput {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 34px;
   border: 0;
   padding: 0 6px;
   background: transparent;
   color: var(--text);
+  font: inherit;
   outline: none;
 }
 

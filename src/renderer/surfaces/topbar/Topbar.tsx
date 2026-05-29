@@ -66,24 +66,32 @@ export function Topbar({ controller }: { controller: BrowserController }) {
             <span className="identity-glyph"><SecurityIcon security={identity.security} /></span>
             <span className="identity-label">{activeTab.isLoading ? "Loading" : identity.label}</span>
           </button>
-          <input
-            id="addressInput"
-            autoComplete="off"
-            inputMode="url"
-            spellCheck={false}
-            aria-label="Address"
-            placeholder="Search or enter address"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-controls="address-suggestions"
-            aria-expanded={omnibox.suggestionsOpen && omnibox.suggestions.length > 0}
-            value={addressValue}
-            onChange={(event) => omnibox.updateAddressValue(event.target.value)}
-            onFocus={() => omnibox.setSuggestionsOpen(true)}
-            onBlur={() => omnibox.setSuggestionsOpen(false)}
-            onKeyDown={omnibox.onAddressKeyDown}
-            aria-activedescendant={omnibox.suggestionsOpen && omnibox.suggestions.length > 0 ? `address-suggestion-${omnibox.activeIndex}` : undefined}
-          />
+          <span className="address-input-shell">
+            {omnibox.completionSuffix && (
+              <span className="address-autocomplete" aria-hidden="true">
+                <span className="address-autocomplete-prefix">{addressValue}</span>
+                <span className="address-autocomplete-suffix">{omnibox.completionSuffix}</span>
+              </span>
+            )}
+            <input
+              id="addressInput"
+              autoComplete="off"
+              inputMode="url"
+              spellCheck={false}
+              aria-label="Address"
+              placeholder="Search or enter address"
+              role="combobox"
+              aria-autocomplete="both"
+              aria-controls="address-suggestions"
+              aria-expanded={omnibox.suggestionsOpen && omnibox.suggestions.length > 0}
+              value={addressValue}
+              onChange={(event) => omnibox.updateAddressValue(event.target.value)}
+              onFocus={() => omnibox.setSuggestionsOpen(true)}
+              onBlur={() => omnibox.setSuggestionsOpen(false)}
+              onKeyDown={omnibox.onAddressKeyDown}
+              aria-activedescendant={omnibox.suggestionsOpen && omnibox.suggestions.length > 0 ? `address-suggestion-${omnibox.activeIndex}` : undefined}
+            />
+          </span>
         </form>
         {omnibox.suggestionsOpen && omnibox.suggestions.length > 0 && (
           <div className="omnibox-suggestions" id="address-suggestions" role="listbox" aria-label="Address suggestions">

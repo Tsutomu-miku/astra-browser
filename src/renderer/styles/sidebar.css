@@ -219,7 +219,22 @@ h1 {
   height: 15px;
 }
 
+.sidebar-address-input-shell {
+  position: relative;
+  min-width: 0;
+  height: 32px;
+  display: grid;
+  align-items: center;
+}
+
+.sidebar-address-input-shell .address-autocomplete {
+  padding: 0;
+}
+
 .sidebar-address-form input {
+  position: relative;
+  z-index: 1;
+  width: 100%;
   min-width: 0;
   height: 32px;
   border: 0;
@@ -227,6 +242,7 @@ h1 {
   outline: none;
   background: transparent;
   color: var(--text);
+  font: inherit;
 }
 
 .sidebar-omnibox-suggestions {

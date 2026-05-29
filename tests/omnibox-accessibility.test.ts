@@ -23,7 +23,7 @@ describe("omnibox accessibility", () => {
 
     const input = container.querySelector<HTMLInputElement>("#addressInput")!;
     expect(input.getAttribute("role")).toBe("combobox");
-    expect(input.getAttribute("aria-autocomplete")).toBe("list");
+    expect(input.getAttribute("aria-autocomplete")).toBe("both");
     expect(input.getAttribute("aria-controls")).toBe("address-suggestions");
     expect(input.getAttribute("aria-expanded")).toBe("false");
 
@@ -37,6 +37,35 @@ describe("omnibox accessibility", () => {
     expect(container.querySelectorAll('[role="option"]').length).toBeGreaterThan(0);
     expect(container.querySelector('[role="option"]')?.getAttribute("aria-selected")).toBe("true");
     expect(input.getAttribute("aria-activedescendant")).toBe("address-suggestion-0");
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it("shows and accepts topbar inline completion", () => {
+    const setAddressValue = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(Topbar, {
+        controller: createController({ addressValue: "git", compactMode: false, setAddressValue })
+      }));
+    });
+
+    expect(container.querySelector(".address-autocomplete-suffix")?.textContent).toBe("hub.com");
+
+    const input = container.querySelector<HTMLInputElement>("#addressInput")!;
+    input.setSelectionRange(3, 3);
+    act(() => {
+      input.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "Tab"
+      }));
+    });
+
+    expect(setAddressValue).toHaveBeenCalledWith("github.com");
 
     act(() => root.unmount());
     container.remove();
@@ -56,6 +85,7 @@ describe("omnibox accessibility", () => {
 
     const input = container.querySelector<HTMLInputElement>("#sidebarAddressInput")!;
     expect(input.getAttribute("role")).toBe("combobox");
+    expect(input.getAttribute("aria-autocomplete")).toBe("both");
     expect(input.getAttribute("aria-controls")).toBe("sidebar-address-suggestions");
     expect(input.getAttribute("aria-expanded")).toBe("false");
 
@@ -87,11 +117,13 @@ describe("omnibox accessibility", () => {
 function createController({
   actions = createActions(),
   addressValue,
-  compactMode
+  compactMode,
+  setAddressValue = vi.fn()
 }: {
   actions?: BrowserController["actions"];
   addressValue: string;
   compactMode: boolean;
+  setAddressValue?: BrowserController["setAddressValue"];
 }): BrowserController {
   const state = createDefaultState();
   const activeWorkspace = getActiveWorkspace(state);
@@ -104,7 +136,7 @@ function createController({
     addressValue,
     compactMode,
     floatingToolbarOpen: false,
-    setAddressValue: vi.fn(),
+    setAddressValue,
     setPanel: vi.fn(),
     state
   } as unknown as BrowserController;

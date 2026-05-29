@@ -9,7 +9,10 @@ import {
   recordHistory
 } from "../src/renderer/domain/actions";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
-import { buildOmniboxSuggestions } from "../src/renderer/common/omnibox/omniboxSuggestions";
+import {
+  buildOmniboxSuggestions,
+  getOmniboxInlineCompletion
+} from "../src/renderer/common/omnibox/omniboxSuggestions";
 
 describe("buildOmniboxSuggestions", () => {
   it("adds a direct navigation suggestion for typed queries", () => {
@@ -78,5 +81,35 @@ describe("buildOmniboxSuggestions", () => {
     }
 
     expect(buildOmniboxSuggestions(state, "")).toHaveLength(8);
+  });
+
+  it("ranks host and title prefix matches ahead of weaker history matches", () => {
+    const state = createDefaultState();
+    state.history.unshift({
+      id: "history-weak",
+      title: "Old example",
+      url: "https://example.test/articles/github",
+      visitedAt: Date.now(),
+      workspaceId: "personal"
+    });
+
+    const suggestions = buildOmniboxSuggestions(state, "git");
+
+    expect(suggestions[1]).toMatchObject({
+      completion: "github.com",
+      title: "GitHub",
+      type: "essential"
+    });
+  });
+
+  it("returns inline completion for URL-backed suggestions", () => {
+    const suggestions = buildOmniboxSuggestions(createDefaultState(), "git");
+
+    expect(getOmniboxInlineCompletion(suggestions, "git")).toEqual({
+      suggestionId: suggestions[1].id,
+      suffix: "hub.com",
+      value: "github.com"
+    });
+    expect(getOmniboxInlineCompletion(suggestions, "git hub")).toBeNull();
   });
 });

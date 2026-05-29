@@ -11,7 +11,11 @@ import {
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import type { BrowserController } from "./types";
 import { getOmniboxAction } from "../../common/omnibox/omniboxActions";
-import { buildOmniboxSuggestions, type OmniboxSuggestion } from "../../common/omnibox/omniboxSuggestions";
+import {
+  buildOmniboxSuggestions,
+  getOmniboxInlineCompletion,
+  type OmniboxSuggestion
+} from "../../common/omnibox/omniboxSuggestions";
 import { clampOmniboxIndex, getNextOmniboxIndex } from "../../common/omnibox/omniboxSelection";
 
 type OmniboxControllerInput = Pick<
@@ -28,6 +32,9 @@ export function useOmniboxController({
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const suggestions = useMemo(() => buildOmniboxSuggestions(state, addressValue), [addressValue, state]);
+  const inlineCompletion = useMemo(() => (
+    getOmniboxInlineCompletion(suggestions, addressValue)
+  ), [addressValue, suggestions]);
   const activeIndex = clampOmniboxIndex(activeSuggestionIndex, suggestions.length);
 
   useEffect(() => {
@@ -63,7 +70,30 @@ export function useOmniboxController({
     runSuggestion(suggestionsOpen ? suggestions[activeIndex] : undefined);
   }, [activeIndex, runSuggestion, suggestions, suggestionsOpen]);
 
+  const acceptInlineCompletion = useCallback(() => {
+    if (!inlineCompletion) return false;
+    setAddressValue(inlineCompletion.value);
+    setSuggestionsOpen(true);
+    const nextIndex = suggestions.findIndex((suggestion) => suggestion.id === inlineCompletion.suggestionId);
+    setActiveSuggestionIndex(nextIndex >= 0 ? nextIndex : 0);
+    return true;
+  }, [inlineCompletion, setAddressValue, suggestions]);
+
   const onAddressKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
+    const shouldAcceptCompletion = (
+      event.key === "Tab" ||
+      (
+        event.key === "ArrowRight" &&
+        event.currentTarget.selectionStart === event.currentTarget.value.length &&
+        event.currentTarget.selectionEnd === event.currentTarget.value.length
+      )
+    );
+
+    if (shouldAcceptCompletion && acceptInlineCompletion()) {
+      event.preventDefault();
+      return;
+    }
+
     if (!suggestionsOpen && isListNavigationKey(event.key)) {
       setSuggestionsOpen(true);
     }
@@ -78,7 +108,7 @@ export function useOmniboxController({
     } else if (event.key === "Escape") {
       setSuggestionsOpen(false);
     }
-  }, [activeIndex, runSuggestion, suggestions, suggestionsOpen]);
+  }, [acceptInlineCompletion, activeIndex, runSuggestion, suggestions, suggestionsOpen]);
 
   const onSuggestionPointerDown = useCallback((event: MouseEvent, suggestion: OmniboxSuggestion) => {
     event.preventDefault();
@@ -93,6 +123,7 @@ export function useOmniboxController({
 
   return {
     activeIndex,
+    completionSuffix: inlineCompletion?.suffix ?? "",
     onAddressKeyDown,
     onSuggestionPointerDown,
     setActiveSuggestionIndex,
