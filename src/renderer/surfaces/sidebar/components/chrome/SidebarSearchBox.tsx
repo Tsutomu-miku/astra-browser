@@ -1,7 +1,11 @@
 import { useRef, type KeyboardEvent } from "react";
 import { FiX } from "react-icons/fi";
 
-import { getSidebarSearchActionHints, type SidebarSearchTarget } from "../../sidebarFiltering";
+import {
+  getSidebarSearchActionHints,
+  getSidebarSearchTargetElementId,
+  type SidebarSearchTarget
+} from "../../sidebarFiltering";
 
 export function SidebarSearchBox({
   activeSearchTarget,
@@ -32,7 +36,7 @@ export function SidebarSearchBox({
         aria-label="Search sidebar"
         placeholder="Search sidebar"
         value={query}
-        aria-activedescendant={activeSearchTarget ? `sidebar-search-${activeSearchTarget.type}-${activeSearchTarget.id}` : undefined}
+        aria-activedescendant={activeSearchTarget ? getSidebarSearchTargetElementId(activeSearchTarget) : undefined}
         onChange={(event) => onQueryChange(event.target.value)}
         onKeyDown={onKeyDown}
       />

@@ -3,6 +3,7 @@ import type { CSSProperties, DragEvent, MouseEvent } from "react";
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
+import { getSidebarSearchTargetElementId } from "../../sidebarFiltering";
 import { TabRow } from "./SidebarItems";
 
 export function TabGroupSection({
@@ -102,6 +103,7 @@ export function TabGroupSection({
           key={tab.id}
           activeTabId={activeTab.id}
           draggingTabId={draggingTabId}
+          id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
           isSearchSelected={searchSelectedTabId === tab.id}
           splitTabIds={splitTabIds}
           tab={tab}

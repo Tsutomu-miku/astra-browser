@@ -105,6 +105,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar search must filter global Essentials plus tabs, tab groups, pinned tabs, and favorites inside the active Space.
 - Sidebar search must navigate Essential and favorite matches in the current tab unless preview or split modifiers are used.
 - Sidebar search must support Arrow, Home, End, Enter, Alt+Enter preview, and Shift+Enter split-open flows.
+- Sidebar search keyboard selection must keep the active result scrolled into view.
 - Sidebar search must visually hint Alt preview and Shift split actions while filtering.
 - Sidebar search clearing must keep focus in the search input and expose an explicit clear-button label.
 - Sidebar items must support Alt-click Glance preview and Shift-click split opening.

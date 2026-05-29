@@ -7,6 +7,7 @@ import {
   filterSidebarItems,
   getNextSidebarSearchIndex,
   getSidebarSearchActionHints,
+  getSidebarSearchTargetElementId,
   getSidebarSearchTargets
 } from "../src/renderer/surfaces/sidebar/sidebarFiltering";
 
@@ -110,5 +111,20 @@ describe("sidebar filtering", () => {
       { id: "split", modifier: "Shift", label: "Split" }
     ]);
     expect(getSidebarSearchActionHints(undefined)).toEqual([]);
+  });
+
+  it("builds stable DOM ids for rendered search targets", () => {
+    expect(getSidebarSearchTargetElementId({
+      type: "tab",
+      id: "tab-1",
+      title: "Docs",
+      url: "https://docs.example"
+    })).toBe("sidebar-search-tab-tab-1");
+    expect(getSidebarSearchTargetElementId({
+      type: "favorite",
+      id: "docs",
+      title: "Docs",
+      url: "https://docs.example"
+    })).toBe("sidebar-search-favorite-docs");
   });
 });

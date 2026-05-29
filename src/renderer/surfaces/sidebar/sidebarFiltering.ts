@@ -95,6 +95,10 @@ export function getSidebarSearchActionHints(target: SidebarSearchTarget | undefi
   ];
 }
 
+export function getSidebarSearchTargetElementId(target: SidebarSearchTarget): string {
+  return `sidebar-search-${target.type}-${target.id}`;
+}
+
 export function clampSidebarSearchIndex(index: number, targetCount: number): number {
   return clampListIndex(index, targetCount);
 }

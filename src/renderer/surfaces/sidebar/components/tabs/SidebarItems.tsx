@@ -50,6 +50,7 @@ export function SidebarSectionHeader({
 export function TabRow({
   activeTabId,
   draggingTabId,
+  id,
   onClose,
   onContextMenu,
   onDrop,
@@ -64,6 +65,7 @@ export function TabRow({
 }: {
   activeTabId: string;
   draggingTabId: string | null;
+  id?: string;
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
@@ -81,6 +83,7 @@ export function TabRow({
   return (
     <div
       className={`tab-row ${tab.isSleeping ? "is-sleeping" : ""} ${splitTabIds.includes(tab.id) ? "is-split-tab" : ""}`}
+      id={id}
       aria-current={tab.id === activeTabId}
       aria-selected={isSearchSelected}
       data-dragging={draggingTabId === tab.id}

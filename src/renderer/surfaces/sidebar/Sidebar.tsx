@@ -22,6 +22,7 @@ import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
 import { handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
+import { scrollSidebarSearchTargetIntoView } from "./model/sidebarSearchTargetDom";
 import { getSidebarTabDropIntent, getSidebarTabsAreaDropIntent } from "./model/sidebarTabDropIntent";
 import {
   clampSidebarSearchIndex,
@@ -180,6 +181,11 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   useEffect(() => {
     setActiveSearchIndex((index) => clampSidebarSearchIndex(index, searchTargets.length));
   }, [searchTargets.length]);
+
+  useEffect(() => {
+    if (!activeSearchTarget) return;
+    scrollSidebarSearchTargetIntoView(activeSearchTarget);
+  }, [activeSearchTarget]);
 
   function onSearchKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
     if (isListNavigationKey(event.key)) {

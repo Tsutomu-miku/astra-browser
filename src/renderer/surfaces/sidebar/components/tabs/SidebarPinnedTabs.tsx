@@ -8,7 +8,7 @@ import { getTabStatusBadges } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
-import type { SidebarSearchTarget } from "../../sidebarFiltering";
+import { getSidebarSearchTargetElementId, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarSectionHeader } from "./SidebarItems";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
@@ -64,7 +64,7 @@ export function SidebarPinnedTabs({
             <button
               className="pinned-tab-button"
               key={tab.id}
-              id={`sidebar-search-tab-${tab.id}`}
+              id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
               title={tab.title || tab.url}
               type="button"
               aria-current={tab.id === activeTab.id}

@@ -5,7 +5,7 @@ import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../doma
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
 import { hasSidebarSectionDragReveal, type SidebarSectionId } from "../../model/sidebarSectionState";
-import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
+import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
 import { FavoriteButton, SidebarSectionHeader } from "./SidebarItems";
 import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
@@ -130,7 +130,7 @@ export function SidebarSections({
                 draggable
                 draggingQuickEntryId={draggingEssentialId}
                 favorite={essential}
-                id={`sidebar-search-essential-${essential.id}`}
+                id={getSidebarSearchTargetElementId({ type: "essential", id: essential.id, title: essential.title, url: essential.url })}
                 isActive={isSidebarUrlActive(activeTab.url, essential.url)}
                 isSearchSelected={activeSearchTarget?.type === "essential" && activeSearchTarget.id === essential.id}
                 dropAxis="horizontal"
@@ -191,7 +191,7 @@ export function SidebarSections({
                 draggable
                 draggingQuickEntryId={draggingFavoriteId}
                 favorite={favorite}
-                id={`sidebar-search-favorite-${favorite.id}`}
+                id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
                 isActive={isSidebarUrlActive(activeTab.url, favorite.url)}
                 isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
                 onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "favorite")}

@@ -3,7 +3,7 @@ import type { DragEvent, MouseEvent } from "react";
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
-import type { SidebarFilterResult, SidebarSearchTarget } from "../../sidebarFiltering";
+import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarSectionHeader, TabRow } from "./SidebarItems";
 import { TabGroupSection } from "./TabGroupSection";
 import { TabOrganizationDropTargets } from "./TabOrganizationDropTargets";
@@ -111,6 +111,7 @@ export function SidebarTabsSection({
             key={tab.id}
             activeTabId={activeTab.id}
             draggingTabId={draggingTabId}
+            id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
             splitTabIds={splitTabIds}
             isSearchSelected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
             tab={tab}
