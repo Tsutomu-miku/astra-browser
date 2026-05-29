@@ -481,6 +481,35 @@ describe("domain actions", () => {
     expect(remainingFavorites[0].tabId).toBe(docsTab.id);
   });
 
+  it("removes tab-backed Favorites when their tab is closed", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const second = openUrlInActiveWorkspace(first, "news.example", "News");
+    const workspace = getActiveWorkspace(second);
+    const docsTab = workspace.tabs.find((tab) => tab.title === "Docs")!;
+    const favorited = addTabToFavorites(second, docsTab.id);
+    const closed = closeTab(favorited, docsTab.id);
+    const closedWorkspace = getActiveWorkspace(closed);
+
+    expect(closedWorkspace.closedTabs[0].url).toBe(docsTab.url);
+    expect(closedWorkspace.favorites.some((favorite) => favorite.tabId === docsTab.id)).toBe(false);
+    expect(closedWorkspace.favorites.some((favorite) => favorite.url === docsTab.url)).toBe(false);
+  });
+
+  it("keeps legacy URL Favorites when a matching tab is closed", () => {
+    const opened = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const docsTab = getActiveTab(getActiveWorkspace(opened));
+    const legacyFavorite = createFavorite("Legacy docs", docsTab.url);
+    const legacyState = {
+      ...opened,
+      workspaces: opened.workspaces.map((workspace) => workspace.id === opened.activeWorkspaceId
+        ? { ...workspace, favorites: [legacyFavorite] }
+        : workspace)
+    };
+    const closed = closeTab(legacyState, docsTab.id);
+
+    expect(getActiveWorkspace(closed).favorites).toEqual([legacyFavorite]);
+  });
+
   it("reorders tabs while preserving the active tab", () => {
     const withFirst = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
     const withSecond = openUrlInActiveWorkspace(withFirst, "second.test", "Second");

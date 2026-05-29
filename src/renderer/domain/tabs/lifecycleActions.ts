@@ -31,6 +31,7 @@ export function closeTab(state: BrowserState, tabId: string): BrowserState {
     if (!tab) return;
 
     prependClosedTabs(workspace, [tab]);
+    removeClosedTabFavorites(workspace, tabId);
 
     if (workspace.tabs.length === 1) {
       workspace.tabs[0] = createTab("New Tab", getWorkspaceHomepageUrl(draft, workspace));
@@ -48,6 +49,10 @@ export function closeTab(state: BrowserState, tabId: string): BrowserState {
 
     pruneSplitTabIds(draft, workspace);
   });
+}
+
+function removeClosedTabFavorites(workspace: ReturnType<typeof getActiveWorkspace>, tabId: string) {
+  workspace.favorites = workspace.favorites.filter((favorite) => favorite.tabId !== tabId);
 }
 
 export function restoreLastClosedTab(state: BrowserState): BrowserState {
