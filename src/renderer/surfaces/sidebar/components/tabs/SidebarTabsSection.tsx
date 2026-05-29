@@ -4,7 +4,7 @@ import { getPointerDropPlacement } from "../../../../common/drag-drop/dropPlacem
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
-import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
+import { getSidebarTabFolderDragId } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarSectionHeader, TabRow } from "./SidebarItems";
 import { TabGroupSection } from "./TabGroupSection";
@@ -13,6 +13,7 @@ export function SidebarTabsSection({
   actions,
   activeSearchTarget,
   activeTab,
+  draggingFavoriteId,
   draggingGroupId,
   draggingTabId,
   filteredItems,
@@ -31,6 +32,7 @@ export function SidebarTabsSection({
   actions: BrowserController["actions"];
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
+  draggingFavoriteId: string | null;
   draggingGroupId: string | null;
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
@@ -57,15 +59,27 @@ export function SidebarTabsSection({
     actions.reorderTabGroup(draggingGroupId, targetGroupId, getPointerDropPlacement(event.currentTarget, event, "vertical"));
     setDraggingGroupId(null);
   };
+  const acceptTabsFolderDrag = (event: DragEvent<HTMLElement>) => {
+    const draggedTabId = getSidebarTabFolderDragId(event, draggingTabId);
+    if (!draggedTabId) return;
+
+    const favoriteId = draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
+    const movedFromPinned = filteredItems.pinnedTabs.some((tab) => tab.id === draggedTabId);
+    const movedFromGroup = filteredItems.groupedTabs.some((entry) => entry.tabs.some((tab) => tab.id === draggedTabId));
+    if (!favoriteId && !movedFromPinned && !movedFromGroup) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  };
 
   return (
     <section
       className="sidebar-section tabs-section"
       onDragEnter={(event) => {
-        acceptSidebarTabFolderDrag(event, draggingTabId);
+        acceptTabsFolderDrag(event);
       }}
       onDragOver={(event) => {
-        acceptSidebarTabFolderDrag(event, draggingTabId);
+        acceptTabsFolderDrag(event);
       }}
       onDrop={onTabsDrop}
     >

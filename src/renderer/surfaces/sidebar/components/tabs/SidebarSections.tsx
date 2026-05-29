@@ -278,6 +278,7 @@ export function SidebarSections({
         actions={actions}
         activeSearchTarget={activeSearchTarget}
         activeTab={activeTab}
+        draggingFavoriteId={draggingFavoriteId}
         draggingGroupId={draggingGroupId}
         draggingTabId={draggingTabId}
         filteredItems={filteredItems}

@@ -247,6 +247,176 @@ describe("sidebar section drop zones", () => {
     act(() => root.unmount());
   });
 
+  it("accepts grouped tab drops on the empty Tabs folder", () => {
+    const groupedTab = { ...createTab("Docs", "https://docs.example"), groupId: "group" };
+    const onTabsDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab: groupedTab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: groupedTab.id,
+        filteredItems: {
+          essentials: [],
+          favorites: [],
+          groupedTabs: [{
+            group: { color: "#7dd3fc", id: "group", isCollapsed: false, name: "Research" },
+            tabs: [groupedTab]
+          }],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: []
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onTabsDrop,
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const tabsSection = container.querySelector<HTMLElement>(".tabs-section")!;
+    const dragOverEvent = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: groupedTab.id });
+    tabsSection.dispatchEvent(dragOverEvent);
+    expect(dragOverEvent.defaultPrevented).toBe(true);
+
+    tabsSection.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: groupedTab.id }));
+    expect(onTabsDrop).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("accepts pinned tab drops on the Tabs folder", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const onTabsDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab: pinned,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: pinned.id,
+        filteredItems: {
+          essentials: [],
+          favorites: [],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [pinned],
+          regularTabs: []
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onTabsDrop,
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const tabsSection = container.querySelector<HTMLElement>(".tabs-section")!;
+    const dragOverEvent = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: pinned.id });
+    tabsSection.dispatchEvent(dragOverEvent);
+    expect(dragOverEvent.defaultPrevented).toBe(true);
+
+    tabsSection.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: pinned.id }));
+    expect(onTabsDrop).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("does not accept regular tab drops on the Tabs folder when no folder move is needed", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const onTabsDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab: tab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: tab.id,
+        filteredItems: {
+          essentials: [],
+          favorites: [],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [tab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onTabsDrop,
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const tabsSection = container.querySelector<HTMLElement>(".tabs-section")!;
+    const dragOverEvent = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id });
+    tabsSection.dispatchEvent(dragOverEvent);
+    expect(dragOverEvent.defaultPrevented).toBe(false);
+
+    tabsSection.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
+
+    act(() => root.unmount());
+  });
+
   it("accepts tab drops on an existing Favorite item", () => {
     const tab = createTab("Docs", "https://docs.example");
     const favorite = createFavorite("MDN", "https://developer.mozilla.org");
