@@ -48,6 +48,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar recently closed rows must support Alt-click Glance preview and Shift-click split opening.
 - Sidebar recently closed rows must support context menus for restore, restoring into another Space, Glance preview, split opening, and copying page details.
 - Sidebar recently closed rows must be draggable onto Space buttons or the New Space button to restore them into the target Space.
+- Sidebar recently closed rows must expose accessible labels with restore position and dragging state.
 - Users must be able to duplicate the active tab.
 - Users must be able to reorder sidebar tabs by drag and drop.
 - Sidebar drag reordering must show a before/after insertion indicator for tabs, pinned tabs, Essentials, favorites, and Spaces.

@@ -1,4 +1,5 @@
 import { getHostInitial, type ClosedTab } from "../../../../domain/browser";
+import { getClosedTabAccessibilityLabel } from "../../model/closedTabItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
@@ -26,13 +27,15 @@ export function ClosedTabButton({
   onRestore: (closedIndex: number) => void;
 }) {
   const title = tab.title || tab.url;
+  const isDragging = draggingClosedTabIndex === closedIndex;
 
   return (
     <button
       className="closed-tab-button"
       type="button"
       draggable={Boolean(onDragStart)}
-      data-dragging={draggingClosedTabIndex === closedIndex}
+      aria-label={getClosedTabAccessibilityLabel({ closedIndex, isDragging, tab })}
+      data-dragging={isDragging}
       title={`Restore ${title}`}
       onContextMenu={(event) => onContextMenu(event, tab, closedIndex)}
       onDragStart={onDragStart}

@@ -35,6 +35,7 @@ describe("sidebar recently closed tabs", () => {
     expect(html).toContain("Shift");
     expect(html).toContain("Split");
     expect(html).toContain('title="Restore Docs"');
+    expect(html).toContain('aria-label="Docs, recently closed tab, restore position 3"');
   });
 
   it("renders a recently closed context menu with restore, split, preview, and copy actions", () => {
@@ -229,6 +230,7 @@ describe("sidebar recently closed tabs", () => {
 
     expect(html).toContain('draggable="true"');
     expect(html).toContain('data-dragging="true"');
+    expect(html).toContain('aria-label="Docs, recently closed tab, restore position 3, dragging"');
   });
 
   it("styles the recently closed sidebar section", () => {
