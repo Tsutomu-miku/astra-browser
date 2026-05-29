@@ -202,7 +202,17 @@ Progress: mostly implemented.
 - Sleeping tabs must unload webviews and wake on selection.
 - Store and webview lifecycle code must not call webview methods before readiness.
 
-Progress: partially implemented.
+Progress: partially implemented. Memory Saver sleep protection is now centralized in a shared tab sleep policy used by domain actions, settings/sidebar summaries, and tab-group context-menu availability. Manual inactive sleep, automatic idle sleep, and group sleep all use the same releasable-tab definition, and no-op sleep requests now preserve the existing state object when every candidate is protected or already sleeping.
+
+Small requirements:
+
+- P0-6.1 Active, pinned, and split-view tabs share one protected-tab policy for Memory Saver.
+- P0-6.2 Manual inactive sleep and automatic idle sleep use the same releasable-tab policy.
+- P0-6.3 Tab-group sleep uses the same releasable-tab policy and remains a no-op when all group tabs are protected.
+- P0-6.4 Settings/sidebar Memory Saver counts are derived from the same policy as the sleep actions.
+- P0-6.5 Sleeping a tab clears loading and navigation affordances before the webview is released.
+- P0-6.6 Sleeping tabs wake on tab selection and split opening.
+- P0-6.7 Webview lifecycle calls are gated by readiness and Electron manual QA.
 
 ## P1 Requirements
 

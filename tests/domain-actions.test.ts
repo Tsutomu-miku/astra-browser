@@ -1103,6 +1103,15 @@ describe("domain actions", () => {
     expect(slept.splitTabIds).toContain(docsTab.id);
   });
 
+  it("keeps sleeping a protected tab group as a no-op", () => {
+    const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.test", "Docs"));
+    const group = getActiveWorkspace(grouped).tabGroups[0];
+    const activeTab = getActiveTab(getActiveWorkspace(grouped));
+
+    expect(activeTab.groupId).toBe(group.id);
+    expect(sleepTabGroup(grouped, group.id)).toBe(grouped);
+  });
+
   it("automatically sleeps idle background tabs while protecting active split and pinned tabs", () => {
     const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
     const second = openUrlInActiveWorkspace(first, "second.test", "Second");
@@ -1140,5 +1149,18 @@ describe("domain actions", () => {
     background.lastActiveAt = now - 31 * 60_000;
 
     expect(sleepIdleTabs(second, now)).toBe(second);
+  });
+
+  it("keeps automatic Memory Saver as a no-op when idle tabs are protected", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const workspace = getActiveWorkspace(first);
+    const active = getActiveTab(workspace);
+    const pinned = workspace.tabs.find((tab) => tab.title === "New Tab")!;
+    const now = 1_000_000;
+    active.lastActiveAt = now - 31 * 60_000;
+    pinned.isPinned = true;
+    pinned.lastActiveAt = now - 31 * 60_000;
+
+    expect(sleepIdleTabs(first, now)).toBe(first);
   });
 });

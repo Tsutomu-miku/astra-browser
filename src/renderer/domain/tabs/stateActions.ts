@@ -10,6 +10,7 @@ import { clearSplitView, getSplitTabIds, setSplitTabIds } from "./splitView";
 import { pruneEmptyTabGroups } from "./groups";
 import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "../browser/zoom";
 import { updateBrowserState } from "../browser/updateState";
+import { getGroupSleepableTabs, getMemoryReleasableTabs, markTabSleeping } from "./sleepPolicy";
 import type { TabDropPlacement } from "./utils";
 
 export function toggleActiveTabPinned(state: BrowserState): BrowserState {
@@ -60,10 +61,7 @@ export function sleepTab(state: BrowserState, tabId: string): BrowserState {
 
     setSplitTabIds(draft, getSplitTabIds(draft).filter((tabId) => tabId !== tab.id));
 
-    tab.isSleeping = true;
-    tab.isLoading = false;
-    tab.canGoBack = false;
-    tab.canGoForward = false;
+    markTabSleeping(tab);
   });
 }
 
@@ -75,31 +73,30 @@ function getSleepTabFocusFallback(tabs: BrowserTab[], tabId: string): BrowserTab
 }
 
 export function sleepTabGroup(state: BrowserState, groupId: string): BrowserState {
+  const workspace = state.workspaces.find((candidate) => candidate.tabGroups.some((group) => group.id === groupId));
+  const sleepableTabIds = workspace
+    ? getGroupSleepableTabs(workspace, state, groupId).map((tab) => tab.id)
+    : [];
+
+  if (sleepableTabIds.length === 0) return state;
+
   return updateBrowserState(state, (draft) => {
     const workspace = draft.workspaces.find((candidate) => candidate.tabGroups.some((group) => group.id === groupId));
     if (!workspace) return;
 
-    const protectedTabIds = new Set([workspace.activeTabId, ...getSplitTabIds(draft)].filter(Boolean));
+    const sleepableTabs = new Set(sleepableTabIds);
 
     for (const tab of workspace.tabs) {
-      if (tab.groupId !== groupId || tab.isPinned || protectedTabIds.has(tab.id)) {
-        continue;
+      if (sleepableTabs.has(tab.id)) {
+        markTabSleeping(tab);
       }
-
-      tab.isSleeping = true;
-      tab.isLoading = false;
-      tab.canGoBack = false;
-      tab.canGoForward = false;
     }
   });
 }
 
 export function sleepInactiveTabs(state: BrowserState): BrowserState {
   const workspace = getActiveWorkspace(state);
-  const visibleTabIds = new Set([workspace.activeTabId, ...getSplitTabIds(state)].filter(Boolean));
-  const sleepableTabIds = workspace.tabs
-    .filter((tab) => !tab.isSleeping && !tab.isPinned && !visibleTabIds.has(tab.id))
-    .map((tab) => tab.id);
+  const sleepableTabIds = getMemoryReleasableTabs(workspace, state).map((tab) => tab.id);
 
   if (sleepableTabIds.length === 0) return state;
 
@@ -109,10 +106,7 @@ export function sleepInactiveTabs(state: BrowserState): BrowserState {
 
     for (const tab of workspace.tabs) {
       if (sleepableTabs.has(tab.id)) {
-        tab.isSleeping = true;
-        tab.isLoading = false;
-        tab.canGoBack = false;
-        tab.canGoForward = false;
+        markTabSleeping(tab);
       }
     }
   });
@@ -121,26 +115,26 @@ export function sleepInactiveTabs(state: BrowserState): BrowserState {
 export function sleepIdleTabs(state: BrowserState, now = Date.now()): BrowserState {
   if (!state.settings.memorySaverEnabled) return state;
 
-  let sleptTabs = 0;
+  const workspace = getActiveWorkspace(state);
+  const cutoff = now - state.settings.memorySaverIdleMinutes * 60_000;
+  const sleepableTabIds = getMemoryReleasableTabs(workspace, state)
+    .filter((tab) => tab.lastActiveAt <= cutoff)
+    .map((tab) => tab.id);
+
+  if (sleepableTabIds.length === 0) return state;
+
   const next = updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
-    const visibleTabIds = new Set([workspace.activeTabId, ...getSplitTabIds(draft)].filter(Boolean));
-    const cutoff = now - draft.settings.memorySaverIdleMinutes * 60_000;
+    const sleepableTabs = new Set(sleepableTabIds);
 
     for (const tab of workspace.tabs) {
-      if (tab.isSleeping || tab.isPinned || visibleTabIds.has(tab.id) || tab.lastActiveAt > cutoff) {
-        continue;
+      if (sleepableTabs.has(tab.id)) {
+        markTabSleeping(tab);
       }
-
-      tab.isSleeping = true;
-      tab.isLoading = false;
-      tab.canGoBack = false;
-      tab.canGoForward = false;
-      sleptTabs += 1;
     }
   });
 
-  return sleptTabs > 0 ? next : state;
+  return next;
 }
 
 export function toggleActiveTabFavorite(state: BrowserState): BrowserState {

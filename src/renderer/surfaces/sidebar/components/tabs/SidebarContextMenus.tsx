@@ -1,5 +1,6 @@
 import { isEssential, isTabFavorite, resolveFavoriteTab, type BrowserState, type Favorite, type Workspace } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
+import { getGroupSleepableTabs } from "../../../../domain/tabs/sleepPolicy";
 import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "../../model/tabContextMenuState";
 import { ClosedTabContextMenu } from "./ClosedTabContextMenu";
 import { QuickEntryContextMenu } from "./QuickEntryContextMenu";
@@ -32,11 +33,12 @@ export function SidebarContextMenus({
   const tabGroupTabs = tabGroupMenuGroup
     ? activeWorkspace.tabs.filter((tab) => tab.groupId === tabGroupMenuGroup.id && !tab.isPinned)
     : [];
-  const protectedTabIds = new Set([activeWorkspace.activeTabId, ...state.splitTabIds].filter(Boolean));
   const tabGroupMenuTabCount = tabGroupMenuGroup
     ? tabGroupTabs.length
     : 0;
-  const canSleepTabGroup = tabGroupTabs.some((tab) => !tab.isSleeping && !protectedTabIds.has(tab.id));
+  const canSleepTabGroup = tabGroupMenuGroup
+    ? getGroupSleepableTabs(activeWorkspace, state, tabGroupMenuGroup.id).length > 0
+    : false;
   const openQuickEntry = (item: Favorite, kind: "essential" | "favorite") => {
     if (kind === "essential") {
       actions.navigateActiveTab(item.url);
