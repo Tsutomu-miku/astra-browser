@@ -65,7 +65,9 @@ describe("omnibox accessibility", () => {
 
     expect(input.getAttribute("aria-expanded")).toBe("true");
     expect(container.querySelector("#sidebar-address-suggestions")?.getAttribute("role")).toBe("listbox");
-    expect(container.querySelector('[role="option"]')?.id).toBe("sidebar-address-suggestion-0");
+    const option = container.querySelector('[role="option"]');
+    expect(option?.id).toBe("sidebar-address-suggestion-0");
+    expect(option?.hasAttribute("title")).toBe(false);
 
     act(() => {
       input.dispatchEvent(new KeyboardEvent("keydown", {

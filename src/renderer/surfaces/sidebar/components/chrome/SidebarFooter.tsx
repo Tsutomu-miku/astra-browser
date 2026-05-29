@@ -117,7 +117,7 @@ export function SidebarFooter({
         <div className="sidebar-split-layout" aria-label="Split layout">
           <button
             type="button"
-            title="Horizontal split layout"
+            aria-label="Horizontal split layout"
             aria-pressed={splitLayout === "horizontal"}
             onClick={() => actions.setSplitLayout("horizontal")}
           >
@@ -125,7 +125,7 @@ export function SidebarFooter({
           </button>
           <button
             type="button"
-            title="Vertical split layout"
+            aria-label="Vertical split layout"
             aria-pressed={splitLayout === "vertical"}
             onClick={() => actions.setSplitLayout("vertical")}
           >
@@ -133,7 +133,7 @@ export function SidebarFooter({
           </button>
           <button
             type="button"
-            title="Grid split layout"
+            aria-label="Grid split layout"
             aria-pressed={splitLayout === "grid"}
             onClick={() => actions.setSplitLayout("grid")}
           >
@@ -143,7 +143,6 @@ export function SidebarFooter({
       )}
       <button
         className="sidebar-memory-saver"
-        title={`Memory Saver: ${memorySaver.summary}`}
         type="button"
         aria-label={`Memory Saver, ${memorySaver.summary}`}
         disabled={memorySaver.reclaimableTabs === 0}
@@ -155,7 +154,6 @@ export function SidebarFooter({
       </button>
       <button
         className="icon-button"
-        title={sidebarToggleLabel}
         type="button"
         aria-label={sidebarToggleLabel}
         aria-pressed={compactMode ? floatingSidebarOpen : undefined}
@@ -165,7 +163,6 @@ export function SidebarFooter({
       </button>
       <button
         className="icon-button"
-        title="Compact mode"
         type="button"
         aria-label="Compact mode"
         aria-pressed={compactMode}
@@ -175,7 +172,6 @@ export function SidebarFooter({
       </button>
       <button
         className="icon-button"
-        title="Split view"
         type="button"
         aria-label={splitButtonLabel}
         aria-pressed={splitMode}
@@ -201,9 +197,9 @@ export function SidebarFooter({
       >
         <FiSquare />
       </button>
-      <button className="icon-button" title="History" type="button" aria-label="History" onClick={() => setPanel("history")}><FiClock /></button>
-      <button className="icon-button" title="Downloads" type="button" aria-label="Downloads" onClick={() => setPanel("downloads")}><FiDownload /></button>
-      <button className="icon-button" title="Settings" type="button" aria-label="Settings" onClick={() => setPanel("settings")}><FiSettings /></button>
+      <button className="icon-button" type="button" aria-label="History" onClick={() => setPanel("history")}><FiClock /></button>
+      <button className="icon-button" type="button" aria-label="Downloads" onClick={() => setPanel("downloads")}><FiDownload /></button>
+      <button className="icon-button" type="button" aria-label="Settings" onClick={() => setPanel("settings")}><FiSettings /></button>
     </footer>
   );
 }

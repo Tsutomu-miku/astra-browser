@@ -43,7 +43,6 @@ export function SidebarSearchBox({
       {query && (
         <button
           className="icon-button"
-          title="Clear sidebar search"
           type="button"
           aria-label="Clear sidebar search"
           onClick={clearSearch}

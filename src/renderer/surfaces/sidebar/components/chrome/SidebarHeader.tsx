@@ -13,7 +13,7 @@ export function SidebarHeader({
         <p className="eyebrow">Workspace</p>
         <h1>{workspaceName}</h1>
       </div>
-      <button className="icon-button" title="New tab" type="button" onClick={onNewTab}><FiPlus /></button>
+      <button className="icon-button" type="button" aria-label="New tab" onClick={onNewTab}><FiPlus /></button>
     </header>
   );
 }

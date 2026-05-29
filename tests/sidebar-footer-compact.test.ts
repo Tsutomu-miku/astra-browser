@@ -16,15 +16,19 @@ const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.
 
 describe("sidebar footer compact controls", () => {
   it("turns the sidebar toggle into a floating-sidebar pin control in compact mode", () => {
-    expect(renderFooter({ compactMode: false, floatingSidebarOpen: false })).toContain('aria-label="Focus sidebar"');
+    const normal = renderFooter({ compactMode: false, floatingSidebarOpen: false });
+    expect(normal).toContain('aria-label="Focus sidebar"');
+    expect(normal).not.toContain('title="Focus sidebar"');
 
     const unpinned = renderFooter({ compactMode: true, floatingSidebarOpen: false });
     expect(unpinned).toContain('aria-label="Pin floating sidebar"');
     expect(unpinned).toContain('aria-pressed="false"');
+    expect(unpinned).not.toContain('title="Pin floating sidebar"');
 
     const pinned = renderFooter({ compactMode: true, floatingSidebarOpen: true });
     expect(pinned).toContain('aria-label="Unpin floating sidebar"');
     expect(pinned).toContain('aria-pressed="true"');
+    expect(pinned).not.toContain('title="Unpin floating sidebar"');
   });
 
   it("keeps tab split drops visually quiet while dragging another tab", () => {
@@ -119,7 +123,7 @@ describe("sidebar footer compact controls", () => {
       })));
     });
 
-    const splitButton = container.querySelector<HTMLButtonElement>('button[title="Split view"]')!;
+    const splitButton = container.querySelector<HTMLButtonElement>('button[aria-label^="Split view"]')!;
     act(() => {
       splitButton.dispatchEvent(createDragEvent("drop"));
     });
@@ -177,13 +181,21 @@ describe("sidebar footer compact controls", () => {
   it("labels icon-only footer controls", () => {
     const html = renderFooter({
       compactMode: false,
-      floatingSidebarOpen: false
+      floatingSidebarOpen: false,
+      splitMode: true
     });
 
+    expect(html).toContain('aria-label="Horizontal split layout"');
+    expect(html).toContain('aria-label="Vertical split layout"');
+    expect(html).toContain('aria-label="Grid split layout"');
     expect(html).toContain('aria-label="Compact mode"');
     expect(html).toContain('aria-label="History"');
     expect(html).toContain('aria-label="Downloads"');
     expect(html).toContain('aria-label="Settings"');
+    expect(html).not.toContain('title="Horizontal split layout"');
+    expect(html).not.toContain('title="Compact mode"');
+    expect(html).not.toContain('title="Split view"');
+    expect(html).not.toContain('title="History"');
   });
 
   it("does not mark the split button as a target for the active tab", () => {
@@ -218,6 +230,7 @@ describe("sidebar footer compact controls", () => {
     expect(html).toContain("3 ready");
     expect(html).toContain("Auto 30m");
     expect(html).toContain('aria-label="Memory Saver, 3 releasable · 0 sleeping · 2 protected"');
+    expect(html).not.toContain('title="Memory Saver: 3 releasable · 0 sleeping · 2 protected"');
     expect(html).not.toContain("disabled");
   });
 
@@ -324,7 +337,8 @@ function renderFooter({
     sleepEnabled: true,
     sleepingTabs: 0,
     summary: "0 releasable · 0 sleeping · 1 protected"
-  }
+  },
+  splitMode = false
 }: {
   activeTabId?: string;
   compactMode: boolean;
@@ -334,6 +348,7 @@ function renderFooter({
   draggingTabId?: string | null;
   floatingSidebarOpen: boolean;
   memorySaver?: Parameters<typeof SidebarFooter>[0]["memorySaver"];
+  splitMode?: boolean;
 }) {
   return renderToStaticMarkup(createElement(SidebarFooter, footerProps({
     activeTabId,
@@ -343,7 +358,8 @@ function renderFooter({
     draggingFavoriteId,
     draggingTabId,
     floatingSidebarOpen,
-    memorySaver
+    memorySaver,
+    splitMode
   })));
 }
 
@@ -364,6 +380,7 @@ function footerProps({
   setDraggingEssentialId = vi.fn(),
   setDraggingFavoriteId = vi.fn(),
   setDraggingTabId = vi.fn(),
+  splitMode = false,
   tabs = [
     { ...createTab("Active", "https://active.example"), id: "active-tab" },
     { ...createTab("Docs", "https://docs.example"), id: "other-tab" }
@@ -385,6 +402,7 @@ function footerProps({
   setDraggingEssentialId?: (essentialId: string | null) => void;
   setDraggingFavoriteId?: (favoriteId: string | null) => void;
   setDraggingTabId?: (tabId: string | null) => void;
+  splitMode?: boolean;
   tabs?: Parameters<typeof SidebarFooter>[0]["tabs"];
 }) {
   return {
@@ -406,7 +424,7 @@ function footerProps({
     setDraggingFavoriteId,
     setDraggingTabId,
     splitLayout: "horizontal",
-    splitMode: false,
+    splitMode,
     tabs
   } satisfies Parameters<typeof SidebarFooter>[0];
 }

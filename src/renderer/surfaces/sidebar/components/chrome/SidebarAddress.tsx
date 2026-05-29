@@ -41,7 +41,6 @@ export function SidebarAddress({ controller }: { controller: BrowserController }
               type="button"
               role="option"
               aria-selected={index === omnibox.activeIndex}
-              title="Alt-click to open in split view"
               onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
               onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
             >

@@ -16,7 +16,7 @@ describe("sidebar search box", () => {
     }));
 
     expect(html).toContain('aria-label="Clear sidebar search"');
-    expect(html).toContain('title="Clear sidebar search"');
+    expect(html).not.toContain('title="Clear sidebar search"');
   });
 
   it("clears search without dropping keyboard focus", () => {
