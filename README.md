@@ -9,6 +9,7 @@ This repository is an active prototype. The current focus is matching Zen-style 
 ## Documentation
 
 - [Requirements](docs/REQUIREMENTS.md): product scope, functional requirements, keyboard expectations, and quality requirements.
+- [Roadmap and progress](docs/ROADMAP.md): P0/P1/P2 priorities, current progress, requirement split rules, and acceptance criteria.
 - [Project spec](docs/PROJECT_SPEC.md): product goal, engineering goals, reference structure, and file split heuristics.
 - [Architecture](docs/ARCHITECTURE.md): runtime boundaries between Electron main, preload, renderer app orchestration, surfaces, state, and domain logic.
 - [Code structure](docs/CODE_STRUCTURE.md): current directory ownership map for day-to-day navigation.

@@ -7,10 +7,17 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 ## Documentation Rules
 
 - Keep README focused on orientation, setup, scripts, packaging, and links.
+- Keep priority, progress, and requirement splitting in `docs/ROADMAP.md`.
 - Keep product requirements in this file.
 - Keep engineering direction and structure in `docs/PROJECT_SPEC.md`.
 - Keep runtime architecture details in `docs/ARCHITECTURE.md`.
 - When a new user-facing feature lands, update the relevant requirement here instead of expanding README.
+
+## Priority And Identity Rules
+
+Detailed P0/P1/P2 priority, current progress, and requirement split guidance live in `docs/ROADMAP.md`.
+
+For tab-related features, requirements must specify object identity. In particular, Space Favorites are tab-like entries: clicking a Favorite should select its matching tab and must not replace the current active tab's URL. URL-only Favorites are legacy/import fallback data and should recover or create a tab instead of mutating the active tab.
 
 ## Current Scope
 
@@ -95,13 +102,14 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to drag sidebar tabs into Essentials to save them as global quick entries.
 - Users must be able to reorder global Essentials directly from the sidebar with drag and drop.
 - Users must have Space-local favorites for quick access.
-- Clicking a Space favorite from the sidebar must navigate the current tab instead of creating a new tab.
-- Users must be able to drag sidebar tabs into Space favorites to save them for quick access.
+- Clicking a Space favorite from the sidebar must select the matching tab when one exists, and must not replace the current active tab's URL.
+- Users must be able to drag sidebar tabs into Space favorites to place those tabs in the Favorites section while preserving tab identity.
 - Users must be able to reorder Space favorites directly from the sidebar with drag and drop.
 - Users must be able to drag Space favorites onto Space buttons or the New Space button to move them between Spaces.
 - Sidebar Essentials and favorites must support context menus for opening, Glance preview, split opening, and removing the entry.
 - Sidebar Space favorite context menus must support moving favorites to another Space or to a new Space.
-- Opening an Essential or favorite from its sidebar context menu must navigate the current tab instead of creating a new tab.
+- Opening an Essential from its sidebar context menu must navigate the current tab instead of creating a new tab.
+- Opening a Space favorite from its sidebar context menu must select the matching tab when one exists, and must not replace the current active tab's URL.
 - Sidebar Essentials and favorites context menus must support copying the entry URL and title.
 - Sidebar Essentials and favorites must expose accessible labels with kind, current-page, search selection, dragging, and drop-target state.
 - Sidebar tab, pinned tab, tab group, recently closed tab, Essential, and favorite context menus must open from the keyboard with `ContextMenu` or `Shift+F10`.
@@ -115,7 +123,8 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar quick entries must show active-page state when the current tab matches an Essential or favorite.
 - Users must be able to toggle the current page as a favorite with `Ctrl+D`, `Cmd+D`, `Ctrl+Shift+D`, or `Cmd+Shift+D`.
 - Sidebar search must filter global Essentials plus tabs, tab groups, pinned tabs, and favorites inside the active Space.
-- Sidebar search must navigate Essential and favorite matches in the current tab unless preview or split modifiers are used.
+- Sidebar search must navigate Essential matches in the current tab unless preview or split modifiers are used.
+- Sidebar search must select matching Favorite tabs unless preview or split modifiers are used.
 - Sidebar search must support Arrow, Home, End, Enter, Alt+Enter preview, and Shift+Enter split-open flows.
 - Sidebar search keyboard selection must keep the active result scrolled into view.
 - Sidebar search must visually hint Alt preview and Shift split actions while filtering.
@@ -200,6 +209,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The command palette must expose page navigation tools for back, forward, reload, stop-loading, and hard reload.
 - The command palette must expose split-pane focus commands while split view is active.
 - The command palette must include entries for open tabs, Essentials, favorites, history, and recently closed tabs.
+- Command palette Favorite entries must select matching tabs by tab identity or legacy URL fallback; they must not replace the current active tab's URL.
 - Recently closed command palette entries must support direct restore, Glance preview, and split opening.
 - The command palette must identify active and sleeping open-tab entries so keyboard navigation has clear tab state.
 - The command palette must directly open URLs or search typed queries.
@@ -222,6 +232,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - New tab quick entries must visually hint Alt preview and Shift split actions on hover or keyboard focus.
 - New tab Essentials, favorites, and recent history entries must support Alt-click Glance preview and Shift-click split opening.
 - New tab Essentials and favorites must support context menus for opening, Glance preview, split opening, and removing the entry.
+- New tab Favorites must select matching tabs by tab identity or legacy URL fallback; they must not replace the current active tab's URL.
 - New tab recent history entries must support context menus for opening, Glance preview, split opening, and removing the entry.
 
 ### Site Identity, Permissions, And Data

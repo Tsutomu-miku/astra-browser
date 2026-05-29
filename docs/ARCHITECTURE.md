@@ -30,7 +30,7 @@ Compact chrome peeking is isolated in a controller hook so tab changes, shortcut
 
 `src/renderer/surfaces/sidebar/sidebarFiltering.ts` owns active-Space sidebar search rules for tabs, tab groups, pinned tabs, and favorites. The component keeps only the query state and rendering decisions.
 
-Essentials are global quick entries stored on `BrowserState`, while favorites remain scoped to a workspace. The sidebar renders Essentials above Space-local tab controls so core pages stay available across Spaces without changing the active workspace profile model.
+Essentials are global quick entries stored on `BrowserState`, while Favorites are scoped to a workspace and should behave like tab-like entries when they originate from tabs. A tab-originated Favorite can carry tab identity so sidebar, start page, command palette, and context-menu flows select the existing tab instead of replacing the active tab URL. URL matching is only a fallback for legacy or imported Favorites that do not yet have tab identity.
 
 `src/renderer/surfaces/webview` keeps current Space webviews mounted and hides inactive tabs instead of unmounting them. This preserves Chromium page state during ordinary tab switching while still rendering split view webviews first, up to four visible panes. Sleeping tabs are the explicit exception: they remain in renderer state and the sidebar, but their hidden Chromium webview is omitted until selection wakes them.
 
