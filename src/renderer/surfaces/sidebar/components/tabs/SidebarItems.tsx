@@ -242,6 +242,9 @@ export function FavoriteButton({
   onPreview: (url: string, title?: string) => void;
   dropAxis?: DropAxis;
 }) {
+  const getDraggedQuickEntryId = (event: DragEvent<HTMLElement>) => (
+    draggingQuickEntryId || event.dataTransfer.getData(getQuickEntryDragDataKey(kind))
+  );
   const isDragging = draggable && draggingQuickEntryId === favorite.id;
   const isDropTarget = draggable && Boolean(draggingQuickEntryId && draggingQuickEntryId !== favorite.id);
   const quickEntryLabel = getQuickEntryAccessibilityLabel({
@@ -282,7 +285,8 @@ export function FavoriteButton({
         }
       }}
       onDragOver={(event) => {
-        if (draggingQuickEntryId && draggingQuickEntryId !== favorite.id) {
+        const draggedQuickEntryId = getDraggedQuickEntryId(event);
+        if (draggedQuickEntryId && draggedQuickEntryId !== favorite.id) {
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
           updateDropPlacement(event.currentTarget, event, dropAxis);
@@ -291,7 +295,8 @@ export function FavoriteButton({
       onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
       onDrop={(event) => {
         clearDropPlacement(event.currentTarget);
-        if (draggingQuickEntryId && draggingQuickEntryId !== favorite.id) onDrop?.(event, favorite.id, dropAxis);
+        const draggedQuickEntryId = getDraggedQuickEntryId(event);
+        if (draggedQuickEntryId && draggedQuickEntryId !== favorite.id) onDrop?.(event, favorite.id, dropAxis);
       }}
       onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
       onKeyDown={(event) => {
@@ -329,4 +334,8 @@ export function FavoriteButton({
       <SidebarItemActionHints />
     </button>
   );
+}
+
+function getQuickEntryDragDataKey(kind: QuickEntryKind): "text/essential-id" | "text/favorite-id" {
+  return kind === "essential" ? "text/essential-id" : "text/favorite-id";
 }

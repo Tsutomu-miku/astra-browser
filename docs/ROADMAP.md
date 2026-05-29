@@ -94,13 +94,13 @@ Small requirements:
 - Dragging tabs to groups, Spaces, New Space, and split targets must use consistent payload recovery.
 - Dragging tabs should not show explicit target-region overlays; destinations accept drops directly, while reordering shows local insertion position only.
 
-Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. Tabs folder drops now accept the same real tab payload path as the other sidebar folders. Real Electron manual QA is still required.
+Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. Tabs folder drops now accept the same real tab payload path as the other sidebar folders, and Favorites/Essentials reorder targets recover from native payloads when React drag state has not synced yet. Real Electron manual QA is still required.
 
 Small requirements:
 
 - P0-3.1 Visible tab row is the drag source.
 - P0-3.2 Tab row stays the tab item drop target; the inner button is not a competing native drag source.
-- P0-3.3 Drag payload is recoverable from native `DataTransfer` when React state is missing.
+- P0-3.3 Drag payload is recoverable from native `DataTransfer` when React state is missing, including tab rows, pinned tabs, Favorites, and Essentials.
 - P0-3.4 Drop on Favorites adds tab-backed Favorite.
 - P0-3.5 Drop on existing Favorite area is accepted.
 - P0-3.6 Reorder regular tabs by before/after placement.

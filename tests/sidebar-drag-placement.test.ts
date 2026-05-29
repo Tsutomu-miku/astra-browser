@@ -123,6 +123,77 @@ describe("sidebar drag placement", () => {
     act(() => root.unmount());
   });
 
+  it("accepts payload-backed Essential reorders when React drag state is not synced yet", () => {
+    const target = createFavorite("Calendar", "https://calendar.example");
+    const onDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(FavoriteButton, {
+        draggable: true,
+        draggingQuickEntryId: null,
+        dropAxis: "horizontal",
+        favorite: target,
+        kind: "essential",
+        onDragStart: vi.fn(),
+        onDrop,
+        onOpen: vi.fn(),
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn()
+      }));
+    });
+
+    const button = container.querySelector<HTMLElement>(".favorite-button")!;
+    stubRect(button, { left: 0, width: 80 });
+    const dragOver = createDragEvent("dragover", { clientX: 60 }, { "text/essential-id": "dragged-essential" });
+
+    button.dispatchEvent(dragOver);
+    expect(dragOver.defaultPrevented).toBe(true);
+    expect(button.dataset.dropPlacement).toBe("after");
+
+    button.dispatchEvent(createDragEvent("drop", { clientX: 60 }, { "text/essential-id": "dragged-essential" }));
+    expect(onDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), target.id, "horizontal");
+    expect(button.dataset.dropPlacement).toBeUndefined();
+
+    act(() => root.unmount());
+  });
+
+  it("accepts payload-backed Favorite reorders when React drag state is not synced yet", () => {
+    const target = createFavorite("Second", "https://second.example");
+    const onDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(FavoriteButton, {
+        draggable: true,
+        draggingQuickEntryId: null,
+        favorite: target,
+        kind: "favorite",
+        onDragStart: vi.fn(),
+        onDrop,
+        onOpen: vi.fn(),
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn()
+      }));
+    });
+
+    const button = container.querySelector<HTMLElement>(".favorite-button")!;
+    stubRect(button, { top: 0, height: 40 });
+    const dragOver = createDragEvent("dragover", { clientY: 5 }, { "text/favorite-id": "dragged-favorite" });
+
+    button.dispatchEvent(dragOver);
+    expect(dragOver.defaultPrevented).toBe(true);
+    expect(button.dataset.dropPlacement).toBe("before");
+
+    button.dispatchEvent(createDragEvent("drop", { clientY: 5 }, { "text/favorite-id": "dragged-favorite" }));
+    expect(onDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), target.id, "vertical");
+    expect(button.dataset.dropPlacement).toBeUndefined();
+
+    act(() => root.unmount());
+  });
+
   it("passes horizontal placement intent when pinned tabs are dropped", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const onTabDrop = vi.fn();
