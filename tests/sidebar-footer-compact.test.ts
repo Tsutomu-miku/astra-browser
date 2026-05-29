@@ -113,6 +113,15 @@ describe("sidebar footer compact controls", () => {
       type: "url",
       url: "https://design.example"
     });
+    expect(getSidebarSplitDropSource({ ...state }, (type) => {
+      if (type === SIDEBAR_TAB_DRAG_TYPE) return "other-tab";
+      if (type === "text/favorite-id") return "favorite";
+      return "";
+    })).toEqual({
+      tabId: "other-tab",
+      title: "Docs",
+      type: "tab"
+    });
   });
 
   it("labels icon-only footer controls", () => {

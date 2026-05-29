@@ -1,9 +1,9 @@
 import { useState, type DragEvent } from "react";
 
 import { getPointerDropPlacement, type DropAxis } from "../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
+import { readSidebarTabDragPayload, writeSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserController } from "../../../app/controller/types";
-import { isEssential, type BrowserState, type Workspace } from "../../../domain/browser";
+import { isEssential, resolveFavoriteTab, type BrowserState, type Workspace } from "../../../domain/browser";
 
 export function useSidebarQuickEntryDrag({
   actions,
@@ -65,6 +65,9 @@ export function useSidebarQuickEntryDrag({
     setDraggingFavoriteId(favoriteId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/favorite-id", favoriteId);
+    const favorite = activeWorkspace.favorites.find((candidate) => candidate.id === favoriteId);
+    const tab = favorite ? resolveFavoriteTab(activeWorkspace, favorite) : undefined;
+    if (tab) writeSidebarTabDragPayload(event.dataTransfer, tab.id);
   };
 
   const handleEssentialReorderDrop = (event: DragEvent<HTMLElement>, targetEssentialId: string, axis: DropAxis = "vertical") => {
