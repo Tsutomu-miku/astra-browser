@@ -116,6 +116,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Clicking a Space favorite from the sidebar must select the matching tab when one exists, and must not replace the current active tab's URL.
 - Users must be able to drag sidebar tabs into Space favorites to place those tabs in the Favorites section while preserving tab identity.
 - Users must be able to reorder Space favorites directly from the sidebar with drag and drop.
+- Space favorite reordering must work across mixed tab-backed and legacy URL Favorite rows.
 - Users must be able to drag Space favorites onto Space buttons or the New Space button to move them between Spaces.
 - Sidebar Essentials and favorites must support context menus for opening, Glance preview, split opening, and removing the entry.
 - Sidebar Space favorite context menus must support moving favorites to another Space or to a new Space.

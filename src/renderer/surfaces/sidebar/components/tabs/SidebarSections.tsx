@@ -210,6 +210,8 @@ export function SidebarSections({
                     id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
                     isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
                     labelKind="favorite tab"
+                    quickEntryDragDataKey="text/favorite-id"
+                    quickEntryDropTargetId={favorite.id}
                     splitTabIds={splitTabIds}
                     tab={tab}
                     onClose={actions.closeTab}
@@ -217,6 +219,7 @@ export function SidebarSections({
                     onDragEndExtra={() => setDraggingFavoriteId(null)}
                     onDragStartExtra={(event) => onFavoriteDragStart(event, favorite.id)}
                     onDrop={onTabDrop}
+                    onQuickEntryDrop={onFavoriteReorderDrop}
                     onPreview={actions.openGlance}
                     onSelect={actions.selectTab}
                     onSplit={actions.openTabInSplit}

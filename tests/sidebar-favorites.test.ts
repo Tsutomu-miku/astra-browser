@@ -420,6 +420,66 @@ describe("sidebar favorites", () => {
     act(() => root.unmount());
   });
 
+  it("reorders legacy Favorites against tab-backed Favorite rows", () => {
+    const activeTab = createTab("Active", "https://active.example");
+    const docsTab = createTab("Docs", "https://docs.example");
+    const legacyFavorite = createFavorite("Legacy", "https://legacy.example");
+    const tabBackedFavorite = createFavorite("Docs", docsTab.url, docsTab.id);
+    const onFavoriteReorderDrop = vi.fn();
+    const onTabDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [legacyFavorite, tabBackedFavorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [activeTab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop,
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop,
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        workspaceTabs: [activeTab, docsTab]
+      }));
+    });
+
+    const tabBackedRow = container.querySelector<HTMLElement>(".favorites .tab-row")!;
+    tabBackedRow.dispatchEvent(createDragEvent("drop", {
+      "text/favorite-id": legacyFavorite.id
+    }));
+
+    expect(onFavoriteReorderDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), tabBackedFavorite.id, "vertical");
+    expect(onTabDrop).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("keeps legacy URL Favorites on the quick entry path", () => {
     const activeTab = createTab("Active", "https://active.example");
     const favorite = createFavorite("Docs", "https://docs.example");
@@ -499,4 +559,18 @@ function createActions() {
     toggleTabGroupCollapsed: vi.fn(),
     updateTabGroup: vi.fn()
   } as unknown as BrowserController["actions"];
+}
+
+function createDragEvent(type: string, data: Record<string, string>) {
+  const event = new Event(type, { bubbles: true, cancelable: true }) as Event & {
+    dataTransfer: DataTransfer;
+  };
+  Object.defineProperty(event, "dataTransfer", {
+    value: {
+      dropEffect: "none",
+      getData: (key: string) => data[key] ?? "",
+      setData: vi.fn()
+    }
+  });
+  return event;
 }
