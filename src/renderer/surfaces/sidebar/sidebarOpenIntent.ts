@@ -1,6 +1,7 @@
 import type { SidebarSearchTarget } from "./sidebarFiltering";
 
 export type SidebarOpenIntent =
+  | { type: "openUrl"; title?: string; url: string }
   | { type: "navigateUrl"; title?: string; url: string }
   | { type: "preview"; title?: string; url: string }
   | { type: "selectTab"; tabId: string }
@@ -26,7 +27,11 @@ export function getSidebarSearchOpenIntent(
       : { type: "splitUrl", title: target.title, url: target.url };
   }
 
-  return target.type === "tab"
-    ? { type: "selectTab", tabId: target.id }
-    : { type: "navigateUrl", title: target.title, url: target.url };
+  if (target.type === "tab") return { type: "selectTab", tabId: target.id };
+  if (target.type === "favorite") {
+    return target.tabId
+      ? { type: "selectTab", tabId: target.tabId }
+      : { type: "openUrl", title: target.title, url: target.url };
+  }
+  return { type: "navigateUrl", title: target.title, url: target.url };
 }

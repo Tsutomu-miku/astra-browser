@@ -12,9 +12,16 @@ describe("getSidebarSearchOpenIntent", () => {
   };
   const favoriteTarget: SidebarSearchTarget = {
     id: "favorite-1",
+    tabId: "tab-favorite-1",
     title: "Mail",
     type: "favorite",
     url: "https://mail.example"
+  };
+  const legacyFavoriteTarget: SidebarSearchTarget = {
+    id: "favorite-legacy",
+    title: "Legacy",
+    type: "favorite",
+    url: "https://legacy.example"
   };
 
   it("opens tabs, previews with Alt, and sends tabs to split with Shift", () => {
@@ -33,16 +40,23 @@ describe("getSidebarSearchOpenIntent", () => {
     });
   });
 
-  it("navigates url-backed targets in the current tab or sends them to split with Shift", () => {
+  it("selects Favorite tab targets or sends them to split with Shift", () => {
     expect(getSidebarSearchOpenIntent(favoriteTarget, { altKey: false, shiftKey: false })).toEqual({
-      title: "Mail",
-      type: "navigateUrl",
-      url: "https://mail.example"
+      tabId: "tab-favorite-1",
+      type: "selectTab"
     });
     expect(getSidebarSearchOpenIntent(favoriteTarget, { altKey: false, shiftKey: true })).toEqual({
       title: "Mail",
       type: "splitUrl",
       url: "https://mail.example"
+    });
+  });
+
+  it("opens legacy url-backed Favorite targets without replacing the active tab", () => {
+    expect(getSidebarSearchOpenIntent(legacyFavoriteTarget, { altKey: false, shiftKey: false })).toEqual({
+      title: "Legacy",
+      type: "openUrl",
+      url: "https://legacy.example"
     });
   });
 });

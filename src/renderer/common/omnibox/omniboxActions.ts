@@ -9,6 +9,7 @@ export interface OmniboxActionHint {
 export type OmniboxAction =
   | { type: "navigateActiveTab"; value: string }
   | { type: "openTabInSplit"; tabId: string }
+  | { type: "openUrlInActiveWorkspace"; title?: string; url: string }
   | { type: "openUrlInSplit"; title?: string; url: string }
   | { type: "selectTab"; tabId: string };
 
@@ -28,11 +29,15 @@ export function getOmniboxAction(
         ? { type: "openTabInSplit", tabId: suggestion.tabId }
         : { type: "selectTab", tabId: suggestion.tabId };
     case "essential":
-    case "favorite":
     case "history":
       return openInSplit
         ? { type: "openUrlInSplit", title: suggestion.title, url: suggestion.url }
         : { type: "navigateActiveTab", value: suggestion.url };
+    case "favorite":
+      if (openInSplit) return { type: "openUrlInSplit", title: suggestion.title, url: suggestion.url };
+      return suggestion.tabId
+        ? { type: "selectTab", tabId: suggestion.tabId }
+        : { type: "openUrlInActiveWorkspace", title: suggestion.title, url: suggestion.url };
     case "navigate":
       return openInSplit
         ? { type: "openUrlInSplit", title: suggestion.title, url: suggestion.value }

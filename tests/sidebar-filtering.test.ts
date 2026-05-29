@@ -70,6 +70,7 @@ describe("sidebar filtering", () => {
     const essential = createFavorite("Inbox", "https://mail.example");
     const pinned = createTab("Mail", "https://mail.example");
     const favorite = createFavorite("Docs", "https://docs.example");
+    const favoriteTab = createTab("Docs Tab", favorite.url);
     const grouped = createTab("Chromium", "https://chromium.example");
     const regular = createTab("News", "https://news.example");
     const result = filterSidebarItems({
@@ -77,16 +78,22 @@ describe("sidebar filtering", () => {
       favorites: [favorite],
       groupedTabs: [{ group, tabs: [grouped] }],
       pinnedTabs: [pinned],
-      regularTabs: [regular]
+      regularTabs: [regular],
+      workspaceTabs: [pinned, favoriteTab, grouped, regular]
     }, "");
 
-    expect(getSidebarSearchTargets(result).map((target) => `${target.type}:${target.title}`)).toEqual([
+    const targets = getSidebarSearchTargets(result);
+    expect(targets.map((target) => `${target.type}:${target.title}`)).toEqual([
       "essential:Inbox",
       "tab:Mail",
       "favorite:Docs",
       "tab:Chromium",
       "tab:News"
     ]);
+    expect(targets.find((target) => target.type === "favorite")).toMatchObject({
+      tabId: favoriteTab.id,
+      type: "favorite"
+    });
   });
 
   it("clamps and wraps keyboard search selection", () => {

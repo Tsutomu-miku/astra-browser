@@ -37,6 +37,39 @@ describe("getOmniboxAction", () => {
     });
   });
 
+  it("selects Favorite tab suggestions or opens legacy Favorites in a new tab", () => {
+    const favoriteSuggestion: OmniboxSuggestion = {
+      id: "favorite-1",
+      subtitle: "Favorite",
+      tabId: "tab-favorite-1",
+      title: "Docs",
+      type: "favorite",
+      url: "https://docs.example"
+    };
+    const legacyFavoriteSuggestion: OmniboxSuggestion = {
+      id: "favorite-legacy",
+      subtitle: "Favorite",
+      title: "Legacy",
+      type: "favorite",
+      url: "https://legacy.example"
+    };
+
+    expect(getOmniboxAction(favoriteSuggestion, "")).toEqual({
+      tabId: "tab-favorite-1",
+      type: "selectTab"
+    });
+    expect(getOmniboxAction(legacyFavoriteSuggestion, "")).toEqual({
+      title: "Legacy",
+      type: "openUrlInActiveWorkspace",
+      url: "https://legacy.example"
+    });
+    expect(getOmniboxAction(favoriteSuggestion, "", true)).toEqual({
+      title: "Docs",
+      type: "openUrlInSplit",
+      url: "https://docs.example"
+    });
+  });
+
   it("falls back to the typed address when no suggestion is selected", () => {
     expect(getOmniboxAction(undefined, "example.com")).toEqual({
       type: "navigateActiveTab",

@@ -16,6 +16,7 @@ export interface SidebarFilterInput {
   groupedTabs: SidebarGroupEntry[];
   pinnedTabs: BrowserTab[];
   regularTabs: BrowserTab[];
+  workspaceTabs?: BrowserTab[];
 }
 
 export interface SidebarFilterResult extends SidebarFilterInput {
@@ -25,7 +26,7 @@ export interface SidebarFilterResult extends SidebarFilterInput {
 
 export type SidebarSearchTarget =
   | { type: "essential"; id: string; title: string; url: string }
-  | { type: "favorite"; id: string; title: string; url: string }
+  | { type: "favorite"; id: string; tabId?: string; title: string; url: string }
   | { type: "tab"; id: string; title: string; url: string };
 
 export type SidebarSearchNavigationKey = ListNavigationKey;
@@ -58,7 +59,7 @@ export function filterSidebarItems(input: SidebarFilterInput, query: string): Si
     }))
     .filter((entry) => entry.tabs.length > 0);
   const regularTabs = input.regularTabs.filter((tab) => matchesTab(tab, normalizedQuery));
-  const filtered = { essentials, favorites, groupedTabs, pinnedTabs, regularTabs };
+  const filtered = { essentials, favorites, groupedTabs, pinnedTabs, regularTabs, workspaceTabs: input.workspaceTabs };
 
   return {
     ...filtered,
@@ -68,6 +69,12 @@ export function filterSidebarItems(input: SidebarFilterInput, query: string): Si
 }
 
 export function getSidebarSearchTargets(input: SidebarFilterResult): SidebarSearchTarget[] {
+  const workspaceTabs = input.workspaceTabs ?? [
+    ...input.pinnedTabs,
+    ...input.groupedTabs.flatMap((entry) => entry.tabs),
+    ...input.regularTabs
+  ];
+
   return [
     ...input.essentials.map((essential) => ({
       type: "essential" as const,
@@ -79,6 +86,7 @@ export function getSidebarSearchTargets(input: SidebarFilterResult): SidebarSear
     ...input.favorites.map((favorite) => ({
       type: "favorite" as const,
       id: favorite.id,
+      tabId: favorite.tabId ?? workspaceTabs.find((tab) => tab.url === favorite.url)?.id,
       title: favorite.title,
       url: favorite.url
     })),

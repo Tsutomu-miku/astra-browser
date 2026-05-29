@@ -47,6 +47,9 @@ export function useOmniboxController({
       case "openUrlInSplit":
         actions.openUrlInSplit(action.url, action.title);
         break;
+      case "openUrlInActiveWorkspace":
+        actions.openUrlInActiveWorkspace(action.url, action.title);
+        break;
       case "navigateActiveTab":
         actions.navigateActiveTab(action.value);
         break;

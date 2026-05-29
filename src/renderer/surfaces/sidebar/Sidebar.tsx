@@ -61,8 +61,9 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     favorites: activeWorkspace.favorites,
     groupedTabs,
     pinnedTabs,
-    regularTabs
-  }, tabQuery), [activeWorkspace.favorites, groupedTabs, pinnedTabs, regularTabs, state.essentials, tabQuery]);
+    regularTabs,
+    workspaceTabs: activeWorkspace.tabs
+  }, tabQuery), [activeWorkspace.favorites, activeWorkspace.tabs, groupedTabs, pinnedTabs, regularTabs, state.essentials, tabQuery]);
   const searchTargets = useMemo(() => getSidebarSearchTargets(filteredItems), [filteredItems]);
   const activeSearchTarget = filteredItems.isFiltering
     ? searchTargets[clampSidebarSearchIndex(activeSearchIndex, searchTargets.length)]
@@ -285,6 +286,8 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       actions.openUrlInSplit(intent.url, intent.title);
     } else if (intent.type === "selectTab") {
       actions.selectTab(intent.tabId);
+    } else if (intent.type === "openUrl") {
+      actions.openUrlInActiveWorkspace(intent.url, intent.title);
     } else {
       actions.navigateActiveTab(intent.url);
     }

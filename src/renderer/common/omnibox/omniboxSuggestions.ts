@@ -4,7 +4,8 @@ import { getActiveWorkspace } from "../../domain/browser/selectors";
 export type OmniboxSuggestion =
   | { type: "navigate"; id: string; title: string; subtitle: string; value: string }
   | { type: "tab"; id: string; title: string; subtitle: string; tabId: string }
-  | { type: "essential" | "favorite" | "history"; id: string; title: string; subtitle: string; url: string };
+  | { type: "essential" | "history"; id: string; title: string; subtitle: string; url: string }
+  | { type: "favorite"; id: string; tabId?: string; title: string; subtitle: string; url: string };
 
 export function buildOmniboxSuggestions(state: BrowserState, query: string): OmniboxSuggestion[] {
   const workspace = getActiveWorkspace(state);
@@ -33,6 +34,7 @@ export function buildOmniboxSuggestions(state: BrowserState, query: string): Omn
     ...workspace.favorites.map((favorite) => ({
       type: "favorite" as const,
       id: `favorite-${favorite.id}`,
+      tabId: favorite.tabId ?? workspace.tabs.find((tab) => tab.url === favorite.url)?.id,
       title: favorite.title,
       subtitle: `Favorite · ${favorite.url}`,
       url: favorite.url
