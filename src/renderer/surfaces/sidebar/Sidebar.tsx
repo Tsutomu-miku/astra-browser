@@ -7,6 +7,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent
 } from "react";
 
+import { scrollElementNearEdge } from "../../common/drag-drop/edgeAutoScroll";
 import { getPointerDropPlacement, type DropAxis } from "../../common/drag-drop/dropPlacement";
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
@@ -24,7 +25,14 @@ import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
 import { handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
-import { readSidebarTabDragEventId, type SidebarDragState } from "./model/sidebarDragSources";
+import {
+  readSidebarClosedTabDragIndex,
+  readSidebarEssentialDragId,
+  readSidebarFavoriteDragId,
+  readSidebarGroupDragId,
+  readSidebarTabDragEventId,
+  type SidebarDragState
+} from "./model/sidebarDragSources";
 import { scrollSidebarSearchTargetIntoView } from "./model/sidebarSearchTargetDom";
 import { getSidebarTabFolders } from "./model/sidebarTabFolders";
 import { getSidebarNewWorkspaceDropIntent, getSidebarWorkspaceDropIntent, type SidebarWorkspaceDropIntent } from "./model/sidebarWorkspaceDropIntent";
@@ -133,6 +141,26 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   };
 
   const getDroppedTabId = (event: DragEvent<HTMLElement>) => readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
+
+  const handleSidebarScrollAreaDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!hasScrollableSidebarDrag(event)) return;
+
+    if (scrollElementNearEdge(event.currentTarget, event.clientY)) {
+      event.preventDefault();
+    }
+  };
+
+  const hasScrollableSidebarDrag = (event: DragEvent<HTMLElement>) => {
+    const readDragData = (type: string) => event.dataTransfer.getData(type);
+
+    return Boolean(
+      readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer) ||
+      readSidebarFavoriteDragId({ draggingFavoriteId }, readDragData) ||
+      readSidebarEssentialDragId({ draggingEssentialId }, readDragData) ||
+      readSidebarGroupDragId({ draggingGroupId }, readDragData) ||
+      readSidebarClosedTabDragIndex({ draggingClosedTabIndex }, readDragData) !== null
+    );
+  };
 
   const handlePinDrop = (event: DragEvent<HTMLElement>) => {
     handleTabFolderDrop(event, { type: "pinned" });
@@ -326,7 +354,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             setActiveSearchIndex(0);
           }}
         />
-        <div className="sidebar-scroll-area">
+        <div className="sidebar-scroll-area" onDragOver={handleSidebarScrollAreaDragOver}>
           <SidebarSections
             actions={actions}
             activeSearchTarget={activeSearchTarget}

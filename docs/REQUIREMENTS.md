@@ -139,6 +139,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Sidebar sections must be individually collapsible, while filtering must reveal matching contents even when a section was collapsed.
 - Sidebar collapsible section headers must support `ArrowLeft` to collapse and `ArrowRight` to expand.
 - Dragging tabs or quick entries should not temporarily reveal collapsed sidebar sections just to advertise drop targets; collapsed sections remain under user control unless search filtering needs to reveal matches.
+- Long sidebar folders must auto-scroll when dragging tabs, quick entries, groups, or recently closed rows near the top or bottom edge.
 - Sidebar quick entries must show active-page state when the current tab matches an Essential or favorite.
 - Users must be able to toggle the current page as a favorite with `Ctrl+D`, `Cmd+D`, `Ctrl+Shift+D`, or `Cmd+Shift+D`.
 - Sidebar search must filter global Essentials plus tabs, tab groups, pinned tabs, and favorites inside the active Space.
