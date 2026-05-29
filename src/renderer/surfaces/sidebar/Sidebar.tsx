@@ -154,6 +154,18 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     handleWorkspaceDrop(event, workspaceId);
   };
 
+  const handleNewWorkspaceDropWithFavorites = (event: DragEvent<HTMLButtonElement>) => {
+    const favoriteId = draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
+    if (favoriteId) {
+      event.preventDefault();
+      actions.moveWorkspaceFavoriteToNewWorkspace(favoriteId);
+      setDraggingFavoriteId(null);
+      return;
+    }
+
+    handleNewWorkspaceDrop(event);
+  };
+
   useEffect(() => {
     setTabQuery("");
     setActiveSearchIndex(0);
@@ -219,7 +231,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         onDrop={handleWorkspaceDropWithFavorites}
         onDeleteWorkspace={actions.deleteWorkspace}
         onNewWorkspace={actions.addWorkspace}
-        onNewWorkspaceDrop={handleNewWorkspaceDrop}
+        onNewWorkspaceDrop={handleNewWorkspaceDropWithFavorites}
         onSelect={actions.switchWorkspace}
         onToggleSidebar={actions.toggleSidebar}
         onUpdateWorkspace={actions.updateWorkspaceById}

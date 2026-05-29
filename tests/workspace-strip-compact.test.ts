@@ -57,8 +57,8 @@ describe("workspace strip compact controls", () => {
       sidebarCollapsed: false
     });
 
-    expect(html.match(/data-drop-target="true"/g)).toHaveLength(1);
-    expect(html).toContain('aria-label="New Space" data-drop-target="false"');
+    expect(html.match(/data-drop-target="true"/g)).toHaveLength(2);
+    expect(html).toContain('aria-label="New Space" data-drop-target="true"');
   });
 
   it("marks New Space as a drop target while dragging tabs or groups", () => {

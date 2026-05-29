@@ -6,6 +6,7 @@ import {
   getNextWorkspaceAccent,
   type BrowserState,
   type BrowserTab,
+  type Favorite,
   type TabGroup,
   type Workspace
 } from "../browser";
@@ -108,6 +109,31 @@ export function restoreClosedTabToNewWorkspace(state: BrowserState, closedIndex:
   });
 }
 
+export function moveWorkspaceFavoriteToNewWorkspace(state: BrowserState, favoriteId: string): BrowserState {
+  const source = getActiveWorkspace(state);
+  if (!source.favorites.some((favorite) => favorite.id === favoriteId)) {
+    return state;
+  }
+
+  return updateBrowserState(state, (draft) => {
+    const source = getActiveWorkspace(draft);
+    const index = source.favorites.findIndex((favorite) => favorite.id === favoriteId);
+    if (index < 0) return;
+
+    const [favorite] = source.favorites.splice(index, 1);
+    const tab = createTab(favorite.title || getReadableUrlTitle(favorite.url), favorite.url);
+    const workspace = createWorkspace(draft, {
+      favorites: [favorite],
+      name: favorite.title || getReadableUrlTitle(favorite.url),
+      tabs: [tab],
+      activeTabId: tab.id
+    });
+    draft.workspaces.push(workspace);
+    draft.activeWorkspaceId = workspace.id;
+    clearSplitView(draft);
+  });
+}
+
 export function deleteWorkspace(state: BrowserState, workspaceId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     if (draft.workspaces.length <= 1) return;
@@ -171,6 +197,7 @@ function createWorkspace(
   state: BrowserState,
   options: {
     activeTabId?: string;
+    favorites?: Favorite[];
     name: string;
     tabGroups?: TabGroup[];
     tabs: BrowserTab[];
@@ -188,7 +215,7 @@ function createWorkspace(
     homepage: getHomepageUrl(state),
     ...normalizeWorkspaceProfile({ id, name }),
     closedTabs: [],
-    favorites: [],
+    favorites: options.favorites ?? [],
     tabGroups: options.tabGroups ?? [],
     tabs,
     activeTabId: options.activeTabId ?? tabs[0].id

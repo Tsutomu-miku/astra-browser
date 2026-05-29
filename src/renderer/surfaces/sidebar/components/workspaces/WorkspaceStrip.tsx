@@ -138,9 +138,9 @@ export function WorkspaceStrip({
         title="New Space"
         type="button"
         aria-label="New Space"
-        data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingGroupId || draggingTabId)}
+        data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId)}
         onDragOver={(event) => {
-          if (draggingClosedTabIndex !== null || draggingGroupId || draggingTabId) {
+          if (draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
           }

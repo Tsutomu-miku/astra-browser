@@ -99,6 +99,10 @@ export function useBrowserActions({
       store.moveTabGroupToNewWorkspace(groupId);
       peekCompactChrome();
     },
+    moveWorkspaceFavoriteToNewWorkspace: (favoriteId: string) => {
+      store.moveWorkspaceFavoriteToNewWorkspace(favoriteId);
+      peekCompactChrome();
+    },
     restoreClosedTabToNewWorkspace: (closedIndex: number) => {
       store.restoreClosedTabToNewWorkspace(closedIndex);
       peekCompactChrome();

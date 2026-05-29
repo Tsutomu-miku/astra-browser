@@ -78,6 +78,7 @@ export {
   deleteWorkspace,
   moveTabGroupToNewWorkspace,
   moveTabToNewWorkspace,
+  moveWorkspaceFavoriteToNewWorkspace,
   reorderWorkspace,
   restoreClosedTabToNewWorkspace,
   switchWorkspace,

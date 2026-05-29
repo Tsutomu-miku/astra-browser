@@ -56,6 +56,7 @@ export interface BrowserStore {
   moveWorkspaceFavoriteToWorkspace: (favoriteId: string, workspaceId: string) => void;
   moveTabToNewWorkspace: (tabId: string) => void;
   moveTabGroupToNewWorkspace: (groupId: string) => void;
+  moveWorkspaceFavoriteToNewWorkspace: (favoriteId: string) => void;
   restoreClosedTabToNewWorkspace: (closedIndex: number) => void;
   closeGlance: () => void;
   openGlance: (url: string, title?: string) => void;

@@ -28,6 +28,7 @@ import {
   moveWorkspaceFavoriteToWorkspace,
   moveTabToNewWorkspace,
   moveTabGroupToNewWorkspace,
+  moveWorkspaceFavoriteToNewWorkspace,
   restoreClosedTabToNewWorkspace,
   openTabInSplit,
   openUrlInSplit,
@@ -168,6 +169,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   moveTabToNewWorkspace: (tabId) => update(set, (state) => moveTabToNewWorkspace(state, tabId)),
   moveTabGroupToNewWorkspace: (groupId) =>
     update(set, (state) => moveTabGroupToNewWorkspace(state, groupId)),
+  moveWorkspaceFavoriteToNewWorkspace: (favoriteId) =>
+    update(set, (state) => moveWorkspaceFavoriteToNewWorkspace(state, favoriteId)),
   restoreClosedTabToNewWorkspace: (closedIndex) =>
     update(set, (state) => restoreClosedTabToNewWorkspace(state, closedIndex)),
   focusSplitPane: (tabId) => update(set, (state) => focusSplitPane(state, tabId)),
