@@ -39,6 +39,7 @@ describe("sidebar pinned tabs", () => {
     }));
 
     expect(html).toContain('aria-label="Pinned tabs"');
+    expect(html).toContain('aria-label="Mail, active, pinned tab"');
     expect(html).toContain(`id="sidebar-search-tab-${pinned.id}"`);
     expect(html).toContain('draggable="true"');
     expect(html).toContain('data-drop-target="true"');
@@ -140,6 +141,37 @@ describe("sidebar pinned tabs", () => {
     act(() => root.unmount());
   });
 
+  it("keeps pinned tab close keys from bubbling to sidebar navigation", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const actions = createActions();
+    const onParentKeyDown = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement("div", {
+        onKeyDown: onParentKeyDown
+      }, createElement(SidebarPinnedTabs, {
+        actions,
+        activeTab: { ...createTab("Active", "https://active.example") },
+        draggingTabId: null,
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onPinDrop: vi.fn(),
+        pinnedTabs: [pinned],
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      })));
+    });
+
+    container.querySelector(".pinned-tab-button")?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete" }));
+
+    expect(actions.closeTab).toHaveBeenCalledWith(pinned.id);
+    expect(onParentKeyDown).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("runs pinned tab keyboard preview and split activation", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const actions = createActions();
@@ -216,6 +248,7 @@ describe("sidebar pinned tabs", () => {
     }));
 
     expect(html).toContain('class="pinned-tab-status-badges"');
+    expect(html).toContain('aria-label="Mail, active, pinned tab, Split, Muted"');
     expect(html).toContain('aria-label="Split, Muted"');
     expect(html).toContain('class="pinned-tab-status-badge is-split"');
     expect(html).toContain('class="pinned-tab-status-badge is-muted"');

@@ -4,7 +4,7 @@ import { FiLoader } from "react-icons/fi";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
-import { getTabStatusBadges } from "../../model/sidebarItemState";
+import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
@@ -59,6 +59,12 @@ export function SidebarPinnedTabs({
       >
         {pinnedTabs.map((tab) => {
           const statusBadges = getTabStatusBadges(tab, splitTabIds);
+          const tabLabel = getSidebarTabAccessibilityLabel({
+            isActive: tab.id === activeTab.id,
+            kind: "pinned tab",
+            statusBadges,
+            tab
+          });
 
           return (
             <button
@@ -67,6 +73,7 @@ export function SidebarPinnedTabs({
               id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
               title={tab.title || tab.url}
               type="button"
+              aria-label={tabLabel}
               aria-current={tab.id === activeTab.id}
               aria-selected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
               draggable
@@ -75,6 +82,7 @@ export function SidebarPinnedTabs({
               onAuxClick={(event) => {
                 if (event.button === 1) {
                   event.preventDefault();
+                  event.stopPropagation();
                   actions.closeTab(tab.id);
                 }
               }}
@@ -96,6 +104,7 @@ export function SidebarPinnedTabs({
                 })) return;
                 if (isCloseTabKey(event.key)) {
                   event.preventDefault();
+                  event.stopPropagation();
                   actions.closeTab(tab.id);
                 }
               }}

@@ -25,6 +25,7 @@ describe("sidebar item action hints", () => {
     }));
 
     expect(html).toContain('class="sidebar-item-action-hints"');
+    expect(html).toContain('aria-label="Docs, active, tab"');
     expect(html).toContain("Alt");
     expect(html).toContain("Preview");
     expect(html).toContain("Shift");
@@ -91,6 +92,39 @@ describe("sidebar item action hints", () => {
 
     expect(onClose).toHaveBeenCalledWith(tab.id);
     expect(onSelect).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("keeps tab row close keys from bubbling to sidebar navigation", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const onClose = vi.fn();
+    const onParentKeyDown = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement("div", {
+        onKeyDown: onParentKeyDown
+      }, createElement(TabRow, {
+        activeTabId: "other-tab",
+        draggingTabId: null,
+        onClose,
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onPreview: vi.fn(),
+        onSelect: vi.fn(),
+        onSplit: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tab
+      })));
+    });
+
+    container.querySelector(".tab-button")?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Backspace" }));
+
+    expect(onClose).toHaveBeenCalledWith(tab.id);
+    expect(onParentKeyDown).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });

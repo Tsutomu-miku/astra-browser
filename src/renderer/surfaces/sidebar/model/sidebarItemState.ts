@@ -29,6 +29,25 @@ export function getTabStatusBadges(
   return badges;
 }
 
+export function getSidebarTabAccessibilityLabel({
+  isActive,
+  kind,
+  statusBadges,
+  tab
+}: {
+  isActive: boolean;
+  kind: "pinned tab" | "tab";
+  statusBadges: TabStatusBadge[];
+  tab: Pick<BrowserTab, "title" | "url">;
+}): string {
+  return [
+    tab.title || tab.url,
+    isActive ? "active" : null,
+    kind,
+    ...statusBadges.map((badge) => badge.label)
+  ].filter(Boolean).join(", ");
+}
+
 function normalizeComparableUrl(url: string): string {
   try {
     const parsed = new URL(url);

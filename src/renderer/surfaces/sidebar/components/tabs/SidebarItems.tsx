@@ -4,7 +4,7 @@ import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icon
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
-import { getTabStatusBadges } from "../../model/sidebarItemState";
+import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
@@ -91,6 +91,12 @@ export function TabRow({
   tab: BrowserTab;
 }) {
   const statusBadges = getTabStatusBadges(tab, splitTabIds);
+  const tabLabel = getSidebarTabAccessibilityLabel({
+    isActive: tab.id === activeTabId,
+    kind: "tab",
+    statusBadges,
+    tab
+  });
 
   return (
     <div
@@ -116,6 +122,7 @@ export function TabRow({
       <button
         className="tab-button"
         type="button"
+        aria-label={tabLabel}
         draggable
         onDragStart={(event) => {
           setDraggingTabId(tab.id);
@@ -126,6 +133,7 @@ export function TabRow({
         onAuxClick={(event) => {
           if (event.button === 1) {
             event.preventDefault();
+            event.stopPropagation();
             onClose(tab.id);
           }
         }}
@@ -147,6 +155,7 @@ export function TabRow({
           })) return;
           if (isCloseTabKey(event.key)) {
             event.preventDefault();
+            event.stopPropagation();
             onClose(tab.id);
           }
         }}
@@ -163,7 +172,10 @@ export function TabRow({
         type="button"
         title="Close tab"
         aria-label={`Close ${tab.title || tab.url}`}
-        onClick={() => onClose(tab.id)}
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose(tab.id);
+        }}
       >
         <FiX />
       </button>

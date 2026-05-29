@@ -62,6 +62,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Focused sidebar tab rows and pinned tab buttons must support Delete and Backspace to close without selecting the tab first.
 - Sidebar tab rows must expose compact visual status badges for split-view, muted, and sleeping states.
 - Pinned tab buttons must expose compact visual status badges for split-view, muted, and sleeping states.
+- Sidebar tab rows and icon-only pinned tab buttons must expose accessible labels that include active and status state.
 - Pinned tabs must participate in sidebar drag-and-drop reordering.
 - Users must be able to close other tabs, close tabs to the left, and close tabs to the right from command palette and sidebar tab context menu flows.
 - Users must be able to cycle tabs with keyboard shortcuts or the command palette.

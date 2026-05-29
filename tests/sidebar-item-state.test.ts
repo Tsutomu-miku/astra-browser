@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getTabStatusBadges, isSidebarUrlActive } from "../src/renderer/surfaces/sidebar/model/sidebarItemState";
+import {
+  getSidebarTabAccessibilityLabel,
+  getTabStatusBadges,
+  isSidebarUrlActive
+} from "../src/renderer/surfaces/sidebar/model/sidebarItemState";
 
 describe("sidebar item state", () => {
   it("matches equivalent quick item urls for active highlighting", () => {
@@ -26,5 +30,20 @@ describe("sidebar item state", () => {
       isMuted: false,
       isSleeping: false
     }, [])).toEqual([]);
+  });
+
+  it("builds accessible tab labels with active and status state", () => {
+    const badges = getTabStatusBadges({
+      id: "tab",
+      isMuted: true,
+      isSleeping: false
+    }, ["tab"]);
+
+    expect(getSidebarTabAccessibilityLabel({
+      isActive: true,
+      kind: "pinned tab",
+      statusBadges: badges,
+      tab: { title: "Mail", url: "https://mail.example" }
+    })).toBe("Mail, active, pinned tab, Split, Muted");
   });
 });
