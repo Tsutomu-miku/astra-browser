@@ -84,7 +84,6 @@ export function TabGroupContextMenu({
             key={color}
             className="tab-group-menu-swatch"
             type="button"
-            title={color}
             aria-label={`Use ${color}`}
             aria-pressed={group.color.toLowerCase() === color}
             style={{ "--swatch": color } as CSSProperties}

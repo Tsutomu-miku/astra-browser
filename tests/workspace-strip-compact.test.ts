@@ -41,6 +41,52 @@ describe("workspace strip compact controls", () => {
     expect(html).not.toContain('title="Collapse sidebar"');
   });
 
+  it("avoids native title tooltips on Space color swatches", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace: vi.fn(),
+        onNewWorkspaceDrop: vi.fn(),
+        onOpenSettings: vi.fn(),
+        onSelect: vi.fn(),
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    act(() => {
+      container.querySelector(".workspace-button")?.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true,
+        button: 2,
+        clientX: 16,
+        clientY: 24
+      }));
+    });
+
+    const swatch = container.querySelector<HTMLButtonElement>(".workspace-menu-swatch");
+    expect(swatch?.getAttribute("aria-label")).toBe("Use #7dd3fc");
+    expect(swatch?.hasAttribute("title")).toBe(false);
+
+    act(() => root.unmount());
+  });
+
   it("marks other Spaces as drop targets while dragging a tab group", () => {
     const html = renderStrip({
       compactMode: false,

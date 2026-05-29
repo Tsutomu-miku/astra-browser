@@ -142,6 +142,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Sidebar tab and favorite rows must reveal Alt preview and Shift split hints on hover or keyboard focus.
 - Sidebar row hover hints must not cover tab or favorite titles; they should reserve inline space or stay inside their tile.
 - Sidebar tab, pinned tab, Essential, and favorite rows must avoid native browser title tooltips that cover the side panel while scanning or dragging.
+- Sidebar Space and tab group menu swatches must avoid native browser title tooltips and use accessible labels instead.
 - Pinned tab buttons must reveal Alt preview and Shift split hints on hover or keyboard focus.
 
 ### Navigation, Address Bar, And Omnibox

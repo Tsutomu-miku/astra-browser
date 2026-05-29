@@ -272,7 +272,6 @@ function WorkspaceContextMenu({
             key={accent}
             className="workspace-menu-swatch"
             type="button"
-            title={accent}
             aria-label={`Use ${accent}`}
             aria-pressed={workspace.accent.toLowerCase() === accent}
             style={{ "--swatch": accent } as CSSProperties}
