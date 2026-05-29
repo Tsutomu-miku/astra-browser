@@ -72,6 +72,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Sidebar tab context menus must support adding or removing a tab from Space favorites and global Essentials.
 - Sidebar tab rows and pinned tab buttons must support middle-click closing without selecting the tab first.
 - Focused sidebar tab rows and pinned tab buttons must support Delete and Backspace to close without selecting the tab first.
+- Tab-backed Sidebar Favorites must use tab-level context menus and close shortcuts; legacy URL Favorites must keep quick-entry context menus.
 - Sidebar tab rows must expose compact visual status badges for split-view, muted, and sleeping states.
 - Pinned tab buttons must expose compact visual status badges for split-view, muted, and sleeping states.
 - Sidebar tab rows and icon-only pinned tab buttons must expose accessible labels that include active and status state.

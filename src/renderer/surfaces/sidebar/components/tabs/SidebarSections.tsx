@@ -197,25 +197,33 @@ export function SidebarSections({
             }}
             onDrop={onFavoriteDrop}
           >
-            {filteredItems.favorites.map((favorite) => (
-              <FavoriteButton
-                key={favorite.id}
-                draggable
-                draggingQuickEntryId={draggingFavoriteId}
-                favorite={favorite}
-                id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
-                isActive={isSidebarFavoriteActive(activeTab, favorite)}
-                isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
-                kind="favorite"
-                onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "favorite")}
-                onDragStart={onFavoriteDragStart}
-                onDragEnd={() => setDraggingFavoriteId(null)}
-                onDrop={onFavoriteReorderDrop}
-                onOpen={() => openFavorite(favorite)}
-                onOpenInSplit={actions.openUrlInSplit}
-                onPreview={actions.openGlance}
-              />
-            ))}
+            {filteredItems.favorites.map((favorite) => {
+              const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
+
+              return (
+                <FavoriteButton
+                  key={favorite.id}
+                  draggable
+                  draggingQuickEntryId={draggingFavoriteId}
+                  favorite={favorite}
+                  id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
+                  isActive={isSidebarFavoriteActive(activeTab, favorite)}
+                  isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
+                  kind="favorite"
+                  tabId={tab?.id}
+                  onCloseTab={tab ? actions.closeTab : undefined}
+                  onContextMenu={(event, item) => {
+                    tab ? onTabContextMenu(event, tab) : onQuickEntryContextMenu(event, item, "favorite");
+                  }}
+                  onDragStart={onFavoriteDragStart}
+                  onDragEnd={() => setDraggingFavoriteId(null)}
+                  onDrop={onFavoriteReorderDrop}
+                  onOpen={() => openFavorite(favorite)}
+                  onOpenInSplit={actions.openUrlInSplit}
+                  onPreview={actions.openGlance}
+                />
+              );
+            })}
           </nav>}
         </section>
       )}

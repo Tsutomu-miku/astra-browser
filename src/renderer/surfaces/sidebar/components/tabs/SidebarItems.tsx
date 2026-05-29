@@ -208,6 +208,8 @@ export function FavoriteButton({
   isActive = false,
   isSearchSelected = false,
   kind = "favorite",
+  tabId,
+  onCloseTab,
   onDragEnd,
   onDragStart,
   onDrop,
@@ -224,6 +226,8 @@ export function FavoriteButton({
   isActive?: boolean;
   isSearchSelected?: boolean;
   kind?: QuickEntryKind;
+  tabId?: string;
+  onCloseTab?: (tabId: string) => void;
   onContextMenu?: (event: MouseEvent, favorite: Favorite) => void;
   onDragEnd?: () => void;
   onDragStart?: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
@@ -256,6 +260,13 @@ export function FavoriteButton({
       data-drop-target={isDropTarget}
       onDragStart={draggable && onDragStart ? (event) => onDragStart(event, favorite.id) : undefined}
       onDragEnd={draggable ? onDragEnd : undefined}
+      onAuxClick={(event) => {
+        if (event.button === 1 && tabId && onCloseTab) {
+          event.preventDefault();
+          event.stopPropagation();
+          onCloseTab(tabId);
+        }
+      }}
       onDragOver={(event) => {
         if (draggingQuickEntryId && draggingQuickEntryId !== favorite.id) {
           event.preventDefault();
@@ -271,11 +282,16 @@ export function FavoriteButton({
       onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
       onKeyDown={(event) => {
         if (onContextMenu && openSidebarKeyboardContextMenu(event)) return;
-        runSidebarItemKeyboardActivation(event, {
+        if (runSidebarItemKeyboardActivation(event, {
           primary: () => onOpen(favorite.url, favorite.title),
           preview: () => onPreview(favorite.url, favorite.title),
           split: () => onOpenInSplit(favorite.url, favorite.title)
-        });
+        })) return;
+        if (tabId && onCloseTab && isCloseTabKey(event.key)) {
+          event.preventDefault();
+          event.stopPropagation();
+          onCloseTab(tabId);
+        }
       }}
       onClick={(event) => {
         if (event.altKey) {
