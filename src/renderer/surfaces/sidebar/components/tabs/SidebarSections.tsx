@@ -243,6 +243,25 @@ export function SidebarSections({
         </section>
       )}
 
+      <SidebarTabsSection
+        actions={actions}
+        activeSearchTarget={activeSearchTarget}
+        activeTab={activeTab}
+        draggingGroupId={draggingGroupId}
+        draggingTabId={draggingTabId}
+        filteredItems={filteredItems}
+        isCollapsed={isSectionCollapsed("tabs")}
+        splitTabIds={splitTabIds}
+        tabCount={tabCount}
+        onTabContextMenu={onTabContextMenu}
+        onTabDrop={onTabDrop}
+        onTabGroupContextMenu={onTabGroupContextMenu}
+        onTabsDrop={onTabsDrop}
+        onToggle={() => toggleSection("tabs")}
+        setDraggingGroupId={setDraggingGroupId}
+        setDraggingTabId={setDraggingTabId}
+      />
+
       {!filteredItems.isFiltering && recentlyClosedTabs.length > 0 && (
         <section className="sidebar-section">
           <SidebarSectionHeader
@@ -273,25 +292,6 @@ export function SidebarSections({
           </nav>}
         </section>
       )}
-
-      <SidebarTabsSection
-        actions={actions}
-        activeSearchTarget={activeSearchTarget}
-        activeTab={activeTab}
-        draggingGroupId={draggingGroupId}
-        draggingTabId={draggingTabId}
-        filteredItems={filteredItems}
-        isCollapsed={isSectionCollapsed("tabs")}
-        splitTabIds={splitTabIds}
-        tabCount={tabCount}
-        onTabContextMenu={onTabContextMenu}
-        onTabDrop={onTabDrop}
-        onTabGroupContextMenu={onTabGroupContextMenu}
-        onTabsDrop={onTabsDrop}
-        onToggle={() => toggleSection("tabs")}
-        setDraggingGroupId={setDraggingGroupId}
-        setDraggingTabId={setDraggingTabId}
-      />
     </>
   );
 }

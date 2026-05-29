@@ -142,8 +142,8 @@ describe("sidebar focus navigation", () => {
     act(() => {
       document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "End" }));
     });
-    expect(document.activeElement?.classList.contains("tab-button")).toBe(true);
-    expect(document.activeElement?.textContent).toContain("Docs");
+    expect(document.activeElement?.classList.contains("closed-tab-button")).toBe(true);
+    expect(document.activeElement?.textContent).toContain("Closed");
 
     act(() => {
       document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home" }));
@@ -152,6 +152,59 @@ describe("sidebar focus navigation", () => {
 
     act(() => root.unmount());
     container.remove();
+  });
+
+  it("orders current tab folders before recently closed recovery", () => {
+    const activeTab = createTab("Docs", "https://docs.example");
+    const pinnedTab = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab,
+        closedTabs: [{ title: "Closed", url: "https://closed.example", closedAt: 1 }],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [createFavorite("Calendar", "https://calendar.example")],
+          favorites: [favorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [pinnedTab],
+          regularTabs: [activeTab]
+        },
+        onClosedTabContextMenu: vi.fn(),
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        setDraggingClosedTabIndex: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const headers = Array.from(container.querySelectorAll(".sidebar-section-header-button"))
+      .map((header) => header.textContent?.replace(/\d+$/, ""));
+    expect(headers).toEqual(["Essentials", "Pinned", "Favorites", "Tabs", "Recently Closed"]);
+
+    act(() => root.unmount());
   });
 
   it("includes tab group toggles in sidebar item focus navigation", () => {
