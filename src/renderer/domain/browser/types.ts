@@ -31,6 +31,7 @@ export interface Favorite {
   id: string;
   title: string;
   url: string;
+  tabId?: string;
 }
 
 export interface TabGroup {

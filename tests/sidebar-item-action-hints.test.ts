@@ -262,10 +262,62 @@ describe("sidebar item action hints", () => {
     container.querySelector(".tab-row")?.dispatchEvent(event);
 
     expect(container.querySelector(".tab-row")?.getAttribute("draggable")).toBe("true");
-    expect(container.querySelector(".tab-button")?.getAttribute("draggable")).toBe("true");
+    expect(container.querySelector(".tab-button")?.getAttribute("draggable")).toBe("false");
     expect(setDraggingTabId).toHaveBeenCalledWith(tab.id);
     expect(data.get(SIDEBAR_TAB_DRAG_TYPE)).toBe(tab.id);
     expect(data.get("text/plain")).toBe(tab.id);
+
+    act(() => root.unmount());
+  });
+
+  it("falls back to pointer dragging when native tab drag does not start", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const setDraggingTabId = vi.fn();
+    const onPointerDrop = vi.fn();
+    const onSelect = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabRow, {
+        activeTabId: tab.id,
+        draggingTabId: null,
+        onClose: vi.fn(),
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onPointerDrop,
+        onPreview: vi.fn(),
+        onSelect,
+        onSplit: vi.fn(),
+        setDraggingTabId,
+        splitTabIds: [],
+        tab
+      }));
+    });
+
+    container.querySelector(".tab-row")?.dispatchEvent(createPointerEvent("pointerdown", {
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+      isPrimary: true,
+      pointerId: 1
+    }));
+    document.dispatchEvent(createPointerEvent("pointermove", {
+      clientX: 28,
+      clientY: 14,
+      pointerId: 1
+    }));
+    document.dispatchEvent(createPointerEvent("pointerup", {
+      clientX: 40,
+      clientY: 22,
+      pointerId: 1
+    }));
+    container.querySelector(".tab-button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(setDraggingTabId).toHaveBeenCalledWith(tab.id);
+    expect(setDraggingTabId).toHaveBeenLastCalledWith(null);
+    expect(onPointerDrop).toHaveBeenCalledWith(tab.id, 40, 22);
+    expect(onSelect).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });
@@ -358,3 +410,11 @@ describe("sidebar item action hints", () => {
     act(() => root.unmount());
   });
 });
+
+function createPointerEvent(type: string, init: Partial<PointerEvent> & MouseEventInit) {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  for (const [key, value] of Object.entries(init)) {
+    Object.defineProperty(event, key, { value });
+  }
+  return event;
+}

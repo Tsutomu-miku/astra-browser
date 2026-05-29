@@ -35,7 +35,6 @@ export interface CommandActions {
   peekCompactChrome: () => void;
   peekCompactSidebar: () => void;
   peekCompactToolbar: () => void;
-  navigateActiveTab: (url: string) => void;
   openTabInSplit: (tabId: string) => void;
   openUrlInSplit: (url: string, title?: string) => void;
   newTab: () => void;

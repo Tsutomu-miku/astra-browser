@@ -19,6 +19,7 @@ export function TabGroupSection({
   onGroupDrop,
   onGroupContextMenu,
   onDrop,
+  onPointerDrop = () => undefined,
   onPreview,
   onSelect,
   onSplit,
@@ -40,6 +41,7 @@ export function TabGroupSection({
   onGroupDrop: (event: DragEvent<HTMLElement>, targetGroupId: string) => void;
   onGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
+  onPointerDrop?: (tabId: string, clientX: number, clientY: number) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
@@ -66,6 +68,7 @@ export function TabGroupSection({
       <div
         className="tab-group-header"
         draggable
+        data-group-id={group.id}
         data-dragging={draggingGroupId === group.id}
         data-drop-target={Boolean(draggingTabId || (draggingGroupId && draggingGroupId !== group.id))}
         onContextMenu={(event) => onGroupContextMenu(event, group)}
@@ -142,6 +145,7 @@ export function TabGroupSection({
           onClose={onClose}
           onContextMenu={onContextMenu}
           onDrop={onDrop}
+          onPointerDrop={onPointerDrop}
           onPreview={onPreview}
           onSelect={onSelect}
           onSplit={onSplit}

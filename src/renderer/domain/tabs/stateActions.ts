@@ -155,7 +155,7 @@ export function toggleTabFavorite(state: BrowserState, tabId: string): BrowserSt
     const index = workspace.favorites.findIndex((favorite) => favorite.url === tab.url);
     index >= 0
       ? workspace.favorites.splice(index, 1)
-      : workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url));
+      : workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url, tab.id));
   });
 }
 

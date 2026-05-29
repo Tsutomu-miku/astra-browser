@@ -36,6 +36,7 @@ export function SidebarSections({
   onPinDrop,
   onTabContextMenu,
   onTabDrop,
+  onTabPointerDrop = () => undefined,
   onTabsDrop = () => undefined,
   onQuickEntryContextMenu,
   setDraggingEssentialId,
@@ -43,7 +44,8 @@ export function SidebarSections({
   setDraggingClosedTabIndex = () => undefined,
   setDraggingGroupId,
   setDraggingTabId,
-  splitTabIds
+  splitTabIds,
+  workspaceTabs = []
 }: {
   actions: BrowserController["actions"];
   activeSearchTarget?: SidebarSearchTarget;
@@ -67,6 +69,7 @@ export function SidebarSections({
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
+  onTabPointerDrop?: (tabId: string, clientX: number, clientY: number) => void;
   onTabsDrop?: (event: DragEvent<HTMLElement>) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
@@ -74,6 +77,7 @@ export function SidebarSections({
   setDraggingGroupId: (groupId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
+  workspaceTabs?: BrowserTab[];
 }) {
   const [collapsedSections, setCollapsedSections] = useState<Record<SidebarSectionId, boolean>>({
     essentials: false,
@@ -101,6 +105,13 @@ export function SidebarSections({
       ...current,
       [sectionId]: !current[sectionId]
     }));
+  };
+  const openFavorite = (favorite: Favorite) => {
+    const tab = workspaceTabs.find((candidate) => (
+      candidate.id === favorite.tabId ||
+      (!favorite.tabId && candidate.url === favorite.url)
+    ));
+    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(favorite.url, favorite.title);
   };
 
   return (
@@ -227,7 +238,7 @@ export function SidebarSections({
                 onDragStart={onFavoriteDragStart}
                 onDragEnd={() => setDraggingFavoriteId(null)}
                 onDrop={onFavoriteReorderDrop}
-                onOpen={actions.navigateActiveTab}
+                onOpen={() => openFavorite(favorite)}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}
               />
@@ -283,6 +294,7 @@ export function SidebarSections({
         tabCount={tabCount}
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}
+        onTabPointerDrop={onTabPointerDrop}
         onTabGroupContextMenu={onTabGroupContextMenu}
         onTabsDrop={onTabsDrop}
         onToggle={() => toggleSection("tabs")}

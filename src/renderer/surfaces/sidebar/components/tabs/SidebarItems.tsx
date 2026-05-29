@@ -1,4 +1,4 @@
-import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
+import { useRef, type DragEvent, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icons/fi";
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
@@ -74,6 +74,7 @@ export function TabRow({
   onClose,
   onContextMenu,
   onDrop,
+  onPointerDrop = () => undefined,
   onPreview,
   onSelect,
   onSplit,
@@ -89,6 +90,7 @@ export function TabRow({
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  onPointerDrop?: (tabId: string, clientX: number, clientY: number) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
@@ -98,6 +100,14 @@ export function TabRow({
   splitTabIds: string[];
   tab: BrowserTab;
 }) {
+  const nativeDragStartedRef = useRef(false);
+  const pointerDragRef = useRef<{
+    active: boolean;
+    pointerId: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const suppressNextClickRef = useRef(false);
   const statusBadges = getTabStatusBadges(tab, splitTabIds);
   const tabLabel = getSidebarTabAccessibilityLabel({
     isActive: tab.id === activeTabId,
@@ -114,12 +124,72 @@ export function TabRow({
       aria-selected={isSearchSelected}
       draggable
       data-dragging={draggingTabId === tab.id}
+      data-tab-id={tab.id}
       onDragStart={(event) => {
+        nativeDragStartedRef.current = true;
+        pointerDragRef.current = null;
         setDraggingTabId(tab.id);
         writeSidebarTabDragPayload(event.dataTransfer, tab.id);
         event.dataTransfer.effectAllowed = "move";
       }}
-      onDragEnd={() => setDraggingTabId(null)}
+      onDragEnd={() => {
+        nativeDragStartedRef.current = false;
+        setDraggingTabId(null);
+      }}
+      onPointerDown={(event) => {
+        if (!shouldStartPointerTabDrag(event)) return;
+
+        pointerDragRef.current = {
+          active: false,
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY
+        };
+
+        const onPointerMove = (moveEvent: PointerEvent) => {
+          const drag = pointerDragRef.current;
+          if (!drag || drag.pointerId !== moveEvent.pointerId || nativeDragStartedRef.current) return;
+
+          const distanceX = Math.abs(moveEvent.clientX - drag.startX);
+          const distanceY = Math.abs(moveEvent.clientY - drag.startY);
+          if (!drag.active && distanceX < 6 && distanceY < 6) return;
+
+          drag.active = true;
+          suppressNextClickRef.current = true;
+          setDraggingTabId(tab.id);
+          moveEvent.preventDefault();
+        };
+
+        const onPointerUp = (upEvent: PointerEvent) => {
+          const drag = pointerDragRef.current;
+          document.removeEventListener("pointermove", onPointerMove);
+          document.removeEventListener("pointerup", onPointerUp);
+          document.removeEventListener("pointercancel", onPointerCancel);
+          pointerDragRef.current = null;
+
+          if (!drag || drag.pointerId !== upEvent.pointerId || nativeDragStartedRef.current) return;
+          if (drag.active) {
+            upEvent.preventDefault();
+            onPointerDrop(tab.id, upEvent.clientX, upEvent.clientY);
+          }
+          setDraggingTabId(null);
+        };
+
+        const onPointerCancel = (cancelEvent: PointerEvent) => {
+          const drag = pointerDragRef.current;
+          if (!drag || drag.pointerId !== cancelEvent.pointerId) return;
+
+          document.removeEventListener("pointermove", onPointerMove);
+          document.removeEventListener("pointerup", onPointerUp);
+          document.removeEventListener("pointercancel", onPointerCancel);
+          pointerDragRef.current = null;
+          setDraggingTabId(null);
+        };
+
+        document.addEventListener("pointermove", onPointerMove);
+        document.addEventListener("pointerup", onPointerUp);
+        document.addEventListener("pointercancel", onPointerCancel);
+      }}
       onDragOver={(event) => {
         const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
         if (draggedTabId && draggedTabId !== tab.id) {
@@ -139,7 +209,7 @@ export function TabRow({
         className="tab-button"
         type="button"
         aria-label={tabLabel}
-        draggable
+        draggable={false}
         onAuxClick={(event) => {
           if (event.button === 1) {
             event.preventDefault();
@@ -148,6 +218,13 @@ export function TabRow({
           }
         }}
         onClick={(event) => {
+          if (suppressNextClickRef.current) {
+            suppressNextClickRef.current = false;
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+
           if (event.altKey) {
             onPreview(tab.url, tab.title);
           } else if (event.shiftKey) {
@@ -196,6 +273,11 @@ export function TabRow({
       </button>
     </div>
   );
+}
+
+function shouldStartPointerTabDrag(event: ReactPointerEvent<HTMLElement>) {
+  if (event.button !== 0 || !event.isPrimary) return false;
+  return !((event.target as HTMLElement | null)?.closest(".tab-close"));
 }
 
 export function FavoriteButton({

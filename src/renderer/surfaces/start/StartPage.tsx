@@ -2,6 +2,8 @@ import { useMemo, type CSSProperties, type MouseEvent } from "react";
 import { FiClock, FiStar, FiZap } from "react-icons/fi";
 
 import { getReadableUrlTitle } from "../../domain/browser";
+import type { Favorite } from "../../domain/browser";
+import type { StartEntryContextMenuItem } from "./components/useStartEntryContextMenu";
 import type { BrowserController } from "../../app/controller/types";
 import { StartEntryActionHints } from "./components/StartEntryActionHints";
 import { StartEntryContextMenu } from "./components/StartEntryContextMenu";
@@ -22,6 +24,29 @@ export function StartPage({
   const content = useMemo(() => getStartPageContent(state, activeWorkspace), [activeWorkspace, state]);
   const accentStyle = { "--start-accent": activeWorkspace.accent } as CSSProperties;
   const { closeMenu, menu, openMenu } = useStartEntryContextMenu();
+
+  function runQuickEntry(item: Favorite | StartEntryContextMenuItem) {
+    const tab = activeWorkspace.tabs.find((candidate) => (
+      candidate.id === item.tabId ||
+      (!item.tabId && candidate.url === item.url)
+    ));
+    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(item.url, item.title);
+  }
+
+  function openQuickEntry(event: MouseEvent, item: Favorite) {
+    const intent = getStartOpenIntent(item.url, item.title, {
+      altKey: event.altKey,
+      shiftKey: event.shiftKey
+    });
+
+    if (intent.type === "preview") {
+      actions.openGlance(intent.url, intent.title);
+    } else if (intent.type === "split") {
+      actions.openUrlInSplit(intent.url, intent.title);
+    } else {
+      runQuickEntry(item);
+    }
+  }
 
   function openOrPreview(event: MouseEvent, url: string, title?: string) {
     const intent = getStartOpenIntent(url, title, {
@@ -63,7 +88,7 @@ export function StartPage({
             items={content.essentials}
             kind="essential"
             onContextMenu={openMenu}
-            onOpen={openOrPreview}
+            onOpen={openQuickEntry}
           />
         </section>
 
@@ -77,7 +102,7 @@ export function StartPage({
             items={content.favorites}
             kind="favorite"
             onContextMenu={openMenu}
-            onOpen={openOrPreview}
+            onOpen={openQuickEntry}
           />
         </section>
 
@@ -112,7 +137,7 @@ export function StartPage({
             left={menu.left}
             top={menu.top}
             onClose={closeMenu}
-            onOpen={actions.navigateActiveTab}
+            onOpen={() => runQuickEntry(menu.item)}
             onOpenInSplit={actions.openUrlInSplit}
             onPreview={actions.openGlance}
             onRemove={(item, kind) => {

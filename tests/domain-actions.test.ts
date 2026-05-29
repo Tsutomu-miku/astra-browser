@@ -373,6 +373,7 @@ describe("domain actions", () => {
 
     expect(getActiveTab(getActiveWorkspace(addedEssential)).title).toBe("News");
     expect(getActiveWorkspace(addedFavorite).favorites.at(-1)).toMatchObject({
+      tabId: docsTab.id,
       title: "Docs",
       url: docsTab.url
     });

@@ -23,10 +23,11 @@ export function createTab(title: string, url: string): BrowserTab {
   };
 }
 
-export function createFavorite(title: string, url: string): Favorite {
+export function createFavorite(title: string, url: string, tabId?: string): Favorite {
   return {
     id: createId(),
     title,
+    ...(tabId ? { tabId } : {}),
     url
   };
 }

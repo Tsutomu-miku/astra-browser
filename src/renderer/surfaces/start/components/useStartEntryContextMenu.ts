@@ -4,7 +4,9 @@ import { useAnchoredContextMenu } from "../../../common/context-menu/useAnchored
 import type { Favorite, HistoryEntry } from "../../../domain/browser";
 
 export type StartEntryContextMenuKind = "essential" | "favorite" | "history";
-export type StartEntryContextMenuItem = Pick<Favorite | HistoryEntry, "id" | "title" | "url">;
+export type StartEntryContextMenuItem = Pick<Favorite | HistoryEntry, "id" | "title" | "url"> & {
+  tabId?: string;
+};
 
 export interface StartEntryContextMenuState {
   item: StartEntryContextMenuItem;

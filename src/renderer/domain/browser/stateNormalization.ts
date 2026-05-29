@@ -134,6 +134,7 @@ export function normalizeFavorites(
       return {
         id: favorite.id ?? createId(),
         title: favorite.title || getReadableUrlTitle(url),
+        ...(typeof favorite.tabId === "string" ? { tabId: favorite.tabId } : {}),
         url
       };
     });

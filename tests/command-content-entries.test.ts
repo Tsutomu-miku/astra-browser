@@ -1,17 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createDefaultState, createFavorite } from "../src/renderer/domain/browser";
+import { createDefaultState, createFavorite, createTab } from "../src/renderer/domain/browser";
 import { buildContentCommands } from "../src/renderer/surfaces/command/model/commandContentEntries";
 import type { CommandActions } from "../src/renderer/surfaces/command/model/commandTypes";
 
 describe("command content entries", () => {
-  it("navigates the current tab for Essentials and Favorites", () => {
+  it("selects existing tabs for Essentials and Favorites", () => {
     const state = createDefaultState();
-    const essential = createFavorite("Docs", "https://docs.example");
-    const favorite = createFavorite("Mail", "https://mail.example");
+    const docsTab = createTab("Docs", "https://docs.example");
+    const mailTab = createTab("Mail", "https://mail.example");
+    const essential = createFavorite("Docs", docsTab.url, docsTab.id);
+    const favorite = createFavorite("Mail", mailTab.url, mailTab.id);
     const workspace = {
       ...state.workspaces[0],
-      favorites: [favorite]
+      favorites: [favorite],
+      tabs: [docsTab, mailTab]
     };
     state.essentials = [essential];
     const actions = createActions();
@@ -20,20 +23,20 @@ describe("command content entries", () => {
     commands.find((command) => command.subtitle.startsWith("Essential"))?.run();
     commands.find((command) => command.subtitle.startsWith("Favorite"))?.run();
 
-    expect(actions.navigateActiveTab).toHaveBeenCalledWith(essential.url);
-    expect(actions.navigateActiveTab).toHaveBeenCalledWith(favorite.url);
+    expect(actions.selectTab).toHaveBeenCalledWith(docsTab.id);
+    expect(actions.selectTab).toHaveBeenCalledWith(mailTab.id);
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
   });
 });
 
 function createActions() {
   return {
-    navigateActiveTab: vi.fn(),
     openGlance: vi.fn(),
     openUrlInActiveWorkspace: vi.fn(),
-    openUrlInSplit: vi.fn()
+    openUrlInSplit: vi.fn(),
+    selectTab: vi.fn()
   } as unknown as CommandActions & {
-    navigateActiveTab: ReturnType<typeof vi.fn>;
     openUrlInActiveWorkspace: ReturnType<typeof vi.fn>;
+    selectTab: ReturnType<typeof vi.fn>;
   };
 }

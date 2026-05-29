@@ -62,9 +62,10 @@ describe("sidebar favorites", () => {
     act(() => root.unmount());
   });
 
-  it("navigates the active tab when a Space favorite is clicked", () => {
+  it("selects the matching tab when a Space favorite is clicked", () => {
     const activeTab = createTab("Active", "https://active.example");
-    const favorite = createFavorite("Docs", "https://docs.example");
+    const docsTab = createTab("Docs", "https://docs.example");
+    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
     const actions = createActions();
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -85,7 +86,7 @@ describe("sidebar favorites", () => {
           hasMatches: true,
           isFiltering: false,
           pinnedTabs: [],
-          regularTabs: [activeTab]
+          regularTabs: [activeTab, docsTab]
         },
         onEssentialDragStart: vi.fn(),
         onEssentialDrop: vi.fn(),
@@ -103,14 +104,16 @@ describe("sidebar favorites", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabIds: [],
+        workspaceTabs: [activeTab, docsTab]
       }));
     });
 
     container.querySelector(".favorite-button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     expect(container.querySelector(".favorite-button")?.getAttribute("aria-label")).toBe("Docs, Favorite");
-    expect(actions.navigateActiveTab).toHaveBeenCalledWith(favorite.url, favorite.title);
+    expect(actions.selectTab).toHaveBeenCalledWith(docsTab.id);
+    expect(actions.navigateActiveTab).not.toHaveBeenCalled();
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
 
     act(() => root.unmount());

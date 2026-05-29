@@ -164,10 +164,13 @@ describe("sidebar quick entry context menu", () => {
     container.remove();
   });
 
-  it("opens quick entries from the sidebar context menu in the active tab", () => {
+  it("selects matching tabs from the sidebar quick entry context menu", () => {
     const state = createDefaultState();
     const activeWorkspace = state.workspaces[0];
-    const item = createFavorite("Docs", "https://docs.example");
+    const tab = activeWorkspace.tabs[0];
+    tab.title = "Docs";
+    tab.url = "https://docs.example/";
+    const item = createFavorite("Docs", tab.url, tab.id);
     const actions = createActions();
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -192,7 +195,8 @@ describe("sidebar quick entry context menu", () => {
 
     container.querySelector(".quick-entry-context-menu button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(actions.navigateActiveTab).toHaveBeenCalledWith(item.url, item.title);
+    expect(actions.selectTab).toHaveBeenCalledWith(tab.id);
+    expect(actions.navigateActiveTab).not.toHaveBeenCalled();
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
 
     act(() => root.unmount());
@@ -251,6 +255,7 @@ function createActions() {
     openUrlInActiveWorkspace: vi.fn(),
     openUrlInSplit: vi.fn(),
     removeEssential: vi.fn(),
-    removeWorkspaceFavorite: vi.fn()
+    removeWorkspaceFavorite: vi.fn(),
+    selectTab: vi.fn()
   } as unknown as BrowserController["actions"];
 }

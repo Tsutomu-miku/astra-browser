@@ -37,6 +37,10 @@ export function SidebarContextMenus({
     ? tabGroupTabs.length
     : 0;
   const canSleepTabGroup = tabGroupTabs.some((tab) => !tab.isSleeping && !protectedTabIds.has(tab.id));
+  const openQuickEntry = (url: string, title?: string) => {
+    const tab = activeWorkspace.tabs.find((candidate) => candidate.url === url);
+    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(url, title);
+  };
 
   return (
     <>
@@ -82,7 +86,7 @@ export function SidebarContextMenus({
           onCopyText={actions.copyText}
           onMoveToNewWorkspace={quickEntryMenu.kind === "favorite" ? actions.moveWorkspaceFavoriteToNewWorkspace : undefined}
           onMoveToWorkspace={quickEntryMenu.kind === "favorite" ? actions.moveWorkspaceFavoriteToWorkspace : undefined}
-          onOpen={actions.navigateActiveTab}
+          onOpen={openQuickEntry}
           onOpenInSplit={actions.openUrlInSplit}
           onPreview={actions.openGlance}
           onRemove={quickEntryMenu.kind === "essential" ? actions.removeEssential : actions.removeWorkspaceFavorite}

@@ -21,6 +21,7 @@ export function SidebarTabsSection({
   isCollapsed,
   onTabContextMenu,
   onTabDrop,
+  onTabPointerDrop,
   onTabGroupContextMenu,
   onTabsDrop,
   onToggle,
@@ -39,6 +40,7 @@ export function SidebarTabsSection({
   isCollapsed: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
+  onTabPointerDrop: (tabId: string, clientX: number, clientY: number) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabsDrop: (event: DragEvent<HTMLElement>) => void;
   onToggle: () => void;
@@ -129,6 +131,7 @@ export function SidebarTabsSection({
             onDrop={onTabDrop}
             onGroupDrop={onGroupDrop}
             onGroupContextMenu={onTabGroupContextMenu}
+            onPointerDrop={onTabPointerDrop}
             onPreview={actions.openGlance}
             onSelect={actions.selectTab}
             onSplit={actions.openTabInSplit}
@@ -150,6 +153,7 @@ export function SidebarTabsSection({
             onClose={actions.closeTab}
             onContextMenu={onTabContextMenu}
             onDrop={onTabDrop}
+            onPointerDrop={onTabPointerDrop}
             onPreview={actions.openGlance}
             onSelect={actions.selectTab}
             onSplit={actions.openTabInSplit}

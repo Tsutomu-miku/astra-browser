@@ -6,18 +6,26 @@ export function buildContentCommands(
   workspace: Workspace,
   actions: CommandActions
 ): Command[] {
+  const openQuickEntry = (url: string, title: string, tabId?: string) => {
+    const tab = workspace.tabs.find((candidate) => (
+      candidate.id === tabId ||
+      (!tabId && candidate.url === url)
+    ));
+    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(url, title);
+  };
+
   return [
     ...state.essentials.map((essential) => ({
       title: essential.title,
       subtitle: `Essential · ${essential.url}`,
-      run: () => actions.navigateActiveTab(essential.url),
+      run: () => openQuickEntry(essential.url, essential.title, essential.tabId),
       runInSplit: () => actions.openUrlInSplit(essential.url, essential.title),
       runPreview: () => actions.openGlance(essential.url, essential.title)
     })),
     ...workspace.favorites.map((favorite) => ({
       title: favorite.title,
       subtitle: `Favorite · ${favorite.url}`,
-      run: () => actions.navigateActiveTab(favorite.url),
+      run: () => openQuickEntry(favorite.url, favorite.title, favorite.tabId),
       runInSplit: () => actions.openUrlInSplit(favorite.url, favorite.title),
       runPreview: () => actions.openGlance(favorite.url, favorite.title)
     })),
