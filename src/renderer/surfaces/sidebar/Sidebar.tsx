@@ -154,6 +154,11 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     handleWorkspaceDrop(event, workspaceId);
   };
 
+  const openWorkspaceSettings = (workspaceId: string) => {
+    actions.switchWorkspace(workspaceId);
+    setPanel("settings");
+  };
+
   const handleNewWorkspaceDropWithFavorites = (event: DragEvent<HTMLButtonElement>) => {
     const favoriteId = draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
     if (favoriteId) {
@@ -232,6 +237,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         onDeleteWorkspace={actions.deleteWorkspace}
         onNewWorkspace={actions.addWorkspace}
         onNewWorkspaceDrop={handleNewWorkspaceDropWithFavorites}
+        onOpenSettings={openWorkspaceSettings}
         onSelect={actions.switchWorkspace}
         onToggleSidebar={actions.toggleSidebar}
         onUpdateWorkspace={actions.updateWorkspaceById}

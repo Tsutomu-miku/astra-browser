@@ -25,6 +25,7 @@ export function WorkspaceStrip({
   onDragOver,
   onDragStart,
   onDrop,
+  onOpenSettings,
   onNewWorkspace,
   onNewWorkspaceDrop,
   onDeleteWorkspace,
@@ -49,6 +50,7 @@ export function WorkspaceStrip({
   onDeleteWorkspace: (workspaceId: string) => void;
   onNewWorkspace: () => void;
   onNewWorkspaceDrop: (event: DragEvent<HTMLButtonElement>) => void;
+  onOpenSettings: (workspaceId: string) => void;
   onSelect: (workspaceId: string) => void;
   onToggleSidebar: () => void;
   onUpdateWorkspace: (workspaceId: string, patch: Partial<Pick<Workspace, "accent" | "name">>) => void;
@@ -96,7 +98,7 @@ export function WorkspaceStrip({
     event.preventDefault();
     setMenu({
       left: Math.min(event.clientX, window.innerWidth - 216),
-      top: Math.min(event.clientY, window.innerHeight - 260),
+      top: Math.min(event.clientY, window.innerHeight - 320),
       workspaceId
     });
   }
@@ -168,6 +170,8 @@ export function WorkspaceStrip({
           workspace={menuWorkspace}
           onClose={() => setMenu(null)}
           onDelete={onDeleteWorkspace}
+          onNewWorkspace={onNewWorkspace}
+          onOpenSettings={onOpenSettings}
           onSelect={onSelect}
           onUpdate={onUpdateWorkspace}
         />
@@ -181,6 +185,8 @@ function WorkspaceContextMenu({
   left,
   onClose,
   onDelete,
+  onNewWorkspace,
+  onOpenSettings,
   onSelect,
   onUpdate,
   top,
@@ -190,6 +196,8 @@ function WorkspaceContextMenu({
   left: number;
   onClose: () => void;
   onDelete: (workspaceId: string) => void;
+  onNewWorkspace: () => void;
+  onOpenSettings: (workspaceId: string) => void;
   onSelect: (workspaceId: string) => void;
   onUpdate: (workspaceId: string, patch: Partial<Pick<Workspace, "accent" | "name">>) => void;
   top: number;
@@ -208,9 +216,16 @@ function WorkspaceContextMenu({
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
     >
+      <button type="button" role="menuitem" onClick={() => run(() => onOpenSettings(workspace.id))}>
+        Space settings
+      </button>
       <button type="button" role="menuitem" onClick={() => run(() => onSelect(workspace.id))}>
         Switch to Space
       </button>
+      <button type="button" role="menuitem" onClick={() => run(onNewWorkspace)}>
+        New Space
+      </button>
+      <span className="tab-context-menu-separator" />
       <label className="workspace-menu-field">
         <span>Name</span>
         <input

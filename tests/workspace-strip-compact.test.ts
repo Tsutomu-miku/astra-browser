@@ -113,6 +113,7 @@ describe("workspace strip compact controls", () => {
         onDeleteWorkspace: vi.fn(),
         onNewWorkspace: vi.fn(),
         onNewWorkspaceDrop: vi.fn(),
+        onOpenSettings: vi.fn(),
         onSelect,
         onToggleSidebar: vi.fn(),
         onUpdateWorkspace: vi.fn(),
@@ -129,8 +130,70 @@ describe("workspace strip compact controls", () => {
     });
 
     expect(container.querySelector(".workspace-context-menu")).not.toBeNull();
+    expect(container.textContent).toContain("Space settings");
     expect(container.textContent).toContain("Switch to Space");
+    expect(container.textContent).toContain("New Space");
     expect(onSelect).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("runs Space settings and creation from the Space context menu", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const onNewWorkspace = vi.fn();
+    const onOpenSettings = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace,
+        onNewWorkspaceDrop: vi.fn(),
+        onOpenSettings,
+        onSelect: vi.fn(),
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    act(() => {
+      container.querySelector(".workspace-button")?.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true,
+        clientX: 10,
+        clientY: 10
+      }));
+    });
+    Array.from(container.querySelectorAll(".workspace-context-menu button"))
+      .find((button) => button.textContent === "Space settings")
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    act(() => {
+      container.querySelector(".workspace-button")?.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true,
+        clientX: 10,
+        clientY: 10
+      }));
+    });
+    Array.from(container.querySelectorAll(".workspace-context-menu button"))
+      .find((button) => button.textContent === "New Space")
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(onOpenSettings).toHaveBeenCalledWith(activeWorkspace.id);
+    expect(onNewWorkspace).toHaveBeenCalled();
 
     act(() => root.unmount());
   });
@@ -178,6 +241,7 @@ function renderStrip({
     onDeleteWorkspace: vi.fn(),
     onNewWorkspace: vi.fn(),
     onNewWorkspaceDrop: vi.fn(),
+    onOpenSettings: vi.fn(),
     onSelect: vi.fn(),
     onToggleSidebar: vi.fn(),
     onUpdateWorkspace: vi.fn(),
