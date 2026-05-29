@@ -23,8 +23,10 @@ export function App() {
             aria-label="Show toolbar"
             title="Show toolbar"
             onClick={controller.actions.peekCompactChrome}
-            onFocus={controller.actions.peekCompactChrome}
-            onPointerEnter={controller.actions.peekCompactChrome}
+            onBlur={controller.releaseCompactChrome}
+            onFocus={controller.holdCompactChrome}
+            onPointerEnter={controller.holdCompactChrome}
+            onPointerLeave={controller.releaseCompactChrome}
           />
         )}
         <Topbar controller={controller} />

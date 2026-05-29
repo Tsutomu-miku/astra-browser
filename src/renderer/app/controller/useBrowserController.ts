@@ -14,7 +14,12 @@ import { useCompactChromePeek } from "./useCompactChromePeek";
 export function useBrowserController() {
   const store = useBrowserStore();
   const webviews = useRef(new Map<string, WebviewElement>());
-  const { compactChromePeeking, peekCompactChrome } = useCompactChromePeek(store.compactMode);
+  const {
+    compactChromePeeking,
+    holdCompactChrome,
+    peekCompactChrome,
+    releaseCompactChrome
+  } = useCompactChromePeek(store.compactMode);
   const activeWorkspace = getActiveWorkspace(store.state);
   const activeTab = getActiveTab(activeWorkspace);
   const activeWebview = webviews.current.get(activeTab.id);
@@ -93,10 +98,12 @@ export function useBrowserController() {
     floatingSidebarOpen: store.floatingSidebarOpen,
     floatingToolbarOpen: store.floatingToolbarOpen,
     glance: store.glance,
+    holdCompactChrome,
     panel: store.panel,
     permissionRequest: store.permissionRequest,
     registerWebview,
     removeWebview,
+    releaseCompactChrome,
     setAddressValue: store.setAddressValue,
     setCommandOpen: store.setCommandOpen,
     setCommandQuery: store.setCommandQuery,

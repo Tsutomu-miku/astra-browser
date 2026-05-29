@@ -163,7 +163,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Collapsed and compact sidebars must reveal their tab controls on hover or keyboard focus.
 - Compact mode must be toggleable with `Ctrl+Alt+C` or `Cmd+Alt+C`.
 - Compact mode must briefly peek browser chrome after tab changes.
-- Compact mode must expose a top-edge peek target for temporarily showing the toolbar.
+- Compact mode must expose a top-edge peek target that holds the toolbar open while hovered or focused and supports temporary command-triggered peeks.
 - Compact mode must expose command palette actions for temporarily peeking the floating toolbar and sidebar.
 - Compact mode must expose a visible control for pinning or unpinning the floating toolbar.
 - Compact mode must expose a visible control for pinning or unpinning the floating sidebar.
