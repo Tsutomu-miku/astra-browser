@@ -27,10 +27,11 @@ import {
   deleteWorkspace,
   moveTabToWorkspace,
   moveTabGroupToWorkspace,
+  moveTabToFolderEnd,
+  moveTabToFolderPosition,
   moveWorkspaceFavoriteToWorkspace,
   moveTabToNewWorkspace,
   moveTabGroupToNewWorkspace,
-  pinTabToPinnedPosition,
   moveWorkspaceFavoriteToNewWorkspace,
   restoreClosedTabToNewWorkspace,
   openTabInSplit,
@@ -71,8 +72,6 @@ import {
   toggleTabMuted,
   toggleTabPinned,
   toggleSplitMode,
-  unpinTabToRegularEnd,
-  unpinTabToRegularPosition,
   ungroupActiveTab,
   ungroupTab,
   ungroupTabGroup,
@@ -192,8 +191,9 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   },
   openTabInSplit: (tabId) => update(set, (state) => openTabInSplit(state, tabId)),
   openUrlInSplit: (url, title) => update(set, (state) => openUrlInSplit(state, url, title)),
-  pinTabToPinnedPosition: (tabId, targetTabId, placement) =>
-    update(set, (state) => pinTabToPinnedPosition(state, tabId, targetTabId, placement)),
+  moveTabToFolderEnd: (tabId, folder) => update(set, (state) => moveTabToFolderEnd(state, tabId, folder)),
+  moveTabToFolderPosition: (tabId, targetTabId, placement) =>
+    update(set, (state) => moveTabToFolderPosition(state, tabId, targetTabId, placement)),
   navigateActiveTab: (url, webview) => update(set, (state) => {
     const next = navigateActiveTab(state, url);
     webview?.loadURL?.(getActiveUrl(next));
@@ -219,9 +219,6 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   reorderTabGroup: (groupId, targetGroupId, placement) =>
     update(set, (state) => reorderTabGroup(state, groupId, targetGroupId, placement)),
   reorderTab: (tabId, targetTabId, placement) => update(set, (state) => reorderTab(state, tabId, targetTabId, placement)),
-  unpinTabToRegularEnd: (tabId) => update(set, (state) => unpinTabToRegularEnd(state, tabId)),
-  unpinTabToRegularPosition: (tabId, targetTabId, placement) =>
-    update(set, (state) => unpinTabToRegularPosition(state, tabId, targetTabId, placement)),
   resetActiveTabZoom: (webview) => update(set, (state) => syncZoom(resetActiveTabZoom(state), webview)),
   resolvePermissionRequest: (decision) => {
     const request = useBrowserStore.getState().permissionRequest;

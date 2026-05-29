@@ -61,7 +61,7 @@ export function SidebarPinnedTabs({
         onDragOver={(event) => {
           if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
             event.preventDefault();
-            event.dataTransfer.dropEffect = "copy";
+            event.dataTransfer.dropEffect = "move";
           }
         }}
         onDrop={onPinDrop}

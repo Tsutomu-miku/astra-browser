@@ -62,8 +62,9 @@ export function assignTabToGroup(state: BrowserState, tabId: string, groupId: st
     const workspace = getActiveWorkspace(draft);
     const group = workspace.tabGroups.find((candidate) => candidate.id === groupId);
     const tab = workspace.tabs.find((candidate) => candidate.id === tabId);
-    if (!group || !tab || tab.isPinned) return;
+    if (!group || !tab) return;
 
+    tab.isPinned = false;
     tab.groupId = group.id;
     pruneEmptyTabGroups(workspace);
   });

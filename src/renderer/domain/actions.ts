@@ -34,9 +34,10 @@ export {
   groupTab,
   moveTabToWorkspace,
   moveTabGroupToWorkspace,
+  moveTabToFolderEnd,
+  moveTabToFolderPosition,
   openTabInSplit,
   openUrlInSplit,
-  pinTabToPinnedPosition,
   removeTabFromSplit,
   removeEssential,
   moveWorkspaceFavoriteToWorkspace,
@@ -67,13 +68,12 @@ export {
   toggleTabMuted,
   toggleTabPinned,
   toggleSplitMode,
-  unpinTabToRegularEnd,
-  unpinTabToRegularPosition,
   ungroupActiveTab,
   ungroupTab,
   ungroupTabGroup,
   updateTabGroup,
   updateTab,
+  type TabFolder,
   type TabDropPlacement
 } from "./tabs";
 export {

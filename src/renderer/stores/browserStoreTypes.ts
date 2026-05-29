@@ -1,4 +1,4 @@
-import type { TabDropPlacement, WorkspaceDropPlacement } from "../domain/actions";
+import type { TabDropPlacement, TabFolder, WorkspaceDropPlacement } from "../domain/actions";
 import type { BrowserState, BrowserTab, DownloadEntry, Workspace } from "../domain/browser";
 import type { WebviewAction, WebviewElement } from "../types/browser-ui";
 import type { PermissionRequestEvent } from "../types/electron";
@@ -65,7 +65,8 @@ export interface BrowserStore {
   openGlanceInSplit: () => void;
   openTabInSplit: (tabId: string) => void;
   openUrlInSplit: (url: string, title?: string) => void;
-  pinTabToPinnedPosition: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
+  moveTabToFolderEnd: (tabId: string, folder: TabFolder) => void;
+  moveTabToFolderPosition: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   navigateActiveTab: (url: string, webview?: WebviewElement) => void;
   newTab: () => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
@@ -118,8 +119,6 @@ export interface BrowserStore {
   toggleTabPinned: (tabId: string) => void;
   toggleSidebar: () => void;
   toggleSplitMode: () => void;
-  unpinTabToRegularEnd: (tabId: string) => void;
-  unpinTabToRegularPosition: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   ungroupActiveTab: () => void;
   ungroupTab: (tabId: string) => void;
   ungroupTabGroup: (groupId: string) => void;

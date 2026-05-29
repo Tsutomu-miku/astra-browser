@@ -245,12 +245,12 @@ describe("sidebar drag placement", () => {
         draggingGroupId: "dragged-group",
         draggingTabId: null,
         group,
-        onAssignTab: vi.fn(),
         onClose: vi.fn(),
         onContextMenu: vi.fn(),
         onDrop: vi.fn(),
         onGroupContextMenu: vi.fn(),
         onGroupDrop,
+        onMoveTabToGroupFolder: vi.fn(),
         onPreview: vi.fn(),
         onSelect: vi.fn(),
         onSplit: vi.fn(),
@@ -283,7 +283,7 @@ describe("sidebar drag placement", () => {
   it("assigns payload-backed tab drags to tab groups", () => {
     const group = tabGroup("target", "Target");
     const tab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
-    const onAssignTab = vi.fn();
+    const onMoveTabToGroupFolder = vi.fn();
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -293,12 +293,12 @@ describe("sidebar drag placement", () => {
         draggingGroupId: null,
         draggingTabId: null,
         group,
-        onAssignTab,
         onClose: vi.fn(),
         onContextMenu: vi.fn(),
         onDrop: vi.fn(),
         onGroupContextMenu: vi.fn(),
         onGroupDrop: vi.fn(),
+        onMoveTabToGroupFolder,
         onPreview: vi.fn(),
         onSelect: vi.fn(),
         onSplit: vi.fn(),
@@ -318,7 +318,7 @@ describe("sidebar drag placement", () => {
     expect(dragOver.defaultPrevented).toBe(true);
 
     header.dispatchEvent(createDragEvent("drop", {}, { "text/plain": "dragged-tab" }));
-    expect(onAssignTab).toHaveBeenCalledWith("dragged-tab", group.id);
+    expect(onMoveTabToGroupFolder).toHaveBeenCalledWith("dragged-tab", group.id);
 
     act(() => root.unmount());
   });

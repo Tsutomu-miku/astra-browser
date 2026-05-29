@@ -31,14 +31,14 @@ export {
   focusSplitPane,
   moveTabToWorkspace,
   moveTabGroupToWorkspace,
+  moveTabToFolderEnd,
+  moveTabToFolderPosition,
   openTabInSplit,
   openUrlInSplit,
-  pinTabToPinnedPosition,
   removeTabFromSplit,
   reorderTab,
   toggleSplitMode,
-  unpinTabToRegularEnd,
-  unpinTabToRegularPosition
+  type TabFolder
 } from "./layoutActions";
 export {
   selectAdjacentTab,

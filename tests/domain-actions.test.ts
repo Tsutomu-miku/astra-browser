@@ -24,10 +24,11 @@ import {
   moveWorkspaceFavoriteToWorkspace,
   moveTabToNewWorkspace,
   moveTabToWorkspace,
+  moveTabToFolderEnd,
+  moveTabToFolderPosition,
   openTabInSplit,
   openUrlInSplit,
   openUrlInActiveWorkspace,
-  pinTabToPinnedPosition,
   recordHistory,
   removeTabFromSplit,
   removeHistoryEntry,
@@ -59,9 +60,7 @@ import {
   toggleTabFavorite,
   toggleTabMuted,
   toggleTabPinned,
-  toggleSplitMode,
-  unpinTabToRegularEnd,
-  unpinTabToRegularPosition
+  toggleSplitMode
 } from "../src/renderer/domain/actions";
 import { createDefaultState, createFavorite } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
@@ -496,29 +495,30 @@ describe("domain actions", () => {
     expect(getActiveTab(getActiveWorkspace(reordered)).title).toBe("Third");
   });
 
-  it("unpins dragged pinned tabs when placing them in the regular tab list", () => {
+  it("moves dragged tabs into the target tab folder", () => {
     const withFirst = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
     const withSecond = openUrlInActiveWorkspace(withFirst, "second.test", "Second");
     const workspace = getActiveWorkspace(withSecond);
     const first = workspace.tabs.find((tab) => tab.title === "First")!;
     const second = workspace.tabs.find((tab) => tab.title === "Second")!;
     const pinned = toggleTabPinned(withSecond, first.id);
-    const unpinned = unpinTabToRegularPosition(pinned, first.id, second.id, "after");
+    const unpinned = moveTabToFolderPosition(pinned, first.id, second.id, "after");
     const tabs = getActiveWorkspace(unpinned).tabs;
     const moved = tabs.find((tab) => tab.id === first.id)!;
 
     expect(moved.isPinned).toBe(false);
+    expect(moved.groupId).toBeNull();
     expect(tabs.map((tab) => tab.title).slice(-2)).toEqual(["Second", "First"]);
   });
 
-  it("pins dragged regular tabs when placing them in the pinned folder", () => {
+  it("pins dragged regular tabs when placing them next to pinned tabs", () => {
     const withFirst = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
     const withSecond = openUrlInActiveWorkspace(withFirst, "second.test", "Second");
     const workspace = getActiveWorkspace(withSecond);
     const first = workspace.tabs.find((tab) => tab.title === "First")!;
     const second = workspace.tabs.find((tab) => tab.title === "Second")!;
     const withPinnedTarget = toggleTabPinned(withSecond, first.id);
-    const pinned = pinTabToPinnedPosition(withPinnedTarget, second.id, first.id, "before");
+    const pinned = moveTabToFolderPosition(withPinnedTarget, second.id, first.id, "before");
     const tabs = getActiveWorkspace(pinned).tabs;
     const moved = tabs.find((tab) => tab.id === second.id)!;
 
@@ -527,18 +527,32 @@ describe("domain actions", () => {
     expect(tabs.map((tab) => tab.title).slice(-2)).toEqual(["Second", "First"]);
   });
 
-  it("unpins dragged pinned tabs to the regular tab list end", () => {
+  it("moves dragged tabs to the regular folder end", () => {
     const withFirst = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
     const withSecond = openUrlInActiveWorkspace(withFirst, "second.test", "Second");
     const workspace = getActiveWorkspace(withSecond);
     const first = workspace.tabs.find((tab) => tab.title === "First")!;
     const pinned = toggleTabPinned(withSecond, first.id);
-    const unpinned = unpinTabToRegularEnd(pinned, first.id);
+    const unpinned = moveTabToFolderEnd(pinned, first.id, { type: "tabs" });
     const tabs = getActiveWorkspace(unpinned).tabs;
     const moved = tabs.find((tab) => tab.id === first.id)!;
 
     expect(moved.isPinned).toBe(false);
+    expect(moved.groupId).toBeNull();
     expect(tabs.at(-1)?.id).toBe(first.id);
+  });
+
+  it("moves dragged tabs into grouped folders", () => {
+    const withNews = openUrlInActiveWorkspace(groupActiveTab(createDefaultState()), "news.example", "News");
+    const workspace = getActiveWorkspace(withNews);
+    const group = workspace.tabGroups[0];
+    const groupedTarget = workspace.tabs.find((tab) => tab.groupId === group.id)!;
+    const newsTab = workspace.tabs.find((tab) => tab.title === "News")!;
+    const grouped = moveTabToFolderPosition(withNews, newsTab.id, groupedTarget.id, "after");
+    const moved = getActiveWorkspace(grouped).tabs.find((tab) => tab.id === newsTab.id)!;
+
+    expect(moved.isPinned).toBe(false);
+    expect(moved.groupId).toBe(group.id);
   });
 
   it("reorders workspaces while preserving the active workspace", () => {

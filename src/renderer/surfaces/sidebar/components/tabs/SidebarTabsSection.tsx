@@ -97,10 +97,10 @@ export function SidebarTabsSection({
             splitTabIds={splitTabIds}
             tabs={tabs}
             draggingTabId={draggingTabId}
-            onAssignTab={actions.assignTabToGroup}
             onClose={actions.closeTab}
             onContextMenu={onTabContextMenu}
             onDrop={onTabDrop}
+            onMoveTabToGroupFolder={(tabId, groupId) => actions.moveTabToFolderEnd(tabId, { type: "group", groupId })}
             onMoveTabOutOfFavoritesFolder={onMoveTabOutOfFavoritesFolder}
             onGroupDrop={onGroupDrop}
             onGroupContextMenu={onTabGroupContextMenu}

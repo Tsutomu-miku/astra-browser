@@ -25,7 +25,6 @@ import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
 import { handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
 import { scrollSidebarSearchTargetIntoView } from "./model/sidebarSearchTargetDom";
-import { getSidebarTabDropIntent, getSidebarTabsAreaDropIntent } from "./model/sidebarTabDropIntent";
 import { getSidebarTabFolders } from "./model/sidebarTabFolders";
 import {
   clampSidebarSearchIndex,
@@ -112,16 +111,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   };
 
   const placeTab = (tabId: string, targetTabId: string, placement: "before" | "after") => {
-    const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
-    const targetTab = activeWorkspace.tabs.find((candidate) => candidate.id === targetTabId);
-    const intent = getSidebarTabDropIntent(draggedTab, targetTab);
-    if (intent.type === "pinToPinnedPosition") {
-      actions.pinTabToPinnedPosition(tabId, targetTabId, placement);
-    } else if (intent.type === "unpinToRegularPosition") {
-      actions.unpinTabToRegularPosition(tabId, targetTabId, placement);
-    } else {
-      actions.reorderTab(tabId, targetTabId, placement);
-    }
+    actions.moveTabToFolderPosition(tabId, targetTabId, placement);
   };
 
   const handleTabsDrop = (event: DragEvent<HTMLElement>) => {
@@ -129,13 +119,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     if (!tabId) return;
 
     const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
-    const intent = getSidebarTabsAreaDropIntent(draggedTab);
     const favoriteId = getDroppedFavoriteId(event);
-    if (intent.type !== "unpinToRegularEnd" && !favoriteId) return;
+    if (!favoriteId && !draggedTab?.isPinned && !draggedTab?.groupId) return;
 
     event.preventDefault();
     if (favoriteId) removeFavoriteFromFolder(favoriteId);
-    if (intent.type === "unpinToRegularEnd") actions.unpinTabToRegularEnd(tabId);
+    actions.moveTabToFolderEnd(tabId, { type: "tabs" });
     setDraggingTabId(null);
   };
 
@@ -157,7 +146,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
 
     event.preventDefault();
     moveDraggedTabOutOfFavoritesFolder(event);
-    if (!tab.isPinned) actions.toggleTabPinned(tab.id);
+    actions.moveTabToFolderEnd(tab.id, { type: "pinned" });
     setDraggingTabId(null);
   };
 

@@ -192,7 +192,7 @@ export function SidebarSections({
             onDragOver={(event) => {
               if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
                 event.preventDefault();
-                event.dataTransfer.dropEffect = "copy";
+                event.dataTransfer.dropEffect = "move";
               }
             }}
             onDrop={onFavoriteDrop}

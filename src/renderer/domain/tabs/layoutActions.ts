@@ -13,6 +13,11 @@ import { clearSplitView, getSplitTabIds, MAX_SPLIT_VIEW_TABS, setSplitTabIds } f
 import { pruneEmptyTabGroups } from "./groups";
 import type { TabDropPlacement } from "./utils";
 
+export type TabFolder =
+  | { type: "group"; groupId: string }
+  | { type: "pinned" }
+  | { type: "tabs" };
+
 export function reorderTab(
   state: BrowserState,
   tabId: string,
@@ -34,7 +39,7 @@ export function reorderTab(
   });
 }
 
-export function pinTabToPinnedPosition(
+export function moveTabToFolderPosition(
   state: BrowserState,
   tabId: string,
   targetTabId: string,
@@ -48,59 +53,56 @@ export function pinTabToPinnedPosition(
     const targetIndex = workspace.tabs.findIndex((tab) => tab.id === targetTabId);
     if (fromIndex < 0 || targetIndex < 0) return;
 
-    const tab = workspace.tabs[fromIndex];
     const targetTab = workspace.tabs[targetIndex];
-    if (tab.isPinned || !targetTab.isPinned) return;
+    const targetFolder = getTabFolder(targetTab);
 
-    const [pinningTab] = workspace.tabs.splice(fromIndex, 1);
-    pinningTab.isPinned = true;
-    pinningTab.groupId = null;
+    const [tab] = workspace.tabs.splice(fromIndex, 1);
+    if (!moveTabToFolder(workspace, tab, targetFolder)) {
+      workspace.tabs.splice(fromIndex, 0, tab);
+      return;
+    }
     pruneEmptyTabGroups(workspace);
     const droppedOnIndex = workspace.tabs.findIndex((candidate) => candidate.id === targetTabId);
     const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
-    workspace.tabs.splice(insertIndex, 0, pinningTab);
+    workspace.tabs.splice(insertIndex, 0, tab);
   });
 }
 
-export function unpinTabToRegularPosition(
+export function moveTabToFolderEnd(
   state: BrowserState,
   tabId: string,
-  targetTabId: string,
-  placement: TabDropPlacement
+  folder: TabFolder
 ): BrowserState {
-  if (tabId === targetTabId) return state;
-
-  return updateBrowserState(state, (draft) => {
-    const workspace = getActiveWorkspace(draft);
-    const fromIndex = workspace.tabs.findIndex((tab) => tab.id === tabId);
-    const targetIndex = workspace.tabs.findIndex((tab) => tab.id === targetTabId);
-    if (fromIndex < 0 || targetIndex < 0) return;
-
-    const tab = workspace.tabs[fromIndex];
-    const targetTab = workspace.tabs[targetIndex];
-    if (!tab.isPinned || targetTab.isPinned) return;
-
-    const [unpinningTab] = workspace.tabs.splice(fromIndex, 1);
-    unpinningTab.isPinned = false;
-    const droppedOnIndex = workspace.tabs.findIndex((candidate) => candidate.id === targetTabId);
-    const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
-    workspace.tabs.splice(insertIndex, 0, unpinningTab);
-  });
-}
-
-export function unpinTabToRegularEnd(state: BrowserState, tabId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
     const fromIndex = workspace.tabs.findIndex((tab) => tab.id === tabId);
     if (fromIndex < 0) return;
 
-    const tab = workspace.tabs[fromIndex];
-    if (!tab.isPinned) return;
-
-    const [unpinningTab] = workspace.tabs.splice(fromIndex, 1);
-    unpinningTab.isPinned = false;
-    workspace.tabs.push(unpinningTab);
+    const [tab] = workspace.tabs.splice(fromIndex, 1);
+    if (!moveTabToFolder(workspace, tab, folder)) {
+      workspace.tabs.splice(fromIndex, 0, tab);
+      return;
+    }
+    pruneEmptyTabGroups(workspace);
+    workspace.tabs.push(tab);
   });
+}
+
+function getTabFolder(tab: BrowserTab): TabFolder {
+  if (tab.isPinned) return { type: "pinned" };
+  if (tab.groupId) return { type: "group", groupId: tab.groupId };
+
+  return { type: "tabs" };
+}
+
+function moveTabToFolder(workspace: Workspace, tab: BrowserTab, folder: TabFolder): boolean {
+  if (folder.type === "group" && !workspace.tabGroups.some((group) => group.id === folder.groupId)) {
+    return false;
+  }
+
+  tab.isPinned = folder.type === "pinned";
+  tab.groupId = folder.type === "group" ? folder.groupId : null;
+  return true;
 }
 
 export function moveTabToWorkspace(state: BrowserState, tabId: string, workspaceId: string): BrowserState {

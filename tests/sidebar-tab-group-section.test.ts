@@ -91,7 +91,7 @@ describe("sidebar tab group section", () => {
   it("moves a Favorite-backed tab out of Favorites when dropped into a group", () => {
     const group = tabGroup();
     const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
-    const onAssignTab = vi.fn();
+    const onMoveTabToGroupFolder = vi.fn();
     const onMoveTabOutOfFavoritesFolder = vi.fn();
     const setDraggingTabId = vi.fn();
     const container = document.createElement("div");
@@ -101,7 +101,7 @@ describe("sidebar tab group section", () => {
       root.render(createElement(TabGroupSection, props({
         activeTab,
         group,
-        onAssignTab,
+        onMoveTabToGroupFolder,
         onMoveTabOutOfFavoritesFolder,
         setDraggingTabId,
         tabs: [activeTab]
@@ -115,7 +115,7 @@ describe("sidebar tab group section", () => {
     }));
 
     expect(onMoveTabOutOfFavoritesFolder).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }));
-    expect(onAssignTab).toHaveBeenCalledWith("favorite-tab", group.id);
+    expect(onMoveTabToGroupFolder).toHaveBeenCalledWith("favorite-tab", group.id);
     expect(setDraggingTabId).toHaveBeenCalledWith(null);
 
     act(() => root.unmount());
@@ -131,12 +131,12 @@ function props(overrides: Partial<Parameters<typeof TabGroupSection>[0]> = {}): 
     draggingGroupId: null,
     draggingTabId: null,
     group,
-    onAssignTab: vi.fn(),
     onClose: vi.fn(),
     onContextMenu: vi.fn(),
     onDrop: vi.fn(),
     onGroupContextMenu: vi.fn(),
     onGroupDrop: vi.fn(),
+    onMoveTabToGroupFolder: vi.fn(),
     onPreview: vi.fn(),
     onSelect: vi.fn(),
     onSplit: vi.fn(),
