@@ -226,7 +226,6 @@ export function FavoriteButton({
       className="favorite-button"
       id={id}
       type="button"
-      title={favorite.url}
       aria-label={getQuickEntryAccessibilityLabel({
         entry: favorite,
         isActive,

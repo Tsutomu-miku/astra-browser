@@ -1,6 +1,7 @@
 import { useState, type DragEvent } from "react";
 
 import { getPointerDropPlacement } from "../../../common/drag-drop/dropPlacement";
+import { readSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserController } from "../../../app/controller/types";
 
 type SidebarWorkspaceDragActions = Pick<
@@ -36,9 +37,10 @@ export function useSidebarWorkspaceDrag({
   };
 
   const handleWorkspaceDragOver = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
     const isClosedTabTarget = draggingClosedTabIndex !== null;
     const isGroupTarget = draggingGroupId && workspaceId !== activeWorkspaceId;
-    const isTabTarget = draggingTabId && workspaceId !== activeWorkspaceId;
+    const isTabTarget = tabId && workspaceId !== activeWorkspaceId;
     const isWorkspaceTarget = draggingWorkspaceId && workspaceId !== draggingWorkspaceId;
     if (isClosedTabTarget || isGroupTarget || isTabTarget || isWorkspaceTarget) {
       event.preventDefault();
@@ -69,7 +71,7 @@ export function useSidebarWorkspaceDrag({
       return;
     }
 
-    const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
+    const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
     if (tabId && workspaceId !== activeWorkspaceId) {
       actions.moveTabToWorkspace(tabId, workspaceId);
     }
@@ -80,7 +82,7 @@ export function useSidebarWorkspaceDrag({
   const handleNewWorkspaceDrop = (event: DragEvent<HTMLButtonElement>) => {
     const closedTabIndex = draggingClosedTabIndex ?? Number.parseInt(event.dataTransfer.getData("text/closed-tab-index"), 10);
     const groupId = draggingGroupId || event.dataTransfer.getData("text/group-id");
-    const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
+    const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
     if (!Number.isInteger(closedTabIndex) && !groupId && !tabId) return;
 
     event.preventDefault();
@@ -100,6 +102,7 @@ export function useSidebarWorkspaceDrag({
     setDraggingClosedTabIndex(null);
     setDraggingGroupId(null);
     setDraggingWorkspaceId(null);
+    setDraggingTabId(null);
   };
 
   return {

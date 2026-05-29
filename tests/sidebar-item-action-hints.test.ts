@@ -293,6 +293,7 @@ describe("sidebar item action hints", () => {
 
     expect(html).toContain('class="sidebar-item-action-hints"');
     expect(html).toContain('aria-label="Docs, Favorite, current page, selected search result, drop target"');
+    expect(html).not.toContain('title="https://docs.example"');
     expect(html).toContain("Alt");
     expect(html).toContain("Preview");
     expect(html).toContain("Shift");

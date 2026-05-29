@@ -1,6 +1,7 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
 
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { isSidebarUrlActive } from "../../model/sidebarItemState";
@@ -117,7 +118,7 @@ export function SidebarSections({
             aria-label="Essentials"
             data-drop-target={Boolean(draggingTabId)}
             onDragOver={(event) => {
-              if (draggingTabId) {
+              if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "copy";
               }
@@ -179,7 +180,7 @@ export function SidebarSections({
             aria-label="Favorites"
             data-drop-target={Boolean(draggingTabId)}
             onDragOver={(event) => {
-              if (draggingTabId) {
+              if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "copy";
               }

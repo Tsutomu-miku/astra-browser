@@ -40,6 +40,7 @@ describe("sidebar pinned tabs", () => {
 
     expect(html).toContain('aria-label="Pinned tabs"');
     expect(html).toContain('aria-label="Mail, active, pinned tab"');
+    expect(html).not.toContain('title="Mail"');
     expect(html).toContain(`id="sidebar-search-tab-${pinned.id}"`);
     expect(html).toContain('draggable="true"');
     expect(html).toContain('data-drop-target="true"');

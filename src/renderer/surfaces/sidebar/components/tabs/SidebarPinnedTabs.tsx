@@ -72,7 +72,6 @@ export function SidebarPinnedTabs({
               className="pinned-tab-button"
               key={tab.id}
               id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
-              title={tab.title || tab.url}
               type="button"
               aria-label={tabLabel}
               aria-current={tab.id === activeTab.id}

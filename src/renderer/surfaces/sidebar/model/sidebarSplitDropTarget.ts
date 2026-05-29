@@ -1,3 +1,4 @@
+import { readSidebarTabDragData } from "../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserTab, ClosedTab, Favorite } from "../../../domain/browser";
 
 export type SidebarSplitDropSource =
@@ -20,7 +21,7 @@ export function getSidebarSplitDropSource(
   state: SidebarSplitDropState,
   getData: (type: string) => string = () => ""
 ): SidebarSplitDropSource | null {
-  const tabId = state.draggingTabId || getData("text/plain");
+  const tabId = state.draggingTabId || readSidebarTabDragData(getData);
   const tab = tabId ? state.tabs.find((candidate) => candidate.id === tabId) : undefined;
   if (tab && tab.id !== state.activeTabId) {
     return { type: "tab", tabId: tab.id, title: tab.title };

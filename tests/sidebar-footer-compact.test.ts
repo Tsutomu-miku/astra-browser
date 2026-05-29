@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { BrowserController } from "../src/renderer/app/controller/types";
+import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import { getSidebarSplitDropSource } from "../src/renderer/surfaces/sidebar/model/sidebarSplitDropTarget";
 import { SidebarFooter } from "../src/renderer/surfaces/sidebar/components/chrome/SidebarFooter";
@@ -102,6 +103,11 @@ describe("sidebar footer compact controls", () => {
       type: "tab"
     });
     expect(getSidebarSplitDropSource({ ...state, draggingTabId: "active-tab" })).toBeNull();
+    expect(getSidebarSplitDropSource({ ...state }, (type) => type === SIDEBAR_TAB_DRAG_TYPE ? "other-tab" : "")).toEqual({
+      tabId: "other-tab",
+      title: "Docs",
+      type: "tab"
+    });
     expect(getSidebarSplitDropSource({ ...state }, (type) => type === "text/favorite-id" ? "favorite" : "")).toEqual({
       title: "Design",
       type: "url",

@@ -7,5 +7,9 @@ export function writeSidebarTabDragPayload(dataTransfer: DataTransfer, tabId: st
 }
 
 export function readSidebarTabDragPayload(dataTransfer: DataTransfer): string {
-  return dataTransfer.getData(SIDEBAR_TAB_DRAG_TYPE) || dataTransfer.getData("text/plain");
+  return readSidebarTabDragData((type) => dataTransfer.getData(type));
+}
+
+export function readSidebarTabDragData(getData: (type: string) => string): string {
+  return getData(SIDEBAR_TAB_DRAG_TYPE) || getData("text/plain");
 }

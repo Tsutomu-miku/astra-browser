@@ -1,6 +1,7 @@
 import { useState, type DragEvent } from "react";
 
 import { getPointerDropPlacement, type DropAxis } from "../../../common/drag-drop/dropPlacement";
+import { readSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserController } from "../../../app/controller/types";
 import { isEssential, isFavorite, type BrowserState, type Workspace } from "../../../domain/browser";
 
@@ -19,7 +20,7 @@ export function useSidebarQuickEntryDrag({
 }) {
   const [draggingEssentialId, setDraggingEssentialId] = useState<string | null>(null);
   const [draggingFavoriteId, setDraggingFavoriteId] = useState<string | null>(null);
-  const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || event.dataTransfer.getData("text/plain");
+  const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
   const getDroppedQuickEntryId = (
     event: DragEvent<HTMLElement>,
     draggingId: string | null,
