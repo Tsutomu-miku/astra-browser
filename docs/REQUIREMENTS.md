@@ -108,6 +108,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Moving a tab into Favorites must create or update its tab-backed Favorite entry; moving a Favorite-backed tab into Tabs, Pinned, or a group must remove it from the Favorites folder in that same move action.
 - Empty Tabs, Pinned, and Favorites folders must remain visible as ordinary sidebar folder headers when not filtering, accept tab drops on the folder itself, and avoid separate "drop target" regions or labels.
 - The regular Tabs folder should accept the same real tab payloads as other sidebar folders and place dropped tabs at the folder end; ordinary tab reordering should happen on tab rows with before/after placement.
+- Sidebar folder drops for Tabs, Pinned, and Favorites should use one tab-folder handler; quick-entry Favorite drag logic is only for URL-only legacy entries and must not synthesize tab payloads.
 - Users must have global Essentials visible across Spaces for core pages.
 - Clicking a global Essential from the sidebar must navigate the current tab instead of creating a new tab.
 - Users must be able to drag sidebar tabs into Essentials to save them as global quick entries.

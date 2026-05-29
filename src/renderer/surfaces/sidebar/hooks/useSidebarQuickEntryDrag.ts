@@ -1,9 +1,9 @@
 import { useState, type DragEvent } from "react";
 
 import { getPointerDropPlacement, type DropAxis } from "../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload, writeSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
+import { readSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserController } from "../../../app/controller/types";
-import { isEssential, resolveFavoriteTab, type BrowserState, type Workspace } from "../../../domain/browser";
+import { isEssential, type BrowserState, type Workspace } from "../../../domain/browser";
 
 export function useSidebarQuickEntryDrag({
   actions,
@@ -41,20 +41,6 @@ export function useSidebarQuickEntryDrag({
     setDraggingTabId(null);
   };
 
-  const handleFavoriteDrop = (event: DragEvent<HTMLElement>) => {
-    if (draggingFavoriteId) {
-      setDraggingFavoriteId(null);
-      return;
-    }
-
-    const tab = getDroppedTab(event);
-    if (!tab) return;
-
-    event.preventDefault();
-    actions.moveTabToFolderEnd(tab.id, { type: "favorites" });
-    setDraggingTabId(null);
-  };
-
   const handleEssentialDragStart = (event: DragEvent<HTMLElement>, essentialId: string) => {
     setDraggingEssentialId(essentialId);
     event.dataTransfer.effectAllowed = "move";
@@ -65,9 +51,6 @@ export function useSidebarQuickEntryDrag({
     setDraggingFavoriteId(favoriteId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/favorite-id", favoriteId);
-    const favorite = activeWorkspace.favorites.find((candidate) => candidate.id === favoriteId);
-    const tab = favorite ? resolveFavoriteTab(activeWorkspace, favorite) : undefined;
-    if (tab) writeSidebarTabDragPayload(event.dataTransfer, tab.id);
   };
 
   const handleEssentialReorderDrop = (event: DragEvent<HTMLElement>, targetEssentialId: string, axis: DropAxis = "vertical") => {
@@ -92,7 +75,6 @@ export function useSidebarQuickEntryDrag({
     handleEssentialDrop,
     handleEssentialReorderDrop,
     handleFavoriteDragStart,
-    handleFavoriteDrop,
     handleFavoriteReorderDrop,
     setDraggingEssentialId,
     setDraggingFavoriteId

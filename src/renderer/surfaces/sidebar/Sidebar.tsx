@@ -12,6 +12,7 @@ import { readSidebarTabDragPayload } from "../../common/drag-drop/sidebarDragPay
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
 import type { BrowserController } from "../../app/controller/types";
+import type { TabFolder } from "../../domain/tabs";
 import { SidebarAddress } from "./components/chrome/SidebarAddress";
 import { SidebarFooter } from "./components/chrome/SidebarFooter";
 import { SidebarHeader } from "./components/chrome/SidebarHeader";
@@ -89,7 +90,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     handleEssentialDrop,
     handleEssentialReorderDrop,
     handleFavoriteDragStart,
-    handleFavoriteDrop,
     handleFavoriteReorderDrop,
     setDraggingEssentialId,
     setDraggingFavoriteId
@@ -114,27 +114,29 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     actions.moveTabToFolderPosition(tabId, targetTabId, placement);
   };
 
-  const handleTabsDrop = (event: DragEvent<HTMLElement>) => {
+  const handleTabFolderDrop = (event: DragEvent<HTMLElement>, folder: TabFolder) => {
     const tabId = getDroppedTabId(event);
     if (!tabId) return;
 
     event.preventDefault();
-    actions.moveTabToFolderEnd(tabId, { type: "tabs" });
+    event.stopPropagation();
+    actions.moveTabToFolderEnd(tabId, folder);
     setDraggingTabId(null);
     setDraggingFavoriteId(null);
+  };
+
+  const handleFavoritesDrop = (event: DragEvent<HTMLElement>) => {
+    handleTabFolderDrop(event, { type: "favorites" });
+  };
+
+  const handleTabsDrop = (event: DragEvent<HTMLElement>) => {
+    handleTabFolderDrop(event, { type: "tabs" });
   };
 
   const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
 
   const handlePinDrop = (event: DragEvent<HTMLElement>) => {
-    const tabId = getDroppedTabId(event);
-    const tab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
-    if (!tab) return;
-
-    event.preventDefault();
-    actions.moveTabToFolderEnd(tab.id, { type: "pinned" });
-    setDraggingTabId(null);
-    setDraggingFavoriteId(null);
+    handleTabFolderDrop(event, { type: "pinned" });
   };
 
   const handleWorkspaceDragOverWithFavorites = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
@@ -290,7 +292,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onEssentialDrop={handleEssentialDrop}
           onEssentialReorderDrop={handleEssentialReorderDrop}
           onFavoriteDragStart={handleFavoriteDragStart}
-          onFavoriteDrop={handleFavoriteDrop}
+          onFavoriteDrop={handleFavoritesDrop}
           onFavoriteReorderDrop={handleFavoriteReorderDrop}
           onClosedTabContextMenu={openClosedTabMenu}
           onTabGroupContextMenu={openTabGroupMenu}

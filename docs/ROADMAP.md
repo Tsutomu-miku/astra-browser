@@ -69,7 +69,7 @@ Acceptance:
 - Adding a tab to Favorites records the tab relationship.
 - Removing a Favorite does not close the tab unless a separate close action is used.
 
-Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, tab drag payloads, and tab accessibility labels while staying in the Favorites folder. Tab-backed Favorites no longer use a separate Favorite drag payload; moving them across Spaces follows the normal tab move path and preserves their Favorites folder membership in the destination Space. Sidebar, Start page, omnibox, command palette, keyboard number shortcuts, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
+Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, tab drag payloads, and tab accessibility labels while staying in the Favorites folder. Tab-backed Favorites no longer use or synthesize a separate Favorite drag payload; moving them across folders or Spaces follows the normal tab move path and preserves their Favorites folder membership when appropriate. Sidebar, Start page, omnibox, command palette, keyboard number shortcuts, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
 
 Small requirements:
 
@@ -96,7 +96,7 @@ Small requirements:
 - Dragging tabs to groups, Spaces, New Space, and split targets must use consistent payload recovery.
 - Dragging tabs should not show explicit target-region overlays; destinations accept drops directly, while reordering shows local insertion position only.
 
-Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. The domain folder move action owns moving tabs into Favorites and moving Favorite-backed tabs back out to Tabs, Pinned, or groups, so the UI no longer manually removes Favorites before moving tabs. Tabs folder drops now accept the same real tab payload path as the other sidebar folders, and tab-backed Favorites use that same tab payload when reordering or moving across Spaces. Pinned tab rows and tab group headers now ignore unrelated payloads instead of swallowing them as tab drops, and tab group reorder recovers from native group payloads when React drag state has not synced yet. URL-only legacy Favorites remain a quick-entry fallback and Space/New Space legacy favorite drops recover from native payloads when React drag state has not synced yet. Real Electron manual QA is still required.
+Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. The domain folder move action owns moving tabs into Favorites and moving Favorite-backed tabs back out to Tabs, Pinned, or groups, so the UI no longer manually removes Favorites before moving tabs. Sidebar folder drops for Tabs, Pinned, and Favorites now share one tab-folder handler instead of branching through quick-entry Favorite logic. Tabs folder drops now accept the same real tab payload path as the other sidebar folders, and tab-backed Favorites use that same tab payload when reordering or moving across Spaces. Pinned tab rows and tab group headers now ignore unrelated payloads instead of swallowing them as tab drops, and tab group reorder recovers from native group payloads when React drag state has not synced yet. URL-only legacy Favorites remain a quick-entry fallback and Space/New Space legacy favorite drops recover from native payloads when React drag state has not synced yet. Real Electron manual QA is still required.
 
 Small requirements:
 
@@ -114,6 +114,7 @@ Small requirements:
 - P0-3.12 Empty Tabs, Pinned, and Favorites folders stay visible as ordinary headers and accept tab drops without special target UI.
 - P0-3.13 Tabs folder drops accept the same real tab payloads as other sidebar folders; regular tab ordering remains row-level before/after placement.
 - P0-3.14 Space and New Space Favorite drops accept native Favorite payloads even when React drag state is missing.
+- P0-3.15 Sidebar folder drops for Tabs, Pinned, and Favorites are handled as the same tab-folder operation; quick-entry drag code must not synthesize tab payloads for Favorites.
 
 ### P0-4 Spaces And Profiles
 
