@@ -6,6 +6,7 @@ import { getHostInitial, type BrowserTab, type Favorite } from "../../../../doma
 import { getTabStatusBadges } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
+import { getSidebarSectionKeyboardToggleIntent } from "../../model/sidebarSectionKeyboard";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
@@ -21,6 +22,15 @@ export function SidebarSectionHeader({
   onToggle?: () => void;
   title: string;
 }) {
+  const handleKeyboardToggle = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const intent = getSidebarSectionKeyboardToggleIntent(event.key, isCollapsed);
+    if (!intent) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    onToggle?.();
+  };
+
   const content = (
     <>
       <span className="sidebar-section-title">
@@ -38,7 +48,9 @@ export function SidebarSectionHeader({
           className="sidebar-section-header-button"
           type="button"
           aria-expanded={!isCollapsed}
+          aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${title}`}
           onClick={onToggle}
+          onKeyDown={handleKeyboardToggle}
         >
           {content}
         </button>
