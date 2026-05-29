@@ -10,7 +10,6 @@ import {
   getAdjacentWorkspaceId,
   getNewWorkspaceAccessibilityLabel,
   getWorkspaceAccessibilityLabel,
-  getWorkspaceButtonLabel,
   getWorkspaceDropTargetState,
   getWorkspaceInitial,
   getWorkspaceTabCount,
@@ -136,7 +135,6 @@ export function WorkspaceStrip({
             className="workspace-button"
             key={workspace.id}
             style={{ "--accent": workspace.accent } as CSSProperties}
-            title={getWorkspaceButtonLabel(workspace)}
             type="button"
             draggable
             aria-label={getWorkspaceAccessibilityLabel(workspace, { isActive, isDropTarget })}
@@ -167,7 +165,6 @@ export function WorkspaceStrip({
       })}
       <button
         className="workspace-button workspace-new-button"
-        title="New Space"
         type="button"
         aria-label={getNewWorkspaceAccessibilityLabel(Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId))}
         data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId)}
@@ -184,7 +181,6 @@ export function WorkspaceStrip({
       </button>
       <button
         className="workspace-button sidebar-toggle"
-        title={sidebarToggleLabel}
         type="button"
         aria-label={sidebarToggleLabel}
         aria-pressed={compactMode ? floatingSidebarOpen : undefined}

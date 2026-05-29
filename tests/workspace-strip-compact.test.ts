@@ -17,14 +17,28 @@ describe("workspace strip compact controls", () => {
   it("uses the always-visible sidebar toggle as a compact floating-sidebar pin", () => {
     const normal = renderStrip({ compactMode: false, floatingSidebarOpen: false, sidebarCollapsed: false });
     expect(normal).toContain('aria-label="Collapse sidebar"');
+    expect(normal).not.toContain('title="Collapse sidebar"');
 
     const compact = renderStrip({ compactMode: true, floatingSidebarOpen: false, sidebarCollapsed: true });
     expect(compact).toContain('aria-label="Pin floating sidebar"');
     expect(compact).toContain('aria-pressed="false"');
+    expect(compact).not.toContain('title="Pin floating sidebar"');
 
     const pinned = renderStrip({ compactMode: true, floatingSidebarOpen: true, sidebarCollapsed: true });
     expect(pinned).toContain('aria-label="Unpin floating sidebar"');
     expect(pinned).toContain('aria-pressed="true"');
+    expect(pinned).not.toContain('title="Unpin floating sidebar"');
+  });
+
+  it("avoids native title tooltips on the Space rail controls", () => {
+    const html = renderStrip({ compactMode: false, floatingSidebarOpen: false, sidebarCollapsed: false });
+
+    expect(html).toContain('aria-label="Personal, 1 tab, active Space"');
+    expect(html).toContain('aria-label="New Space"');
+    expect(html).toContain('aria-label="Collapse sidebar"');
+    expect(html).not.toContain('title="Personal, 1 tab"');
+    expect(html).not.toContain('title="New Space"');
+    expect(html).not.toContain('title="Collapse sidebar"');
   });
 
   it("marks other Spaces as drop targets while dragging a tab group", () => {
