@@ -106,7 +106,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     }
 
     const placement = getPointerDropPlacement(event.currentTarget, event, axis);
-    removeDraggedFavoriteLocation(event);
+    moveDraggedTabOutOfFavoritesFolder(event);
     placeTab(tabId, targetTabId, placement);
     setDraggingTabId(null);
   };
@@ -134,20 +134,20 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     if (intent.type !== "unpinToRegularEnd" && !favoriteId) return;
 
     event.preventDefault();
-    if (favoriteId) removeFavoriteLocation(favoriteId);
+    if (favoriteId) removeFavoriteFromFolder(favoriteId);
     if (intent.type === "unpinToRegularEnd") actions.unpinTabToRegularEnd(tabId);
     setDraggingTabId(null);
   };
 
   const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
   const getDroppedFavoriteId = (event: DragEvent<HTMLElement>) => draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
-  const removeFavoriteLocation = (favoriteId: string) => {
+  const removeFavoriteFromFolder = (favoriteId: string) => {
     actions.removeWorkspaceFavorite(favoriteId);
     setDraggingFavoriteId(null);
   };
-  const removeDraggedFavoriteLocation = (event: DragEvent<HTMLElement>) => {
+  const moveDraggedTabOutOfFavoritesFolder = (event: DragEvent<HTMLElement>) => {
     const favoriteId = getDroppedFavoriteId(event);
-    if (favoriteId) removeFavoriteLocation(favoriteId);
+    if (favoriteId) removeFavoriteFromFolder(favoriteId);
   };
 
   const handlePinDrop = (event: DragEvent<HTMLElement>) => {
@@ -156,7 +156,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     if (!tab) return;
 
     event.preventDefault();
-    removeDraggedFavoriteLocation(event);
+    moveDraggedTabOutOfFavoritesFolder(event);
     if (!tab.isPinned) actions.toggleTabPinned(tab.id);
     setDraggingTabId(null);
   };
@@ -322,7 +322,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onPinDrop={handlePinDrop}
           onTabContextMenu={openTabMenu}
           onTabDrop={handleTabDrop}
-          onTabLocationDrop={removeDraggedFavoriteLocation}
+          onMoveTabOutOfFavoritesFolder={moveDraggedTabOutOfFavoritesFolder}
           onTabsDrop={handleTabsDrop}
           setDraggingEssentialId={setDraggingEssentialId}
           setDraggingFavoriteId={setDraggingFavoriteId}

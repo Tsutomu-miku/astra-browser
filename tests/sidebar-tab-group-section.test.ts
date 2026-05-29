@@ -88,11 +88,11 @@ describe("sidebar tab group section", () => {
     act(() => root.unmount());
   });
 
-  it("notifies parent when a Favorite-backed tab is dropped into a group", () => {
+  it("moves a Favorite-backed tab out of Favorites when dropped into a group", () => {
     const group = tabGroup();
     const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
     const onAssignTab = vi.fn();
-    const onTabLocationDrop = vi.fn();
+    const onMoveTabOutOfFavoritesFolder = vi.fn();
     const setDraggingTabId = vi.fn();
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -102,7 +102,7 @@ describe("sidebar tab group section", () => {
         activeTab,
         group,
         onAssignTab,
-        onTabLocationDrop,
+        onMoveTabOutOfFavoritesFolder,
         setDraggingTabId,
         tabs: [activeTab]
       })));
@@ -114,7 +114,7 @@ describe("sidebar tab group section", () => {
       "text/favorite-id": "favorite"
     }));
 
-    expect(onTabLocationDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }));
+    expect(onMoveTabOutOfFavoritesFolder).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }));
     expect(onAssignTab).toHaveBeenCalledWith("favorite-tab", group.id);
     expect(setDraggingTabId).toHaveBeenCalledWith(null);
 
