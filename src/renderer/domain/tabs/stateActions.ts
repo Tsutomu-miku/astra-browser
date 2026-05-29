@@ -5,7 +5,7 @@ import {
   getReadableUrlTitle
 } from "../browser";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
-import { mergeFavoriteByUrl, moveFavoriteBackingTabToWorkspace } from "../common/favoriteTabs";
+import { mergeFavoriteByUrl, moveFavoriteBackingTabToWorkspace, placeTabInFavoritesFolder } from "../common/favoriteTabs";
 import { clearSplitView, getSplitTabIds, setSplitTabIds } from "./splitView";
 import { pruneEmptyTabGroups } from "./groups";
 import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "../browser/zoom";
@@ -152,17 +152,7 @@ export function addTabToFavorites(state: BrowserState, tabId: string): BrowserSt
     const workspace = draft.workspaces.find((candidate) => candidate.tabs.some((tab) => tab.id === tabId));
     const tab = workspace?.tabs.find((candidate) => candidate.id === tabId);
     if (!workspace || !tab) return;
-    placeTabInFavorites(workspace, tab);
-    if (workspace.favorites.some((favorite) => favorite.tabId === tab.id)) return;
-
-    const legacyFavorite = workspace.favorites.find((favorite) => !favorite.tabId && favorite.url === tab.url);
-    if (legacyFavorite) {
-      legacyFavorite.tabId = tab.id;
-      legacyFavorite.title = tab.title || legacyFavorite.title || getReadableUrlTitle(tab.url);
-      return;
-    }
-
-    workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url, tab.id));
+    placeTabInFavoritesFolder(workspace, tab);
   });
 }
 
@@ -181,8 +171,7 @@ export function toggleTabFavorite(state: BrowserState, tabId: string): BrowserSt
       return;
     }
 
-    placeTabInFavorites(workspace, tab);
-    workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url, tab.id));
+    placeTabInFavoritesFolder(workspace, tab);
   });
 }
 
@@ -264,12 +253,6 @@ function reorderFavoriteList(
   const droppedOnIndex = favorites.findIndex((candidate) => candidate.id === targetFavoriteId);
   const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
   favorites.splice(insertIndex, 0, favorite);
-}
-
-function placeTabInFavorites(workspace: ReturnType<typeof getActiveWorkspace>, tab: BrowserTab) {
-  tab.isPinned = false;
-  tab.groupId = null;
-  pruneEmptyTabGroups(workspace);
 }
 
 export function toggleActiveTabEssential(state: BrowserState): BrowserState {

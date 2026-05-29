@@ -1,4 +1,5 @@
 import {
+  createFavorite,
   createTab,
   getReadableUrlTitle,
   getWorkspaceHomepageUrl,
@@ -43,6 +44,51 @@ export function mergeFavoriteByUrl(favorites: Favorite[], favorite: Favorite): F
   existing.title = favorite.title || existing.title;
   existing.tabId = favorite.tabId;
   return existing;
+}
+
+export function placeTabInFavoritesFolder(workspace: Workspace, tab: BrowserTab) {
+  tab.isPinned = false;
+  tab.groupId = null;
+  pruneEmptyTabGroups(workspace);
+  upsertTabFavorite(workspace, tab);
+}
+
+export function removeTabFromFavoritesFolder(workspace: Workspace, tabId: string) {
+  workspace.favorites = workspace.favorites.filter((favorite) => favorite.tabId !== tabId);
+}
+
+export function isTabInFavoritesFolder(workspace: Workspace, tabId: string) {
+  return workspace.favorites.some((favorite) => favorite.tabId === tabId);
+}
+
+export function reorderFavoriteBackingTab(
+  workspace: Workspace,
+  tabId: string,
+  targetTabId: string,
+  placement: "before" | "after"
+) {
+  const favoriteIndex = workspace.favorites.findIndex((favorite) => favorite.tabId === tabId);
+  const targetIndex = workspace.favorites.findIndex((favorite) => favorite.tabId === targetTabId);
+  if (favoriteIndex < 0 || targetIndex < 0) return;
+
+  const [favorite] = workspace.favorites.splice(favoriteIndex, 1);
+  const droppedOnIndex = workspace.favorites.findIndex((candidate) => candidate.tabId === targetTabId);
+  const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
+  workspace.favorites.splice(insertIndex, 0, favorite);
+}
+
+function upsertTabFavorite(workspace: Workspace, tab: BrowserTab) {
+  const tabBackedFavorite = workspace.favorites.find((favorite) => favorite.tabId === tab.id);
+  if (tabBackedFavorite) return;
+
+  const legacyFavorite = workspace.favorites.find((favorite) => !favorite.tabId && favorite.url === tab.url);
+  if (legacyFavorite) {
+    legacyFavorite.tabId = tab.id;
+    legacyFavorite.title = tab.title || legacyFavorite.title || getReadableUrlTitle(tab.url);
+    return;
+  }
+
+  workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url, tab.id));
 }
 
 function detachFavoriteBackingTab(

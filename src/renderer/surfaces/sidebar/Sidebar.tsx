@@ -105,9 +105,9 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     }
 
     const placement = getPointerDropPlacement(event.currentTarget, event, axis);
-    moveDraggedTabOutOfFavoritesFolder(event);
     placeTab(tabId, targetTabId, placement);
     setDraggingTabId(null);
+    setDraggingFavoriteId(null);
   };
 
   const placeTab = (tabId: string, targetTabId: string, placement: "before" | "after") => {
@@ -118,24 +118,13 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     const tabId = getDroppedTabId(event);
     if (!tabId) return;
 
-    const favoriteId = getDroppedFavoriteId(event);
-
     event.preventDefault();
-    if (favoriteId) removeFavoriteFromFolder(favoriteId);
     actions.moveTabToFolderEnd(tabId, { type: "tabs" });
     setDraggingTabId(null);
+    setDraggingFavoriteId(null);
   };
 
   const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
-  const getDroppedFavoriteId = (event: DragEvent<HTMLElement>) => draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
-  const removeFavoriteFromFolder = (favoriteId: string) => {
-    actions.removeWorkspaceFavorite(favoriteId);
-    setDraggingFavoriteId(null);
-  };
-  const moveDraggedTabOutOfFavoritesFolder = (event: DragEvent<HTMLElement>) => {
-    const favoriteId = getDroppedFavoriteId(event);
-    if (favoriteId) removeFavoriteFromFolder(favoriteId);
-  };
 
   const handlePinDrop = (event: DragEvent<HTMLElement>) => {
     const tabId = getDroppedTabId(event);
@@ -143,9 +132,9 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     if (!tab) return;
 
     event.preventDefault();
-    moveDraggedTabOutOfFavoritesFolder(event);
     actions.moveTabToFolderEnd(tab.id, { type: "pinned" });
     setDraggingTabId(null);
+    setDraggingFavoriteId(null);
   };
 
   const handleWorkspaceDragOverWithFavorites = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
@@ -309,7 +298,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onPinDrop={handlePinDrop}
           onTabContextMenu={openTabMenu}
           onTabDrop={handleTabDrop}
-          onMoveTabOutOfFavoritesFolder={moveDraggedTabOutOfFavoritesFolder}
           onTabsDrop={handleTabsDrop}
           setDraggingEssentialId={setDraggingEssentialId}
           setDraggingFavoriteId={setDraggingFavoriteId}

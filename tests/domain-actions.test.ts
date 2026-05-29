@@ -571,6 +571,35 @@ describe("domain actions", () => {
     expect(tabs.at(-1)?.id).toBe(first.id);
   });
 
+  it("moves dragged tabs into the Favorites folder through tab folder actions", () => {
+    const withFirst = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const workspace = getActiveWorkspace(withFirst);
+    const first = getActiveTab(workspace);
+    const pinned = toggleTabPinned(withFirst, first.id);
+    const favorited = moveTabToFolderEnd(pinned, first.id, { type: "favorites" });
+    const moved = getActiveWorkspace(favorited).tabs.find((tab) => tab.id === first.id)!;
+    const favorite = getActiveWorkspace(favorited).favorites.find((candidate) => candidate.tabId === first.id);
+
+    expect(moved.isPinned).toBe(false);
+    expect(moved.groupId).toBeNull();
+    expect(favorite).toMatchObject({
+      tabId: first.id,
+      title: "First",
+      url: "https://first.test/"
+    });
+  });
+
+  it("moves Favorite-backed tabs out of Favorites through tab folder actions", () => {
+    const withFirst = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const workspace = getActiveWorkspace(withFirst);
+    const first = getActiveTab(workspace);
+    const favorited = moveTabToFolderEnd(withFirst, first.id, { type: "favorites" });
+    const unpinned = moveTabToFolderEnd(favorited, first.id, { type: "tabs" });
+
+    expect(getActiveWorkspace(unpinned).favorites.some((favorite) => favorite.tabId === first.id)).toBe(false);
+    expect(getActiveWorkspace(unpinned).tabs.at(-1)?.id).toBe(first.id);
+  });
+
   it("moves dragged tabs into grouped folders", () => {
     const withNews = openUrlInActiveWorkspace(groupActiveTab(createDefaultState()), "news.example", "News");
     const workspace = getActiveWorkspace(withNews);

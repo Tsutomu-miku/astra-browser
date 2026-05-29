@@ -19,7 +19,6 @@ export function TabGroupSection({
   onGroupContextMenu,
   onDrop,
   onMoveTabToGroupFolder,
-  onMoveTabOutOfFavoritesFolder,
   onPreview,
   onSelect,
   onSplit,
@@ -41,7 +40,6 @@ export function TabGroupSection({
   onGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
   onMoveTabToGroupFolder: (tabId: string, groupId: string) => void;
-  onMoveTabOutOfFavoritesFolder?: (event: DragEvent<HTMLElement>) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
@@ -104,7 +102,6 @@ export function TabGroupSection({
           event.preventDefault();
           const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
           if (tabId) {
-            onMoveTabOutOfFavoritesFolder?.(event);
             onMoveTabToGroupFolder(tabId, group.id);
           }
           setDraggingTabId(null);

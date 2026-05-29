@@ -10,6 +10,31 @@ import { useSidebarQuickEntryDrag } from "../src/renderer/surfaces/sidebar/hooks
 import { FavoriteButton } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
 
 describe("useSidebarQuickEntryDrag", () => {
+  it("drops tabs into Favorites through the shared tab folder action", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const workspace = createWorkspace(tab, createFavorite("Other", "https://other.example"));
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(FavoriteDropHarness, {
+        actions,
+        activeWorkspace: workspace,
+        state: createDefaultState()
+      }));
+    });
+
+    container.querySelector(".favorites-drop")?.dispatchEvent(createDragEvent("drop", {
+      [SIDEBAR_TAB_DRAG_TYPE]: tab.id
+    }));
+
+    expect(actions.moveTabToFolderEnd).toHaveBeenCalledWith(tab.id, { type: "favorites" });
+    expect(actions.addTabToFavorites).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("writes the backing tab payload when dragging a tab-backed Favorite", () => {
     const tab = createTab("Docs", "https://docs.example");
     const favorite = createFavorite("Docs", tab.url, tab.id);
@@ -105,6 +130,29 @@ function FavoriteDragHarness({
   });
 }
 
+function FavoriteDropHarness({
+  actions,
+  activeWorkspace,
+  state
+}: {
+  actions: BrowserController["actions"];
+  activeWorkspace: Workspace;
+  state: BrowserState;
+}) {
+  const drag = useSidebarQuickEntryDrag({
+    actions,
+    activeWorkspace,
+    draggingTabId: null,
+    setDraggingTabId: vi.fn(),
+    state
+  });
+
+  return createElement("nav", {
+    className: "favorites-drop",
+    onDrop: drag.handleFavoriteDrop
+  });
+}
+
 function createWorkspace(tab: Workspace["tabs"][number], favorite: Workspace["favorites"][number]): Workspace {
   return {
     ...createDefaultState().workspaces[0],
@@ -117,8 +165,24 @@ function createWorkspace(tab: Workspace["tabs"][number], favorite: Workspace["fa
 function createActions() {
   return {
     addTabToFavorites: vi.fn(),
+    moveTabToFolderEnd: vi.fn(),
     reorderEssential: vi.fn(),
     reorderWorkspaceFavorite: vi.fn(),
     toggleTabEssential: vi.fn()
   } as unknown as BrowserController["actions"];
+}
+
+function createDragEvent(type: string, data: Record<string, string>) {
+  const event = new Event(type, { bubbles: true, cancelable: true }) as Event & {
+    dataTransfer: DataTransfer;
+  };
+  Object.defineProperty(event, "dataTransfer", {
+    value: {
+      dropEffect: "none",
+      effectAllowed: "all",
+      getData: (key: string) => data[key] ?? "",
+      setData: vi.fn()
+    }
+  });
+  return event;
 }

@@ -7,6 +7,12 @@ import {
   normalizeAddress,
   Workspace
 } from "../browser";
+import {
+  isTabInFavoritesFolder,
+  placeTabInFavoritesFolder,
+  removeTabFromFavoritesFolder,
+  reorderFavoriteBackingTab
+} from "../common/favoriteTabs";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
 import { updateBrowserState } from "../browser/updateState";
 import { clearSplitView, getSplitTabIds, MAX_SPLIT_VIEW_TABS, setSplitTabIds } from "./splitView";
@@ -14,6 +20,7 @@ import { pruneEmptyTabGroups } from "./groups";
 import type { TabDropPlacement } from "./utils";
 
 export type TabFolder =
+  | { type: "favorites" }
   | { type: "group"; groupId: string }
   | { type: "pinned" }
   | { type: "tabs" };
@@ -54,7 +61,7 @@ export function moveTabToFolderPosition(
     if (fromIndex < 0 || targetIndex < 0) return;
 
     const targetTab = workspace.tabs[targetIndex];
-    const targetFolder = getTabFolder(targetTab);
+    const targetFolder = getTabFolder(workspace, targetTab);
 
     const [tab] = workspace.tabs.splice(fromIndex, 1);
     if (!moveTabToFolder(workspace, tab, targetFolder)) {
@@ -65,6 +72,9 @@ export function moveTabToFolderPosition(
     const droppedOnIndex = workspace.tabs.findIndex((candidate) => candidate.id === targetTabId);
     const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
     workspace.tabs.splice(insertIndex, 0, tab);
+    if (targetFolder.type === "favorites") {
+      reorderFavoriteBackingTab(workspace, tab.id, targetTabId, placement);
+    }
   });
 }
 
@@ -88,7 +98,8 @@ export function moveTabToFolderEnd(
   });
 }
 
-function getTabFolder(tab: BrowserTab): TabFolder {
+function getTabFolder(workspace: Workspace, tab: BrowserTab): TabFolder {
+  if (isTabInFavoritesFolder(workspace, tab.id)) return { type: "favorites" };
   if (tab.isPinned) return { type: "pinned" };
   if (tab.groupId) return { type: "group", groupId: tab.groupId };
 
@@ -102,6 +113,11 @@ function moveTabToFolder(workspace: Workspace, tab: BrowserTab, folder: TabFolde
 
   tab.isPinned = folder.type === "pinned";
   tab.groupId = folder.type === "group" ? folder.groupId : null;
+  if (folder.type === "favorites") {
+    placeTabInFavoritesFolder(workspace, tab);
+  } else {
+    removeTabFromFavoritesFolder(workspace, tab.id);
+  }
   return true;
 }
 

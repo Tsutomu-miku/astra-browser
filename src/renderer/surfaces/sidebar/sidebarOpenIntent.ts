@@ -22,6 +22,10 @@ export function getSidebarSearchOpenIntent(
   }
 
   if (modifiers.shiftKey) {
+    if (target.type === "favorite" && target.tabId) {
+      return { type: "splitTab", tabId: target.tabId };
+    }
+
     return target.type === "tab"
       ? { type: "splitTab", tabId: target.id }
       : { type: "splitUrl", title: target.title, url: target.url };

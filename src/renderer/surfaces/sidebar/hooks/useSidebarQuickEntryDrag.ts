@@ -51,7 +51,7 @@ export function useSidebarQuickEntryDrag({
     if (!tab) return;
 
     event.preventDefault();
-    actions.addTabToFavorites(tab.id);
+    actions.moveTabToFolderEnd(tab.id, { type: "favorites" });
     setDraggingTabId(null);
   };
 

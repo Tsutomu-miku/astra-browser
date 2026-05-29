@@ -90,11 +90,10 @@ describe("sidebar tab group section", () => {
     act(() => root.unmount());
   });
 
-  it("moves a Favorite-backed tab out of Favorites when dropped into a group", () => {
+  it("moves dropped tabs into the group folder through the shared tab folder action", () => {
     const group = tabGroup();
     const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
     const onMoveTabToGroupFolder = vi.fn();
-    const onMoveTabOutOfFavoritesFolder = vi.fn();
     const setDraggingTabId = vi.fn();
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -104,7 +103,6 @@ describe("sidebar tab group section", () => {
         activeTab,
         group,
         onMoveTabToGroupFolder,
-        onMoveTabOutOfFavoritesFolder,
         setDraggingTabId,
         tabs: [activeTab]
       })));
@@ -116,7 +114,6 @@ describe("sidebar tab group section", () => {
       "text/favorite-id": "favorite"
     }));
 
-    expect(onMoveTabOutOfFavoritesFolder).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }));
     expect(onMoveTabToGroupFolder).toHaveBeenCalledWith("favorite-tab", group.id);
     expect(setDraggingTabId).toHaveBeenCalledWith(null);
 

@@ -46,9 +46,8 @@ describe("getSidebarSearchOpenIntent", () => {
       type: "selectTab"
     });
     expect(getSidebarSearchOpenIntent(favoriteTarget, { altKey: false, shiftKey: true })).toEqual({
-      title: "Mail",
-      type: "splitUrl",
-      url: "https://mail.example"
+      tabId: "tab-favorite-1",
+      type: "splitTab"
     });
   });
 
