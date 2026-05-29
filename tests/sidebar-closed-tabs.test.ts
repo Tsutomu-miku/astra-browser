@@ -104,9 +104,27 @@ describe("sidebar recently closed tabs", () => {
     act(() => root.unmount());
   });
 
+  it("marks recently closed rows as draggable restore sources", () => {
+    const html = renderToStaticMarkup(createElement(ClosedTabButton, {
+      closedIndex: 2,
+      draggingClosedTabIndex: 2,
+      onContextMenu: vi.fn(),
+      onDragEnd: vi.fn(),
+      onDragStart: vi.fn(),
+      onOpenInSplit: vi.fn(),
+      onPreview: vi.fn(),
+      onRestore: vi.fn(),
+      tab: closedTab()
+    }));
+
+    expect(html).toContain('draggable="true"');
+    expect(html).toContain('data-dragging="true"');
+  });
+
   it("styles the recently closed sidebar section", () => {
     expect(sidebarCss).toContain(".recently-closed-tabs");
     expect(sidebarCss).toContain(".closed-tab-button");
+    expect(sidebarCss).toContain('.closed-tab-button[data-dragging="true"]');
     expect(sidebarCss).toContain(".closed-tab-action");
   });
 });

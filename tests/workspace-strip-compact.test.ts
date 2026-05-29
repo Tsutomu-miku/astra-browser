@@ -37,6 +37,18 @@ describe("workspace strip compact controls", () => {
     expect(html).toContain('data-drop-target="true"');
   });
 
+  it("marks Spaces as restore targets while dragging a recently closed tab", () => {
+    const html = renderStrip({
+      compactMode: false,
+      draggingClosedTabIndex: 0,
+      floatingSidebarOpen: false,
+      sidebarCollapsed: false
+    });
+
+    expect(html.match(/data-drop-target="true"/g)).toHaveLength(2);
+    expect(html).toContain('aria-label="New Space" data-drop-target="false"');
+  });
+
   it("marks New Space as a drop target while dragging tabs or groups", () => {
     const tabHtml = renderStrip({
       compactMode: false,
@@ -109,12 +121,14 @@ describe("workspace strip compact controls", () => {
 
 function renderStrip({
   compactMode,
+  draggingClosedTabIndex = null,
   draggingGroupId = null,
   draggingTabId = null,
   floatingSidebarOpen,
   sidebarCollapsed
 }: {
   compactMode: boolean;
+  draggingClosedTabIndex?: number | null;
   draggingGroupId?: string | null;
   draggingTabId?: string | null;
   floatingSidebarOpen: boolean;
@@ -126,6 +140,7 @@ function renderStrip({
   return renderToStaticMarkup(createElement(WorkspaceStrip, {
     activeWorkspaceId: activeWorkspace.id,
     compactMode,
+    draggingClosedTabIndex,
     draggingGroupId,
     draggingTabId,
     draggingWorkspaceId: null,

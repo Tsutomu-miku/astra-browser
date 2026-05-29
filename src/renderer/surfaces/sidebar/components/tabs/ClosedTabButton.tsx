@@ -1,18 +1,24 @@
 import { getHostInitial, type ClosedTab } from "../../../../domain/browser";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
-import type { MouseEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
 
 export function ClosedTabButton({
   closedIndex,
+  draggingClosedTabIndex,
   onContextMenu,
+  onDragEnd,
+  onDragStart,
   onOpenInSplit,
   onPreview,
   tab,
   onRestore
 }: {
   closedIndex: number;
+  draggingClosedTabIndex?: number | null;
   onContextMenu: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
+  onDragEnd?: () => void;
+  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
   tab: ClosedTab;
@@ -24,8 +30,12 @@ export function ClosedTabButton({
     <button
       className="closed-tab-button"
       type="button"
+      draggable={Boolean(onDragStart)}
+      data-dragging={draggingClosedTabIndex === closedIndex}
       title={`Restore ${title}`}
       onContextMenu={(event) => onContextMenu(event, tab, closedIndex)}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       onKeyDown={openSidebarKeyboardContextMenu}
       onClick={(event) => {
         if (event.altKey) {

@@ -63,6 +63,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     : undefined;
   const {
     clearWorkspaceDrag,
+    draggingClosedTabIndex,
     draggingGroupId,
     draggingTabId,
     draggingWorkspaceId,
@@ -70,6 +71,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     handleWorkspaceDragOver,
     handleWorkspaceDragStart,
     handleWorkspaceDrop,
+    setDraggingClosedTabIndex,
     setDraggingGroupId,
     setDraggingTabId
   } = useSidebarWorkspaceDrag({ actions, activeWorkspaceId: activeWorkspace.id });
@@ -182,6 +184,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         activeWorkspaceId={activeWorkspace.id}
         compactMode={compactMode}
         draggingGroupId={draggingGroupId}
+        draggingClosedTabIndex={draggingClosedTabIndex}
         draggingTabId={draggingTabId}
         draggingWorkspaceId={draggingWorkspaceId}
         floatingSidebarOpen={floatingSidebarOpen}
@@ -222,6 +225,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           closedTabs={activeWorkspace.closedTabs}
           draggingEssentialId={draggingEssentialId}
           draggingFavoriteId={draggingFavoriteId}
+          draggingClosedTabIndex={draggingClosedTabIndex}
           draggingGroupId={draggingGroupId}
           draggingTabId={draggingTabId}
           filteredItems={filteredItems}
@@ -241,6 +245,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onTabsDrop={handleTabsDrop}
           setDraggingEssentialId={setDraggingEssentialId}
           setDraggingFavoriteId={setDraggingFavoriteId}
+          setDraggingClosedTabIndex={setDraggingClosedTabIndex}
           setDraggingGroupId={setDraggingGroupId}
           setDraggingTabId={setDraggingTabId}
         />

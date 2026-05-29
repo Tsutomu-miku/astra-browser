@@ -602,6 +602,11 @@ h1 {
   outline: none;
 }
 
+.closed-tab-button[data-dragging="true"] {
+  opacity: 0.5;
+  transform: translateX(2px);
+}
+
 .closed-tab-icon {
   width: 22px;
   height: 22px;

@@ -137,6 +137,10 @@ export function useBrowserActions({
       store.restoreClosedTab(closedIndex);
       peekCompactChrome();
     },
+    restoreClosedTabToWorkspace: (closedIndex: number, workspaceId: string) => {
+      store.restoreClosedTabToWorkspace(closedIndex, workspaceId);
+      peekCompactChrome();
+    },
     restoreLastClosedTab: () => {
       store.restoreLastClosedTab();
       peekCompactChrome();

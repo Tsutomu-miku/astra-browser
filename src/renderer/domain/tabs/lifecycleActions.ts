@@ -69,6 +69,33 @@ export function restoreClosedTab(state: BrowserState, closedIndex: number): Brow
   });
 }
 
+export function restoreClosedTabToWorkspace(
+  state: BrowserState,
+  closedIndex: number,
+  workspaceId: string
+): BrowserState {
+  const source = getActiveWorkspace(state);
+  const target = state.workspaces.find((workspace) => workspace.id === workspaceId);
+  if (!Number.isInteger(closedIndex) || closedIndex < 0 || !source.closedTabs[closedIndex] || !target) {
+    return state;
+  }
+
+  return updateBrowserState(state, (draft) => {
+    const source = getActiveWorkspace(draft);
+    const target = draft.workspaces.find((workspace) => workspace.id === workspaceId);
+    if (!target) return;
+
+    const [closed] = source.closedTabs.splice(closedIndex, 1);
+    if (!closed) return;
+
+    const tab = createTab(closed.title, closed.url);
+    target.tabs.push(tab);
+    target.activeTabId = tab.id;
+    draft.activeWorkspaceId = target.id;
+    clearSplitView(draft);
+  });
+}
+
 export function duplicateActiveTab(state: BrowserState): BrowserState {
   return duplicateTab(state, getActiveTab(getActiveWorkspace(state)).id);
 }

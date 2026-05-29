@@ -11,6 +11,7 @@ export {
   duplicateActiveTab,
   duplicateTab,
   restoreClosedTab,
+  restoreClosedTabToWorkspace,
   restoreLastClosedTab
 } from "./lifecycleActions";
 export {

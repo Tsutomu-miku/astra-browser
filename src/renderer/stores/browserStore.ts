@@ -42,6 +42,7 @@ import {
   reorderWorkspaceFavorite,
   resetActiveTabZoom,
   restoreClosedTab,
+  restoreClosedTabToWorkspace,
   restoreLastClosedTab,
   selectAdjacentTab,
   selectTab,
@@ -214,6 +215,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     set({ permissionRequest: null });
   },
   restoreClosedTab: (closedIndex) => update(set, (state) => restoreClosedTab(state, closedIndex)),
+  restoreClosedTabToWorkspace: (closedIndex, workspaceId) =>
+    update(set, (state) => restoreClosedTabToWorkspace(state, closedIndex, workspaceId)),
   restoreLastClosedTab: () => update(set, restoreLastClosedTab),
   runWebviewAction: (action, webview) => webview?.[action]?.(),
   selectAdjacentTab: (direction) => update(set, (state) => selectAdjacentTab(state, direction)),

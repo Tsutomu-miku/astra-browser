@@ -9,6 +9,7 @@ type SidebarWorkspaceDragActions = Pick<
   | "moveTabToNewWorkspace"
   | "moveTabToWorkspace"
   | "reorderWorkspace"
+  | "restoreClosedTabToWorkspace"
 >;
 
 export function useSidebarWorkspaceDrag({
@@ -19,10 +20,12 @@ export function useSidebarWorkspaceDrag({
   activeWorkspaceId: string;
 }) {
   const [draggingGroupId, setDraggingGroupId] = useState<string | null>(null);
+  const [draggingClosedTabIndex, setDraggingClosedTabIndex] = useState<number | null>(null);
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
   const [draggingWorkspaceId, setDraggingWorkspaceId] = useState<string | null>(null);
 
   const handleWorkspaceDragStart = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    setDraggingClosedTabIndex(null);
     setDraggingGroupId(null);
     setDraggingTabId(null);
     setDraggingWorkspaceId(workspaceId);
@@ -31,10 +34,11 @@ export function useSidebarWorkspaceDrag({
   };
 
   const handleWorkspaceDragOver = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    const isClosedTabTarget = draggingClosedTabIndex !== null;
     const isGroupTarget = draggingGroupId && workspaceId !== activeWorkspaceId;
     const isTabTarget = draggingTabId && workspaceId !== activeWorkspaceId;
     const isWorkspaceTarget = draggingWorkspaceId && workspaceId !== draggingWorkspaceId;
-    if (isGroupTarget || isTabTarget || isWorkspaceTarget) {
+    if (isClosedTabTarget || isGroupTarget || isTabTarget || isWorkspaceTarget) {
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
     }
@@ -47,6 +51,13 @@ export function useSidebarWorkspaceDrag({
       const placement = event.clientY > rect.top + rect.height / 2 ? "after" : "before";
       actions.reorderWorkspace(draggingWorkspaceId, workspaceId, placement);
       setDraggingWorkspaceId(null);
+      return;
+    }
+
+    const closedTabIndex = draggingClosedTabIndex ?? Number.parseInt(event.dataTransfer.getData("text/closed-tab-index"), 10);
+    if (Number.isInteger(closedTabIndex)) {
+      actions.restoreClosedTabToWorkspace(closedTabIndex, workspaceId);
+      setDraggingClosedTabIndex(null);
       return;
     }
 
@@ -81,12 +92,14 @@ export function useSidebarWorkspaceDrag({
   };
 
   const clearWorkspaceDrag = () => {
+    setDraggingClosedTabIndex(null);
     setDraggingGroupId(null);
     setDraggingWorkspaceId(null);
   };
 
   return {
     clearWorkspaceDrag,
+    draggingClosedTabIndex,
     draggingGroupId,
     draggingTabId,
     draggingWorkspaceId,
@@ -94,6 +107,7 @@ export function useSidebarWorkspaceDrag({
     handleWorkspaceDragOver,
     handleWorkspaceDragStart,
     handleWorkspaceDrop,
+    setDraggingClosedTabIndex,
     setDraggingGroupId,
     setDraggingTabId
   };

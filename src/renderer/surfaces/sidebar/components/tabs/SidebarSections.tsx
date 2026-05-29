@@ -17,6 +17,7 @@ export function SidebarSections({
   activeSearchTarget,
   activeTab,
   closedTabs,
+  draggingClosedTabIndex = null,
   draggingEssentialId,
   draggingFavoriteId,
   draggingGroupId,
@@ -37,6 +38,7 @@ export function SidebarSections({
   onQuickEntryContextMenu,
   setDraggingEssentialId,
   setDraggingFavoriteId,
+  setDraggingClosedTabIndex = () => undefined,
   setDraggingGroupId,
   setDraggingTabId,
   splitTabIds
@@ -45,6 +47,7 @@ export function SidebarSections({
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
   closedTabs: ClosedTab[];
+  draggingClosedTabIndex?: number | null;
   draggingEssentialId: string | null;
   draggingFavoriteId: string | null;
   draggingGroupId: string | null;
@@ -65,6 +68,7 @@ export function SidebarSections({
   onTabsDrop?: (event: DragEvent<HTMLElement>) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
+  setDraggingClosedTabIndex?: (closedIndex: number | null) => void;
   setDraggingGroupId: (groupId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
@@ -217,8 +221,15 @@ export function SidebarSections({
               <ClosedTabButton
                 key={`${tab.url}-${tab.closedAt}`}
                 closedIndex={index}
+                draggingClosedTabIndex={draggingClosedTabIndex}
                 tab={tab}
                 onContextMenu={onClosedTabContextMenu}
+                onDragEnd={() => setDraggingClosedTabIndex(null)}
+                onDragStart={(event) => {
+                  setDraggingClosedTabIndex(index);
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/closed-tab-index", String(index));
+                }}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}
                 onRestore={actions.restoreClosedTab}

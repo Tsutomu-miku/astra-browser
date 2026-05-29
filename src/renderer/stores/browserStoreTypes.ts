@@ -83,6 +83,7 @@ export interface BrowserStore {
   resetActiveTabZoom: (webview?: WebviewElement) => void;
   resolvePermissionRequest: (decision: "allow" | "block") => void;
   restoreClosedTab: (closedIndex: number) => void;
+  restoreClosedTabToWorkspace: (closedIndex: number, workspaceId: string) => void;
   restoreLastClosedTab: () => void;
   setActiveTabZoom: (zoomFactor: number, webview?: WebviewElement) => void;
   setAddressValue: (value: string) => void;

@@ -43,6 +43,7 @@ export {
   reorderTab,
   resetActiveTabZoom,
   restoreClosedTab,
+  restoreClosedTabToWorkspace,
   restoreLastClosedTab,
   selectAdjacentTab,
   selectTab,
