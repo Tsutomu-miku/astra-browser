@@ -61,6 +61,7 @@ export function WorkspaceStrip({
   workspaces: Workspace[];
 }) {
   const [menu, setMenu] = useState<{ left: number; top: number; workspaceId: string } | null>(null);
+  const menuTriggerRef = useRef<HTMLElement | null>(null);
   const menuWorkspace = menu ? workspaces.find((workspace) => workspace.id === menu.workspaceId) : undefined;
   const sidebarToggleLabel = compactMode
     ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
@@ -69,20 +70,20 @@ export function WorkspaceStrip({
   useEffect(() => {
     if (!menu) return;
 
-    const close = () => setMenu(null);
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
+      if (event.key === "Escape") closeWorkspaceMenu();
     };
+    const closeWithoutFocusRestore = () => closeWorkspaceMenu({ restoreFocus: false });
 
-    window.addEventListener("click", close);
-    window.addEventListener("blur", close);
+    window.addEventListener("click", closeWithoutFocusRestore);
+    window.addEventListener("blur", closeWithoutFocusRestore);
     window.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("scroll", closeWithoutFocusRestore, true);
     return () => {
-      window.removeEventListener("click", close);
-      window.removeEventListener("blur", close);
+      window.removeEventListener("click", closeWithoutFocusRestore);
+      window.removeEventListener("blur", closeWithoutFocusRestore);
       window.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("scroll", closeWithoutFocusRestore, true);
     };
   }, [menu]);
 
@@ -99,11 +100,20 @@ export function WorkspaceStrip({
 
   function openWorkspaceMenu(event: MouseEvent, workspaceId: string) {
     event.preventDefault();
+    menuTriggerRef.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     setMenu({
       left: Math.min(event.clientX, window.innerWidth - 216),
       top: Math.min(event.clientY, window.innerHeight - 320),
       workspaceId
     });
+  }
+
+  function closeWorkspaceMenu({ restoreFocus = true }: { restoreFocus?: boolean } = {}) {
+    setMenu(null);
+    if (restoreFocus && menuTriggerRef.current?.isConnected) {
+      menuTriggerRef.current.focus();
+    }
+    menuTriggerRef.current = null;
   }
 
   return (
@@ -185,7 +195,7 @@ export function WorkspaceStrip({
           left={menu.left}
           top={menu.top}
           workspace={menuWorkspace}
-          onClose={() => setMenu(null)}
+          onClose={closeWorkspaceMenu}
           onDelete={onDeleteWorkspace}
           onNewWorkspace={onNewWorkspace}
           onOpenSettings={onOpenSettings}

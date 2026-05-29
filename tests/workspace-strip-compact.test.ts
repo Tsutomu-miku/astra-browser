@@ -149,6 +149,117 @@ describe("workspace strip compact controls", () => {
     container.remove();
   });
 
+  it("restores focus to the Space button when its context menu closes with Escape", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace: vi.fn(),
+        onNewWorkspaceDrop: vi.fn(),
+        onOpenSettings: vi.fn(),
+        onSelect: vi.fn(),
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    const trigger = container.querySelector<HTMLButtonElement>(".workspace-button")!;
+    trigger.focus();
+
+    act(() => {
+      trigger.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "ContextMenu"
+      }));
+    });
+
+    expect(container.querySelector(".workspace-context-menu")).not.toBeNull();
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+
+    expect(container.querySelector(".workspace-context-menu")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it("restores focus to the Space button after running a Space menu action", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const onOpenSettings = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace: vi.fn(),
+        onNewWorkspaceDrop: vi.fn(),
+        onOpenSettings,
+        onSelect: vi.fn(),
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    const trigger = container.querySelector<HTMLButtonElement>(".workspace-button")!;
+    trigger.focus();
+
+    act(() => {
+      trigger.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true,
+        clientX: 10,
+        clientY: 10
+      }));
+    });
+
+    act(() => {
+      Array.from(container.querySelectorAll(".workspace-context-menu button"))
+        .find((button) => button.textContent === "Space settings")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onOpenSettings).toHaveBeenCalledWith(activeWorkspace.id);
+    expect(container.querySelector(".workspace-context-menu")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it("moves focus through Space controls with Arrow, Home, and End", () => {
     const state = createDefaultState();
     const activeWorkspace = getActiveWorkspace(state);

@@ -21,6 +21,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to create, delete, rename, recolor, and reorder Spaces.
 - The workspace strip must expose a direct new-Space action without opening Settings.
 - The workspace strip must expose direct Space management for settings, switching, creating, renaming, recoloring, and deleting from a Space context menu.
+- Workspace strip context menus must restore focus to their triggering Space button when closed by Escape or a menu action.
 - The workspace strip must support Arrow, Home, and End keyboard focus navigation across Spaces, New Space, and the sidebar toggle without stealing editing keys from Space menu fields.
 - The topbar Space pill must expose direct Space settings, creation, and deletion from a context menu.
 - The workspace strip must show per-Space tab counts for quick scanning.
