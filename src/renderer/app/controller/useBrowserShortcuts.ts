@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 
-import { getNumberShortcutTarget } from "../../common/shortcuts/numberShortcutTargets";
+import { getLastNumberShortcutTabTarget, getNumberShortcutTarget } from "../../common/shortcuts/numberShortcutTargets";
 import type { ShortcutIntent } from "../../common/shortcuts/keyboardShortcuts";
 import type { Workspace } from "../../domain/browser";
 import { useBrowserStore } from "../../stores/browserStore";
@@ -53,11 +53,11 @@ export function useBrowserShortcuts({
       if (workspace) actions.switchWorkspace(workspace.id);
     } else if (intent.type === "selectTabIndex") {
       const target = getNumberShortcutTarget(store.state.essentials, activeWorkspace, intent.index);
-      if (target?.type === "essential") actions.openUrlInActiveWorkspace(target.url, target.title);
+      if (target?.type === "essential") actions.navigateActiveTab(target.url);
       if (target?.type === "tab") actions.selectTab(target.tabId);
     } else if (intent.type === "selectLastTab") {
-      const tab = activeWorkspace.tabs.at(-1);
-      if (tab) actions.selectTab(tab.id);
+      const target = getLastNumberShortcutTabTarget(activeWorkspace);
+      if (target) actions.selectTab(target.tabId);
     } else if (intent.type === "selectAdjacentTab") {
       actions.selectAdjacentTab(intent.direction);
     } else if (intent.type === "newTab") {

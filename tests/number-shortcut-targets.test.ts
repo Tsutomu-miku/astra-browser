@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getNumberShortcutTarget } from "../src/renderer/common/shortcuts/numberShortcutTargets";
+import {
+  getLastNumberShortcutTabTarget,
+  getNumberShortcutTarget,
+  getNumberShortcutTabs
+} from "../src/renderer/common/shortcuts/numberShortcutTargets";
 import { createFavorite, createTab, type Workspace } from "../src/renderer/domain/browser";
 
 function workspaceWithTabs(tabs: Workspace["tabs"]): Pick<Workspace, "tabs"> {
@@ -24,6 +28,20 @@ describe("getNumberShortcutTarget", () => {
     expect(getNumberShortcutTarget([essential], workspace, 1)).toEqual({ type: "tab", tabId: pinned.id });
     expect(getNumberShortcutTarget([essential], workspace, 2)).toEqual({ type: "tab", tabId: regular.id });
     expect(getNumberShortcutTarget([essential], workspace, 3)).toEqual({ type: "tab", tabId: secondRegular.id });
+    expect(getNumberShortcutTabs(workspace).map((tab) => tab.id)).toEqual([
+      pinned.id,
+      regular.id,
+      secondRegular.id
+    ]);
+  });
+
+  it("selects the last tab using sidebar visual order", () => {
+    const trailingPinned = { ...createTab("Pinned", "https://pinned.example"), isPinned: true };
+    const firstRegular = createTab("Docs", "https://docs.example");
+    const lastRegular = createTab("News", "https://news.example");
+    const workspace = workspaceWithTabs([firstRegular, lastRegular, trailingPinned]);
+
+    expect(getLastNumberShortcutTabTarget(workspace)).toEqual({ type: "tab", tabId: lastRegular.id });
   });
 
   it("returns null outside the available shortcut targets", () => {

@@ -1,4 +1,4 @@
-import type { Favorite, Workspace } from "../../domain/browser";
+import type { BrowserTab, Favorite, Workspace } from "../../domain/browser";
 
 export type NumberShortcutTarget =
   | { type: "essential"; title: string; url: string }
@@ -17,11 +17,22 @@ export function getNumberShortcutTarget(
   }
 
   const tabIndex = index - essentials.length;
-  const orderedTabs = [
-    ...workspace.tabs.filter((tab) => tab.isPinned),
-    ...workspace.tabs.filter((tab) => !tab.isPinned)
-  ];
+  const orderedTabs = getNumberShortcutTabs(workspace);
   const tab = orderedTabs[tabIndex];
 
   return tab ? { type: "tab", tabId: tab.id } : null;
+}
+
+export function getLastNumberShortcutTabTarget(
+  workspace: Pick<Workspace, "tabs">
+): Extract<NumberShortcutTarget, { type: "tab" }> | null {
+  const tab = getNumberShortcutTabs(workspace).at(-1);
+  return tab ? { type: "tab", tabId: tab.id } : null;
+}
+
+export function getNumberShortcutTabs(workspace: Pick<Workspace, "tabs">): BrowserTab[] {
+  return [
+    ...workspace.tabs.filter((tab) => tab.isPinned),
+    ...workspace.tabs.filter((tab) => !tab.isPinned)
+  ];
 }
