@@ -152,6 +152,7 @@ export function addTabToFavorites(state: BrowserState, tabId: string): BrowserSt
     const workspace = draft.workspaces.find((candidate) => candidate.tabs.some((tab) => tab.id === tabId));
     const tab = workspace?.tabs.find((candidate) => candidate.id === tabId);
     if (!workspace || !tab) return;
+    placeTabInFavorites(workspace, tab);
     if (workspace.favorites.some((favorite) => favorite.tabId === tab.id)) return;
 
     const legacyFavorite = workspace.favorites.find((favorite) => !favorite.tabId && favorite.url === tab.url);
@@ -175,9 +176,13 @@ export function toggleTabFavorite(state: BrowserState, tabId: string): BrowserSt
     const index = tabBackedIndex >= 0
       ? tabBackedIndex
       : workspace.favorites.findIndex((favorite) => !favorite.tabId && favorite.url === tab.url);
-    index >= 0
-      ? workspace.favorites.splice(index, 1)
-      : workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url, tab.id));
+    if (index >= 0) {
+      workspace.favorites.splice(index, 1);
+      return;
+    }
+
+    placeTabInFavorites(workspace, tab);
+    workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url, tab.id));
   });
 }
 
@@ -259,6 +264,12 @@ function reorderFavoriteList(
   const droppedOnIndex = favorites.findIndex((candidate) => candidate.id === targetFavoriteId);
   const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
   favorites.splice(insertIndex, 0, favorite);
+}
+
+function placeTabInFavorites(workspace: ReturnType<typeof getActiveWorkspace>, tab: BrowserTab) {
+  tab.isPinned = false;
+  tab.groupId = null;
+  pruneEmptyTabGroups(workspace);
 }
 
 export function toggleActiveTabEssential(state: BrowserState): BrowserState {

@@ -437,6 +437,24 @@ describe("domain actions", () => {
     });
   });
 
+  it("moves tabs into Favorites as their only sidebar location", () => {
+    const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
+    const docsTab = getActiveTab(getActiveWorkspace(grouped));
+    const pinned = toggleTabPinned(grouped, docsTab.id);
+    const favorited = addTabToFavorites(pinned, docsTab.id);
+    const workspace = getActiveWorkspace(favorited);
+    const tab = workspace.tabs.find((candidate) => candidate.id === docsTab.id)!;
+
+    expect(tab.isPinned).toBe(false);
+    expect(tab.groupId).toBeNull();
+    expect(workspace.tabGroups).toHaveLength(0);
+    expect(workspace.favorites.find((favorite) => favorite.tabId === docsTab.id)).toMatchObject({
+      tabId: docsTab.id,
+      title: "Docs",
+      url: docsTab.url
+    });
+  });
+
   it("removes quick entries by url without requiring a matching tab", () => {
     const withFavorite = toggleActiveTabFavorite(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
     const withEssential = toggleActiveTabEssential(withFavorite);

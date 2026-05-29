@@ -11,7 +11,6 @@ import { getPointerDropPlacement, type DropAxis } from "../../common/drag-drop/d
 import { readSidebarTabDragPayload } from "../../common/drag-drop/sidebarDragPayload";
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
-import { getGroupedTabs } from "../../domain/tabs/groups";
 import type { BrowserController } from "../../app/controller/types";
 import { SidebarAddress } from "./components/chrome/SidebarAddress";
 import { SidebarFooter } from "./components/chrome/SidebarFooter";
@@ -27,6 +26,7 @@ import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
 import { handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
 import { scrollSidebarSearchTargetIntoView } from "./model/sidebarSearchTargetDom";
 import { getSidebarTabDropIntent, getSidebarTabsAreaDropIntent } from "./model/sidebarTabDropIntent";
+import { getSidebarTabLocations } from "./model/sidebarTabLocations";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -51,10 +51,11 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     tabGroupMenu,
     tabMenu
   } = useSidebarContextMenus();
-  const pinnedTabs = activeWorkspace.tabs.filter((tab) => tab.isPinned);
-  const groupedTabs = getGroupedTabs(activeWorkspace);
-  const groupedTabIds = new Set(groupedTabs.flatMap((entry) => entry.tabs.map((tab) => tab.id)));
-  const regularTabs = activeWorkspace.tabs.filter((tab) => !tab.isPinned && !groupedTabIds.has(tab.id));
+  const {
+    groupedTabs,
+    pinnedTabs,
+    regularTabs
+  } = useMemo(() => getSidebarTabLocations(activeWorkspace), [activeWorkspace]);
   const memorySaver = useMemo(() => getMemorySaverState(activeWorkspace, state), [activeWorkspace, state]);
   const filteredItems = useMemo(() => filterSidebarItems({
     essentials: state.essentials,
@@ -105,6 +106,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     }
 
     const placement = getPointerDropPlacement(event.currentTarget, event, axis);
+    removeDraggedFavoriteLocation(event);
     placeTab(tabId, targetTabId, placement);
     setDraggingTabId(null);
   };
@@ -122,16 +124,29 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
 
   const handleTabsDrop = (event: DragEvent<HTMLElement>) => {
     const tabId = getDroppedTabId(event);
+    if (!tabId) return;
+
     const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
     const intent = getSidebarTabsAreaDropIntent(draggedTab);
-    if (intent.type !== "unpinToRegularEnd") return;
+    const favoriteId = getDroppedFavoriteId(event);
+    if (intent.type !== "unpinToRegularEnd" && !favoriteId) return;
 
     event.preventDefault();
-    actions.unpinTabToRegularEnd(tabId);
+    if (favoriteId) removeFavoriteLocation(favoriteId);
+    if (intent.type === "unpinToRegularEnd") actions.unpinTabToRegularEnd(tabId);
     setDraggingTabId(null);
   };
 
   const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+  const getDroppedFavoriteId = (event: DragEvent<HTMLElement>) => draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
+  const removeFavoriteLocation = (favoriteId: string) => {
+    actions.removeWorkspaceFavorite(favoriteId);
+    setDraggingFavoriteId(null);
+  };
+  const removeDraggedFavoriteLocation = (event: DragEvent<HTMLElement>) => {
+    const favoriteId = getDroppedFavoriteId(event);
+    if (favoriteId) removeFavoriteLocation(favoriteId);
+  };
 
   const handlePinDrop = (event: DragEvent<HTMLElement>) => {
     const tabId = getDroppedTabId(event);
@@ -139,6 +154,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     if (!tab) return;
 
     event.preventDefault();
+    removeDraggedFavoriteLocation(event);
     if (!tab.isPinned) actions.toggleTabPinned(tab.id);
     setDraggingTabId(null);
   };
@@ -304,6 +320,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           onPinDrop={handlePinDrop}
           onTabContextMenu={openTabMenu}
           onTabDrop={handleTabDrop}
+          onTabLocationDrop={removeDraggedFavoriteLocation}
           onTabsDrop={handleTabsDrop}
           setDraggingEssentialId={setDraggingEssentialId}
           setDraggingFavoriteId={setDraggingFavoriteId}

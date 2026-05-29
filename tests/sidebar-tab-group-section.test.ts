@@ -87,6 +87,39 @@ describe("sidebar tab group section", () => {
 
     act(() => root.unmount());
   });
+
+  it("notifies parent when a Favorite-backed tab is dropped into a group", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onAssignTab = vi.fn();
+    const onTabLocationDrop = vi.fn();
+    const setDraggingTabId = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        group,
+        onAssignTab,
+        onTabLocationDrop,
+        setDraggingTabId,
+        tabs: [activeTab]
+      })));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    header.dispatchEvent(createDragEvent("drop", {
+      "application/x-astra-sidebar-tab-id": "favorite-tab",
+      "text/favorite-id": "favorite"
+    }));
+
+    expect(onTabLocationDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }));
+    expect(onAssignTab).toHaveBeenCalledWith("favorite-tab", group.id);
+    expect(setDraggingTabId).toHaveBeenCalledWith(null);
+
+    act(() => root.unmount());
+  });
 });
 
 function props(overrides: Partial<Parameters<typeof TabGroupSection>[0]> = {}): Parameters<typeof TabGroupSection>[0] {
@@ -124,4 +157,18 @@ function tabGroup(): TabGroup {
     isCollapsed: false,
     name: "Research"
   };
+}
+
+function createDragEvent(type: string, data: Record<string, string>) {
+  const event = new Event(type, { bubbles: true, cancelable: true }) as Event & {
+    dataTransfer: DataTransfer;
+  };
+  Object.defineProperty(event, "dataTransfer", {
+    value: {
+      dropEffect: "none",
+      getData: (key: string) => data[key] ?? "",
+      setData: vi.fn()
+    }
+  });
+  return event;
 }

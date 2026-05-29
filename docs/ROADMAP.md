@@ -69,7 +69,7 @@ Acceptance:
 - Adding a tab to Favorites records the tab relationship.
 - Removing a Favorite does not close the tab unless a separate close action is used.
 
-Progress: partially implemented. Favorite items now carry optional `tabId` and opening paths select matching tabs first. Full data-model cleanup is still needed.
+Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites are treated as a distinct sidebar location instead of being duplicated in regular tab sections. Full cross-surface QA is still needed.
 
 Small requirements:
 
@@ -90,7 +90,7 @@ Small requirements:
 - Dragging tabs to groups, Spaces, New Space, and split targets must use consistent payload recovery.
 - Dragging tabs should not show explicit target-region overlays; destinations accept drops directly, while reordering shows local insertion position only.
 
-Progress: partially implemented. Native drag payloads and insertion indicators exist, but real Electron manual QA is still required.
+Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, and Favorite-to-tab-location moves exist, but real Electron manual QA is still required.
 
 Small requirements:
 
@@ -103,6 +103,7 @@ Small requirements:
 - P0-3.7 Reorder pinned tabs by horizontal placement.
 - P0-3.8 Drag state clears after drop, cancel, or native drag end.
 - P0-3.9 Dragging tabs does not auto-render empty target sections or New Group/Ungroup target buttons.
+- P0-3.10 Dragging a Favorite-backed tab into Tabs, Pinned, or a group removes the Favorite location.
 
 ### P0-4 Spaces And Profiles
 
@@ -194,8 +195,8 @@ Progress: started.
 | Electron Chromium shell | Mostly done | Electron shell, preload bridge, renderer surfaces exist. |
 | Spaces | Mostly done | Creation, switching, reordering, profiles, settings are present. |
 | Regular tabs | Mostly done | Lifecycle, selection, closing, duplication, sleeping, webviews are present. |
-| Favorites as tabs | Partial | `tabId` exists and opening semantics fixed; tab identity is the primary path with URL fallback for legacy data. |
-| Drag-and-drop | Partial | Workspace drag works; tab drag uses a native payload from the visible tab button; needs manual Electron QA. |
+| Favorites as tabs | Partial | `tabId` exists, opening semantics are fixed, and Favorite-backed tabs are excluded from other sidebar tab locations. |
+| Drag-and-drop | Partial | Workspace drag works; tab drag uses a native payload from the visible tab button; Favorite-backed drags can move back into tab locations; needs manual Electron QA. |
 | Pinned tabs | Partial | Pin/unpin and drag behavior exist; should be reviewed with Favorite-as-tab model. |
 | Tab groups | Partial | Grouping, context menus, drag targets exist; needs integrated DnD QA. |
 | Essentials | Partial | Global quick entries exist; semantics intentionally remain URL-entry based for now. |

@@ -36,6 +36,7 @@ export function SidebarSections({
   onPinDrop,
   onTabContextMenu,
   onTabDrop,
+  onTabLocationDrop,
   onTabsDrop = () => undefined,
   onQuickEntryContextMenu,
   setDraggingEssentialId,
@@ -68,6 +69,7 @@ export function SidebarSections({
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
+  onTabLocationDrop?: (event: DragEvent<HTMLElement>) => void;
   onTabsDrop?: (event: DragEvent<HTMLElement>) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
@@ -262,6 +264,7 @@ export function SidebarSections({
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}
         onTabGroupContextMenu={onTabGroupContextMenu}
+        onTabLocationDrop={onTabLocationDrop}
         onTabsDrop={onTabsDrop}
         onToggle={() => toggleSection("tabs")}
         setDraggingGroupId={setDraggingGroupId}
