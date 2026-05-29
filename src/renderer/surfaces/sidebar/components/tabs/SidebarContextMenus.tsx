@@ -41,6 +41,10 @@ export function SidebarContextMenus({
     const tab = resolveFavoriteTab(activeWorkspace, item);
     tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(item.url, item.title);
   };
+  const openQuickEntryInSplit = (item: Favorite, kind: "essential" | "favorite") => {
+    const tab = kind === "favorite" ? resolveFavoriteTab(activeWorkspace, item) : undefined;
+    tab ? actions.openTabInSplit(tab.id) : actions.openUrlInSplit(item.url, item.title);
+  };
 
   return (
     <>
@@ -87,7 +91,7 @@ export function SidebarContextMenus({
           onMoveToNewWorkspace={quickEntryMenu.kind === "favorite" ? actions.moveWorkspaceFavoriteToNewWorkspace : undefined}
           onMoveToWorkspace={quickEntryMenu.kind === "favorite" ? actions.moveWorkspaceFavoriteToWorkspace : undefined}
           onOpen={openQuickEntry}
-          onOpenInSplit={actions.openUrlInSplit}
+          onOpenInSplit={openQuickEntryInSplit}
           onPreview={actions.openGlance}
           onRemove={quickEntryMenu.kind === "essential" ? actions.removeEssential : actions.removeWorkspaceFavorite}
         />

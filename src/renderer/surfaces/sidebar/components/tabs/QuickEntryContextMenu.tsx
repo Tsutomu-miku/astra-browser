@@ -28,7 +28,7 @@ export function QuickEntryContextMenu({
   onMoveToNewWorkspace?: (favoriteId: string) => void;
   onMoveToWorkspace?: (favoriteId: string, workspaceId: string) => void;
   onOpen: (item: Favorite) => void;
-  onOpenInSplit: (url: string, title?: string) => void;
+  onOpenInSplit: (item: Favorite, kind: "essential" | "favorite") => void;
   onPreview: (url: string, title?: string) => void;
   onRemove: (url: string) => void;
   top: number;
@@ -57,7 +57,7 @@ export function QuickEntryContextMenu({
       <button type="button" role="menuitem" onClick={() => run(() => onPreview(item.url, item.title))}>
         Preview in Glance
       </button>
-      <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(item.url, item.title))}>
+      <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(item, kind))}>
         Open in split view
       </button>
       {canMoveFavorite && (

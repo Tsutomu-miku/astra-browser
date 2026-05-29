@@ -307,6 +307,45 @@ describe("sidebar quick entry context menu", () => {
     act(() => root.unmount());
   });
 
+  it("opens matching Favorite tabs in split by tab id from the sidebar context menu", () => {
+    const state = createDefaultState();
+    const activeWorkspace = state.workspaces[0];
+    const tab = activeWorkspace.tabs[0];
+    tab.title = "Docs";
+    tab.url = "https://docs.example/";
+    const item = createFavorite("Docs", tab.url, tab.id);
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarContextMenus, {
+        actions,
+        activeWorkspace,
+        closedTabMenu: null,
+        closeMenus: vi.fn(),
+        quickEntryMenu: {
+          item,
+          kind: "favorite",
+          left: 10,
+          top: 20
+        },
+        state,
+        tabGroupMenu: null,
+        tabMenu: null
+      }));
+    });
+
+    Array.from(container.querySelectorAll(".quick-entry-context-menu button"))
+      .find((button) => button.textContent === "Open in split view")
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(actions.openTabInSplit).toHaveBeenCalledWith(tab.id);
+    expect(actions.openUrlInSplit).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("wires favorite Space move actions through sidebar context menus", () => {
     const state = createDefaultState();
     const activeWorkspace = state.workspaces[0];
@@ -357,6 +396,7 @@ function createActions() {
     moveWorkspaceFavoriteToWorkspace: vi.fn(),
     navigateActiveTab: vi.fn(),
     openGlance: vi.fn(),
+    openTabInSplit: vi.fn(),
     openUrlInActiveWorkspace: vi.fn(),
     openUrlInSplit: vi.fn(),
     removeEssential: vi.fn(),
