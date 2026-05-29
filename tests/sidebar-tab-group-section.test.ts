@@ -79,13 +79,44 @@ describe("sidebar tab group section", () => {
       }));
     });
 
-    container.querySelector(".tab-group-title-input")?.dispatchEvent(new KeyboardEvent("keydown", {
+    container.querySelector(".tab-group-toggle")?.dispatchEvent(new KeyboardEvent("keydown", {
       bubbles: true,
       key: "F10",
       shiftKey: true
     }));
 
     expect(onGroupContextMenu).toHaveBeenCalledWith(expect.objectContaining({ type: "contextmenu" }), group);
+
+    act(() => root.unmount());
+  });
+
+  it("keeps tab group title keyboard context menu keys inside the input", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onGroupContextMenu = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        group,
+        onGroupContextMenu,
+        tabs: [activeTab]
+      })));
+    });
+
+    container.querySelector(".tab-group-title-input")?.dispatchEvent(new KeyboardEvent("keydown", {
+      bubbles: true,
+      key: "F10",
+      shiftKey: true
+    }));
+    container.querySelector(".tab-group-title-input")?.dispatchEvent(new KeyboardEvent("keydown", {
+      bubbles: true,
+      key: "ContextMenu"
+    }));
+
+    expect(onGroupContextMenu).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });

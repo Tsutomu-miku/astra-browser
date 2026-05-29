@@ -56,6 +56,8 @@ export function TabGroupSection({
     draggingGroupId || event.dataTransfer.getData("text/group-id")
   );
   const handleToggleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (openSidebarKeyboardContextMenu(event)) return;
+
     const intent = getDisclosureKeyboardToggleIntent(event.key, group.isCollapsed);
     if (!intent) return;
 
@@ -73,7 +75,6 @@ export function TabGroupSection({
         data-dragging={draggingGroupId === group.id}
         data-drop-target={Boolean(draggingGroupId && draggingGroupId !== group.id)}
         onContextMenu={(event) => onGroupContextMenu(event, group)}
-        onKeyDown={openSidebarKeyboardContextMenu}
         onDragStart={(event) => {
           setDraggingGroupId(group.id);
           event.dataTransfer.effectAllowed = "move";
