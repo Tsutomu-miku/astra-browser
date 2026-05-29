@@ -204,7 +204,8 @@ describe("sidebar focus navigation", () => {
       })));
     });
 
-    const tabsHeader = container.querySelector<HTMLButtonElement>(".sidebar-section-header-button")!;
+    const tabsHeader = Array.from(container.querySelectorAll<HTMLButtonElement>(".sidebar-section-header-button"))
+      .find((button) => button.textContent?.includes("Tabs"))!;
     tabsHeader.focus();
 
     act(() => {

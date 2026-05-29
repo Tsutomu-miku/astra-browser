@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
+import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { createTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarPinnedTabs } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs";
@@ -294,6 +295,43 @@ describe("sidebar pinned tabs", () => {
     expect(html).toBe("");
   });
 
+  it("accepts tab drops on an empty pinned folder header when shown by the sidebar", () => {
+    const activeTab = createTab("Mail", "https://mail.example");
+    const onPinDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarPinnedTabs, {
+        actions: createActions(),
+        activeTab,
+        draggingTabId: activeTab.id,
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onPinDrop,
+        onToggle: vi.fn(),
+        pinnedTabs: [],
+        setDraggingTabId: vi.fn(),
+        showWhenEmpty: true,
+        splitTabIds: []
+      }));
+    });
+
+    const pinnedHeader = container.querySelector<HTMLElement>(".sidebar-section-header-button");
+    const pinnedSection = pinnedHeader?.closest<HTMLElement>(".sidebar-section");
+    expect(pinnedHeader?.textContent).toContain("Pinned");
+    expect(container.querySelector(".pinned-tabs")).toBeNull();
+
+    const dragOverEvent = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: activeTab.id });
+    pinnedSection?.dispatchEvent(dragOverEvent);
+    expect(dragOverEvent.defaultPrevented).toBe(true);
+
+    pinnedSection?.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: activeTab.id }));
+    expect(onPinDrop).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("styles pinned tab drag and drop states", () => {
     expect(sidebarCss).toContain('.pinned-tab-button[data-dragging="true"]');
     expect(dropZoneCss).toContain('.pinned-tab-button[data-drop-placement]::before');
@@ -322,3 +360,16 @@ describe("sidebar pinned tabs", () => {
     expect(actionHintCss).not.toContain(".pinned-tab-button:focus-visible .sidebar-item-action-hints");
   });
 });
+
+function createDragEvent(type: string, dragData: Record<string, string>) {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: {
+      dropEffect: "none",
+      effectAllowed: "all",
+      getData: vi.fn((dataType: string) => dragData[dataType] ?? ""),
+      setData: vi.fn()
+    }
+  });
+  return event;
+}

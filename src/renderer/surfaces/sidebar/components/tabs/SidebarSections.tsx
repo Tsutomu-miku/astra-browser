@@ -11,6 +11,7 @@ import {
   isSidebarUrlActive
 } from "../../model/sidebarItemState";
 import { hasSidebarSectionDragReveal, type SidebarSectionId } from "../../model/sidebarSectionState";
+import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
 import { FavoriteButton, SidebarSectionHeader } from "./SidebarItems";
@@ -112,6 +113,8 @@ export function SidebarSections({
     const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
     tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(favorite.url, favorite.title);
   };
+  const showFavoritesFolder = filteredItems.favorites.length > 0 || !filteredItems.isFiltering;
+  const showPinnedFolder = filteredItems.pinnedTabs.length > 0 || !filteredItems.isFiltering;
 
   return (
     <>
@@ -176,31 +179,29 @@ export function SidebarSections({
         onPinDrop={onPinDrop}
         onToggle={() => toggleSection("pinned")}
         setDraggingTabId={setDraggingTabId}
+        showWhenEmpty={showPinnedFolder}
       />
 
-      {filteredItems.favorites.length > 0 && (
-        <section className="sidebar-section">
+      {showFavoritesFolder && (
+        <section
+          className="sidebar-section"
+          onDragEnter={(event) => {
+            acceptSidebarTabFolderDrag(event, draggingTabId);
+          }}
+          onDragOver={(event) => {
+            acceptSidebarTabFolderDrag(event, draggingTabId);
+          }}
+          onDrop={onFavoriteDrop}
+        >
           <SidebarSectionHeader
             count={filteredItems.favorites.length}
             isCollapsed={isSectionCollapsed("favorites")}
             title="Favorites"
             onToggle={() => toggleSection("favorites")}
           />
-          {!isSectionCollapsed("favorites") && <nav
+          {!isSectionCollapsed("favorites") && filteredItems.favorites.length > 0 && <nav
             className="favorites"
             aria-label="Favorites"
-            onDragEnter={(event) => {
-              if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
-                event.preventDefault();
-              }
-            }}
-            onDragOver={(event) => {
-              if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-              }
-            }}
-            onDrop={onFavoriteDrop}
           >
             {filteredItems.favorites.map((favorite) => {
               const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);

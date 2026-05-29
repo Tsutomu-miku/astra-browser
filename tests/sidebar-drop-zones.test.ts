@@ -54,6 +54,8 @@ describe("sidebar section drop zones", () => {
     expect(html).not.toContain('aria-label="Pinned tabs"');
     expect(html).not.toContain('aria-label="Essentials"');
     expect(html).not.toContain('aria-label="Favorites"');
+    expect(html).toContain("Pinned");
+    expect(html).toContain("Favorites");
   });
 
   it("accepts tab drops on existing Favorites without marking a visible target area", () => {
@@ -111,6 +113,68 @@ describe("sidebar section drop zones", () => {
     expect(favorites.dataset.dropTarget).toBeUndefined();
 
     favorites.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
+    expect(onFavoriteDrop).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("accepts tab drops on an empty Favorites folder header", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const onFavoriteDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab: tab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: tab.id,
+        filteredItems: {
+          essentials: [],
+          favorites: [],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [tab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop,
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const favoritesHeader = Array.from(container.querySelectorAll<HTMLElement>(".sidebar-section-header-button"))
+      .find((button) => button.textContent?.includes("Favorites"));
+    const favoritesSection = favoritesHeader?.closest<HTMLElement>(".sidebar-section");
+    expect(favoritesHeader).toBeTruthy();
+    expect(favoritesSection).toBeTruthy();
+    expect(container.querySelector(".favorites")).toBeNull();
+    expect(container.textContent).not.toContain("Drop to");
+
+    const dragOverEvent = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id });
+    favoritesSection?.dispatchEvent(dragOverEvent);
+    expect(dragOverEvent.defaultPrevented).toBe(true);
+
+    favoritesSection?.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
     expect(onFavoriteDrop).toHaveBeenCalled();
 
     act(() => root.unmount());

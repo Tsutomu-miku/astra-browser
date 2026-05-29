@@ -6,6 +6,7 @@ import { readSidebarTabDragPayload, writeSidebarTabDragPayload } from "../../../
 import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
+import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
@@ -25,6 +26,7 @@ export function SidebarPinnedTabs({
   onToggle,
   pinnedTabs,
   setDraggingTabId,
+  showWhenEmpty = false,
   splitTabIds
 }: {
   actions: BrowserController["actions"];
@@ -38,33 +40,31 @@ export function SidebarPinnedTabs({
   onToggle?: () => void;
   pinnedTabs: BrowserTab[];
   setDraggingTabId: (tabId: string | null) => void;
+  showWhenEmpty?: boolean;
   splitTabIds: string[];
 }) {
-  if (pinnedTabs.length === 0) return null;
+  if (pinnedTabs.length === 0 && !showWhenEmpty) return null;
 
   return (
-    <section className="sidebar-section">
+    <section
+      className="sidebar-section"
+      onDragEnter={(event) => {
+        acceptSidebarTabFolderDrag(event, draggingTabId);
+      }}
+      onDragOver={(event) => {
+        acceptSidebarTabFolderDrag(event, draggingTabId);
+      }}
+      onDrop={onPinDrop}
+    >
       <SidebarSectionHeader
         count={pinnedTabs.length}
         isCollapsed={isCollapsed}
         title="Pinned"
         onToggle={onToggle}
       />
-      {!isCollapsed && <nav
+      {!isCollapsed && pinnedTabs.length > 0 && <nav
         className="pinned-tabs"
         aria-label="Pinned tabs"
-        onDragEnter={(event) => {
-          if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
-            event.preventDefault();
-          }
-        }}
-        onDragOver={(event) => {
-          if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "move";
-          }
-        }}
-        onDrop={onPinDrop}
       >
         {pinnedTabs.map((tab) => {
           const statusBadges = getTabStatusBadges(tab, splitTabIds);
@@ -132,6 +132,7 @@ export function SidebarPinnedTabs({
               onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
               onDrop={(event) => {
                 clearDropPlacement(event.currentTarget);
+                event.stopPropagation();
                 onTabDrop(event, tab.id, "horizontal");
               }}
             >

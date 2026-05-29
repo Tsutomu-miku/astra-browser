@@ -101,6 +101,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Users must be able to drag pinned tabs back into the regular Tabs section to unpin and place them near the drop target.
 - Dropping a pinned tab onto empty space inside the regular Tabs section must unpin it to the end of the regular list.
 - Tabs, Pinned, Favorites, and tab groups must be treated as sidebar folders: moving a tab into a folder preserves tab identity and uses the same tab move path wherever possible.
+- Empty Pinned and Favorites folders must remain visible as ordinary sidebar folder headers when not filtering, accept tab drops on the folder itself, and avoid separate "drop target" regions or labels.
 - Users must have global Essentials visible across Spaces for core pages.
 - Clicking a global Essential from the sidebar must navigate the current tab instead of creating a new tab.
 - Users must be able to drag sidebar tabs into Essentials to save them as global quick entries.

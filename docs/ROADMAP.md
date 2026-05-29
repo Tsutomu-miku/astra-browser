@@ -94,7 +94,7 @@ Small requirements:
 - Dragging tabs to groups, Spaces, New Space, and split targets must use consistent payload recovery.
 - Dragging tabs should not show explicit target-region overlays; destinations accept drops directly, while reordering shows local insertion position only.
 
-Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. Real Electron manual QA is still required.
+Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. Real Electron manual QA is still required.
 
 Small requirements:
 
@@ -106,9 +106,10 @@ Small requirements:
 - P0-3.6 Reorder regular tabs by before/after placement.
 - P0-3.7 Reorder pinned tabs by horizontal placement.
 - P0-3.8 Drag state clears after drop, cancel, or native drag end.
-- P0-3.9 Dragging tabs does not auto-render empty target sections or New Group/Ungroup target buttons.
+- P0-3.9 Dragging tabs does not render separate target-region sections or New Group/Ungroup target buttons.
 - P0-3.10 Dragging a Favorite-backed tab into Tabs, Pinned, or a group removes it from the Favorites folder.
 - P0-3.11 Tabs, Pinned, and tab groups share one folder move path instead of separate pin/unpin/drop-intent branches.
+- P0-3.12 Empty Pinned and Favorites folders stay visible as ordinary headers and accept tab drops without special target UI.
 
 ### P0-4 Spaces And Profiles
 
