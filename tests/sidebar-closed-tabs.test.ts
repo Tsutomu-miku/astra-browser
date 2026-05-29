@@ -7,8 +7,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ClosedTab } from "../src/renderer/domain/browser";
+import { createDefaultState } from "../src/renderer/domain/browser";
 import { ClosedTabButton } from "../src/renderer/surfaces/sidebar/components/tabs/ClosedTabButton";
+import { SidebarContextMenus } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarContextMenus";
 import { ClosedTabContextMenu } from "../src/renderer/surfaces/sidebar/components/tabs/ClosedTabContextMenu";
+import type { BrowserController } from "../src/renderer/app/controller/types";
 
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 
@@ -38,17 +41,22 @@ describe("sidebar recently closed tabs", () => {
     const html = renderToStaticMarkup(createElement(ClosedTabContextMenu, {
       closedIndex: 1,
       left: 10,
+      moveWorkspaceTargets: [{ id: "work", name: "Work" }],
       onClose: vi.fn(),
       onCopyText: vi.fn(),
       onOpenInSplit: vi.fn(),
       onPreview: vi.fn(),
       onRestore: vi.fn(),
+      onRestoreToNewWorkspace: vi.fn(),
+      onRestoreToWorkspace: vi.fn(),
       tab: closedTab(),
       top: 20
     }));
 
     expect(html).toContain('role="menu"');
     expect(html).toContain("Restore");
+    expect(html).toContain("Restore to Work");
+    expect(html).toContain("Restore to New Space");
     expect(html).toContain("Preview in Glance");
     expect(html).toContain("Open in split view");
     expect(html).toContain("Copy URL");
@@ -75,6 +83,77 @@ describe("sidebar recently closed tabs", () => {
     expect(renderToStaticMarkup(menu)).toContain("Copy URL");
     expect(onCopyText).toHaveBeenCalledWith("https://docs.example/");
     expect(onCopyText).toHaveBeenCalledWith("Docs");
+  });
+
+  it("restores recently closed tabs to another Space from the context menu", () => {
+    const tab = closedTab();
+    const onClose = vi.fn();
+    const onRestoreToWorkspace = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(ClosedTabContextMenu, {
+        closedIndex: 2,
+        left: 10,
+        moveWorkspaceTargets: [{ id: "work", name: "Work" }],
+        onClose,
+        onCopyText: vi.fn(),
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn(),
+        onRestore: vi.fn(),
+        onRestoreToNewWorkspace: vi.fn(),
+        onRestoreToWorkspace,
+        tab,
+        top: 20
+      }));
+    });
+
+    Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Restore to Work")
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(onRestoreToWorkspace).toHaveBeenCalledWith(2, "work");
+    expect(onClose).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("wires recently closed Space restore actions through sidebar context menus", () => {
+    const state = createDefaultState();
+    const activeWorkspace = state.workspaces[0];
+    const tab = closedTab();
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarContextMenus, {
+        actions,
+        activeWorkspace,
+        closedTabMenu: {
+          closedIndex: 1,
+          left: 10,
+          tab,
+          top: 20
+        },
+        closeMenus: vi.fn(),
+        quickEntryMenu: null,
+        state,
+        tabGroupMenu: null,
+        tabMenu: null
+      }));
+    });
+
+    const restoreButtons = Array.from(container.querySelectorAll(".closed-tab-context-menu button"))
+      .filter((button) => button.textContent?.startsWith("Restore to"));
+    restoreButtons[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    restoreButtons.at(-1)?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(actions.restoreClosedTabToWorkspace).toHaveBeenCalledWith(1, "work");
+    expect(actions.restoreClosedTabToNewWorkspace).toHaveBeenCalledWith(1);
+
+    act(() => root.unmount());
   });
 
   it("opens recently closed context menus from the keyboard", () => {
@@ -135,4 +214,15 @@ function closedTab(): ClosedTab {
     title: "Docs",
     url: "https://docs.example/"
   };
+}
+
+function createActions() {
+  return {
+    copyText: vi.fn(),
+    openGlance: vi.fn(),
+    openUrlInSplit: vi.fn(),
+    restoreClosedTab: vi.fn(),
+    restoreClosedTabToNewWorkspace: vi.fn(),
+    restoreClosedTabToWorkspace: vi.fn()
+  } as unknown as BrowserController["actions"];
 }

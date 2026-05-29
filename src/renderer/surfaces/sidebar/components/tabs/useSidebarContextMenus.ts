@@ -74,7 +74,7 @@ export function useSidebarContextMenus() {
     setClosedTabMenu({
       closedIndex,
       tab,
-      ...getMenuPosition(event, 206, 170)
+      ...getMenuPosition(event, 206, 252)
     });
   }
 

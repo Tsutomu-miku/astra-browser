@@ -110,6 +110,7 @@ export function SidebarContextMenus({
         <ClosedTabContextMenu
           closedIndex={closedTabMenu.closedIndex}
           left={closedTabMenu.left}
+          moveWorkspaceTargets={getMoveWorkspaceTargets(state.workspaces, activeWorkspace.id)}
           tab={closedTabMenu.tab}
           top={closedTabMenu.top}
           onClose={closeMenus}
@@ -117,6 +118,8 @@ export function SidebarContextMenus({
           onOpenInSplit={actions.openUrlInSplit}
           onPreview={actions.openGlance}
           onRestore={actions.restoreClosedTab}
+          onRestoreToNewWorkspace={actions.restoreClosedTabToNewWorkspace}
+          onRestoreToWorkspace={actions.restoreClosedTabToWorkspace}
         />
       )}
     </>
