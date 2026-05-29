@@ -275,10 +275,11 @@ describe("sidebar item action hints", () => {
   });
 
   it("uses in-flow action hints so hover labels do not cover tab titles", () => {
-    expect(sidebarCss).toContain("grid-template-columns: 24px minmax(0, 1fr) auto");
-    expect(sidebarCss).toContain("grid-template-columns: 22px minmax(0, 1fr) auto");
-    expect(sidebarActionHintsCss).toContain("max-width: 0");
-    expect(sidebarActionHintsCss).toContain("max-width: 46px");
+    expect(sidebarCss).toContain("grid-template-columns: 24px minmax(0, 1fr) 46px");
+    expect(sidebarCss).toContain("grid-template-columns: 22px minmax(0, 1fr) 46px");
+    expect(sidebarActionHintsCss).toContain("width: 46px");
+    expect(sidebarActionHintsCss).toContain("min-width: 46px");
+    expect(sidebarActionHintsCss).not.toContain("max-width");
     expect(sidebarActionHintsCss).toContain("width: 20px");
     expect(sidebarActionHintsCss).not.toContain("kbd");
     expect(sidebarActionHintsCss).not.toContain("right: 6px");

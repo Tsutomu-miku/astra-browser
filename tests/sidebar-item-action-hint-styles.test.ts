@@ -6,10 +6,11 @@ const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-
 const sidebarLayoutCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 
 describe("sidebar item action hint styles", () => {
-  it("reveals row action hints in flow on hover and keyboard focus", () => {
+  it("reveals row action hints from stable in-flow slots on hover and keyboard focus", () => {
     expect(sidebarCss).not.toContain("position: absolute");
-    expect(sidebarCss).toContain("max-width: 0");
-    expect(sidebarCss).toContain("max-width: 46px");
+    expect(sidebarCss).toContain("width: 46px");
+    expect(sidebarCss).toContain("min-width: 46px");
+    expect(sidebarCss).not.toContain("max-width");
     expect(sidebarCss).toContain(".tab-row:hover .sidebar-item-action-hints");
     expect(sidebarCss).toContain(".tab-row:focus-within .sidebar-item-action-hints");
     expect(sidebarCss).toContain(".favorite-button:hover .sidebar-item-action-hints");

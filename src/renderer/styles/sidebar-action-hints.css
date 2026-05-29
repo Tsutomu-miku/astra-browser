@@ -1,6 +1,6 @@
 .sidebar-item-action-hints {
-  min-width: 0;
-  max-width: 0;
+  width: 46px;
+  min-width: 46px;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
@@ -12,7 +12,6 @@
   pointer-events: none;
   transform: translateX(3px);
   transition:
-    max-width 140ms ease,
     opacity 120ms ease,
     transform 120ms ease;
 }
@@ -23,7 +22,6 @@
 .favorite-button:focus-visible .sidebar-item-action-hints,
 .closed-tab-button:hover .sidebar-item-action-hints,
 .closed-tab-button:focus-visible .sidebar-item-action-hints {
-  max-width: 46px;
   opacity: 1;
   transform: translateX(0);
 }
