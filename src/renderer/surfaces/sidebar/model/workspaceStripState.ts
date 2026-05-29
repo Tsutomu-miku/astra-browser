@@ -22,6 +22,54 @@ export function getWorkspaceButtonLabel(workspace: Pick<Workspace, "name" | "tab
   return `${getWorkspaceDisplayName(workspace)}, ${tabCount} ${tabCount === 1 ? "tab" : "tabs"}`;
 }
 
+export function getWorkspaceAccessibilityLabel(
+  workspace: Pick<Workspace, "name" | "tabs">,
+  {
+    isActive,
+    isDropTarget
+  }: {
+    isActive: boolean;
+    isDropTarget: boolean;
+  }
+): string {
+  return [
+    getWorkspaceButtonLabel(workspace),
+    isActive ? "active Space" : "Space",
+    isDropTarget ? "drop target" : null
+  ].filter(Boolean).join(", ");
+}
+
+export function getNewWorkspaceAccessibilityLabel(isDropTarget: boolean): string {
+  return isDropTarget ? "Drop to create New Space" : "New Space";
+}
+
+export function getWorkspaceDropTargetState({
+  activeWorkspaceId,
+  draggingClosedTabIndex,
+  draggingFavoriteId,
+  draggingGroupId,
+  draggingTabId,
+  draggingWorkspaceId,
+  workspaceId
+}: {
+  activeWorkspaceId: string;
+  draggingClosedTabIndex: number | null;
+  draggingFavoriteId: string | null;
+  draggingGroupId: string | null;
+  draggingTabId: string | null;
+  draggingWorkspaceId: string | null;
+  workspaceId: string;
+}): boolean {
+  const isActive = workspaceId === activeWorkspaceId;
+  return Boolean(
+    (draggingGroupId && !isActive) ||
+    draggingClosedTabIndex !== null ||
+    (draggingFavoriteId && !isActive) ||
+    (draggingTabId && !isActive) ||
+    (draggingWorkspaceId && workspaceId !== draggingWorkspaceId)
+  );
+}
+
 export function getWorkspaceWheelDirection(deltaX: number, deltaY: number): 1 | -1 | 0 {
   const dominantDelta = Math.abs(deltaY) >= Math.abs(deltaX) ? deltaY : deltaX;
   if (Math.abs(dominantDelta) < 1) return 0;

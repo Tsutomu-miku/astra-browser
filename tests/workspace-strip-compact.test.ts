@@ -46,7 +46,8 @@ describe("workspace strip compact controls", () => {
     });
 
     expect(html.match(/data-drop-target="true"/g)).toHaveLength(3);
-    expect(html).toContain('aria-label="New Space" data-drop-target="true"');
+    expect(html).toContain('aria-label="Personal, 1 tab, active Space, drop target"');
+    expect(html).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
   });
 
   it("marks other Spaces as drop targets while dragging a Space favorite", () => {
@@ -58,7 +59,8 @@ describe("workspace strip compact controls", () => {
     });
 
     expect(html.match(/data-drop-target="true"/g)).toHaveLength(2);
-    expect(html).toContain('aria-label="New Space" data-drop-target="true"');
+    expect(html).toContain('aria-label="Work, 1 tab, Space, drop target"');
+    expect(html).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
   });
 
   it("marks New Space as a drop target while dragging tabs or groups", () => {
@@ -76,8 +78,8 @@ describe("workspace strip compact controls", () => {
     });
 
     expect(tabHtml).toContain('class="workspace-button workspace-new-button"');
-    expect(tabHtml).toContain('aria-label="New Space" data-drop-target="true"');
-    expect(groupHtml).toContain('aria-label="New Space" data-drop-target="true"');
+    expect(tabHtml).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
+    expect(groupHtml).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
   });
 
   it("marks New Space as a drop target while dragging a recently closed tab", () => {
@@ -88,7 +90,7 @@ describe("workspace strip compact controls", () => {
       sidebarCollapsed: false
     });
 
-    expect(html).toContain('aria-label="New Space" data-drop-target="true"');
+    expect(html).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
   });
 
   it("opens Space context menus from the keyboard", () => {

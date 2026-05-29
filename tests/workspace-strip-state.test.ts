@@ -4,7 +4,10 @@ import { createTab, type Workspace } from "../src/renderer/domain/browser";
 import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
+  getNewWorkspaceAccessibilityLabel,
+  getWorkspaceAccessibilityLabel,
   getWorkspaceButtonLabel,
+  getWorkspaceDropTargetState,
   getWorkspaceInitial,
   getWorkspaceTabCount,
   getWorkspaceWheelDirection
@@ -24,6 +27,10 @@ describe("workspace strip state", () => {
     expect(getWorkspaceInitial(personal)).toBe("P");
     expect(getWorkspaceTabCount(personal)).toBe(2);
     expect(getWorkspaceButtonLabel(personal)).toBe("Personal, 2 tabs");
+    expect(getWorkspaceAccessibilityLabel(personal, {
+      isActive: true,
+      isDropTarget: false
+    })).toBe("Personal, 2 tabs, active Space");
   });
 
   it("handles blank names and singular tab labels", () => {
@@ -31,6 +38,36 @@ describe("workspace strip state", () => {
 
     expect(getWorkspaceInitial(unnamed)).toBe("S");
     expect(getWorkspaceButtonLabel(unnamed)).toBe("Space, 1 tab");
+    expect(getWorkspaceAccessibilityLabel(unnamed, {
+      isActive: false,
+      isDropTarget: true
+    })).toBe("Space, 1 tab, Space, drop target");
+  });
+
+  it("labels New Space differently when it is a drop target", () => {
+    expect(getNewWorkspaceAccessibilityLabel(false)).toBe("New Space");
+    expect(getNewWorkspaceAccessibilityLabel(true)).toBe("Drop to create New Space");
+  });
+
+  it("marks workspace drop targets from sidebar drag state", () => {
+    expect(getWorkspaceDropTargetState({
+      activeWorkspaceId: "personal",
+      draggingClosedTabIndex: null,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      draggingTabId: "tab",
+      draggingWorkspaceId: null,
+      workspaceId: "work"
+    })).toBe(true);
+    expect(getWorkspaceDropTargetState({
+      activeWorkspaceId: "personal",
+      draggingClosedTabIndex: null,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      draggingTabId: "tab",
+      draggingWorkspaceId: null,
+      workspaceId: "personal"
+    })).toBe(false);
   });
 
   it("maps wheel movement to workspace cycle direction", () => {

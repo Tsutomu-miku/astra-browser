@@ -7,7 +7,10 @@ import type { Workspace } from "../../../../domain/browser";
 import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
+  getNewWorkspaceAccessibilityLabel,
+  getWorkspaceAccessibilityLabel,
   getWorkspaceButtonLabel,
+  getWorkspaceDropTargetState,
   getWorkspaceInitial,
   getWorkspaceTabCount,
   getWorkspaceWheelDirection
@@ -123,50 +126,49 @@ export function WorkspaceStrip({
       onKeyDown={handleWorkspaceFocusNavigation}
       onWheel={onWorkspaceWheel}
     >
-      {workspaces.map((workspace) => (
-        <button
-          className="workspace-button"
-          key={workspace.id}
-          style={{ "--accent": workspace.accent } as CSSProperties}
-          title={getWorkspaceButtonLabel(workspace)}
-          type="button"
-          draggable
-          aria-label={getWorkspaceButtonLabel(workspace)}
-          aria-current={workspace.id === activeWorkspaceId}
-          data-dragging={draggingWorkspaceId === workspace.id}
-          data-drop-target={Boolean(
-            (draggingGroupId && workspace.id !== activeWorkspaceId) ||
-            draggingClosedTabIndex !== null ||
-            (draggingFavoriteId && workspace.id !== activeWorkspaceId) ||
-            (draggingTabId && workspace.id !== activeWorkspaceId) ||
-            (draggingWorkspaceId && workspace.id !== draggingWorkspaceId)
-          )}
-          onDragStart={(event) => onDragStart(event, workspace.id)}
-          onDragEnd={onDragEnd}
-          onDragOver={(event) => {
-            onDragOver(event, workspace.id);
-            if (draggingWorkspaceId && workspace.id !== draggingWorkspaceId) {
-              updateDropPlacement(event.currentTarget, event, "vertical");
-            }
-          }}
-          onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
-          onDrop={(event) => {
-            clearDropPlacement(event.currentTarget);
-            onDrop(event, workspace.id);
-          }}
-          onContextMenu={(event) => openWorkspaceMenu(event, workspace.id)}
-          onKeyDown={openSidebarKeyboardContextMenu}
-          onClick={() => onSelect(workspace.id)}
-        >
-          <span className="workspace-initial">{getWorkspaceInitial(workspace)}</span>
-          <span className="workspace-tab-count" aria-hidden="true">{getWorkspaceTabCount(workspace)}</span>
-        </button>
-      ))}
+      {workspaces.map((workspace) => {
+        const isActive = workspace.id === activeWorkspaceId;
+        const isDropTarget = getWorkspaceDropTargetState({ activeWorkspaceId, draggingClosedTabIndex, draggingFavoriteId, draggingGroupId, draggingTabId, draggingWorkspaceId, workspaceId: workspace.id });
+
+        return (
+          <button
+            className="workspace-button"
+            key={workspace.id}
+            style={{ "--accent": workspace.accent } as CSSProperties}
+            title={getWorkspaceButtonLabel(workspace)}
+            type="button"
+            draggable
+            aria-label={getWorkspaceAccessibilityLabel(workspace, { isActive, isDropTarget })}
+            aria-current={isActive}
+            data-dragging={draggingWorkspaceId === workspace.id}
+            data-drop-target={isDropTarget}
+            onDragStart={(event) => onDragStart(event, workspace.id)}
+            onDragEnd={onDragEnd}
+            onDragOver={(event) => {
+              onDragOver(event, workspace.id);
+              if (draggingWorkspaceId && workspace.id !== draggingWorkspaceId) {
+                updateDropPlacement(event.currentTarget, event, "vertical");
+              }
+            }}
+            onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
+            onDrop={(event) => {
+              clearDropPlacement(event.currentTarget);
+              onDrop(event, workspace.id);
+            }}
+            onContextMenu={(event) => openWorkspaceMenu(event, workspace.id)}
+            onKeyDown={openSidebarKeyboardContextMenu}
+            onClick={() => onSelect(workspace.id)}
+          >
+            <span className="workspace-initial">{getWorkspaceInitial(workspace)}</span>
+            <span className="workspace-tab-count" aria-hidden="true">{getWorkspaceTabCount(workspace)}</span>
+          </button>
+        );
+      })}
       <button
         className="workspace-button workspace-new-button"
         title="New Space"
         type="button"
-        aria-label="New Space"
+        aria-label={getNewWorkspaceAccessibilityLabel(Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId))}
         data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId)}
         onDragOver={(event) => {
           if (draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId) {
