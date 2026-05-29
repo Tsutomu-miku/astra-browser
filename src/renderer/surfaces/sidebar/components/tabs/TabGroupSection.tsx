@@ -115,7 +115,6 @@ export function TabGroupSection({
           type="button"
           aria-expanded={!group.isCollapsed}
           aria-label={`${group.isCollapsed ? "Expand" : "Collapse"} tab group ${group.name}`}
-          title={group.isCollapsed ? "Expand group" : "Collapse group"}
           onClick={onToggle}
           onKeyDown={handleToggleKeyDown}
         >

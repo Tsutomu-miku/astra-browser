@@ -35,6 +35,8 @@ describe("sidebar item action hints", () => {
     expect(html).toContain('data-action-hint="preview"');
     expect(html).toContain('data-action-hint="split"');
     expect(html).toContain('aria-label="Docs, active, tab"');
+    expect(html).toContain('aria-label="Close Docs"');
+    expect(html).not.toContain('title="Close tab"');
     expect(html).not.toContain("<kbd");
     expect(html).not.toContain(">Preview<");
     expect(html).not.toContain(">Split<");

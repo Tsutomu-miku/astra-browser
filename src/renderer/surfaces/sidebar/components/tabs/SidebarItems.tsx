@@ -182,7 +182,6 @@ export function TabRow({
       <button
         className="tab-close"
         type="button"
-        title="Close tab"
         aria-label={`Close ${tab.title || tab.url}`}
         draggable={false}
         onDragStart={(event) => {

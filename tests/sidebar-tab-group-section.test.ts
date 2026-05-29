@@ -26,6 +26,7 @@ describe("sidebar tab group section", () => {
     let toggle = container.querySelector<HTMLButtonElement>(".tab-group-toggle")!;
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(toggle.getAttribute("aria-label")).toBe("Collapse tab group Research");
+    expect(toggle.hasAttribute("title")).toBe(false);
 
     act(() => {
       toggle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
@@ -46,6 +47,7 @@ describe("sidebar tab group section", () => {
     toggle = container.querySelector<HTMLButtonElement>(".tab-group-toggle")!;
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(toggle.getAttribute("aria-label")).toBe("Expand tab group Research");
+    expect(toggle.hasAttribute("title")).toBe(false);
 
     act(() => {
       toggle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));

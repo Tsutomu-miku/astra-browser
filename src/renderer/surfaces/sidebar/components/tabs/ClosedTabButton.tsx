@@ -36,7 +36,6 @@ export function ClosedTabButton({
       draggable={Boolean(onDragStart)}
       aria-label={getClosedTabAccessibilityLabel({ closedIndex, isDragging, tab })}
       data-dragging={isDragging}
-      title={`Restore ${title}`}
       onContextMenu={(event) => onContextMenu(event, tab, closedIndex)}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
