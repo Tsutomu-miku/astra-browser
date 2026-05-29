@@ -229,7 +229,7 @@ describe("sidebar item action hints", () => {
     act(() => root.unmount());
   });
 
-  it("uses the visible tab button as the drag source", () => {
+  it("uses the whole tab row as the drag source", () => {
     const tab = createTab("Docs", "https://docs.example");
     const setDraggingTabId = vi.fn();
     const data = new Map<string, string>();
@@ -259,8 +259,9 @@ describe("sidebar item action hints", () => {
         setData: (type: string, value: string) => data.set(type, value)
       }
     });
-    container.querySelector(".tab-button")?.dispatchEvent(event);
+    container.querySelector(".tab-row")?.dispatchEvent(event);
 
+    expect(container.querySelector(".tab-row")?.getAttribute("draggable")).toBe("true");
     expect(container.querySelector(".tab-button")?.getAttribute("draggable")).toBe("true");
     expect(setDraggingTabId).toHaveBeenCalledWith(tab.id);
     expect(data.get(SIDEBAR_TAB_DRAG_TYPE)).toBe(tab.id);

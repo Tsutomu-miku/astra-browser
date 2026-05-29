@@ -119,6 +119,59 @@ describe("sidebar section drop zones", () => {
     act(() => root.unmount());
   });
 
+  it("accepts tab drops on an existing Favorite item", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const onFavoriteDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab: tab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: tab.id,
+        filteredItems: {
+          essentials: [],
+          favorites: [favorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [tab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop,
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const favoriteButton = container.querySelector<HTMLElement>(".favorites .favorite-button")!;
+    favoriteButton.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
+
+    expect(onFavoriteDrop).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("does not offer a new group target for dragged pinned tabs", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const html = renderToStaticMarkup(createElement(SidebarSections, {

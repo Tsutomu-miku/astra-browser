@@ -10,14 +10,14 @@ export function buildContentCommands(
     ...state.essentials.map((essential) => ({
       title: essential.title,
       subtitle: `Essential · ${essential.url}`,
-      run: () => actions.openUrlInActiveWorkspace(essential.url, essential.title),
+      run: () => actions.navigateActiveTab(essential.url),
       runInSplit: () => actions.openUrlInSplit(essential.url, essential.title),
       runPreview: () => actions.openGlance(essential.url, essential.title)
     })),
     ...workspace.favorites.map((favorite) => ({
       title: favorite.title,
       subtitle: `Favorite · ${favorite.url}`,
-      run: () => actions.openUrlInActiveWorkspace(favorite.url, favorite.title),
+      run: () => actions.navigateActiveTab(favorite.url),
       runInSplit: () => actions.openUrlInSplit(favorite.url, favorite.title),
       runPreview: () => actions.openGlance(favorite.url, favorite.title)
     })),

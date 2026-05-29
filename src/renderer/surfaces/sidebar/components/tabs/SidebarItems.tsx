@@ -112,7 +112,14 @@ export function TabRow({
       id={id}
       aria-current={tab.id === activeTabId}
       aria-selected={isSearchSelected}
+      draggable
       data-dragging={draggingTabId === tab.id}
+      onDragStart={(event) => {
+        setDraggingTabId(tab.id);
+        writeSidebarTabDragPayload(event.dataTransfer, tab.id);
+        event.dataTransfer.effectAllowed = "move";
+      }}
+      onDragEnd={() => setDraggingTabId(null)}
       onDragOver={(event) => {
         const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
         if (draggedTabId && draggedTabId !== tab.id) {
@@ -133,11 +140,6 @@ export function TabRow({
         type="button"
         aria-label={tabLabel}
         draggable
-        onDragStart={(event) => {
-          setDraggingTabId(tab.id);
-          writeSidebarTabDragPayload(event.dataTransfer, tab.id);
-        }}
-        onDragEnd={() => setDraggingTabId(null)}
         onAuxClick={(event) => {
           if (event.button === 1) {
             event.preventDefault();
@@ -180,6 +182,11 @@ export function TabRow({
         type="button"
         title="Close tab"
         aria-label={`Close ${tab.title || tab.url}`}
+        draggable={false}
+        onDragStart={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
         onClick={(event) => {
           event.stopPropagation();
           onClose(tab.id);
