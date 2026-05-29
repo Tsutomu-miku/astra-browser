@@ -3,55 +3,93 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const COMPACT_CHROME_PEEK_MS = 1400;
 
 export function useCompactChromePeek(compactMode: boolean) {
-  const chromePeekTimeout = useRef<number | null>(null);
-  const [compactChromeHeld, setCompactChromeHeld] = useState(false);
-  const [compactChromePulse, setCompactChromePulse] = useState(false);
+  const sidebarPeekTimeout = useRef<number | null>(null);
+  const toolbarPeekTimeout = useRef<number | null>(null);
+  const [compactSidebarPulse, setCompactSidebarPulse] = useState(false);
+  const [compactToolbarHeld, setCompactToolbarHeld] = useState(false);
+  const [compactToolbarPulse, setCompactToolbarPulse] = useState(false);
 
-  const clearPeekTimeout = useCallback(() => {
-    if (!chromePeekTimeout.current) return;
-
-    window.clearTimeout(chromePeekTimeout.current);
-    chromePeekTimeout.current = null;
+  const clearSidebarPeekTimeout = useCallback(() => {
+    clearPeekTimeout(sidebarPeekTimeout);
   }, []);
 
+  const clearToolbarPeekTimeout = useCallback(() => {
+    clearPeekTimeout(toolbarPeekTimeout);
+  }, []);
+
+  const peekCompactSidebar = useCallback(() => {
+    if (!compactMode) return;
+
+    pulsePeek(sidebarPeekTimeout, clearSidebarPeekTimeout, setCompactSidebarPulse);
+  }, [clearSidebarPeekTimeout, compactMode]);
+
+  const peekCompactToolbar = useCallback(() => {
+    if (!compactMode) return;
+
+    pulsePeek(toolbarPeekTimeout, clearToolbarPeekTimeout, setCompactToolbarPulse);
+  }, [clearToolbarPeekTimeout, compactMode]);
+
   const peekCompactChrome = useCallback(() => {
+    peekCompactSidebar();
+    peekCompactToolbar();
+  }, [peekCompactSidebar, peekCompactToolbar]);
+
+  const holdCompactToolbar = useCallback(() => {
     if (!compactMode) return;
 
-    clearPeekTimeout();
-
-    setCompactChromePulse(true);
-    chromePeekTimeout.current = window.setTimeout(() => {
-      setCompactChromePulse(false);
-      chromePeekTimeout.current = null;
-    }, COMPACT_CHROME_PEEK_MS);
-  }, [clearPeekTimeout, compactMode]);
-
-  const holdCompactChrome = useCallback(() => {
-    if (!compactMode) return;
-
-    setCompactChromeHeld(true);
+    setCompactToolbarHeld(true);
   }, [compactMode]);
 
-  const releaseCompactChrome = useCallback(() => {
-    setCompactChromeHeld(false);
+  const releaseCompactToolbar = useCallback(() => {
+    setCompactToolbarHeld(false);
   }, []);
 
   useEffect(() => {
     if (compactMode) return;
 
-    clearPeekTimeout();
-    setCompactChromeHeld(false);
-    setCompactChromePulse(false);
-  }, [clearPeekTimeout, compactMode]);
+    clearSidebarPeekTimeout();
+    clearToolbarPeekTimeout();
+    setCompactSidebarPulse(false);
+    setCompactToolbarHeld(false);
+    setCompactToolbarPulse(false);
+  }, [clearSidebarPeekTimeout, clearToolbarPeekTimeout, compactMode]);
 
   useEffect(() => () => {
-    clearPeekTimeout();
-  }, [clearPeekTimeout]);
+    clearSidebarPeekTimeout();
+    clearToolbarPeekTimeout();
+  }, [clearSidebarPeekTimeout, clearToolbarPeekTimeout]);
+
+  const compactSidebarPeeking = compactMode && compactSidebarPulse;
+  const compactToolbarPeeking = compactMode && (compactToolbarHeld || compactToolbarPulse);
 
   return {
-    compactChromePeeking: compactMode && (compactChromeHeld || compactChromePulse),
-    holdCompactChrome,
+    compactChromePeeking: compactSidebarPeeking || compactToolbarPeeking,
+    compactSidebarPeeking,
+    compactToolbarPeeking,
+    holdCompactToolbar,
     peekCompactChrome,
-    releaseCompactChrome
+    peekCompactSidebar,
+    peekCompactToolbar,
+    releaseCompactToolbar
   };
+}
+
+function pulsePeek(
+  timeoutRef: { current: number | null },
+  clearTimeoutRef: () => void,
+  setPulse: (peeking: boolean) => void
+) {
+  clearTimeoutRef();
+  setPulse(true);
+  timeoutRef.current = window.setTimeout(() => {
+    setPulse(false);
+    timeoutRef.current = null;
+  }, COMPACT_CHROME_PEEK_MS);
+}
+
+function clearPeekTimeout(timeoutRef: { current: number | null }) {
+  if (!timeoutRef.current) return;
+
+  window.clearTimeout(timeoutRef.current);
+  timeoutRef.current = null;
 }

@@ -16,9 +16,13 @@ export function useBrowserController() {
   const webviews = useRef(new Map<string, WebviewElement>());
   const {
     compactChromePeeking,
-    holdCompactChrome,
+    compactSidebarPeeking,
+    compactToolbarPeeking,
+    holdCompactToolbar,
     peekCompactChrome,
-    releaseCompactChrome
+    peekCompactSidebar,
+    peekCompactToolbar,
+    releaseCompactToolbar
   } = useCompactChromePeek(store.compactMode);
   const activeWorkspace = getActiveWorkspace(store.state);
   const activeTab = getActiveTab(activeWorkspace);
@@ -34,6 +38,8 @@ export function useBrowserController() {
     activeWebview,
     focusAddressBar,
     peekCompactChrome,
+    peekCompactSidebar,
+    peekCompactToolbar,
     store,
     webviews
   });
@@ -92,18 +98,20 @@ export function useBrowserController() {
     commandQuery: store.commandQuery,
     compactChromePeeking,
     compactMode: store.compactMode,
+    compactSidebarPeeking,
+    compactToolbarPeeking,
     findOpen: store.findOpen,
     findQuery: store.findQuery,
     findResult: store.findResult,
     floatingSidebarOpen: store.floatingSidebarOpen,
     floatingToolbarOpen: store.floatingToolbarOpen,
     glance: store.glance,
-    holdCompactChrome,
+    holdCompactToolbar,
     panel: store.panel,
     permissionRequest: store.permissionRequest,
     registerWebview,
     removeWebview,
-    releaseCompactChrome,
+    releaseCompactToolbar,
     setAddressValue: store.setAddressValue,
     setCommandOpen: store.setCommandOpen,
     setCommandQuery: store.setCommandQuery,

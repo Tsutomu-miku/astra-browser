@@ -33,6 +33,8 @@ export interface CommandActions {
   openGlance: (url: string, title?: string) => void;
   openFind: () => void;
   peekCompactChrome: () => void;
+  peekCompactSidebar: () => void;
+  peekCompactToolbar: () => void;
   openTabInSplit: (tabId: string) => void;
   openUrlInSplit: (url: string, title?: string) => void;
   newTab: () => void;

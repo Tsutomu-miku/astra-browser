@@ -7,6 +7,8 @@ interface BrowserActionsOptions {
   activeWebview: WebviewElement | undefined;
   focusAddressBar: () => void;
   peekCompactChrome: () => void;
+  peekCompactSidebar: () => void;
+  peekCompactToolbar: () => void;
   store: BrowserStore;
   webviews: { current: Map<string, WebviewElement> };
 }
@@ -15,6 +17,8 @@ export function useBrowserActions({
   activeWebview,
   focusAddressBar,
   peekCompactChrome,
+  peekCompactSidebar,
+  peekCompactToolbar,
   store,
   webviews
 }: BrowserActionsOptions) {
@@ -54,6 +58,8 @@ export function useBrowserActions({
     deleteWorkspace: store.deleteWorkspace,
     focusAddressBar,
     peekCompactChrome,
+    peekCompactSidebar,
+    peekCompactToolbar,
     duplicateTab: (tabId: string) => {
       store.duplicateTab(tabId);
       peekCompactChrome();
@@ -204,7 +210,7 @@ export function useBrowserActions({
     updateWorkspace: store.updateWorkspace,
     zoomIn: () => store.zoomIn(activeWebview),
     zoomOut: () => store.zoomOut(activeWebview)
-  }), [activeWebview, focusAddressBar, peekCompactChrome, store, webviews]);
+  }), [activeWebview, focusAddressBar, peekCompactChrome, peekCompactSidebar, peekCompactToolbar, store, webviews]);
 }
 
 export type BrowserActions = ReturnType<typeof useBrowserActions>;

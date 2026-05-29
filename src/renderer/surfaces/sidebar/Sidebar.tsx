@@ -36,7 +36,7 @@ import {
 import { getSidebarSearchOpenIntent, type SidebarOpenIntent } from "./sidebarOpenIntent";
 
 export function Sidebar({ controller }: { controller: BrowserController }) {
-  const { activeTab, activeWorkspace, actions, compactChromePeeking, compactMode, floatingSidebarOpen, setPanel, setSidebarWidth, sidebarCollapsed, sidebarWidth, state } = controller;
+  const { activeTab, activeWorkspace, actions, compactMode, compactSidebarPeeking, floatingSidebarOpen, setPanel, setSidebarWidth, sidebarCollapsed, sidebarWidth, state } = controller;
   const [tabQuery, setTabQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const {
@@ -227,7 +227,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
 
   return (
     <aside
-      className={`sidebar ${sidebarCollapsed || compactMode ? "is-collapsed" : ""} ${compactMode ? "is-compact-mode" : ""} ${floatingSidebarOpen ? "is-floating-open" : ""} ${compactChromePeeking ? "is-peeking-chrome" : ""}`}
+      className={`sidebar ${sidebarCollapsed || compactMode ? "is-collapsed" : ""} ${compactMode ? "is-compact-mode" : ""} ${floatingSidebarOpen ? "is-floating-open" : ""} ${compactSidebarPeeking ? "is-peeking-chrome" : ""}`}
       style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
     >
       <section className="traffic-space" aria-hidden="true" />

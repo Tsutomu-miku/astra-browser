@@ -36,6 +36,8 @@ function commandActions() {
     openGlance: vi.fn(),
     openFind: vi.fn(),
     peekCompactChrome: vi.fn(),
+    peekCompactSidebar: vi.fn(),
+    peekCompactToolbar: vi.fn(),
     openTabInSplit: vi.fn(),
     openUrlInSplit: vi.fn(),
     newTab: vi.fn(),
@@ -168,7 +170,8 @@ describe("buildCommands", () => {
   });
 
   it("labels compact chrome commands by current state", () => {
-    const commands = buildCommands(createDefaultState(), commandActions(), vi.fn(), {
+    const actions = commandActions();
+    const commands = buildCommands(createDefaultState(), actions, vi.fn(), {
       compactMode: true,
       floatingSidebarOpen: true,
       floatingToolbarOpen: true,
@@ -181,6 +184,13 @@ describe("buildCommands", () => {
     expect(commands.some((command) => command.title === "Peek floating sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Unpin floating sidebar")).toBe(true);
     expect(commands.some((command) => command.title === "Unpin floating toolbar")).toBe(true);
+
+    commands.find((command) => command.title === "Peek floating toolbar")?.run();
+    commands.find((command) => command.title === "Peek floating sidebar")?.run();
+
+    expect(actions.peekCompactToolbar).toHaveBeenCalled();
+    expect(actions.peekCompactSidebar).toHaveBeenCalled();
+    expect(actions.peekCompactChrome).not.toHaveBeenCalled();
   });
 
   it("copies current page values from command palette actions", () => {

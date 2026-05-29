@@ -86,12 +86,12 @@ export function buildCommands(
       {
         title: "Peek floating toolbar",
         subtitle: "Temporarily reveal compact browser controls",
-        run: actions.peekCompactChrome
+        run: actions.peekCompactToolbar
       },
       {
         title: "Peek floating sidebar",
         subtitle: "Temporarily reveal compact tabs and Spaces",
-        run: actions.peekCompactChrome
+        run: actions.peekCompactSidebar
       }
     ]
     : [];

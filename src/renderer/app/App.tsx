@@ -15,18 +15,18 @@ export function App() {
   return (
     <>
       <Sidebar controller={controller} />
-      <main className={`browser ${controller.compactMode ? "is-compact-mode" : ""} ${controller.compactChromePeeking ? "is-peeking-chrome" : ""} ${controller.floatingToolbarOpen ? "is-floating-toolbar-open" : ""}`}>
+      <main className={`browser ${controller.compactMode ? "is-compact-mode" : ""} ${controller.compactToolbarPeeking ? "is-peeking-chrome" : ""} ${controller.floatingToolbarOpen ? "is-floating-toolbar-open" : ""}`}>
         {controller.compactMode && (
           <button
             className="compact-peek-zone"
             type="button"
             aria-label="Show toolbar"
             title="Show toolbar"
-            onClick={controller.actions.peekCompactChrome}
-            onBlur={controller.releaseCompactChrome}
-            onFocus={controller.holdCompactChrome}
-            onPointerEnter={controller.holdCompactChrome}
-            onPointerLeave={controller.releaseCompactChrome}
+            onClick={controller.actions.peekCompactToolbar}
+            onBlur={controller.releaseCompactToolbar}
+            onFocus={controller.holdCompactToolbar}
+            onPointerEnter={controller.holdCompactToolbar}
+            onPointerLeave={controller.releaseCompactToolbar}
           />
         )}
         <Topbar controller={controller} />
