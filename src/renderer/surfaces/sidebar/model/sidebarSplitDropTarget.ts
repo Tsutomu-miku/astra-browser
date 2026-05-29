@@ -33,7 +33,7 @@ export function getSidebarSplitDropSource(
 
   const favoriteId = state.draggingFavoriteId || getData("text/favorite-id");
   const favorite = favoriteId ? state.favorites.find((candidate) => candidate.id === favoriteId) : undefined;
-  if (favorite) return createUrlDropSource(favorite);
+  if (favorite) return createFavoriteDropSource(favorite, state.tabs, state.activeTabId);
 
   const closedTabIndex = getClosedTabIndex(state.draggingClosedTabIndex, getData("text/closed-tab-index"));
   const closedTab = Number.isInteger(closedTabIndex) ? state.closedTabs[closedTabIndex] : undefined;
@@ -48,6 +48,19 @@ function createUrlDropSource(source: Pick<Favorite | ClosedTab, "title" | "url">
     type: "url",
     url: source.url
   };
+}
+
+function createFavoriteDropSource(
+  favorite: Favorite,
+  tabs: BrowserTab[],
+  activeTabId: string
+): SidebarSplitDropSource | null {
+  const tab = favorite.tabId ? tabs.find((candidate) => candidate.id === favorite.tabId) : undefined;
+  if (tab) {
+    return tab.id === activeTabId ? null : { type: "tab", tabId: tab.id, title: tab.title };
+  }
+
+  return createUrlDropSource(favorite);
 }
 
 function getClosedTabIndex(draggingClosedTabIndex: number | null, rawIndex: string) {

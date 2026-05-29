@@ -99,6 +99,39 @@ describe("sidebar footer compact controls", () => {
     container.remove();
   });
 
+  it("opens dropped tab-backed Favorites in split view by tab id", () => {
+    const actions = createActions();
+    const setDraggingFavoriteId = vi.fn();
+    const favorite = { ...createFavorite("Docs Favorite", "https://docs.example", "other-tab"), id: "favorite" };
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarFooter, footerProps({
+        actions,
+        compactMode: false,
+        draggingFavoriteId: "favorite",
+        favorites: [favorite],
+        floatingSidebarOpen: false,
+        memorySaver: defaultMemorySaver(),
+        setDraggingFavoriteId
+      })));
+    });
+
+    const splitButton = container.querySelector<HTMLButtonElement>('button[title="Split view"]')!;
+    act(() => {
+      splitButton.dispatchEvent(createDragEvent("drop"));
+    });
+
+    expect(actions.openTabInSplit).toHaveBeenCalledWith("other-tab");
+    expect(actions.openUrlInSplit).not.toHaveBeenCalled();
+    expect(setDraggingFavoriteId).toHaveBeenCalledWith(null);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it("resolves split drop sources from drag state or data transfer", () => {
     const state = splitDropState();
 
@@ -118,6 +151,18 @@ describe("sidebar footer compact controls", () => {
       type: "url",
       url: "https://design.example"
     });
+    expect(getSidebarSplitDropSource({
+      ...state,
+      favorites: [{ ...createFavorite("Docs Favorite", "https://docs.example", "other-tab"), id: "favorite" }]
+    }, (type) => type === "text/favorite-id" ? "favorite" : "")).toEqual({
+      tabId: "other-tab",
+      title: "Docs",
+      type: "tab"
+    });
+    expect(getSidebarSplitDropSource({
+      ...state,
+      favorites: [{ ...createFavorite("Active Favorite", "https://active.example", "active-tab"), id: "favorite" }]
+    }, (type) => type === "text/favorite-id" ? "favorite" : "")).toBeNull();
     expect(getSidebarSplitDropSource({ ...state }, (type) => {
       if (type === SIDEBAR_TAB_DRAG_TYPE) return "other-tab";
       if (type === "text/favorite-id") return "favorite";

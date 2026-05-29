@@ -151,10 +151,10 @@ Progress: partially implemented. Row action hints and close controls reveal on k
 ### P1-2 Split View And Glance
 
 - Split view supports horizontal, vertical, and grid layouts.
-- Tabs, Favorites, Essentials, history, and recently closed rows can be sent to split view.
+- Tabs, tab-backed Favorites, Essentials, history, and recently closed rows can be sent to split view without duplicating existing tab-backed pages.
 - Glance previews can open, split, close, navigate, reload, and copy URL.
 
-Progress: partially implemented.
+Progress: partially implemented. Sidebar click, keyboard, and drag-to-split paths now keep tab-backed Favorites on tab identity while URL-only entries still use URL split.
 
 ### P1-3 Command Palette And Omnibox
 
