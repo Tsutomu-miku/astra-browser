@@ -3,9 +3,10 @@ import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icon
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload, writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
+import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getQuickEntryAccessibilityLabel, type QuickEntryKind } from "../../model/quickEntryItemState";
+import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
@@ -127,7 +128,7 @@ export function TabRow({
         setDraggingTabId(null);
       }}
       onDragOver={(event) => {
-        const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+        const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
         if (draggedTabId && draggedTabId !== tab.id) {
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
@@ -137,7 +138,7 @@ export function TabRow({
       onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
       onDrop={(event) => {
         clearDropPlacement(event.currentTarget);
-        const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+        const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
         if (draggedTabId && draggedTabId !== tab.id) onDrop(event, tab.id);
       }}
       onContextMenu={(event) => onContextMenu(event, tab)}

@@ -2,9 +2,10 @@ import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { FiLoader } from "react-icons/fi";
 
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload, writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
+import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
+import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
@@ -124,7 +125,7 @@ export function SidebarPinnedTabs({
               }}
               onDragEnd={() => setDraggingTabId(null)}
               onDragOver={(event) => {
-                const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+                const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
                 if (draggedTabId && draggedTabId !== tab.id) {
                   event.preventDefault();
                   event.dataTransfer.dropEffect = "move";
@@ -134,7 +135,7 @@ export function SidebarPinnedTabs({
               onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
               onDrop={(event) => {
                 clearDropPlacement(event.currentTarget);
-                const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+                const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
                 if (!draggedTabId || draggedTabId === tab.id) return;
 
                 event.stopPropagation();

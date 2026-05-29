@@ -31,7 +31,7 @@ describe("sidebar footer compact controls", () => {
     expect(pinned).not.toContain('title="Unpin floating sidebar"');
   });
 
-  it("keeps tab split drops visually quiet while dragging another tab", () => {
+  it("marks the split button as a drop target while dragging another tab", () => {
     const html = renderFooter({
       compactMode: false,
       draggingTabId: "other-tab",
@@ -39,7 +39,7 @@ describe("sidebar footer compact controls", () => {
     });
 
     expect(html).toContain('aria-label="Split view, drop Docs here"');
-    expect(html).toContain('data-drop-target="false"');
+    expect(html).toContain('data-drop-target="true"');
   });
 
   it("marks the split button as a drop target for sidebar URL entries", () => {

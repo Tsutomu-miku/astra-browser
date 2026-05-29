@@ -76,7 +76,7 @@ export function SidebarFooter({
     favorites,
     tabs
   });
-  const showSplitDropTarget = Boolean(splitDropSource && splitDropSource.type !== "tab");
+  const showSplitDropTarget = Boolean(splitDropSource);
   const splitButtonLabel = splitDropSource
     ? `Split view, drop ${splitDropSource.title || "item"} here`
     : "Split view";

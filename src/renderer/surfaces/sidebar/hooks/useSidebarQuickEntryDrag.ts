@@ -1,9 +1,14 @@
 import { useState, type DragEvent } from "react";
 
 import { getPointerDropPlacement, type DropAxis } from "../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserController } from "../../../app/controller/types";
 import { isEssential, type BrowserState, type Workspace } from "../../../domain/browser";
+import {
+  SIDEBAR_DRAG_DATA,
+  readSidebarEssentialDragId,
+  readSidebarFavoriteDragId,
+  readSidebarTabDragEventId
+} from "../model/sidebarDragSources";
 
 export function useSidebarQuickEntryDrag({
   actions,
@@ -20,12 +25,7 @@ export function useSidebarQuickEntryDrag({
 }) {
   const [draggingEssentialId, setDraggingEssentialId] = useState<string | null>(null);
   const [draggingFavoriteId, setDraggingFavoriteId] = useState<string | null>(null);
-  const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
-  const getDroppedQuickEntryId = (
-    event: DragEvent<HTMLElement>,
-    draggingId: string | null,
-    dataKey: string
-  ) => draggingId || event.dataTransfer.getData(dataKey);
+  const getDroppedTabId = (event: DragEvent<HTMLElement>) => readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
 
   const handleEssentialDrop = (event: DragEvent<HTMLElement>) => {
     if (draggingEssentialId) {
@@ -44,22 +44,22 @@ export function useSidebarQuickEntryDrag({
   const handleEssentialDragStart = (event: DragEvent<HTMLElement>, essentialId: string) => {
     setDraggingEssentialId(essentialId);
     event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/essential-id", essentialId);
+    event.dataTransfer.setData(SIDEBAR_DRAG_DATA.essentialId, essentialId);
   };
 
   const handleFavoriteDragStart = (event: DragEvent<HTMLElement>, favoriteId: string) => {
     setDraggingFavoriteId(favoriteId);
     event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/favorite-id", favoriteId);
+    event.dataTransfer.setData(SIDEBAR_DRAG_DATA.favoriteId, favoriteId);
   };
 
   const handleEssentialReorderDrop = (event: DragEvent<HTMLElement>, targetEssentialId: string, axis: DropAxis = "vertical") => {
-    const essentialId = getDroppedQuickEntryId(event, draggingEssentialId, "text/essential-id");
+    const essentialId = readSidebarEssentialDragId({ draggingEssentialId }, (type) => event.dataTransfer.getData(type));
     runQuickEntryReorder(event, essentialId, targetEssentialId, axis, actions.reorderEssential, setDraggingEssentialId);
   };
 
   const handleFavoriteReorderDrop = (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis = "vertical") => {
-    const favoriteId = getDroppedQuickEntryId(event, draggingFavoriteId, "text/favorite-id");
+    const favoriteId = readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type));
     runQuickEntryReorder(event, favoriteId, targetFavoriteId, axis, actions.reorderWorkspaceFavorite, setDraggingFavoriteId);
   };
 

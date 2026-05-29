@@ -1,9 +1,9 @@
 import type { DragEvent } from "react";
 
-import { readSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
+import { readSidebarTabDragEventId } from "./sidebarDragSources";
 
 export function getSidebarTabFolderDragId(event: DragEvent<HTMLElement>, draggingTabId: string | null) {
-  return draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+  return readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
 }
 
 export function acceptSidebarTabFolderDrag(event: DragEvent<HTMLElement>, draggingTabId: string | null, dropEffect: DataTransfer["dropEffect"] = "move") {

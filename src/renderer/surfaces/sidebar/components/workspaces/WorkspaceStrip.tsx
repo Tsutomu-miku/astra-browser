@@ -3,8 +3,8 @@ import { FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiTrash2, FiUnlock } fro
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import { clearDropPlacement, updateDropPlacement } from "../../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import type { Workspace } from "../../../../domain/browser";
+import { readSidebarFavoriteDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
@@ -179,10 +179,10 @@ export function WorkspaceStrip({
           if (
             draggingClosedTabIndex !== null ||
             draggingFavoriteId ||
-            event.dataTransfer.getData("text/favorite-id") ||
+            readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type)) ||
             draggingGroupId ||
             draggingTabId ||
-            readSidebarTabDragPayload(event.dataTransfer)
+            readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer)
           ) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";

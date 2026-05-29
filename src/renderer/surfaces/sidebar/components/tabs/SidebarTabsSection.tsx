@@ -4,6 +4,7 @@ import { getPointerDropPlacement } from "../../../../common/drag-drop/dropPlacem
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
+import { readSidebarGroupDragId } from "../../model/sidebarDragSources";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarSectionHeader, TabRow } from "./SidebarItems";
@@ -47,7 +48,7 @@ export function SidebarTabsSection({
   const onGroupDrop = (event: DragEvent<HTMLElement>, targetGroupId: string) => {
     event.preventDefault();
     event.stopPropagation();
-    const groupId = draggingGroupId || event.dataTransfer.getData("text/group-id");
+    const groupId = readSidebarGroupDragId({ draggingGroupId }, (type) => event.dataTransfer.getData(type));
     if (!groupId || groupId === targetGroupId) {
       setDraggingGroupId(null);
       return;

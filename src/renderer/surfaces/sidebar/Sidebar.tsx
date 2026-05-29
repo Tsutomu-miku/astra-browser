@@ -8,7 +8,6 @@ import {
 } from "react";
 
 import { getPointerDropPlacement, type DropAxis } from "../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload } from "../../common/drag-drop/sidebarDragPayload";
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
 import type { BrowserController } from "../../app/controller/types";
@@ -25,6 +24,7 @@ import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
 import { handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
+import { readSidebarFavoriteDragId, readSidebarTabDragEventId } from "./model/sidebarDragSources";
 import { scrollSidebarSearchTargetIntoView } from "./model/sidebarSearchTargetDom";
 import { getSidebarTabFolders } from "./model/sidebarTabFolders";
 import {
@@ -133,14 +133,14 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     handleTabFolderDrop(event, { type: "tabs" });
   };
 
-  const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+  const getDroppedTabId = (event: DragEvent<HTMLElement>) => readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
 
   const handlePinDrop = (event: DragEvent<HTMLElement>) => {
     handleTabFolderDrop(event, { type: "pinned" });
   };
 
   const handleWorkspaceDragOverWithFavorites = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    const favoriteId = draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
+    const favoriteId = readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type));
     if (favoriteId && workspaceId !== activeWorkspace.id) {
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
@@ -151,7 +151,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   };
 
   const handleWorkspaceDropWithFavorites = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    const favoriteId = draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
+    const favoriteId = readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type));
     if (favoriteId && workspaceId !== activeWorkspace.id) {
       event.preventDefault();
       actions.moveWorkspaceFavoriteToWorkspace(favoriteId, workspaceId);
@@ -168,7 +168,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   };
 
   const handleNewWorkspaceDropWithFavorites = (event: DragEvent<HTMLButtonElement>) => {
-    const favoriteId = draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
+    const favoriteId = readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type));
     if (favoriteId) {
       event.preventDefault();
       actions.moveWorkspaceFavoriteToNewWorkspace(favoriteId);

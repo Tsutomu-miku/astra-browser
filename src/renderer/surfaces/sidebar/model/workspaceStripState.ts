@@ -1,4 +1,5 @@
 import type { Workspace } from "../../../domain/browser";
+import { hasNewWorkspaceDragSource, type SidebarDragState } from "./sidebarDragSources";
 
 export const WORKSPACE_ACCENT_SWATCHES = [
   "#7dd3fc",
@@ -48,18 +49,13 @@ export function getNewWorkspaceDropTargetState({
   draggingFavoriteId,
   draggingGroupId,
   draggingTabId
-}: {
-  draggingClosedTabIndex: number | null;
-  draggingFavoriteId: string | null;
-  draggingGroupId: string | null;
-  draggingTabId: string | null;
-}): boolean {
-  return Boolean(
-    draggingClosedTabIndex !== null ||
-    draggingFavoriteId ||
-    draggingGroupId ||
+}: Pick<SidebarDragState, "draggingClosedTabIndex" | "draggingFavoriteId" | "draggingGroupId" | "draggingTabId">): boolean {
+  return hasNewWorkspaceDragSource({
+    draggingClosedTabIndex,
+    draggingFavoriteId,
+    draggingGroupId,
     draggingTabId
-  );
+  });
 }
 
 export function getWorkspaceDropTargetState({

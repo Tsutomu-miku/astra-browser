@@ -1,13 +1,13 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
 
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { resolveFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import {
   isSidebarFavoriteActive,
   isSidebarUrlActive
 } from "../../model/sidebarItemState";
+import { readSidebarTabDragEventId, SIDEBAR_DRAG_DATA } from "../../model/sidebarDragSources";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
@@ -122,12 +122,12 @@ export function SidebarSections({
             className="essentials"
             aria-label="Essentials"
             onDragEnter={(event) => {
-              if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
+              if (readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer)) {
                 event.preventDefault();
               }
             }}
             onDragOver={(event) => {
-              if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
+              if (readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer)) {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "copy";
               }
@@ -282,7 +282,7 @@ export function SidebarSections({
                 onDragStart={(event) => {
                   setDraggingClosedTabIndex(index);
                   event.dataTransfer.effectAllowed = "move";
-                  event.dataTransfer.setData("text/closed-tab-index", String(index));
+                  event.dataTransfer.setData(SIDEBAR_DRAG_DATA.closedTabIndex, String(index));
                 }}
                 onOpenInSplit={actions.openUrlInSplit}
                 onPreview={actions.openGlance}

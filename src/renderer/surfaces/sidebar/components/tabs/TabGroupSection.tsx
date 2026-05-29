@@ -2,8 +2,8 @@ import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent } from "react"
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
+import { SIDEBAR_DRAG_DATA, readSidebarGroupDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { getSidebarSearchTargetElementId } from "../../sidebarFiltering";
 import { TabRow } from "./SidebarItems";
@@ -52,8 +52,9 @@ export function TabGroupSection({
   tabs: BrowserTab[];
 }) {
   const hasActiveTab = tabs.some((tab) => tab.id === activeTab.id);
-  const getDraggedGroupId = (event: DragEvent<HTMLElement>) => (
-    draggingGroupId || event.dataTransfer.getData("text/group-id")
+  const getDraggedGroupId = (event: DragEvent<HTMLElement>) => readSidebarGroupDragId(
+    { draggingGroupId },
+    (type) => event.dataTransfer.getData(type)
   );
   const handleToggleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (openSidebarKeyboardContextMenu(event)) return;
@@ -78,11 +79,11 @@ export function TabGroupSection({
         onDragStart={(event) => {
           setDraggingGroupId(group.id);
           event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData("text/group-id", group.id);
+          event.dataTransfer.setData(SIDEBAR_DRAG_DATA.groupId, group.id);
         }}
         onDragEnd={() => setDraggingGroupId(null)}
         onDragOver={(event) => {
-          const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+          const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
           const draggedGroupId = getDraggedGroupId(event);
           if (draggedGroupId && draggedGroupId !== group.id) {
             event.preventDefault();
@@ -105,7 +106,7 @@ export function TabGroupSection({
             setDraggingGroupId(null);
             return;
           }
-          const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+          const tabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
           if (!tabId) return;
 
           event.preventDefault();

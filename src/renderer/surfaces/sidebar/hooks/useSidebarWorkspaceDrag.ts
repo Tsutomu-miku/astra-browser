@@ -1,8 +1,14 @@
 import { useState, type DragEvent } from "react";
 
 import { getPointerDropPlacement } from "../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserController } from "../../../app/controller/types";
+import {
+  SIDEBAR_DRAG_DATA,
+  readSidebarClosedTabDragIndex,
+  readSidebarGroupDragId,
+  readSidebarTabDragEventId,
+  readSidebarWorkspaceDragId
+} from "../model/sidebarDragSources";
 
 type SidebarWorkspaceDragActions = Pick<
   BrowserController["actions"],
@@ -33,15 +39,19 @@ export function useSidebarWorkspaceDrag({
     setDraggingTabId(null);
     setDraggingWorkspaceId(workspaceId);
     event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/workspace-id", workspaceId);
+    event.dataTransfer.setData(SIDEBAR_DRAG_DATA.workspaceId, workspaceId);
   };
 
   const handleWorkspaceDragOver = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
-    const isClosedTabTarget = draggingClosedTabIndex !== null;
-    const isGroupTarget = draggingGroupId && workspaceId !== activeWorkspaceId;
+    const getData = (type: string) => event.dataTransfer.getData(type);
+    const tabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
+    const groupId = readSidebarGroupDragId({ draggingGroupId }, getData);
+    const closedTabIndex = readSidebarClosedTabDragIndex({ draggingClosedTabIndex }, getData);
+    const workspaceDragId = readSidebarWorkspaceDragId({ draggingWorkspaceId }, getData);
+    const isClosedTabTarget = closedTabIndex !== null;
+    const isGroupTarget = groupId && workspaceId !== activeWorkspaceId;
     const isTabTarget = tabId && workspaceId !== activeWorkspaceId;
-    const isWorkspaceTarget = draggingWorkspaceId && workspaceId !== draggingWorkspaceId;
+    const isWorkspaceTarget = workspaceDragId && workspaceId !== workspaceDragId;
     if (isClosedTabTarget || isGroupTarget || isTabTarget || isWorkspaceTarget) {
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
@@ -50,28 +60,29 @@ export function useSidebarWorkspaceDrag({
 
   const handleWorkspaceDrop = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
     event.preventDefault();
-    if (draggingWorkspaceId && draggingWorkspaceId !== workspaceId) {
+    const droppedWorkspaceId = readSidebarWorkspaceDragId({ draggingWorkspaceId }, (type) => event.dataTransfer.getData(type));
+    if (droppedWorkspaceId && droppedWorkspaceId !== workspaceId) {
       const placement = getPointerDropPlacement(event.currentTarget, event, "vertical");
-      actions.reorderWorkspace(draggingWorkspaceId, workspaceId, placement);
+      actions.reorderWorkspace(droppedWorkspaceId, workspaceId, placement);
       setDraggingWorkspaceId(null);
       return;
     }
 
-    const closedTabIndex = draggingClosedTabIndex ?? Number.parseInt(event.dataTransfer.getData("text/closed-tab-index"), 10);
-    if (Number.isInteger(closedTabIndex)) {
+    const closedTabIndex = readSidebarClosedTabDragIndex({ draggingClosedTabIndex }, (type) => event.dataTransfer.getData(type));
+    if (closedTabIndex !== null) {
       actions.restoreClosedTabToWorkspace(closedTabIndex, workspaceId);
       setDraggingClosedTabIndex(null);
       return;
     }
 
-    const groupId = draggingGroupId || event.dataTransfer.getData("text/group-id");
+    const groupId = readSidebarGroupDragId({ draggingGroupId }, (type) => event.dataTransfer.getData(type));
     if (groupId && workspaceId !== activeWorkspaceId) {
       actions.moveTabGroupToWorkspace(groupId, workspaceId);
       setDraggingGroupId(null);
       return;
     }
 
-    const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+    const tabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
     if (tabId && workspaceId !== activeWorkspaceId) {
       actions.moveTabToWorkspace(tabId, workspaceId);
     }
@@ -80,13 +91,14 @@ export function useSidebarWorkspaceDrag({
   };
 
   const handleNewWorkspaceDrop = (event: DragEvent<HTMLButtonElement>) => {
-    const closedTabIndex = draggingClosedTabIndex ?? Number.parseInt(event.dataTransfer.getData("text/closed-tab-index"), 10);
-    const groupId = draggingGroupId || event.dataTransfer.getData("text/group-id");
-    const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
-    if (!Number.isInteger(closedTabIndex) && !groupId && !tabId) return;
+    const getData = (type: string) => event.dataTransfer.getData(type);
+    const closedTabIndex = readSidebarClosedTabDragIndex({ draggingClosedTabIndex }, getData);
+    const groupId = readSidebarGroupDragId({ draggingGroupId }, getData);
+    const tabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
+    if (closedTabIndex === null && !groupId && !tabId) return;
 
     event.preventDefault();
-    if (Number.isInteger(closedTabIndex)) {
+    if (closedTabIndex !== null) {
       actions.restoreClosedTabToNewWorkspace(closedTabIndex);
     } else if (groupId) {
       actions.moveTabGroupToNewWorkspace(groupId);

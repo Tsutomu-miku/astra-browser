@@ -1,17 +1,22 @@
-import { readSidebarTabDragData } from "../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserTab, ClosedTab, Favorite } from "../../../domain/browser";
+import {
+  readSidebarClosedTabDragIndex,
+  readSidebarEssentialDragId,
+  readSidebarFavoriteDragId,
+  readSidebarTabDragId,
+  type SidebarDragState
+} from "./sidebarDragSources";
 
 export type SidebarSplitDropSource =
   | { type: "tab"; tabId: string; title: string }
   | { type: "url"; title: string; url: string };
 
-export interface SidebarSplitDropState {
+export interface SidebarSplitDropState extends Required<Pick<
+  SidebarDragState,
+  "draggingClosedTabIndex" | "draggingEssentialId" | "draggingFavoriteId" | "draggingTabId"
+>> {
   activeTabId: string;
   closedTabs: ClosedTab[];
-  draggingClosedTabIndex: number | null;
-  draggingEssentialId: string | null;
-  draggingFavoriteId: string | null;
-  draggingTabId: string | null;
   essentials: Favorite[];
   favorites: Favorite[];
   tabs: BrowserTab[];
@@ -21,22 +26,22 @@ export function getSidebarSplitDropSource(
   state: SidebarSplitDropState,
   getData: (type: string) => string = () => ""
 ): SidebarSplitDropSource | null {
-  const tabId = state.draggingTabId || readSidebarTabDragData(getData);
+  const tabId = readSidebarTabDragId(state, getData);
   const tab = tabId ? state.tabs.find((candidate) => candidate.id === tabId) : undefined;
   if (tab && tab.id !== state.activeTabId) {
     return { type: "tab", tabId: tab.id, title: tab.title };
   }
 
-  const essentialId = state.draggingEssentialId || getData("text/essential-id");
+  const essentialId = readSidebarEssentialDragId(state, getData);
   const essential = essentialId ? state.essentials.find((candidate) => candidate.id === essentialId) : undefined;
   if (essential) return createUrlDropSource(essential);
 
-  const favoriteId = state.draggingFavoriteId || getData("text/favorite-id");
+  const favoriteId = readSidebarFavoriteDragId(state, getData);
   const favorite = favoriteId ? state.favorites.find((candidate) => candidate.id === favoriteId) : undefined;
   if (favorite) return createFavoriteDropSource(favorite, state.tabs, state.activeTabId);
 
-  const closedTabIndex = getClosedTabIndex(state.draggingClosedTabIndex, getData("text/closed-tab-index"));
-  const closedTab = Number.isInteger(closedTabIndex) ? state.closedTabs[closedTabIndex] : undefined;
+  const closedTabIndex = readSidebarClosedTabDragIndex(state, getData);
+  const closedTab = closedTabIndex === null ? undefined : state.closedTabs[closedTabIndex];
   if (closedTab) return createUrlDropSource(closedTab);
 
   return null;
@@ -61,11 +66,4 @@ function createFavoriteDropSource(
   }
 
   return createUrlDropSource(favorite);
-}
-
-function getClosedTabIndex(draggingClosedTabIndex: number | null, rawIndex: string) {
-  if (draggingClosedTabIndex !== null) return draggingClosedTabIndex;
-  if (!rawIndex) return Number.NaN;
-
-  return Number.parseInt(rawIndex, 10);
 }

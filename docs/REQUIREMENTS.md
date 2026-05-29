@@ -60,6 +60,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Users must be able to duplicate the active tab.
 - Users must be able to reorder sidebar tabs by drag and drop.
 - Sidebar tab drag-and-drop must remain reliable across tab rows, Pinned, tab groups, Essentials, Favorites, Spaces, New Space, and Split drop targets even when drag state is recovered from the native drag payload instead of React state.
+- Sidebar drag-and-drop payload identity must be resolved through a shared sidebar drag source model instead of per-component hard-coded `DataTransfer` keys.
 - Sidebar Essential and Favorite reordering must also recover from native drag payloads instead of depending only on React drag state.
 - Sidebar drag reordering must show a before/after insertion indicator for tabs, pinned tabs, Essentials, favorites, and Spaces.
 - Sidebar tab drag should avoid explicit target-region overlays; valid destinations should accept drops directly, and reordered items should show only the local before/after insertion indicator.
