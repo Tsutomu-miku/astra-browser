@@ -4,7 +4,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  flex: 0 0 auto;
+  gap: 3px;
   color: var(--muted);
   opacity: 0;
   overflow: hidden;
@@ -22,7 +23,7 @@
 .favorite-button:focus-visible .sidebar-item-action-hints,
 .closed-tab-button:hover .sidebar-item-action-hints,
 .closed-tab-button:focus-visible .sidebar-item-action-hints {
-  max-width: 132px;
+  max-width: 46px;
   opacity: 1;
   transform: translateX(0);
 }
@@ -34,6 +35,7 @@
   bottom: 3px;
   z-index: 5;
   max-width: none;
+  gap: 3px;
   justify-content: center;
   transform: translateY(2px);
 }
@@ -44,38 +46,20 @@
   transform: translateY(0);
 }
 
-.pinned-tab-button .sidebar-item-action-hint span {
-  display: none;
-}
-
-.pinned-tab-button .sidebar-item-action-hint kbd {
-  min-width: 18px;
-  height: 14px;
-  font-size: 8px;
-}
-
 .sidebar-item-action-hint {
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  white-space: nowrap;
-  font-size: 10px;
-  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
 }
 
-.sidebar-item-action-hint kbd {
-  min-width: 24px;
-  height: 16px;
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 9px;
-  line-height: 1;
+.sidebar-item-action-hint svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.2;
 }
 
 .sidebar-item-action-hint.is-preview {

@@ -31,11 +31,13 @@ describe("sidebar item action hints", () => {
     }));
 
     expect(html).toContain('class="sidebar-item-action-hints"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('data-action-hint="preview"');
+    expect(html).toContain('data-action-hint="split"');
     expect(html).toContain('aria-label="Docs, active, tab"');
-    expect(html).toContain("Alt");
-    expect(html).toContain("Preview");
-    expect(html).toContain("Shift");
-    expect(html).toContain("Split");
+    expect(html).not.toContain("<kbd");
+    expect(html).not.toContain(">Preview<");
+    expect(html).not.toContain(">Split<");
   });
 
   it("closes tab rows on middle click without selecting first", () => {
@@ -326,7 +328,9 @@ describe("sidebar item action hints", () => {
     expect(sidebarCss).toContain("grid-template-columns: 24px minmax(0, 1fr) auto");
     expect(sidebarCss).toContain("grid-template-columns: 22px minmax(0, 1fr) auto");
     expect(sidebarActionHintsCss).toContain("max-width: 0");
-    expect(sidebarActionHintsCss).toContain("max-width: 132px");
+    expect(sidebarActionHintsCss).toContain("max-width: 46px");
+    expect(sidebarActionHintsCss).toContain("width: 20px");
+    expect(sidebarActionHintsCss).not.toContain("kbd");
     expect(sidebarActionHintsCss).not.toContain("right: 6px");
   });
 
@@ -345,12 +349,14 @@ describe("sidebar item action hints", () => {
     }));
 
     expect(html).toContain('class="sidebar-item-action-hints"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('data-action-hint="preview"');
+    expect(html).toContain('data-action-hint="split"');
     expect(html).toContain('aria-label="Docs, Favorite, current page, selected search result, drop target"');
     expect(html).not.toContain('title="https://docs.example"');
-    expect(html).toContain("Alt");
-    expect(html).toContain("Preview");
-    expect(html).toContain("Shift");
-    expect(html).toContain("Split");
+    expect(html).not.toContain("<kbd");
+    expect(html).not.toContain(">Preview<");
+    expect(html).not.toContain(">Split<");
   });
 
   it("runs favorite keyboard open, preview, and split activation", () => {

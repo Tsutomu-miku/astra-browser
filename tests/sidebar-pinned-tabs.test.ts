@@ -78,10 +78,12 @@ describe("sidebar pinned tabs", () => {
     }));
 
     expect(html).toContain('class="sidebar-item-action-hints"');
-    expect(html).toContain("Alt");
-    expect(html).toContain("Preview");
-    expect(html).toContain("Shift");
-    expect(html).toContain("Split");
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('data-action-hint="preview"');
+    expect(html).toContain('data-action-hint="split"');
+    expect(html).not.toContain("<kbd");
+    expect(html).not.toContain(">Preview<");
+    expect(html).not.toContain(">Split<");
   });
 
   it("closes pinned tabs on middle click without selecting first", () => {

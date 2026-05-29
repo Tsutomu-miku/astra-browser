@@ -1,13 +1,13 @@
+import { FiColumns, FiEye } from "react-icons/fi";
+
 export function SidebarItemActionHints() {
   return (
-    <span className="sidebar-item-action-hints" aria-label="Alt Preview, Shift Split">
-      <span className="sidebar-item-action-hint is-preview">
-        <kbd>Alt</kbd>
-        <span>Preview</span>
+    <span className="sidebar-item-action-hints" aria-hidden="true">
+      <span className="sidebar-item-action-hint is-preview" data-action-hint="preview">
+        <FiEye />
       </span>
-      <span className="sidebar-item-action-hint is-split">
-        <kbd>Shift</kbd>
-        <span>Split</span>
+      <span className="sidebar-item-action-hint is-split" data-action-hint="split">
+        <FiColumns />
       </span>
     </span>
   );

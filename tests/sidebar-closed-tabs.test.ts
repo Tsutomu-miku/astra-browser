@@ -30,10 +30,13 @@ describe("sidebar recently closed tabs", () => {
     expect(html).toContain("Docs");
     expect(html).toContain("https://docs.example/");
     expect(html).toContain("Restore");
-    expect(html).toContain("Alt");
-    expect(html).toContain("Preview");
-    expect(html).toContain("Shift");
-    expect(html).toContain("Split");
+    expect(html).toContain('class="sidebar-item-action-hints"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('data-action-hint="preview"');
+    expect(html).toContain('data-action-hint="split"');
+    expect(html).not.toContain("<kbd");
+    expect(html).not.toContain(">Preview<");
+    expect(html).not.toContain(">Split<");
     expect(html).toContain('title="Restore Docs"');
     expect(html).toContain('aria-label="Docs, recently closed tab, restore position 3"');
   });
