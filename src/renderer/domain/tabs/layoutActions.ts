@@ -9,6 +9,7 @@ import {
 } from "../browser";
 import {
   isTabInFavoritesFolder,
+  moveTabFavoriteToWorkspace,
   placeTabInFavoritesFolder,
   removeTabFromFavoritesFolder,
   reorderFavoriteBackingTab
@@ -99,7 +100,7 @@ export function moveTabToFolderEnd(
 }
 
 function getTabFolder(workspace: Workspace, tab: BrowserTab): TabFolder {
-  if (isTabInFavoritesFolder(workspace, tab.id)) return { type: "favorites" };
+  if (isTabInFavoritesFolder(workspace, tab)) return { type: "favorites" };
   if (tab.isPinned) return { type: "pinned" };
   if (tab.groupId) return { type: "group", groupId: tab.groupId };
 
@@ -116,7 +117,7 @@ function moveTabToFolder(workspace: Workspace, tab: BrowserTab, folder: TabFolde
   if (folder.type === "favorites") {
     placeTabInFavoritesFolder(workspace, tab);
   } else {
-    removeTabFromFavoritesFolder(workspace, tab.id);
+    removeTabFromFavoritesFolder(workspace, tab);
   }
   return true;
 }
@@ -140,6 +141,7 @@ export function moveTabToWorkspace(state: BrowserState, tabId: string, workspace
     }
 
     target.tabs.push(tab);
+    moveTabFavoriteToWorkspace(source, target, tab);
     target.activeTabId = tab.id;
     draft.activeWorkspaceId = target.id;
     clearSplitView(draft);

@@ -1,4 +1,4 @@
-import { createElement, type DragEvent as ReactDragEvent } from "react";
+import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
@@ -351,14 +351,12 @@ describe("sidebar favorites", () => {
     act(() => root.unmount());
   });
 
-  it("drags tab-backed Favorites as tab rows while preserving the Favorite payload", () => {
+  it("drags tab-backed Favorites as plain tab rows", () => {
     const activeTab = createTab("Active", "https://active.example");
     const docsTab = createTab("Docs", "https://docs.example");
     const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
     const setDraggingTabId = vi.fn();
-    const onFavoriteDragStart = vi.fn((event: ReactDragEvent<HTMLElement>, favoriteId: string) => {
-      event.dataTransfer.setData("text/favorite-id", favoriteId);
-    });
+    const onFavoriteDragStart = vi.fn();
     const data = new Map<string, string>();
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -413,14 +411,14 @@ describe("sidebar favorites", () => {
     container.querySelector(".favorites .tab-row")?.dispatchEvent(event);
 
     expect(setDraggingTabId).toHaveBeenCalledWith(docsTab.id);
-    expect(onFavoriteDragStart).toHaveBeenCalledWith(expect.objectContaining({ type: "dragstart" }), favorite.id);
+    expect(onFavoriteDragStart).not.toHaveBeenCalled();
     expect(data.get(SIDEBAR_TAB_DRAG_TYPE)).toBe(docsTab.id);
-    expect(data.get("text/favorite-id")).toBe(favorite.id);
+    expect(data.get("text/favorite-id")).toBeUndefined();
 
     act(() => root.unmount());
   });
 
-  it("reorders legacy Favorites against tab-backed Favorite rows", () => {
+  it("ignores legacy Favorite payloads on tab-backed Favorite rows", () => {
     const activeTab = createTab("Active", "https://active.example");
     const docsTab = createTab("Docs", "https://docs.example");
     const legacyFavorite = createFavorite("Legacy", "https://legacy.example");
@@ -474,7 +472,7 @@ describe("sidebar favorites", () => {
       "text/favorite-id": legacyFavorite.id
     }));
 
-    expect(onFavoriteReorderDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), tabBackedFavorite.id, "vertical");
+    expect(onFavoriteReorderDrop).not.toHaveBeenCalled();
     expect(onTabDrop).not.toHaveBeenCalled();
 
     act(() => root.unmount());

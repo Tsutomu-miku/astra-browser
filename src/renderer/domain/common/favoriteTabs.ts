@@ -53,12 +53,36 @@ export function placeTabInFavoritesFolder(workspace: Workspace, tab: BrowserTab)
   upsertTabFavorite(workspace, tab);
 }
 
-export function removeTabFromFavoritesFolder(workspace: Workspace, tabId: string) {
-  workspace.favorites = workspace.favorites.filter((favorite) => favorite.tabId !== tabId);
+export function takeTabFavorite(workspace: Workspace, tab: BrowserTab): Favorite | null {
+  const favoriteIndex = workspace.favorites.findIndex((favorite) => (
+    favorite.tabId === tab.id || (!favorite.tabId && favorite.url === tab.url)
+  ));
+  if (favoriteIndex < 0) return null;
+
+  const [favorite] = workspace.favorites.splice(favoriteIndex, 1);
+  favorite.tabId = tab.id;
+  favorite.url = tab.url;
+  favorite.title = tab.title || favorite.title || getReadableUrlTitle(tab.url);
+  return favorite;
 }
 
-export function isTabInFavoritesFolder(workspace: Workspace, tabId: string) {
-  return workspace.favorites.some((favorite) => favorite.tabId === tabId);
+export function moveTabFavoriteToWorkspace(source: Workspace, target: Workspace, tab: BrowserTab) {
+  const favorite = takeTabFavorite(source, tab);
+  if (!favorite) return;
+
+  mergeFavoriteByUrl(target.favorites, favorite);
+}
+
+export function removeTabFromFavoritesFolder(workspace: Workspace, tab: BrowserTab) {
+  workspace.favorites = workspace.favorites.filter((favorite) => (
+    favorite.tabId !== tab.id && (favorite.tabId || favorite.url !== tab.url)
+  ));
+}
+
+export function isTabInFavoritesFolder(workspace: Workspace, tab: BrowserTab) {
+  return workspace.favorites.some((favorite) => (
+    favorite.tabId === tab.id || (!favorite.tabId && favorite.url === tab.url)
+  ));
 }
 
 export function reorderFavoriteBackingTab(

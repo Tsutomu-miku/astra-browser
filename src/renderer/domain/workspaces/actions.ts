@@ -11,7 +11,7 @@ import {
   type Workspace
 } from "../browser";
 import { getActiveWorkspace } from "../browser/selectors";
-import { takeFavoriteBackingTab } from "../common/favoriteTabs";
+import { takeFavoriteBackingTab, takeTabFavorite } from "../common/favoriteTabs";
 import { pruneEmptyTabGroups } from "../tabs/groups";
 import { clearSplitView } from "../tabs/splitView";
 import { updateBrowserState } from "../browser/updateState";
@@ -48,7 +48,9 @@ export function moveTabToNewWorkspace(state: BrowserState, tabId: string): Brows
     pruneEmptyTabGroups(source);
     replaceEmptyOrMovedActiveTab(draft, source, tabId, index);
 
+    const favorite = takeTabFavorite(source, tab);
     const workspace = createWorkspace(draft, {
+      favorites: favorite ? [favorite] : undefined,
       name: tab.title || getReadableUrlTitle(tab.url),
       tabs: [tab],
       activeTabId: tab.id

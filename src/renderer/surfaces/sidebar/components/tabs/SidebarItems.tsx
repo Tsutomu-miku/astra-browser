@@ -72,14 +72,9 @@ export function TabRow({
   draggingTabId,
   id,
   labelKind = "tab",
-  quickEntryDragDataKey,
-  quickEntryDropTargetId,
   onClose,
   onContextMenu,
-  onDragEndExtra,
-  onDragStartExtra,
   onDrop,
-  onQuickEntryDrop,
   onPreview,
   onSelect,
   onSplit,
@@ -93,14 +88,9 @@ export function TabRow({
   draggingTabId: string | null;
   id?: string;
   labelKind?: "favorite tab" | "pinned tab" | "tab";
-  quickEntryDragDataKey?: "text/essential-id" | "text/favorite-id";
-  quickEntryDropTargetId?: string;
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
-  onDragEndExtra?: () => void;
-  onDragStartExtra?: (event: DragEvent<HTMLElement>, tab: BrowserTab) => void;
   onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
-  onQuickEntryDrop?: (event: DragEvent<HTMLElement>, targetQuickEntryId: string, axis: DropAxis) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
@@ -121,7 +111,6 @@ export function TabRow({
     setDraggingTabId(tab.id);
     writeSidebarTabDragPayload(event.dataTransfer, tab.id);
     event.dataTransfer.effectAllowed = "move";
-    onDragStartExtra?.(event, tab);
   };
 
   return (
@@ -136,12 +125,10 @@ export function TabRow({
       onDragStart={startTabDrag}
       onDragEnd={() => {
         setDraggingTabId(null);
-        onDragEndExtra?.();
       }}
       onDragOver={(event) => {
         const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
-        const draggedQuickEntryId = getDraggedQuickEntryId(event, quickEntryDragDataKey);
-        if ((draggedTabId && draggedTabId !== tab.id) || (draggedQuickEntryId && draggedQuickEntryId !== quickEntryDropTargetId)) {
+        if (draggedTabId && draggedTabId !== tab.id) {
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
           updateDropPlacement(event.currentTarget, event, dropAxis);
@@ -150,13 +137,8 @@ export function TabRow({
       onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
       onDrop={(event) => {
         clearDropPlacement(event.currentTarget);
-        const draggedQuickEntryId = getDraggedQuickEntryId(event, quickEntryDragDataKey);
-        if (draggedQuickEntryId && draggedQuickEntryId !== quickEntryDropTargetId && quickEntryDropTargetId && onQuickEntryDrop) {
-          onQuickEntryDrop(event, quickEntryDropTargetId, dropAxis);
-          return;
-        }
-
-        onDrop(event, tab.id);
+        const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+        if (draggedTabId && draggedTabId !== tab.id) onDrop(event, tab.id);
       }}
       onContextMenu={(event) => onContextMenu(event, tab)}
     >
@@ -361,11 +343,4 @@ export function FavoriteButton({
 
 function getQuickEntryDragDataKey(kind: QuickEntryKind): "text/essential-id" | "text/favorite-id" {
   return kind === "essential" ? "text/essential-id" : "text/favorite-id";
-}
-
-function getDraggedQuickEntryId(
-  event: DragEvent<HTMLElement>,
-  dataKey: "text/essential-id" | "text/favorite-id" | undefined
-): string {
-  return dataKey ? event.dataTransfer.getData(dataKey) : "";
 }

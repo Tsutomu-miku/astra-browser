@@ -69,7 +69,7 @@ Acceptance:
 - Adding a tab to Favorites records the tab relationship.
 - Removing a Favorite does not close the tab unless a separate close action is used.
 
-Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, drag payloads, mixed Favorite reordering, and tab accessibility labels while staying in the Favorites folder. Sidebar, Start page, omnibox, command palette, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
+Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, tab drag payloads, and tab accessibility labels while staying in the Favorites folder. Tab-backed Favorites no longer use a separate Favorite drag payload; moving them across Spaces follows the normal tab move path and preserves their Favorites folder membership in the destination Space. Sidebar, Start page, omnibox, command palette, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
 
 Small requirements:
 
@@ -84,7 +84,7 @@ Small requirements:
 - P0-2.9 Tab-backed Favorites open split view by tab identity; legacy URL Favorites open split view by URL.
 - P0-2.10 Closing a tab-backed Favorite removes it from the Favorites folder; legacy URL Favorites survive matching tab closes.
 - P0-2.11 Tab-backed Favorites render through the shared sidebar tab row path instead of a separate quick-entry row implementation.
-- P0-2.12 Mixed tab-backed and legacy URL Favorites reorder against each other inside the Favorites folder.
+- P0-2.12 Tab-backed Favorites reorder as normal tab rows inside the Favorites folder; URL-only legacy Favorites stay on the quick-entry fallback path.
 
 ### P0-3 Sidebar Drag And Drop
 
@@ -96,7 +96,7 @@ Small requirements:
 - Dragging tabs to groups, Spaces, New Space, and split targets must use consistent payload recovery.
 - Dragging tabs should not show explicit target-region overlays; destinations accept drops directly, while reordering shows local insertion position only.
 
-Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. The domain folder move action owns moving tabs into Favorites and moving Favorite-backed tabs back out to Tabs, Pinned, or groups, so the UI no longer manually removes Favorites before moving tabs. Tabs folder drops now accept the same real tab payload path as the other sidebar folders, and Favorites/Essentials reorder targets plus Space/New Space favorite drops recover from native payloads when React drag state has not synced yet. Real Electron manual QA is still required.
+Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. The domain folder move action owns moving tabs into Favorites and moving Favorite-backed tabs back out to Tabs, Pinned, or groups, so the UI no longer manually removes Favorites before moving tabs. Tabs folder drops now accept the same real tab payload path as the other sidebar folders, and tab-backed Favorites use that same tab payload when reordering or moving across Spaces. URL-only legacy Favorites remain a quick-entry fallback and Space/New Space legacy favorite drops recover from native payloads when React drag state has not synced yet. Real Electron manual QA is still required.
 
 Small requirements:
 
