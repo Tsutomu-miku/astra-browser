@@ -9,6 +9,7 @@ import {
   pruneEmptyTabGroups
 } from "./groups";
 import { clearSplitView } from "./splitView";
+import type { TabDropPlacement } from "./utils";
 
 export function groupActiveTab(state: BrowserState): BrowserState {
   return groupTab(state);
@@ -65,6 +66,27 @@ export function assignTabToGroup(state: BrowserState, tabId: string, groupId: st
 
     tab.groupId = group.id;
     pruneEmptyTabGroups(workspace);
+  });
+}
+
+export function reorderTabGroup(
+  state: BrowserState,
+  groupId: string,
+  targetGroupId: string,
+  placement: TabDropPlacement
+): BrowserState {
+  if (groupId === targetGroupId) return state;
+
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const fromIndex = workspace.tabGroups.findIndex((group) => group.id === groupId);
+    const targetIndex = workspace.tabGroups.findIndex((group) => group.id === targetGroupId);
+    if (fromIndex < 0 || targetIndex < 0) return;
+
+    const [group] = workspace.tabGroups.splice(fromIndex, 1);
+    const droppedOnIndex = workspace.tabGroups.findIndex((candidate) => candidate.id === targetGroupId);
+    const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
+    workspace.tabGroups.splice(insertIndex, 0, group);
   });
 }
 

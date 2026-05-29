@@ -74,6 +74,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 ### Groups, Pins, Essentials, And Favorites
 
 - Users must be able to create named, color-coded, collapsible tab groups.
+- Users must be able to reorder tab groups directly from the sidebar with drag and drop.
 - Sidebar tab group headers must support context menus for collapsing, sleeping, duplicating, renaming, recoloring, moving to another Space, closing, and ungrouping the whole group.
 - Sidebar tab group toggles must support `ArrowLeft` to collapse and `ArrowRight` to expand without stealing editing keys from group name fields.
 - Sidebar tab group toggles must participate in the same Arrow, Home, and End keyboard focus navigation as other primary sidebar items.

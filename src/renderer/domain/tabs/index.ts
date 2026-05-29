@@ -19,6 +19,7 @@ export {
   duplicateTabGroup,
   groupActiveTab,
   groupTab,
+  reorderTabGroup,
   toggleTabGroupCollapsed,
   ungroupActiveTab,
   ungroupTab,

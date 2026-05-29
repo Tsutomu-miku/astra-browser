@@ -40,6 +40,7 @@ export {
   moveWorkspaceFavoriteToWorkspace,
   removeWorkspaceFavorite,
   reorderEssential,
+  reorderTabGroup,
   reorderWorkspaceFavorite,
   reorderTab,
   resetActiveTabZoom,

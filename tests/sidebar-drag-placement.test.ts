@@ -2,12 +2,17 @@ import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-import { createDefaultState, createFavorite, createTab } from "../src/renderer/domain/browser";
+import { createDefaultState, createFavorite, createTab, type TabGroup } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { FavoriteButton, TabRow } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
 import { SidebarPinnedTabs } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs";
+import { TabGroupSection } from "../src/renderer/surfaces/sidebar/components/tabs/TabGroupSection";
 import { WorkspaceStrip } from "../src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip";
+
+const sidebarGroupsCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-groups.css"), "utf8");
 
 describe("sidebar drag placement", () => {
   it("marks tab row before and after insertion placement while dragging", () => {
@@ -159,6 +164,60 @@ describe("sidebar drag placement", () => {
 
     act(() => root.unmount());
   });
+
+  it("marks before and after insertion placement while reordering tab groups", () => {
+    const group = tabGroup("target", "Target");
+    const tab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onGroupDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, {
+        activeTab: tab,
+        draggingGroupId: "dragged-group",
+        draggingTabId: null,
+        group,
+        onAssignTab: vi.fn(),
+        onClose: vi.fn(),
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onGroupContextMenu: vi.fn(),
+        onGroupDrop,
+        onPreview: vi.fn(),
+        onSelect: vi.fn(),
+        onSplit: vi.fn(),
+        onToggle: vi.fn(),
+        onUpdate: vi.fn(),
+        searchSelectedTabId: undefined,
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tabs: [tab]
+      }));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    stubRect(header, { top: 0, height: 36 });
+
+    header.dispatchEvent(createDragEvent("dragover", { clientY: 30 }));
+    expect(header.dataset.dropPlacement).toBe("after");
+
+    header.dispatchEvent(createDragEvent("dragover", { clientY: 4 }));
+    expect(header.dataset.dropPlacement).toBe("before");
+
+    header.dispatchEvent(createDragEvent("drop", { clientY: 4 }));
+    expect(onGroupDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), group.id);
+    expect(header.dataset.dropPlacement).toBeUndefined();
+
+    act(() => root.unmount());
+  });
+
+  it("styles tab group insertion indicators", () => {
+    expect(sidebarGroupsCss).toContain(".tab-group-header[data-drop-placement]::before");
+    expect(sidebarGroupsCss).toContain('.tab-group-header[data-drop-placement="before"]::before');
+    expect(sidebarGroupsCss).toContain('.tab-group-header[data-drop-placement="after"]::before');
+  });
 });
 
 function createActions() {
@@ -199,4 +258,13 @@ function stubRect(target: HTMLElement, rect: Partial<DOMRect>) {
       toJSON: () => undefined
     })
   });
+}
+
+function tabGroup(id: string, name: string): TabGroup {
+  return {
+    color: "#7dd3fc",
+    id,
+    isCollapsed: false,
+    name
+  };
 }

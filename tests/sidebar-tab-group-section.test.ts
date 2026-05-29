@@ -103,6 +103,7 @@ function props(overrides: Partial<Parameters<typeof TabGroupSection>[0]> = {}): 
     onContextMenu: vi.fn(),
     onDrop: vi.fn(),
     onGroupContextMenu: vi.fn(),
+    onGroupDrop: vi.fn(),
     onPreview: vi.fn(),
     onSelect: vi.fn(),
     onSplit: vi.fn(),

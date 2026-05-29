@@ -1,7 +1,7 @@
 import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent } from "react";
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
-import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { getSidebarSearchTargetElementId } from "../../sidebarFiltering";
@@ -15,6 +15,7 @@ export function TabGroupSection({
   onAssignTab,
   onClose,
   onContextMenu,
+  onGroupDrop,
   onGroupContextMenu,
   onDrop,
   onPreview,
@@ -35,6 +36,7 @@ export function TabGroupSection({
   onAssignTab: (tabId: string, groupId: string) => void;
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
+  onGroupDrop: (event: DragEvent<HTMLElement>, targetGroupId: string) => void;
   onGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
   onPreview: (url: string, title?: string) => void;
@@ -64,7 +66,7 @@ export function TabGroupSection({
         className="tab-group-header"
         draggable
         data-dragging={draggingGroupId === group.id}
-        data-drop-target={Boolean(draggingTabId)}
+        data-drop-target={Boolean(draggingTabId || (draggingGroupId && draggingGroupId !== group.id))}
         onContextMenu={(event) => onGroupContextMenu(event, group)}
         onKeyDown={openSidebarKeyboardContextMenu}
         onDragStart={(event) => {
@@ -74,9 +76,26 @@ export function TabGroupSection({
         }}
         onDragEnd={() => setDraggingGroupId(null)}
         onDragOver={(event) => {
-          if (draggingTabId) event.preventDefault();
+          if (draggingGroupId && draggingGroupId !== group.id) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            updateDropPlacement(event.currentTarget, event, "vertical");
+          } else if (draggingTabId) {
+            event.preventDefault();
+          }
         }}
+        onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
         onDrop={(event) => {
+          clearDropPlacement(event.currentTarget);
+          if (draggingGroupId && draggingGroupId !== group.id) {
+            onGroupDrop(event, group.id);
+            return;
+          }
+          if (draggingGroupId) {
+            event.preventDefault();
+            setDraggingGroupId(null);
+            return;
+          }
           event.preventDefault();
           const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
           if (tabId) onAssignTab(tabId, group.id);

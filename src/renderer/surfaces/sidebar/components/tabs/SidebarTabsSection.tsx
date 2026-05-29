@@ -1,5 +1,6 @@
 import type { DragEvent, MouseEvent } from "react";
 
+import { getPointerDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
@@ -51,6 +52,17 @@ export function SidebarTabsSection({
   const canUngroupDraggedTab = Boolean(
     draggingTabId && filteredItems.groupedTabs.some((entry) => entry.tabs.some((tab) => tab.id === draggingTabId))
   );
+  const onGroupDrop = (event: DragEvent<HTMLElement>, targetGroupId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!draggingGroupId || draggingGroupId === targetGroupId) {
+      setDraggingGroupId(null);
+      return;
+    }
+
+    actions.reorderTabGroup(draggingGroupId, targetGroupId, getPointerDropPlacement(event.currentTarget, event, "vertical"));
+    setDraggingGroupId(null);
+  };
 
   return (
     <section className="sidebar-section tabs-section">
@@ -96,6 +108,7 @@ export function SidebarTabsSection({
             onClose={actions.closeTab}
             onContextMenu={onTabContextMenu}
             onDrop={onTabDrop}
+            onGroupDrop={onGroupDrop}
             onGroupContextMenu={onTabGroupContextMenu}
             onPreview={actions.openGlance}
             onSelect={actions.selectTab}

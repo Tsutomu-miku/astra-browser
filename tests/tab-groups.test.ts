@@ -10,6 +10,7 @@ import {
   moveTabGroupToWorkspace,
   moveTabToWorkspace,
   openUrlInActiveWorkspace,
+  reorderTabGroup,
   toggleActiveTabPinned,
   toggleTabGroupCollapsed,
   ungroupActiveTab,
@@ -139,6 +140,24 @@ describe("tab groups", () => {
     expect(workspace.activeTabId).toBe(copiedTabs[0].id);
     expect(new Set(copiedTabs.map((tab) => tab.id)).has(secondTab.id)).toBe(false);
     expect(duplicated.splitMode).toBe(false);
+  });
+
+  it("reorders tab groups inside the active workspace", () => {
+    const state = createDefaultState();
+    const workspace = getActiveWorkspace(state);
+    workspace.tabGroups = [
+      { id: "first", name: "First", color: "#7dd3fc", isCollapsed: false },
+      { id: "second", name: "Second", color: "#f0abfc", isCollapsed: false },
+      { id: "third", name: "Third", color: "#86d39d", isCollapsed: false }
+    ];
+
+    const movedBefore = reorderTabGroup(state, "third", "first", "before");
+    const movedAfter = reorderTabGroup(movedBefore, "first", "second", "after");
+    const ignored = reorderTabGroup(movedAfter, "second", "second", "before");
+
+    expect(getActiveWorkspace(movedBefore).tabGroups.map((group) => group.name)).toEqual(["Third", "First", "Second"]);
+    expect(getActiveWorkspace(movedAfter).tabGroups.map((group) => group.name)).toEqual(["Third", "Second", "First"]);
+    expect(ignored).toBe(movedAfter);
   });
 
   it("ungroups every tab in a group without changing selection", () => {

@@ -138,6 +138,7 @@ export function useBrowserActions({
     removeTabFromSplit: store.removeTabFromSplit,
     replaceBrowserState: store.replaceBrowserState,
     reorderEssential: store.reorderEssential,
+    reorderTabGroup: store.reorderTabGroup,
     reorderWorkspace: store.reorderWorkspace,
     reorderWorkspaceFavorite: store.reorderWorkspaceFavorite,
     reorderTab: store.reorderTab,

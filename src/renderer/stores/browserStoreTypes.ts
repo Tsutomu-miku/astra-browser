@@ -74,6 +74,7 @@ export interface BrowserStore {
   removeWorkspaceFavorite: (url: string) => void;
   replaceBrowserState: (state: BrowserState) => void;
   reorderEssential: (essentialId: string, targetEssentialId: string, placement: TabDropPlacement) => void;
+  reorderTabGroup: (groupId: string, targetGroupId: string, placement: TabDropPlacement) => void;
   reorderWorkspaceFavorite: (favoriteId: string, targetFavoriteId: string, placement: TabDropPlacement) => void;
   reorderTab: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   reorderWorkspace: (workspaceId: string, targetWorkspaceId: string, placement: WorkspaceDropPlacement) => void;
