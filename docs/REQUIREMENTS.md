@@ -131,6 +131,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Sidebar Essentials and favorites must expose accessible labels with kind, current-page, search selection, dragging, and drop-target state.
 - Sidebar tab, pinned tab, tab group, recently closed tab, Essential, and favorite context menus must open from the keyboard with `ContextMenu` or `Shift+F10`.
 - Sidebar context menus must focus the first action when opened and support Arrow, Home, and End keyboard navigation.
+- Sidebar context menu keyboard navigation must keep the newly focused menu item scrolled into view.
 - Sidebar context menus must restore focus to their triggering sidebar item when closed by Escape or a menu action.
 - Sidebar primary items and section headers must support Arrow, Home, and End keyboard focus navigation without stealing editing keys from text fields.
 - Sidebar keyboard focus navigation must keep the newly focused item scrolled into view inside long folders.
