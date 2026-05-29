@@ -19,6 +19,10 @@ export function SidebarAddress({ controller }: { controller: BrowserController }
           spellCheck={false}
           aria-label="Sidebar address"
           placeholder="Search or enter address"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="sidebar-address-suggestions"
+          aria-expanded={omnibox.suggestionsOpen && omnibox.suggestions.length > 0}
           value={addressValue}
           onBlur={() => omnibox.setSuggestionsOpen(false)}
           onChange={(event) => omnibox.updateAddressValue(event.target.value)}
@@ -28,13 +32,14 @@ export function SidebarAddress({ controller }: { controller: BrowserController }
         />
       </form>
       {omnibox.suggestionsOpen && omnibox.suggestions.length > 0 && (
-        <div className="sidebar-omnibox-suggestions" role="listbox" aria-label="Sidebar address suggestions">
+        <div className="sidebar-omnibox-suggestions" id="sidebar-address-suggestions" role="listbox" aria-label="Sidebar address suggestions">
           {omnibox.suggestions.map((suggestion, index) => (
             <button
               className="sidebar-omnibox-suggestion"
               id={`sidebar-address-suggestion-${index}`}
               key={suggestion.id}
               type="button"
+              role="option"
               aria-selected={index === omnibox.activeIndex}
               title="Alt-click to open in split view"
               onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}

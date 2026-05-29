@@ -73,6 +73,10 @@ export function Topbar({ controller }: { controller: BrowserController }) {
             spellCheck={false}
             aria-label="Address"
             placeholder="Search or enter address"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="address-suggestions"
+            aria-expanded={omnibox.suggestionsOpen && omnibox.suggestions.length > 0}
             value={addressValue}
             onChange={(event) => omnibox.updateAddressValue(event.target.value)}
             onFocus={() => omnibox.setSuggestionsOpen(true)}
@@ -82,13 +86,14 @@ export function Topbar({ controller }: { controller: BrowserController }) {
           />
         </form>
         {omnibox.suggestionsOpen && omnibox.suggestions.length > 0 && (
-          <div className="omnibox-suggestions" role="listbox" aria-label="Address suggestions">
+          <div className="omnibox-suggestions" id="address-suggestions" role="listbox" aria-label="Address suggestions">
             {omnibox.suggestions.map((suggestion, index) => (
               <button
                 className="omnibox-suggestion"
                 id={`address-suggestion-${index}`}
                 key={suggestion.id}
                 type="button"
+                role="option"
                 aria-selected={index === omnibox.activeIndex}
                 title="Alt-click to open in split view"
                 onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
