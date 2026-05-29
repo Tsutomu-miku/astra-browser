@@ -76,9 +76,12 @@ export function SidebarContextMenus({
           item={quickEntryMenu.item}
           kind={quickEntryMenu.kind}
           left={quickEntryMenu.left}
+          moveWorkspaceTargets={quickEntryMenu.kind === "favorite" ? getMoveWorkspaceTargets(state.workspaces, activeWorkspace.id) : []}
           top={quickEntryMenu.top}
           onClose={closeMenus}
           onCopyText={actions.copyText}
+          onMoveToNewWorkspace={quickEntryMenu.kind === "favorite" ? actions.moveWorkspaceFavoriteToNewWorkspace : undefined}
+          onMoveToWorkspace={quickEntryMenu.kind === "favorite" ? actions.moveWorkspaceFavoriteToWorkspace : undefined}
           onOpen={actions.navigateActiveTab}
           onOpenInSplit={actions.openUrlInSplit}
           onPreview={actions.openGlance}

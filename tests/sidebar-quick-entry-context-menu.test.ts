@@ -22,6 +22,8 @@ describe("sidebar quick entry context menu", () => {
       top: 20,
       onClose: vi.fn(),
       onCopyText: vi.fn(),
+      onMoveToNewWorkspace: vi.fn(),
+      onMoveToWorkspace: vi.fn(),
       onOpen: vi.fn(),
       onOpenInSplit: vi.fn(),
       onPreview: vi.fn(),
@@ -35,6 +37,7 @@ describe("sidebar quick entry context menu", () => {
     expect(html).toContain("Copy URL");
     expect(html).toContain("Copy title");
     expect(html).toContain("Remove Essential");
+    expect(html).not.toContain("Move to New Space");
   });
 
   it("copies quick entry URL and title", () => {
@@ -65,9 +68,12 @@ describe("sidebar quick entry context menu", () => {
       item: createFavorite("Docs", "https://docs.example"),
       kind: "favorite",
       left: 10,
+      moveWorkspaceTargets: [{ id: "work", name: "Work" }],
       top: 20,
       onClose: vi.fn(),
       onCopyText: vi.fn(),
+      onMoveToNewWorkspace: vi.fn(),
+      onMoveToWorkspace: vi.fn(),
       onOpen: vi.fn(),
       onOpenInSplit: vi.fn(),
       onPreview: vi.fn(),
@@ -75,6 +81,43 @@ describe("sidebar quick entry context menu", () => {
     }));
 
     expect(html).toContain("Remove Favorite");
+    expect(html).toContain("Move to Work");
+    expect(html).toContain("Move to New Space");
+  });
+
+  it("moves favorites to another Space from the context menu", () => {
+    const favorite = createFavorite("Docs", "https://docs.example");
+    const onClose = vi.fn();
+    const onMoveToWorkspace = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(QuickEntryContextMenu, {
+        item: favorite,
+        kind: "favorite",
+        left: 10,
+        moveWorkspaceTargets: [{ id: "work", name: "Work" }],
+        top: 20,
+        onClose,
+        onCopyText: vi.fn(),
+        onMoveToNewWorkspace: vi.fn(),
+        onMoveToWorkspace,
+        onOpen: vi.fn(),
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn(),
+        onRemove: vi.fn()
+      }));
+    });
+
+    Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Move to Work")
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(onMoveToWorkspace).toHaveBeenCalledWith(favorite.id, "work");
+    expect(onClose).toHaveBeenCalled();
+
+    act(() => root.unmount());
   });
 
   it("opens quick entries from the sidebar context menu in the active tab", () => {
@@ -111,6 +154,43 @@ describe("sidebar quick entry context menu", () => {
     act(() => root.unmount());
   });
 
+  it("wires favorite Space move actions through sidebar context menus", () => {
+    const state = createDefaultState();
+    const activeWorkspace = state.workspaces[0];
+    const item = createFavorite("Docs", "https://docs.example");
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarContextMenus, {
+        actions,
+        activeWorkspace,
+        closedTabMenu: null,
+        closeMenus: vi.fn(),
+        quickEntryMenu: {
+          item,
+          kind: "favorite",
+          left: 10,
+          top: 20
+        },
+        state,
+        tabGroupMenu: null,
+        tabMenu: null
+      }));
+    });
+
+    const moveButtons = Array.from(container.querySelectorAll(".quick-entry-context-menu button"))
+      .filter((button) => button.textContent?.startsWith("Move to"));
+    moveButtons[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    moveButtons.at(-1)?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(actions.moveWorkspaceFavoriteToWorkspace).toHaveBeenCalledWith(item.id, "work");
+    expect(actions.moveWorkspaceFavoriteToNewWorkspace).toHaveBeenCalledWith(item.id);
+
+    act(() => root.unmount());
+  });
+
   it("styles quick entry menus with the shared sidebar menu surface", () => {
     expect(contextMenuCss).toContain(".quick-entry-context-menu");
     expect(contextMenuCss).toContain(".tab-context-menu button.danger");
@@ -120,6 +200,8 @@ describe("sidebar quick entry context menu", () => {
 function createActions() {
   return {
     copyText: vi.fn(),
+    moveWorkspaceFavoriteToNewWorkspace: vi.fn(),
+    moveWorkspaceFavoriteToWorkspace: vi.fn(),
     navigateActiveTab: vi.fn(),
     openGlance: vi.fn(),
     openUrlInActiveWorkspace: vi.fn(),

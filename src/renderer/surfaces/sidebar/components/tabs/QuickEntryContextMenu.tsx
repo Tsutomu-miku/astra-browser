@@ -1,11 +1,15 @@
 import type { Favorite } from "../../../../domain/browser";
+import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
 export function QuickEntryContextMenu({
   item,
   kind,
   left,
+  moveWorkspaceTargets,
   onClose,
   onCopyText,
+  onMoveToNewWorkspace,
+  onMoveToWorkspace,
   onOpen,
   onOpenInSplit,
   onPreview,
@@ -15,8 +19,11 @@ export function QuickEntryContextMenu({
   item: Favorite;
   kind: "essential" | "favorite";
   left: number;
+  moveWorkspaceTargets?: MoveWorkspaceTarget[];
   onClose: () => void;
   onCopyText: (text: string) => void;
+  onMoveToNewWorkspace?: (favoriteId: string) => void;
+  onMoveToWorkspace?: (favoriteId: string, workspaceId: string) => void;
   onOpen: (url: string, title?: string) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
@@ -24,6 +31,7 @@ export function QuickEntryContextMenu({
   top: number;
 }) {
   const label = kind === "essential" ? "Essential" : "Favorite";
+  const canMoveFavorite = kind === "favorite" && (Boolean(onMoveToNewWorkspace) || Boolean(onMoveToWorkspace));
   const run = (action: () => void) => {
     action();
     onClose();
@@ -45,6 +53,24 @@ export function QuickEntryContextMenu({
       <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(item.url, item.title))}>
         Open in split view
       </button>
+      {canMoveFavorite && (
+        <>
+          <span className="tab-context-menu-separator" />
+          {moveWorkspaceTargets?.map((workspace) => (
+            <button
+              key={workspace.id}
+              type="button"
+              role="menuitem"
+              onClick={() => run(() => onMoveToWorkspace?.(item.id, workspace.id))}
+            >
+              Move to {workspace.name}
+            </button>
+          ))}
+          <button type="button" role="menuitem" onClick={() => run(() => onMoveToNewWorkspace?.(item.id))}>
+            Move to New Space
+          </button>
+        </>
+      )}
       <button type="button" role="menuitem" onClick={() => run(() => onCopyText(item.url))}>
         Copy URL
       </button>

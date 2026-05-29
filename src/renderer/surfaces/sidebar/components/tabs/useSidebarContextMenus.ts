@@ -62,7 +62,7 @@ export function useSidebarContextMenus() {
     setQuickEntryMenu({
       item,
       kind,
-      ...getMenuPosition(event, 206, 188)
+      ...getMenuPosition(event, 206, kind === "favorite" ? 272 : 188)
     });
   }
 

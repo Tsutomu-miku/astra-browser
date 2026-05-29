@@ -86,6 +86,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Users must be able to reorder Space favorites directly from the sidebar with drag and drop.
 - Users must be able to drag Space favorites onto Space buttons or the New Space button to move them between Spaces.
 - Sidebar Essentials and favorites must support context menus for opening, Glance preview, split opening, and removing the entry.
+- Sidebar Space favorite context menus must support moving favorites to another Space or to a new Space.
 - Opening an Essential or favorite from its sidebar context menu must navigate the current tab instead of creating a new tab.
 - Sidebar Essentials and favorites context menus must support copying the entry URL and title.
 - Sidebar tab, pinned tab, tab group, recently closed tab, Essential, and favorite context menus must open from the keyboard with `ContextMenu` or `Shift+F10`.
