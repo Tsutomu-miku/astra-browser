@@ -2,7 +2,7 @@ import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
-import { type BrowserTab } from "../../../../domain/browser";
+import { type BrowserTab, type FaviconCache } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
@@ -21,6 +21,7 @@ export function SidebarPinnedTabs({
   activeSearchTarget,
   activeTab,
   draggingTabId,
+  faviconCache,
   isCollapsed = false,
   onTabContextMenu,
   onTabDrop,
@@ -35,6 +36,7 @@ export function SidebarPinnedTabs({
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
   draggingTabId: string | null;
+  faviconCache?: FaviconCache;
   isCollapsed?: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
@@ -143,7 +145,7 @@ export function SidebarPinnedTabs({
                 onTabDrop(event, tab.id, "horizontal");
               }}
             >
-              <SidebarItemIcon className="pinned-tab-icon" faviconUrl={tab.faviconUrl} status={iconStatus} url={tab.url} />
+              <SidebarItemIcon className="pinned-tab-icon" faviconCache={faviconCache} faviconUrl={tab.faviconUrl} status={iconStatus} url={tab.url} />
               <SidebarTabStatusBadges badges={statusBadges} variant="pinned" />
               <SidebarItemActionHints />
             </button>

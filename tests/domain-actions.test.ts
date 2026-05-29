@@ -60,7 +60,8 @@ import {
   toggleTabFavorite,
   toggleTabMuted,
   toggleTabPinned,
-  toggleSplitMode
+  toggleSplitMode,
+  updateTab
 } from "../src/renderer/domain/actions";
 import { createDefaultState, createFavorite } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
@@ -1026,6 +1027,24 @@ describe("domain actions", () => {
 
     expect(getActiveTab(getActiveWorkspace(muted)).isMuted).toBe(true);
     expect(getActiveTab(getActiveWorkspace(unmuted)).isMuted).toBe(false);
+  });
+
+  it("caches tab favicons by site and reuses them on navigation", () => {
+    const initial = createDefaultState();
+    const tab = getActiveTab(getActiveWorkspace(initial));
+    const faviconUrl = "https://docs.example/favicon.ico";
+    const withFavicon = updateTab(initial, tab.id, {
+      faviconUrl,
+      url: "https://docs.example/page-one"
+    });
+    const withSiblingPage = updateTab(withFavicon, tab.id, {
+      faviconUrl: undefined,
+      url: "https://docs.example/page-two"
+    });
+    const updatedTab = getActiveTab(getActiveWorkspace(withSiblingPage));
+
+    expect(withFavicon.faviconCache["https://docs.example"]).toBe(faviconUrl);
+    expect(updatedTab.faviconUrl).toBe(faviconUrl);
   });
 
   it("sleeps inactive tabs and wakes them when selected", () => {

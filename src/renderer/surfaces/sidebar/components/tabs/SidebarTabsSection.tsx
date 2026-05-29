@@ -2,7 +2,7 @@ import type { DragEvent, MouseEvent } from "react";
 
 import { getPointerDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
-import type { BrowserTab, TabGroup } from "../../../../domain/browser";
+import type { BrowserTab, FaviconCache, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { readSidebarGroupDragId } from "../../model/sidebarDragSources";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
@@ -16,6 +16,7 @@ export function SidebarTabsSection({
   activeTab,
   draggingGroupId,
   draggingTabId,
+  faviconCache,
   filteredItems,
   isCollapsed,
   onTabContextMenu,
@@ -33,6 +34,7 @@ export function SidebarTabsSection({
   activeTab: BrowserTab;
   draggingGroupId: string | null;
   draggingTabId: string | null;
+  faviconCache?: FaviconCache;
   filteredItems: SidebarFilterResult;
   isCollapsed: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
@@ -88,6 +90,7 @@ export function SidebarTabsSection({
             activeTab={activeTab}
             draggingGroupId={draggingGroupId}
             group={group}
+            faviconCache={faviconCache}
             searchSelectedTabId={activeSearchTarget?.type === "tab" ? activeSearchTarget.id : undefined}
             splitTabIds={splitTabIds}
             tabs={tabs}
@@ -112,6 +115,7 @@ export function SidebarTabsSection({
             key={tab.id}
             activeTabId={activeTab.id}
             draggingTabId={draggingTabId}
+            faviconCache={faviconCache}
             id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
             splitTabIds={splitTabIds}
             isSearchSelected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}

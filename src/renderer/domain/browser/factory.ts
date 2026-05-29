@@ -36,6 +36,7 @@ export function createFavorite(title: string, url: string, tabId?: string): Favo
 export function createDefaultState(): BrowserState {
   return {
     activeWorkspaceId: "personal",
+    faviconCache: {},
     splitMode: false,
     splitTabId: null,
     splitTabIds: [],

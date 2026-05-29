@@ -18,6 +18,7 @@ import { getSplitTabIds, pruneSplitTabIds } from "../tabs/splitView";
 import { normalizeTabGroups } from "../tabs/groups";
 import { normalizeWorkspaceProfile } from "../workspaces/profiles";
 import { normalizeZoomFactor } from "./zoom";
+import { getCachedFaviconUrl, normalizeFaviconCache, normalizeFaviconUrl, setCachedFaviconUrl } from "./favicon";
 
 export function normalizeState(candidateState: PartialBrowserState | null | undefined): BrowserState {
   const fallback = createDefaultState();
@@ -28,6 +29,7 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
   state.history = Array.isArray(state.history) ? state.history as HistoryEntry[] : [];
   state.downloads = Array.isArray(state.downloads) ? state.downloads as DownloadEntry[] : [];
   state.essentials = normalizeFavorites(state.essentials, state.settings?.searchEngine);
+  state.faviconCache = normalizeFaviconCache(state.faviconCache);
   state.sitePermissions = normalizeSitePermissions(state.sitePermissions);
   state.settings = {
     ...fallback.settings,
@@ -65,7 +67,13 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
       tab.id = tab.id ?? createId();
       tab.url = normalizeAddress(tab.url || getHomepageUrl(state), state.settings.searchEngine);
       tab.title = tab.title || getReadableUrlTitle(tab.url);
-      if (typeof tab.faviconUrl !== "string" || tab.faviconUrl.trim().length === 0) {
+      const faviconUrl = normalizeFaviconUrl(tab.faviconUrl);
+      if (faviconUrl) {
+        tab.faviconUrl = faviconUrl;
+        setCachedFaviconUrl(state.faviconCache, tab.url, faviconUrl);
+      } else if (getCachedFaviconUrl(state.faviconCache, tab.url)) {
+        tab.faviconUrl = getCachedFaviconUrl(state.faviconCache, tab.url);
+      } else {
         delete tab.faviconUrl;
       }
       tab.groupId = isKnownTabGroup(workspace.tabGroups, tab.groupId) ? tab.groupId : null;
@@ -155,7 +163,7 @@ export function normalizeClosedTabs(closedTabs: Array<Partial<ClosedTab> | null>
       return {
         title: tab.title || getReadableUrlTitle(url),
         url,
-        ...(typeof tab.faviconUrl === "string" && tab.faviconUrl.trim() ? { faviconUrl: tab.faviconUrl } : {}),
+        ...(normalizeFaviconUrl(tab.faviconUrl) ? { faviconUrl: normalizeFaviconUrl(tab.faviconUrl)! } : {}),
         closedAt: Number(tab.closedAt) || Date.now()
       };
     })

@@ -1,4 +1,4 @@
-import { type ClosedTab } from "../../../../domain/browser";
+import { type ClosedTab, type FaviconCache } from "../../../../domain/browser";
 import { getClosedTabAccessibilityLabel } from "../../model/closedTabItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
@@ -9,6 +9,7 @@ import type { DragEvent, MouseEvent } from "react";
 export function ClosedTabButton({
   closedIndex,
   draggingClosedTabIndex,
+  faviconCache,
   onContextMenu,
   onDragEnd,
   onDragStart,
@@ -19,6 +20,7 @@ export function ClosedTabButton({
 }: {
   closedIndex: number;
   draggingClosedTabIndex?: number | null;
+  faviconCache?: FaviconCache;
   onContextMenu: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
   onDragEnd?: () => void;
   onDragStart?: (event: DragEvent<HTMLButtonElement>) => void;
@@ -58,7 +60,7 @@ export function ClosedTabButton({
         }
       }}
     >
-      <SidebarItemIcon className="closed-tab-icon" faviconUrl={tab.faviconUrl} url={tab.url} />
+      <SidebarItemIcon className="closed-tab-icon" faviconCache={faviconCache} faviconUrl={tab.faviconUrl} url={tab.url} />
       <span className="closed-tab-main">
         <span className="closed-tab-title">{title}</span>
         <span className="closed-tab-url">{tab.url}</span>

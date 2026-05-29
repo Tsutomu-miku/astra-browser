@@ -5,6 +5,7 @@ import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { type BrowserTab, type Favorite } from "../../../../domain/browser";
+import type { FaviconCache } from "../../../../domain/browser";
 import { getQuickEntryAccessibilityLabel, type QuickEntryKind } from "../../model/quickEntryItemState";
 import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
@@ -72,6 +73,7 @@ export function SidebarSectionHeader({
 export function TabRow({
   activeTabId,
   draggingTabId,
+  faviconCache,
   id,
   labelKind = "tab",
   onClose,
@@ -88,6 +90,7 @@ export function TabRow({
 }: {
   activeTabId: string;
   draggingTabId: string | null;
+  faviconCache?: FaviconCache;
   id?: string;
   labelKind?: "favorite tab" | "pinned tab" | "tab";
   onClose: (tabId: string) => void;
@@ -180,7 +183,7 @@ export function TabRow({
           }
         }}
       >
-        <SidebarItemIcon className="tab-favicon" faviconUrl={tab.faviconUrl} status={iconStatus} url={tab.url} />
+        <SidebarItemIcon className="tab-favicon" faviconCache={faviconCache} faviconUrl={tab.faviconUrl} status={iconStatus} url={tab.url} />
         <span className="tab-title-stack">
           <span className="tab-title">{tab.title || tab.url}</span>
           <SidebarTabStatusBadges badges={statusBadges} />
@@ -210,6 +213,7 @@ export function TabRow({
 export function FavoriteButton({
   draggable = false,
   draggingQuickEntryId = null,
+  faviconCache,
   favorite,
   id,
   isActive = false,
@@ -231,6 +235,7 @@ export function FavoriteButton({
 }: {
   draggable?: boolean;
   draggingQuickEntryId?: string | null;
+  faviconCache?: FaviconCache;
   favorite: Favorite;
   id?: string;
   isActive?: boolean;
@@ -331,7 +336,7 @@ export function FavoriteButton({
         }
       }}
     >
-      <SidebarItemIcon className="favorite-icon" status={iconStatus} url={favorite.url} />
+      <SidebarItemIcon className="favorite-icon" faviconCache={faviconCache} status={iconStatus} url={favorite.url} />
       {tabStatusBadges.length > 0 ? (
         <span className="favorite-title-stack">
           <span className="favorite-title">{favorite.title}</span>

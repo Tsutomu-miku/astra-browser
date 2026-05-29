@@ -2,7 +2,7 @@ import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent } from "react"
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
-import type { BrowserTab, TabGroup } from "../../../../domain/browser";
+import type { BrowserTab, FaviconCache, TabGroup } from "../../../../domain/browser";
 import { SIDEBAR_DRAG_DATA, readSidebarGroupDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { getSidebarSearchTargetElementId } from "../../sidebarFiltering";
@@ -12,6 +12,7 @@ export function TabGroupSection({
   activeTab,
   draggingGroupId,
   draggingTabId,
+  faviconCache,
   group,
   onClose,
   onContextMenu,
@@ -33,6 +34,7 @@ export function TabGroupSection({
   activeTab: BrowserTab;
   draggingGroupId: string | null;
   draggingTabId: string | null;
+  faviconCache?: FaviconCache;
   group: TabGroup;
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
@@ -144,6 +146,7 @@ export function TabGroupSection({
           key={tab.id}
           activeTabId={activeTab.id}
           draggingTabId={draggingTabId}
+          faviconCache={faviconCache}
           id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
           isSearchSelected={searchSelectedTabId === tab.id}
           splitTabIds={splitTabIds}

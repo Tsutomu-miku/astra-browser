@@ -332,6 +332,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
           activeTab={activeTab}
           closedTabs={activeWorkspace.closedTabs}
           draggingEssentialId={draggingEssentialId}
+          faviconCache={state.faviconCache}
           draggingFavoriteId={draggingFavoriteId}
           draggingClosedTabIndex={draggingClosedTabIndex}
           draggingGroupId={draggingGroupId}

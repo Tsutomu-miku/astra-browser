@@ -62,6 +62,8 @@ export interface DownloadEntry {
   finishedAt?: number;
 }
 
+export type FaviconCache = Record<string, string>;
+
 export type SitePermissionDecision = "allow" | "block";
 
 export interface SitePermissionRule {
@@ -96,6 +98,7 @@ export interface Workspace {
 
 export interface BrowserState {
   activeWorkspaceId: string;
+  faviconCache: FaviconCache;
   splitMode: boolean;
   splitTabId: string | null;
   splitTabIds: string[];
@@ -116,6 +119,7 @@ export type PartialWorkspace = Partial<Omit<Workspace, "closedTabs" | "favorites
 
 export type PartialBrowserState = Partial<Omit<BrowserState, "settings" | "workspaces">> & {
   essentials?: Array<Partial<Favorite> | null>;
+  faviconCache?: Record<string, unknown>;
   settings?: Partial<BrowserSettings>;
   sitePermissions?: Array<Partial<SitePermissionRule> | null>;
   workspaces?: PartialWorkspace[];

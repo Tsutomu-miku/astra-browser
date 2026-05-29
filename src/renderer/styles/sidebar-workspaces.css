@@ -20,10 +20,10 @@
   place-items: center;
   border: 1px solid transparent;
   border-radius: 11px;
-  background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.07);
   color: var(--text);
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 600;
   transition:
     background 140ms ease,
     border-color 140ms ease,
@@ -32,8 +32,8 @@
 }
 
 .workspace-button:hover {
-  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
-  background: color-mix(in srgb, var(--accent) 26%, rgba(255, 255, 255, 0.12));
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.105);
   transform: translateY(-1px);
 }
 
@@ -46,11 +46,9 @@
 }
 
 .workspace-button[aria-current="true"] {
-  border-color: color-mix(in srgb, var(--accent) 74%, white);
-  background: color-mix(in srgb, var(--accent) 30%, rgba(255, 255, 255, 0.1));
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
 }
 
 .workspace-button[data-drop-target="true"] {
@@ -104,7 +102,7 @@
   background: rgba(8, 9, 12, 0.86);
   color: color-mix(in srgb, var(--text) 84%, var(--accent));
   font-size: 10px;
-  font-weight: 760;
+  font-weight: 600;
 }
 
 .workspace-new-button {
@@ -171,7 +169,7 @@
 .workspace-menu-field span {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
 }
 

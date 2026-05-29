@@ -1,7 +1,7 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
 
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
-import { resolveFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type TabGroup } from "../../../../domain/browser";
+import { resolveFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type FaviconCache, type TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import {
   isSidebarFavoriteActive,
@@ -26,6 +26,7 @@ export function SidebarSections({
   closedTabs,
   draggingClosedTabIndex = null,
   draggingEssentialId,
+  faviconCache,
   draggingFavoriteId,
   draggingGroupId,
   draggingTabId,
@@ -57,6 +58,7 @@ export function SidebarSections({
   closedTabs: ClosedTab[];
   draggingClosedTabIndex?: number | null;
   draggingEssentialId: string | null;
+  faviconCache?: FaviconCache;
   draggingFavoriteId: string | null;
   draggingGroupId: string | null;
   draggingTabId: string | null;
@@ -138,6 +140,7 @@ export function SidebarSections({
               <FavoriteButton
                 key={essential.id}
                 draggable
+                faviconCache={faviconCache}
                 draggingQuickEntryId={draggingEssentialId}
                 favorite={essential}
                 id={getSidebarSearchTargetElementId({ type: "essential", id: essential.id, title: essential.title, url: essential.url })}
@@ -163,6 +166,7 @@ export function SidebarSections({
         activeSearchTarget={activeSearchTarget}
         activeTab={activeTab}
         draggingTabId={draggingTabId}
+        faviconCache={faviconCache}
         isCollapsed={isSectionCollapsed("pinned")}
         pinnedTabs={filteredItems.pinnedTabs}
         splitTabIds={splitTabIds}
@@ -203,6 +207,7 @@ export function SidebarSections({
                     key={favorite.id}
                     activeTabId={activeTab.id}
                     draggingTabId={draggingTabId}
+                    faviconCache={faviconCache}
                     id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
                     isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
                     labelKind="favorite tab"
@@ -223,6 +228,7 @@ export function SidebarSections({
                 <FavoriteButton
                   key={favorite.id}
                   draggable
+                  faviconCache={faviconCache}
                   draggingQuickEntryId={draggingFavoriteId}
                   favorite={favorite}
                   id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
@@ -250,6 +256,7 @@ export function SidebarSections({
         draggingGroupId={draggingGroupId}
         draggingTabId={draggingTabId}
         filteredItems={filteredItems}
+        faviconCache={faviconCache}
         isCollapsed={isSectionCollapsed("tabs")}
         splitTabIds={splitTabIds}
         tabCount={tabCount}
@@ -276,6 +283,7 @@ export function SidebarSections({
                 key={`${tab.url}-${tab.closedAt}`}
                 closedIndex={index}
                 draggingClosedTabIndex={draggingClosedTabIndex}
+                faviconCache={faviconCache}
                 tab={tab}
                 onContextMenu={onClosedTabContextMenu}
                 onDragEnd={() => setDraggingClosedTabIndex(null)}

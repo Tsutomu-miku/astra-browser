@@ -55,4 +55,17 @@ describe("sidebar item icon", () => {
     expect(html).toContain('src="https://docs.example/favicon.ico"');
     expect(html).toContain('data-icon-kind="web"');
   });
+
+  it("uses cached site favicons when the item has no own favicon", () => {
+    const html = renderToStaticMarkup(createElement(SidebarItemIcon, {
+      className: "favorite-icon",
+      faviconCache: {
+        "https://docs.example": "https://docs.example/cached.ico"
+      },
+      url: "https://docs.example/deep/page"
+    }));
+
+    expect(html).toContain("sidebar-item-icon-image");
+    expect(html).toContain('src="https://docs.example/cached.ico"');
+  });
 });

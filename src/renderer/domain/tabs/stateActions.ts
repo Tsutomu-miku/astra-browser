@@ -2,6 +2,7 @@ import {
   BrowserState,
   BrowserTab,
   createFavorite,
+  getCachedFaviconUrl,
   getReadableUrlTitle
 } from "../browser";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
@@ -11,6 +12,7 @@ import { pruneEmptyTabGroups } from "./groups";
 import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "../browser/zoom";
 import { updateBrowserState } from "../browser/updateState";
 import { getGroupSleepableTabs, getMemoryReleasableTabs, markTabSleeping } from "./sleepPolicy";
+import { normalizeFaviconUrl, setCachedFaviconUrl } from "../browser/favicon";
 import type { TabDropPlacement } from "./utils";
 
 export function toggleActiveTabPinned(state: BrowserState): BrowserState {
@@ -276,6 +278,14 @@ export function updateTab(state: BrowserState, tabId: string, patch: Partial<Bro
     const tab = draft.workspaces.flatMap((workspace) => workspace.tabs).find((candidate) => candidate.id === tabId);
     if (tab) {
       Object.assign(tab, patch);
+      const faviconUrl = normalizeFaviconUrl(patch.faviconUrl);
+      if (faviconUrl) {
+        tab.faviconUrl = faviconUrl;
+        setCachedFaviconUrl(draft.faviconCache, tab.url, faviconUrl);
+      } else if (patch.url) {
+        const cachedFaviconUrl = getCachedFaviconUrl(draft.faviconCache, patch.url);
+        cachedFaviconUrl ? tab.faviconUrl = cachedFaviconUrl : delete tab.faviconUrl;
+      }
       if (patch.url || patch.isLoading) {
         tab.isSleeping = false;
         tab.lastActiveAt = Date.now();

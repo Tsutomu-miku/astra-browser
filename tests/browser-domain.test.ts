@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   createDefaultState,
   formatBytes,
+  getCachedFaviconUrl,
+  getFaviconCacheKey,
   getHomepageUrl,
   getHostInitial,
   getNextWorkspaceAccent,
@@ -11,6 +13,7 @@ import {
   isEssential,
   isFavorite,
   normalizeAddress,
+  normalizeFaviconCache,
   normalizeState,
   applyStartupBehavior
 } from "../src/renderer/domain/browser";
@@ -124,5 +127,18 @@ describe("browser domain primitives", () => {
     expect(isEssential(state, "https://github.com")).toBe(true);
     expect(getNextWorkspaceAccent(2)).toBe("#86efac");
     expect(formatBytes(1536)).toBe("1.5 KB");
+  });
+
+  it("normalizes and reads favicon cache by site origin", () => {
+    const cache = normalizeFaviconCache({
+      "https://docs.example/path": "https://docs.example/favicon.ico",
+      "astra://newtab": "https://ignored.example/icon.ico",
+      "https://bad.example": "not a url"
+    });
+
+    expect(getFaviconCacheKey("https://docs.example/other")).toBe("https://docs.example");
+    expect(getFaviconCacheKey("astra://newtab")).toBeNull();
+    expect(getCachedFaviconUrl(cache, "https://docs.example/other")).toBe("https://docs.example/favicon.ico");
+    expect(getCachedFaviconUrl(cache, "https://bad.example")).toBeUndefined();
   });
 });

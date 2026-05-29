@@ -73,9 +73,9 @@ Exit criteria:
 
 Status: next.
 
-- Sidebar visual hierarchy: spacing, density, section rhythm, active state, collapsed state, and recently closed placement.
+- Sidebar visual hierarchy: spacing, density, section rhythm, quiet active state, restrained typography, collapsed state, and recently closed placement.
 - Iconography: real site favicons for tabs where available, consistent symbolic icons for actions and status, clear favicon fallbacks, no placeholder-looking controls in primary chrome.
-- Interaction states: hover, pressed, focus-visible, drag, split-target, sleeping, muted, active, search-selected, and disabled states must feel deliberate and not cover row titles.
+- Interaction states: hover, pressed, focus-visible, drag, split-target, sleeping, muted, active, search-selected, and disabled states must feel deliberate, quiet, and not cover row titles.
 - Compact chrome: floating sidebar/topbar reveal, pin/unpin controls, address field behavior, and content-first layout.
 - Split and Glance: visible affordances, no duplicate tab-backed splits, predictable pane focus, and polished controls.
 - Command palette, omnibox, sidebar search, and start page: same object semantics and modifier hints.
@@ -219,22 +219,22 @@ Small requirements:
 
 ### P1-1 Arc/Zen Sidebar Experience
 
-- Sidebar sections should visually align with Arc-style hierarchy: Essentials, Pinned, Favorites, groups, regular tabs, recently closed.
+- Sidebar sections should visually align with Arc-style hierarchy: Essentials, Pinned, Favorites, groups, regular tabs, recently closed, with restrained font weights.
 - Sidebar iconography should use real site favicons for tabs where available, consistent symbolic action/status icons, clear favicon fallbacks, and restrained primary chrome controls.
 - Hover affordances must not cover row titles.
-- Hover, pressed, focus-visible, active, selected, drag, drop-target, sleeping, muted, split, and disabled states must be visually distinct and quiet.
+- Hover, pressed, focus-visible, active, selected, drag, drop-target, sleeping, muted, split, and disabled states must be visually distinct and quiet, without border-heavy active rows.
 - Section collapse, search reveal, and drag reveal must feel predictable.
 - Keyboard focus navigation must work across sections and context menus.
 
-Progress: partially implemented. Row action hints reserve stable inline space, pinned tab hints reveal inside the icon tile, status badges, list controls, Space rail controls, sidebar chrome controls, and sidebar menu swatches avoid native title tooltips, hover/focus no longer overlays or squeezes row titles, and close controls reveal on keyboard focus without using absolute overlays. Collapsed sidebar sections now stay collapsed during tab, Essential, and Favorite drags; search filtering is the only automatic section reveal path. Current tab folders now render before Recently Closed so the sidebar scans as Essentials, Pinned, Favorites, Tabs, then recovery. Tab group keyboard context menus open from the group toggle while group-name editing fields keep text-editing context menu keys. Essential context-menu Open now navigates the active tab instead of selecting or creating a tab. Tab rows, pinned tabs, and recently closed tabs now persist Electron page favicons when available and share a sidebar icon renderer with internal-page, local-file, web, unknown-page, loading, and sleeping fallbacks.
+Progress: partially implemented. Row action hints reserve stable inline space, pinned tab hints reveal inside the icon tile, status badges, list controls, Space rail controls, sidebar chrome controls, and sidebar menu swatches avoid native title tooltips, hover/focus no longer overlays or squeezes row titles, and close controls reveal on keyboard focus without using absolute overlays. Collapsed sidebar sections now stay collapsed during tab, Essential, and Favorite drags; search filtering is the only automatic section reveal path. Current tab folders now render before Recently Closed so the sidebar scans as Essentials, Pinned, Favorites, Tabs, then recovery. Tab group keyboard context menus open from the group toggle while group-name editing fields keep text-editing context menu keys. Essential context-menu Open now navigates the active tab instead of selecting or creating a tab. Tab rows, pinned tabs, and recently closed tabs now persist Electron page favicons when available and share a sidebar icon renderer with internal-page, local-file, web, unknown-page, loading, and sleeping fallbacks. Favicons are cached by site origin so same-site tabs, Favorites, and recently closed rows can reuse known icons before the webview emits a fresh favicon event. Active and selected sidebar states now use neutral row fills and restrained text weight instead of accent-tinted borders, heavy type, or multi-layer inset shadows, with the global chrome background reduced to a quieter neutral palette.
 
 Small requirements:
 
-- P1-1.1 Sidebar section rhythm and density align with Arc/Zen-style vertical browsing.
+- P1-1.1 Sidebar section rhythm, density, and typography align with Arc/Zen-style vertical browsing.
 - P1-1.2 Primary sidebar and footer icons are consistent, discoverable, and do not rely on text labels inside cramped controls.
 - P1-1.3 Real site favicons and fallback icons distinguish tabs, pinned tabs, Essentials, Favorites, groups, recently closed rows, and internal pages.
 - P1-1.4 Row action hints reserve space and never obscure title text.
-- P1-1.5 Active, search-selected, split, muted, sleeping, hover, focus, pressed, disabled, dragging, and drop-target states are visually distinct.
+- P1-1.5 Active, search-selected, split, muted, sleeping, hover, focus, pressed, disabled, dragging, and drop-target states are visually distinct without border-heavy active rows.
 - P1-1.6 Collapsed and compact sidebar reveal behavior is predictable and content-first.
 - P1-1.7 Sidebar visual QA includes desktop and narrow widths for text fitting and icon clarity.
 
