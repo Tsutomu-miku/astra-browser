@@ -94,6 +94,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar Essentials and favorites context menus must support copying the entry URL and title.
 - Sidebar tab, pinned tab, tab group, recently closed tab, Essential, and favorite context menus must open from the keyboard with `ContextMenu` or `Shift+F10`.
 - Sidebar context menus must focus the first action when opened and support Arrow, Home, and End keyboard navigation.
+- Sidebar context menus must restore focus to their triggering sidebar item when closed by Escape or a menu action.
 - Sidebar primary items and section headers must support Arrow, Home, and End keyboard focus navigation without stealing editing keys from text fields.
 - Sidebar Essentials, pinned tabs, favorites, and tabs must be visually separated into scannable sections.
 - Sidebar sections must be individually collapsible, while filtering must reveal matching contents even when a section was collapsed.

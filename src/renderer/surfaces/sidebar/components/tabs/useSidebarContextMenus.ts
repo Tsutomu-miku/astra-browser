@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 
 import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
 
@@ -35,16 +35,22 @@ export function useSidebarContextMenus() {
   const [quickEntryMenu, setQuickEntryMenu] = useState<QuickEntryMenuState | null>(null);
   const [closedTabMenu, setClosedTabMenu] = useState<ClosedTabMenuState | null>(null);
   const [tabGroupMenu, setTabGroupMenu] = useState<TabGroupMenuState | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
-  function closeMenus() {
+  function closeMenus({ restoreFocus = true }: { restoreFocus?: boolean } = {}) {
     setClosedTabMenu(null);
     setTabGroupMenu(null);
     setTabMenu(null);
     setQuickEntryMenu(null);
+    if (restoreFocus && triggerRef.current?.isConnected) {
+      triggerRef.current.focus();
+    }
+    triggerRef.current = null;
   }
 
   function openTabMenu(event: MouseEvent, tab: BrowserTab) {
     event.preventDefault();
+    triggerRef.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     setClosedTabMenu(null);
     setTabGroupMenu(null);
     setQuickEntryMenu(null);
@@ -56,6 +62,7 @@ export function useSidebarContextMenus() {
 
   function openQuickEntryMenu(event: MouseEvent, item: Favorite, kind: QuickEntryMenuState["kind"]) {
     event.preventDefault();
+    triggerRef.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     setClosedTabMenu(null);
     setTabGroupMenu(null);
     setTabMenu(null);
@@ -68,6 +75,7 @@ export function useSidebarContextMenus() {
 
   function openClosedTabMenu(event: MouseEvent, tab: ClosedTab, closedIndex: number) {
     event.preventDefault();
+    triggerRef.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     setQuickEntryMenu(null);
     setTabGroupMenu(null);
     setTabMenu(null);
@@ -80,6 +88,7 @@ export function useSidebarContextMenus() {
 
   function openTabGroupMenu(event: MouseEvent, group: TabGroup) {
     event.preventDefault();
+    triggerRef.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     setClosedTabMenu(null);
     setQuickEntryMenu(null);
     setTabMenu(null);
@@ -95,16 +104,17 @@ export function useSidebarContextMenus() {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeMenus();
     };
+    const closeWithoutFocusRestore = () => closeMenus({ restoreFocus: false });
 
-    window.addEventListener("click", closeMenus);
-    window.addEventListener("blur", closeMenus);
+    window.addEventListener("click", closeWithoutFocusRestore);
+    window.addEventListener("blur", closeWithoutFocusRestore);
     window.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("scroll", closeMenus, true);
+    window.addEventListener("scroll", closeWithoutFocusRestore, true);
     return () => {
-      window.removeEventListener("click", closeMenus);
-      window.removeEventListener("blur", closeMenus);
+      window.removeEventListener("click", closeWithoutFocusRestore);
+      window.removeEventListener("blur", closeWithoutFocusRestore);
       window.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("scroll", closeMenus, true);
+      window.removeEventListener("scroll", closeWithoutFocusRestore, true);
     };
   }, [closedTabMenu, quickEntryMenu, tabGroupMenu, tabMenu]);
 
