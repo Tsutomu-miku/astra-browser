@@ -26,6 +26,23 @@
   transform: translateX(0);
 }
 
+.pinned-tab-button .sidebar-item-action-hints {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 34px;
+  min-width: 34px;
+  justify-content: center;
+  gap: 2px;
+  transform: translate(-50%, 3px);
+}
+
+.pinned-tab-button:hover .sidebar-item-action-hints,
+.pinned-tab-button:focus-visible .sidebar-item-action-hints {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .sidebar-item-action-hint {
   width: 20px;
   height: 20px;
@@ -40,6 +57,18 @@
   width: 12px;
   height: 12px;
   stroke-width: 2.2;
+}
+
+.pinned-tab-button .sidebar-item-action-hint {
+  width: 15px;
+  height: 15px;
+  border-radius: 5px;
+  background: rgba(9, 10, 13, 0.74);
+}
+
+.pinned-tab-button .sidebar-item-action-hint svg {
+  width: 9px;
+  height: 9px;
 }
 
 .sidebar-item-action-hint.is-preview {

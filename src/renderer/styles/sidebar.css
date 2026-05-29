@@ -423,6 +423,15 @@ h1 {
 .pinned-tab-icon {
   display: grid;
   place-items: center;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.pinned-tab-button:hover .pinned-tab-icon,
+.pinned-tab-button:focus-visible .pinned-tab-icon {
+  opacity: 0.72;
+  transform: translateY(-5px);
 }
 
 .pinned-tab-status-badges {

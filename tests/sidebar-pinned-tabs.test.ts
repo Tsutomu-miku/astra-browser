@@ -64,7 +64,7 @@ describe("sidebar pinned tabs", () => {
     expect(html).toContain('data-dragging="true"');
   });
 
-  it("keeps pinned tab buttons compact without hover action overlays", () => {
+  it("renders compact pinned tab action hints without text overlays", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const html = renderToStaticMarkup(createElement(SidebarPinnedTabs, {
       actions: createActions(),
@@ -78,9 +78,10 @@ describe("sidebar pinned tabs", () => {
       splitTabIds: []
     }));
 
-    expect(html).not.toContain('class="sidebar-item-action-hints"');
-    expect(html).not.toContain('data-action-hint="preview"');
-    expect(html).not.toContain('data-action-hint="split"');
+    expect(html).toContain('class="sidebar-item-action-hints"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('data-action-hint="preview"');
+    expect(html).toContain('data-action-hint="split"');
     expect(html).not.toContain("<kbd");
     expect(html).not.toContain(">Preview<");
     expect(html).not.toContain(">Split<");
@@ -354,10 +355,15 @@ describe("sidebar pinned tabs", () => {
     expect(sidebarCss).toContain(".sidebar-section-title svg");
   });
 
-  it("does not style pinned tab action hint overlays", () => {
-    expect(actionHintCss).not.toContain(".pinned-tab-button .sidebar-item-action-hints");
-    expect(actionHintCss).not.toContain(".pinned-tab-button:hover .sidebar-item-action-hints");
-    expect(actionHintCss).not.toContain(".pinned-tab-button:focus-visible .sidebar-item-action-hints");
+  it("styles pinned tab action hints inside the icon tile", () => {
+    expect(actionHintCss).toContain(".pinned-tab-button .sidebar-item-action-hints");
+    expect(actionHintCss).toContain(".pinned-tab-button:hover .sidebar-item-action-hints");
+    expect(actionHintCss).toContain(".pinned-tab-button:focus-visible .sidebar-item-action-hints");
+    expect(actionHintCss).toContain("width: 34px");
+    expect(actionHintCss).toContain("bottom: 3px");
+    expect(actionHintCss).toContain("translate(-50%, 0)");
+    expect(sidebarCss).toContain(".pinned-tab-button:hover .pinned-tab-icon");
+    expect(sidebarCss).toContain("transform: translateY(-5px)");
   });
 });
 

@@ -7,7 +7,9 @@ const sidebarLayoutCss = readFileSync(join(__dirname, "../src/renderer/styles/si
 
 describe("sidebar item action hint styles", () => {
   it("reveals row action hints from stable in-flow slots on hover and keyboard focus", () => {
-    expect(sidebarCss).not.toContain("position: absolute");
+    expect(sidebarCss).not.toContain(".tab-row .sidebar-item-action-hints {\n  position: absolute");
+    expect(sidebarCss).not.toContain(".favorite-button .sidebar-item-action-hints {\n  position: absolute");
+    expect(sidebarCss).not.toContain(".closed-tab-button .sidebar-item-action-hints {\n  position: absolute");
     expect(sidebarCss).toContain("width: 46px");
     expect(sidebarCss).toContain("min-width: 46px");
     expect(sidebarCss).not.toContain("max-width");
@@ -17,6 +19,8 @@ describe("sidebar item action hint styles", () => {
     expect(sidebarCss).toContain(".favorite-button:focus-visible .sidebar-item-action-hints");
     expect(sidebarCss).toContain(".closed-tab-button:hover .sidebar-item-action-hints");
     expect(sidebarCss).toContain(".closed-tab-button:focus-visible .sidebar-item-action-hints");
+    expect(sidebarCss).toContain(".pinned-tab-button:hover .sidebar-item-action-hints");
+    expect(sidebarCss).toContain(".pinned-tab-button:focus-visible .sidebar-item-action-hints");
   });
 
   it("reveals tab close controls on keyboard row focus", () => {
