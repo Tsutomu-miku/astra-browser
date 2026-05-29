@@ -37,6 +37,14 @@
   transform: translateY(-1px);
 }
 
+.workspace-button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 58%, white);
+  outline: none;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
 .workspace-button[aria-current="true"] {
   border-color: color-mix(in srgb, var(--accent) 74%, white);
   background: color-mix(in srgb, var(--accent) 30%, rgba(255, 255, 255, 0.1));

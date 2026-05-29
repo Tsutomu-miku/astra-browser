@@ -3,10 +3,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 import { createDefaultState } from "../src/renderer/domain/browser";
 import { getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { WorkspaceStrip } from "../src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip";
+
+const workspaceCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-workspaces.css"), "utf8");
 
 describe("workspace strip compact controls", () => {
   it("uses the always-visible sidebar toggle as a compact floating-sidebar pin", () => {
@@ -94,6 +98,12 @@ describe("workspace strip compact controls", () => {
     expect(onSelect).not.toHaveBeenCalled();
 
     act(() => root.unmount());
+  });
+
+  it("styles keyboard focus for Space buttons", () => {
+    expect(workspaceCss).toContain(".workspace-button:focus-visible");
+    expect(workspaceCss).toContain("outline: none");
+    expect(workspaceCss).toContain("0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent)");
   });
 });
 
