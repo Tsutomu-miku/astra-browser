@@ -23,6 +23,7 @@ export function useBrowserActions({
   webviews
 }: BrowserActionsOptions) {
   return useMemo(() => ({
+    addTabToFavorites: store.addTabToFavorites,
     addWorkspace: store.addWorkspace,
     assignTabToGroup: store.assignTabToGroup,
     clearBrowsingData: store.clearBrowsingData,

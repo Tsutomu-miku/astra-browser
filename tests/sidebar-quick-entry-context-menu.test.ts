@@ -120,6 +120,68 @@ describe("sidebar quick entry context menu", () => {
     act(() => root.unmount());
   });
 
+  it("removes favorites by item id from the context menu", () => {
+    const favorite = createFavorite("Docs", "https://docs.example");
+    const onClose = vi.fn();
+    const onRemove = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(QuickEntryContextMenu, {
+        item: favorite,
+        kind: "favorite",
+        left: 10,
+        top: 20,
+        onClose,
+        onCopyText: vi.fn(),
+        onOpen: vi.fn(),
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn(),
+        onRemove
+      }));
+    });
+
+    Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Remove Favorite")
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(onRemove).toHaveBeenCalledWith(favorite.id);
+    expect(onClose).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("removes Essentials by URL from the context menu", () => {
+    const essential = createFavorite("Docs", "https://docs.example");
+    const onRemove = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(QuickEntryContextMenu, {
+        item: essential,
+        kind: "essential",
+        left: 10,
+        top: 20,
+        onClose: vi.fn(),
+        onCopyText: vi.fn(),
+        onOpen: vi.fn(),
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn(),
+        onRemove
+      }));
+    });
+
+    Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Remove Essential")
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(onRemove).toHaveBeenCalledWith(essential.url);
+
+    act(() => root.unmount());
+  });
+
   it("focuses and navigates quick entry menu actions from the keyboard", () => {
     const container = document.createElement("div");
     document.body.append(container);
@@ -198,6 +260,49 @@ describe("sidebar quick entry context menu", () => {
     expect(actions.selectTab).toHaveBeenCalledWith(tab.id);
     expect(actions.navigateActiveTab).not.toHaveBeenCalled();
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("selects Favorite tabs by tab id before URL fallback from the sidebar context menu", () => {
+    const state = createDefaultState();
+    const activeWorkspace = state.workspaces[0];
+    const firstTab = activeWorkspace.tabs[0];
+    firstTab.title = "Docs original";
+    firstTab.url = "https://docs.example/";
+    const secondTab = {
+      ...firstTab,
+      id: "docs-second",
+      title: "Docs selected"
+    };
+    activeWorkspace.tabs.push(secondTab);
+    const item = createFavorite("Docs", secondTab.url, secondTab.id);
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarContextMenus, {
+        actions,
+        activeWorkspace,
+        closedTabMenu: null,
+        closeMenus: vi.fn(),
+        quickEntryMenu: {
+          item,
+          kind: "favorite",
+          left: 10,
+          top: 20
+        },
+        state,
+        tabGroupMenu: null,
+        tabMenu: null
+      }));
+    });
+
+    container.querySelector(".quick-entry-context-menu button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(actions.selectTab).toHaveBeenCalledWith(secondTab.id);
+    expect(actions.selectTab).not.toHaveBeenCalledWith(firstTab.id);
 
     act(() => root.unmount());
   });

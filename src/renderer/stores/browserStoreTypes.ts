@@ -29,6 +29,7 @@ export interface BrowserStore {
   splitLayout: SplitLayout;
   state: BrowserState;
   glance: { title: string; url: string } | null;
+  addTabToFavorites: (tabId: string) => void;
   addWorkspace: () => void;
   assignTabToGroup: (tabId: string, groupId: string) => void;
   clearBrowsingData: () => void;

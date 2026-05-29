@@ -3,7 +3,7 @@ import { useState, type DragEvent } from "react";
 import { getPointerDropPlacement, type DropAxis } from "../../../common/drag-drop/dropPlacement";
 import { readSidebarTabDragPayload } from "../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserController } from "../../../app/controller/types";
-import { isEssential, isFavorite, type BrowserState, type Workspace } from "../../../domain/browser";
+import { isEssential, type BrowserState, type Workspace } from "../../../domain/browser";
 
 export function useSidebarQuickEntryDrag({
   actions,
@@ -51,7 +51,7 @@ export function useSidebarQuickEntryDrag({
     if (!tab) return;
 
     event.preventDefault();
-    if (!isFavorite(activeWorkspace, tab.url)) actions.toggleTabFavorite(tab.id);
+    actions.addTabToFavorites(tab.id);
     setDraggingTabId(null);
   };
 

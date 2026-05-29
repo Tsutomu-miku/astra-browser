@@ -1,4 +1,4 @@
-import { isEssential, isFavorite, type BrowserState, type Workspace } from "../../../../domain/browser";
+import { isEssential, isTabFavorite, type BrowserState, type Favorite, type Workspace } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "../../model/tabContextMenuState";
 import { ClosedTabContextMenu } from "./ClosedTabContextMenu";
@@ -37,9 +37,11 @@ export function SidebarContextMenus({
     ? tabGroupTabs.length
     : 0;
   const canSleepTabGroup = tabGroupTabs.some((tab) => !tab.isSleeping && !protectedTabIds.has(tab.id));
-  const openQuickEntry = (url: string, title?: string) => {
-    const tab = activeWorkspace.tabs.find((candidate) => candidate.url === url);
-    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(url, title);
+  const openQuickEntry = (item: Favorite) => {
+    const tab =
+      (item.tabId ? activeWorkspace.tabs.find((candidate) => candidate.id === item.tabId) : null) ??
+      activeWorkspace.tabs.find((candidate) => candidate.url === item.url);
+    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(item.url, item.title);
   };
 
   return (
@@ -72,7 +74,7 @@ export function SidebarContextMenus({
           onTogglePinned={actions.toggleTabPinned}
           onUngroupTab={actions.ungroupTab}
           tabIsEssential={isEssential(state, tabMenu.tab.url)}
-          tabIsFavorite={isFavorite(activeWorkspace, tabMenu.tab.url)}
+          tabIsFavorite={isTabFavorite(activeWorkspace, tabMenu.tab)}
         />
       )}
       {quickEntryMenu && (

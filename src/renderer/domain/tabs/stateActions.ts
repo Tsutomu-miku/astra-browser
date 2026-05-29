@@ -147,23 +147,47 @@ export function toggleActiveTabFavorite(state: BrowserState): BrowserState {
   return toggleTabFavorite(state, getActiveTab(getActiveWorkspace(state)).id);
 }
 
+export function addTabToFavorites(state: BrowserState, tabId: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const workspace = draft.workspaces.find((candidate) => candidate.tabs.some((tab) => tab.id === tabId));
+    const tab = workspace?.tabs.find((candidate) => candidate.id === tabId);
+    if (!workspace || !tab) return;
+    if (workspace.favorites.some((favorite) => favorite.tabId === tab.id)) return;
+
+    const legacyFavorite = workspace.favorites.find((favorite) => !favorite.tabId && favorite.url === tab.url);
+    if (legacyFavorite) {
+      legacyFavorite.tabId = tab.id;
+      legacyFavorite.title = tab.title || legacyFavorite.title || getReadableUrlTitle(tab.url);
+      return;
+    }
+
+    workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url, tab.id));
+  });
+}
+
 export function toggleTabFavorite(state: BrowserState, tabId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = draft.workspaces.find((candidate) => candidate.tabs.some((tab) => tab.id === tabId));
     const tab = workspace?.tabs.find((candidate) => candidate.id === tabId);
     if (!workspace || !tab) return;
 
-    const index = workspace.favorites.findIndex((favorite) => favorite.url === tab.url);
+    const tabBackedIndex = workspace.favorites.findIndex((favorite) => favorite.tabId === tab.id);
+    const index = tabBackedIndex >= 0
+      ? tabBackedIndex
+      : workspace.favorites.findIndex((favorite) => !favorite.tabId && favorite.url === tab.url);
     index >= 0
       ? workspace.favorites.splice(index, 1)
       : workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url, tab.id));
   });
 }
 
-export function removeWorkspaceFavorite(state: BrowserState, url: string): BrowserState {
+export function removeWorkspaceFavorite(state: BrowserState, favoriteIdOrUrl: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
-    workspace.favorites = workspace.favorites.filter((favorite) => favorite.url !== url);
+    const removedById = workspace.favorites.some((favorite) => favorite.id === favoriteIdOrUrl);
+    workspace.favorites = workspace.favorites.filter((favorite) => (
+      removedById ? favorite.id !== favoriteIdOrUrl : favorite.url !== favoriteIdOrUrl
+    ));
   });
 }
 

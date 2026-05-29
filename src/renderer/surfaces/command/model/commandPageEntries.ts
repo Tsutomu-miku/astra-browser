@@ -1,5 +1,5 @@
 import { shortcutLabels } from "../../../common/shortcuts/shortcutLabels";
-import { isEssential, isFavorite, type BrowserState, type BrowserTab, type Workspace } from "../../../domain/browser";
+import { isEssential, isTabFavorite, type BrowserState, type BrowserTab, type Workspace } from "../../../domain/browser";
 import type { Command, CommandActions } from "./commandTypes";
 
 export function buildPageCommands(
@@ -43,7 +43,7 @@ export function buildPageCommands(
   return [
     ...navigationCommands,
     {
-      title: isFavorite(workspace, activeTab.url) ? "Remove favorite" : "Add favorite",
+      title: isTabFavorite(workspace, activeTab) ? "Remove favorite" : "Add favorite",
       subtitle: activeTab.url,
       shortcut: shortcutLabels.favorite,
       run: actions.toggleActiveTabFavorite

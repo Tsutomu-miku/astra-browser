@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { SIDEBAR_DEFAULT_WIDTH, clampSidebarWidth } from "../common/layout/sidebarSizing";
 import {
   addTab,
+  addTabToFavorites,
   assignTabToGroup,
   addWorkspace,
   clearHistory,
@@ -114,6 +115,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   splitLayout: "horizontal",
   state: initialState,
   glance: null,
+  addTabToFavorites: (tabId) => update(set, (state) => addTabToFavorites(state, tabId)),
   addWorkspace: () => update(set, addWorkspace),
   assignTabToGroup: (tabId, groupId) => update(set, (state) => assignTabToGroup(state, tabId, groupId)),
   clearBrowsingData: () => {

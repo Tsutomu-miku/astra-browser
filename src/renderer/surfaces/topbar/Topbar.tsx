@@ -16,7 +16,7 @@ import {
   FiZap
 } from "react-icons/fi";
 
-import { isEssential, isFavorite } from "../../domain/browser";
+import { isEssential, isTabFavorite } from "../../domain/browser";
 import { getUrlIdentity } from "../../domain/browser/urlIdentity";
 import { formatZoomPercent } from "../../domain/browser/zoom";
 import type { BrowserController } from "../../app/controller/types";
@@ -169,9 +169,9 @@ export function Topbar({ controller }: { controller: BrowserController }) {
         )}
         <button
           className="icon-button"
-          title={isFavorite(activeWorkspace, activeTab.url) ? "Remove favorite" : "Add favorite"}
+          title={isTabFavorite(activeWorkspace, activeTab) ? "Remove favorite" : "Add favorite"}
           type="button"
-          aria-pressed={isFavorite(activeWorkspace, activeTab.url)}
+          aria-pressed={isTabFavorite(activeWorkspace, activeTab)}
           onClick={actions.toggleActiveTabFavorite}
         >
           <FiStar />

@@ -24,6 +24,7 @@ export {
   closeTabsToLeft,
   closeTabsToRight,
   closeTab,
+  addTabToFavorites,
   duplicateActiveTab,
   duplicateTab,
   duplicateTabGroup,

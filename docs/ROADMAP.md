@@ -88,20 +88,21 @@ Small requirements:
 - Dragging tabs into Pinned must pin the tab.
 - Dragging pinned tabs back to Tabs must unpin them.
 - Dragging tabs to groups, Spaces, New Space, and split targets must use consistent payload recovery.
-- Drop targets must show visible hover state and insertion position where relevant.
+- Dragging tabs should not show explicit target-region overlays; destinations accept drops directly, while reordering shows local insertion position only.
 
-Progress: partially implemented. Native drag payloads, insertion indicators, and pointer fallback exist, but real Electron manual QA is still required.
+Progress: partially implemented. Native drag payloads and insertion indicators exist, but real Electron manual QA is still required.
 
 Small requirements:
 
-- P0-3.1 Tab row is the drag source.
-- P0-3.2 Nested tab controls do not steal drag start.
-- P0-3.3 Pointer fallback starts drag after movement threshold.
+- P0-3.1 Visible tab button is the drag source.
+- P0-3.2 Tab row stays a drop target, not a competing drag source.
+- P0-3.3 Drag payload is recoverable from native `DataTransfer` when React state is missing.
 - P0-3.4 Drop on Favorites adds tab-backed Favorite.
 - P0-3.5 Drop on existing Favorite area is accepted.
 - P0-3.6 Reorder regular tabs by before/after placement.
 - P0-3.7 Reorder pinned tabs by horizontal placement.
 - P0-3.8 Drag state clears after drop, cancel, or native drag end.
+- P0-3.9 Dragging tabs does not auto-render empty target sections or New Group/Ungroup target buttons.
 
 ### P0-4 Spaces And Profiles
 
@@ -193,8 +194,8 @@ Progress: started.
 | Electron Chromium shell | Mostly done | Electron shell, preload bridge, renderer surfaces exist. |
 | Spaces | Mostly done | Creation, switching, reordering, profiles, settings are present. |
 | Regular tabs | Mostly done | Lifecycle, selection, closing, duplication, sleeping, webviews are present. |
-| Favorites as tabs | Partial | `tabId` exists and opening semantics fixed; deeper data migration and UI wording still need review. |
-| Drag-and-drop | Partial | Workspace drag works; tab drag has native plus pointer fallback; needs manual Electron QA. |
+| Favorites as tabs | Partial | `tabId` exists and opening semantics fixed; tab identity is the primary path with URL fallback for legacy data. |
+| Drag-and-drop | Partial | Workspace drag works; tab drag uses a native payload from the visible tab button; needs manual Electron QA. |
 | Pinned tabs | Partial | Pin/unpin and drag behavior exist; should be reviewed with Favorite-as-tab model. |
 | Tab groups | Partial | Grouping, context menus, drag targets exist; needs integrated DnD QA. |
 | Essentials | Partial | Global quick entries exist; semantics intentionally remain URL-entry based for now. |

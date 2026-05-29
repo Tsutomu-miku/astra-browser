@@ -27,7 +27,7 @@ export function QuickEntryContextMenu({
   onCopyText: (text: string) => void;
   onMoveToNewWorkspace?: (favoriteId: string) => void;
   onMoveToWorkspace?: (favoriteId: string, workspaceId: string) => void;
-  onOpen: (url: string, title?: string) => void;
+  onOpen: (item: Favorite) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
   onRemove: (url: string) => void;
@@ -51,7 +51,7 @@ export function QuickEntryContextMenu({
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={handleMenuKeyboardNavigation}
     >
-      <button type="button" role="menuitem" onClick={() => run(() => onOpen(item.url, item.title))}>
+      <button type="button" role="menuitem" onClick={() => run(() => onOpen(item))}>
         Open
       </button>
       <button type="button" role="menuitem" onClick={() => run(() => onPreview(item.url, item.title))}>
@@ -85,7 +85,7 @@ export function QuickEntryContextMenu({
         Copy title
       </button>
       <span className="tab-context-menu-separator" />
-      <button type="button" role="menuitem" className="danger" onClick={() => run(() => onRemove(item.url))}>
+      <button type="button" role="menuitem" className="danger" onClick={() => run(() => onRemove(kind === "favorite" ? item.id : item.url))}>
         Remove {label}
       </button>
     </div>

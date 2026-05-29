@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addTab,
+  addTabToFavorites,
   clearBrowsingData,
   clearHistory,
   clearSitePermissionRulesForOrigin,
@@ -385,6 +386,57 @@ describe("domain actions", () => {
     expect(removedEssential.essentials.some((essential) => essential.url === docsTab.url)).toBe(false);
   });
 
+  it("adds tab-backed Favorites by tab identity instead of URL equality", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const second = openUrlInActiveWorkspace(first, "docs.example", "Docs duplicate");
+    const workspace = getActiveWorkspace(second);
+    const docsTab = workspace.tabs.find((tab) => tab.title === "Docs")!;
+    const duplicateTab = workspace.tabs.find((tab) => tab.title === "Docs duplicate")!;
+    const withDocsFavorite = addTabToFavorites(second, docsTab.id);
+    const withDuplicateFavorite = addTabToFavorites(withDocsFavorite, duplicateTab.id);
+    const favorites = getActiveWorkspace(withDuplicateFavorite).favorites.filter((favorite) => favorite.url === docsTab.url);
+
+    expect(favorites.map((favorite) => favorite.tabId)).toContain(docsTab.id);
+    expect(favorites.map((favorite) => favorite.tabId)).toContain(duplicateTab.id);
+  });
+
+  it("toggles Favorites by tab identity before falling back to legacy URL entries", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const second = openUrlInActiveWorkspace(first, "docs.example", "Docs duplicate");
+    const workspace = getActiveWorkspace(second);
+    const docsTab = workspace.tabs.find((tab) => tab.title === "Docs")!;
+    const duplicateTab = workspace.tabs.find((tab) => tab.title === "Docs duplicate")!;
+    const withDocsFavorite = addTabToFavorites(second, docsTab.id);
+    const withDuplicateFavorite = toggleTabFavorite(withDocsFavorite, duplicateTab.id);
+    const withoutDuplicateFavorite = toggleTabFavorite(withDuplicateFavorite, duplicateTab.id);
+    const remainingFavorites = getActiveWorkspace(withoutDuplicateFavorite).favorites.filter((favorite) => favorite.url === docsTab.url);
+
+    expect(getActiveWorkspace(withDuplicateFavorite).favorites.map((favorite) => favorite.tabId)).toContain(duplicateTab.id);
+    expect(remainingFavorites).toHaveLength(1);
+    expect(remainingFavorites[0].tabId).toBe(docsTab.id);
+  });
+
+  it("upgrades legacy URL Favorites when a matching tab is added to Favorites", () => {
+    const withDocs = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const docsTab = getActiveTab(getActiveWorkspace(withDocs));
+    const legacyFavorite = createFavorite("Legacy docs", docsTab.url);
+    const legacyState = {
+      ...withDocs,
+      workspaces: withDocs.workspaces.map((workspace) => workspace.id === withDocs.activeWorkspaceId
+        ? { ...workspace, favorites: [legacyFavorite] }
+        : workspace)
+    };
+    const upgraded = addTabToFavorites(legacyState, docsTab.id);
+    const favorites = getActiveWorkspace(upgraded).favorites;
+
+    expect(favorites).toHaveLength(1);
+    expect(favorites[0]).toMatchObject({
+      tabId: docsTab.id,
+      title: "Docs",
+      url: docsTab.url
+    });
+  });
+
   it("removes quick entries by url without requiring a matching tab", () => {
     const withFavorite = toggleActiveTabFavorite(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
     const withEssential = toggleActiveTabEssential(withFavorite);
@@ -394,6 +446,21 @@ describe("domain actions", () => {
 
     expect(getActiveWorkspace(withoutFavorite).favorites.some((favorite) => favorite.url === url)).toBe(false);
     expect(withoutEssential.essentials.some((essential) => essential.url === url)).toBe(false);
+  });
+
+  it("removes a single Favorite by id when duplicate Favorite URLs exist", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const second = openUrlInActiveWorkspace(first, "docs.example", "Docs duplicate");
+    const workspace = getActiveWorkspace(second);
+    const docsTab = workspace.tabs.find((tab) => tab.title === "Docs")!;
+    const duplicateTab = workspace.tabs.find((tab) => tab.title === "Docs duplicate")!;
+    const withFavorites = addTabToFavorites(addTabToFavorites(second, docsTab.id), duplicateTab.id);
+    const duplicateFavorite = getActiveWorkspace(withFavorites).favorites.find((favorite) => favorite.tabId === duplicateTab.id)!;
+    const withoutDuplicate = removeWorkspaceFavorite(withFavorites, duplicateFavorite.id);
+    const remainingFavorites = getActiveWorkspace(withoutDuplicate).favorites.filter((favorite) => favorite.url === docsTab.url);
+
+    expect(remainingFavorites).toHaveLength(1);
+    expect(remainingFavorites[0].tabId).toBe(docsTab.id);
   });
 
   it("reorders tabs while preserving the active tab", () => {

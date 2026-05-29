@@ -10,6 +10,7 @@ export {
   getSearchUrl,
   getWorkspaceHomepageUrl,
   isFavorite,
+  isTabFavorite,
   normalizeAddress
 } from "./navigation";
 export {

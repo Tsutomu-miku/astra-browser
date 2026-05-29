@@ -62,6 +62,15 @@ export function isFavorite(workspace: Pick<Workspace, "favorites"> | undefined, 
   return Boolean(workspace?.favorites?.some((favorite) => favorite.url === url));
 }
 
+export function isTabFavorite(
+  workspace: Pick<Workspace, "favorites"> | undefined,
+  tab: Pick<Workspace["tabs"][number], "id" | "url">
+): boolean {
+  return Boolean(workspace?.favorites?.some((favorite) => (
+    favorite.tabId ? favorite.tabId === tab.id : favorite.url === tab.url
+  )));
+}
+
 export function isEssential(state: Pick<BrowserState, "essentials"> | undefined, url: string): boolean {
   return Boolean(state?.essentials?.some((essential: Favorite) => essential.url === url));
 }

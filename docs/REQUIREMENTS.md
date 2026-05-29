@@ -61,7 +61,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Users must be able to reorder sidebar tabs by drag and drop.
 - Sidebar tab drag-and-drop must remain reliable across tab rows, Pinned, tab groups, Essentials, Favorites, Spaces, New Space, and Split drop targets even when drag state is recovered from the native drag payload instead of React state.
 - Sidebar drag reordering must show a before/after insertion indicator for tabs, pinned tabs, Essentials, favorites, and Spaces.
-- Sidebar drag targets must show inline section-level drop labels and an active hover state so the destination is obvious before releasing.
+- Sidebar tab drag should avoid explicit target-region overlays; valid destinations should accept drops directly, and reordered items should show only the local before/after insertion indicator.
 - Users must be able to move tabs between Spaces from the command palette or by dragging onto Space buttons.
 - Users must be able to drag sidebar tabs onto the New Space button to create a Space from that tab.
 - Sidebar Space context menus must support switching, renaming, recoloring, deleting, and keyboard opening via `ContextMenu` or `Shift+F10`.
@@ -90,9 +90,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Users must be able to drag sidebar tab groups onto Space buttons to move the whole group between Spaces.
 - Users must be able to drag sidebar tab groups onto the New Space button to create a Space from that group.
 - Sidebar tab context menus must support creating a new group from a tab, moving tabs to existing groups, and ungrouping grouped tabs.
-- Users must be able to drag a regular sidebar tab onto a New Group target to create a tab group.
-- Users must be able to drag a grouped sidebar tab onto an Ungroup target to remove it from its group.
-- Sidebar New Group and Ungroup drop targets must expose button semantics with keyboard activation and Escape cancellation while a tab is being organized.
+- Tab grouping and ungrouping should stay available through tab context menus and commands; dragging tabs should not create extra New Group or Ungroup target regions in the sidebar.
 - Users must be able to pin tabs per Space.
 - Users must be able to drag sidebar tabs into Pinned to pin them in the active Space.
 - Users must be able to drag pinned tabs back into the regular Tabs section to unpin and place them near the drop target.
@@ -119,7 +117,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Sidebar Essentials, pinned tabs, favorites, and tabs must be visually separated into scannable sections.
 - Sidebar sections must be individually collapsible, while filtering must reveal matching contents even when a section was collapsed.
 - Sidebar collapsible section headers must support `ArrowLeft` to collapse and `ArrowRight` to expand.
-- Sidebar drag targets must temporarily reveal collapsed Essentials, Pinned, Favorites, and Tabs sections when dragging relevant tabs or quick entries.
+- Dragging a tab should not temporarily reveal collapsed sidebar sections just to advertise drop targets; collapsed sections remain under user control unless search filtering needs to reveal matches.
 - Sidebar quick entries must show active-page state when the current tab matches an Essential or favorite.
 - Users must be able to toggle the current page as a favorite with `Ctrl+D`, `Cmd+D`, `Ctrl+Shift+D`, or `Cmd+Shift+D`.
 - Sidebar search must filter global Essentials plus tabs, tab groups, pinned tabs, and favorites inside the active Space.
