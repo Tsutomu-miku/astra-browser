@@ -27,6 +27,7 @@ import {
   openTabInSplit,
   openUrlInSplit,
   openUrlInActiveWorkspace,
+  pinTabToPinnedPosition,
   recordHistory,
   removeTabFromSplit,
   removeHistoryEntry,
@@ -507,6 +508,22 @@ describe("domain actions", () => {
     const moved = tabs.find((tab) => tab.id === first.id)!;
 
     expect(moved.isPinned).toBe(false);
+    expect(tabs.map((tab) => tab.title).slice(-2)).toEqual(["Second", "First"]);
+  });
+
+  it("pins dragged regular tabs when placing them in the pinned folder", () => {
+    const withFirst = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const withSecond = openUrlInActiveWorkspace(withFirst, "second.test", "Second");
+    const workspace = getActiveWorkspace(withSecond);
+    const first = workspace.tabs.find((tab) => tab.title === "First")!;
+    const second = workspace.tabs.find((tab) => tab.title === "Second")!;
+    const withPinnedTarget = toggleTabPinned(withSecond, first.id);
+    const pinned = pinTabToPinnedPosition(withPinnedTarget, second.id, first.id, "before");
+    const tabs = getActiveWorkspace(pinned).tabs;
+    const moved = tabs.find((tab) => tab.id === second.id)!;
+
+    expect(moved.isPinned).toBe(true);
+    expect(moved.groupId).toBeNull();
     expect(tabs.map((tab) => tab.title).slice(-2)).toEqual(["Second", "First"]);
   });
 

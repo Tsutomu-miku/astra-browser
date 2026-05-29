@@ -30,6 +30,7 @@ import {
   moveWorkspaceFavoriteToWorkspace,
   moveTabToNewWorkspace,
   moveTabGroupToNewWorkspace,
+  pinTabToPinnedPosition,
   moveWorkspaceFavoriteToNewWorkspace,
   restoreClosedTabToNewWorkspace,
   openTabInSplit,
@@ -191,6 +192,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   },
   openTabInSplit: (tabId) => update(set, (state) => openTabInSplit(state, tabId)),
   openUrlInSplit: (url, title) => update(set, (state) => openUrlInSplit(state, url, title)),
+  pinTabToPinnedPosition: (tabId, targetTabId, placement) =>
+    update(set, (state) => pinTabToPinnedPosition(state, tabId, targetTabId, placement)),
   navigateActiveTab: (url, webview) => update(set, (state) => {
     const next = navigateActiveTab(state, url);
     webview?.loadURL?.(getActiveUrl(next));

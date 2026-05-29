@@ -7,6 +7,13 @@ import {
 } from "../src/renderer/surfaces/sidebar/model/sidebarTabDropIntent";
 
 describe("sidebar tab drop intent", () => {
+  it("pins regular tabs when they are dropped into the pinned folder", () => {
+    const regular = createTab("Docs", "https://docs.example");
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+
+    expect(getSidebarTabDropIntent(regular, pinned)).toEqual({ type: "pinToPinnedPosition" });
+  });
+
   it("unpins pinned tabs when they are dropped into the regular tab list", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const regular = createTab("Docs", "https://docs.example");

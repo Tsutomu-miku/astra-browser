@@ -33,6 +33,7 @@ export {
   moveTabGroupToWorkspace,
   openTabInSplit,
   openUrlInSplit,
+  pinTabToPinnedPosition,
   removeTabFromSplit,
   reorderTab,
   toggleSplitMode,

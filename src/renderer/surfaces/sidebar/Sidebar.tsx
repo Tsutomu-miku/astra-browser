@@ -115,7 +115,9 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
     const targetTab = activeWorkspace.tabs.find((candidate) => candidate.id === targetTabId);
     const intent = getSidebarTabDropIntent(draggedTab, targetTab);
-    if (intent.type === "unpinToRegularPosition") {
+    if (intent.type === "pinToPinnedPosition") {
+      actions.pinTabToPinnedPosition(tabId, targetTabId, placement);
+    } else if (intent.type === "unpinToRegularPosition") {
       actions.unpinTabToRegularPosition(tabId, targetTabId, placement);
     } else {
       actions.reorderTab(tabId, targetTabId, placement);

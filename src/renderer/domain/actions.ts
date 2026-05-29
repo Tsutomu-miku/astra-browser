@@ -36,6 +36,7 @@ export {
   moveTabGroupToWorkspace,
   openTabInSplit,
   openUrlInSplit,
+  pinTabToPinnedPosition,
   removeTabFromSplit,
   removeEssential,
   moveWorkspaceFavoriteToWorkspace,

@@ -65,6 +65,7 @@ export interface BrowserStore {
   openGlanceInSplit: () => void;
   openTabInSplit: (tabId: string) => void;
   openUrlInSplit: (url: string, title?: string) => void;
+  pinTabToPinnedPosition: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   navigateActiveTab: (url: string, webview?: WebviewElement) => void;
   newTab: () => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;

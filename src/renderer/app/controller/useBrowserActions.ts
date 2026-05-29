@@ -138,6 +138,7 @@ export function useBrowserActions({
       store.openUrlInActiveWorkspace(url, title);
       peekCompactChrome();
     },
+    pinTabToPinnedPosition: store.pinTabToPinnedPosition,
     recordHistory: store.recordHistory,
     removeEssential: store.removeEssential,
     removeHistoryEntry: store.removeHistoryEntry,

@@ -1,6 +1,7 @@
 import type { BrowserTab } from "../../../domain/browser";
 
 export type SidebarTabDropIntent =
+  | { type: "pinToPinnedPosition" }
   | { type: "reorder" }
   | { type: "unpinToRegularEnd" }
   | { type: "unpinToRegularPosition" };
@@ -11,6 +12,10 @@ export function getSidebarTabDropIntent(
 ): SidebarTabDropIntent {
   if (draggedTab?.isPinned && targetTab && !targetTab.isPinned) {
     return { type: "unpinToRegularPosition" };
+  }
+
+  if (draggedTab && !draggedTab.isPinned && targetTab?.isPinned) {
+    return { type: "pinToPinnedPosition" };
   }
 
   return { type: "reorder" };
