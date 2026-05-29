@@ -4,6 +4,7 @@ import { FiLoader } from "react-icons/fi";
 import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
+import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import type { SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
@@ -85,6 +86,7 @@ export function SidebarPinnedTabs({
                 }
               }}
               onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+                if (openSidebarKeyboardContextMenu(event)) return;
                 if (isCloseTabKey(event.key)) {
                   event.preventDefault();
                   actions.closeTab(tab.id);

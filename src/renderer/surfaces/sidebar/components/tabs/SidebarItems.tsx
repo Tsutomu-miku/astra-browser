@@ -3,6 +3,7 @@ import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icon
 
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
+import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
@@ -111,6 +112,7 @@ export function TabRow({
           }
         }}
         onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
+          if (openSidebarKeyboardContextMenu(event)) return;
           if (isCloseTabKey(event.key)) {
             event.preventDefault();
             onClose(tab.id);
@@ -189,6 +191,9 @@ export function FavoriteButton({
         if (draggingQuickEntryId && draggingQuickEntryId !== favorite.id) onDrop?.(event, favorite.id);
       }}
       onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
+      onKeyDown={(event) => {
+        if (onContextMenu) openSidebarKeyboardContextMenu(event);
+      }}
       onClick={(event) => {
         if (event.altKey) {
           onPreview(favorite.url, favorite.title);

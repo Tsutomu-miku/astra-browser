@@ -140,6 +140,36 @@ describe("sidebar pinned tabs", () => {
     act(() => root.unmount());
   });
 
+  it("opens pinned tab context menus from the keyboard", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const onTabContextMenu = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarPinnedTabs, {
+        actions: createActions(),
+        activeTab: pinned,
+        draggingTabId: null,
+        onTabContextMenu,
+        onTabDrop: vi.fn(),
+        onPinDrop: vi.fn(),
+        pinnedTabs: [pinned],
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    container.querySelector(".pinned-tab-button")?.dispatchEvent(new KeyboardEvent("keydown", {
+      bubbles: true,
+      key: "ContextMenu"
+    }));
+
+    expect(onTabContextMenu).toHaveBeenCalledWith(expect.objectContaining({ type: "contextmenu" }), pinned);
+
+    act(() => root.unmount());
+  });
+
   it("renders compact status badges for split and muted pinned tabs", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isMuted: true, isPinned: true };
     const html = renderToStaticMarkup(createElement(SidebarPinnedTabs, {

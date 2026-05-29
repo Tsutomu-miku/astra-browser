@@ -95,6 +95,65 @@ describe("sidebar item action hints", () => {
     act(() => root.unmount());
   });
 
+  it("opens tab row context menus from the keyboard", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const onContextMenu = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabRow, {
+        activeTabId: "other-tab",
+        draggingTabId: null,
+        onClose: vi.fn(),
+        onContextMenu,
+        onDrop: vi.fn(),
+        onPreview: vi.fn(),
+        onSelect: vi.fn(),
+        onSplit: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tab
+      }));
+    });
+
+    container.querySelector(".tab-button")?.dispatchEvent(new KeyboardEvent("keydown", {
+      bubbles: true,
+      key: "F10",
+      shiftKey: true
+    }));
+
+    expect(onContextMenu).toHaveBeenCalledWith(expect.objectContaining({ type: "contextmenu" }), tab);
+
+    act(() => root.unmount());
+  });
+
+  it("opens favorite context menus from the keyboard", () => {
+    const favorite = createFavorite("Docs", "https://docs.example");
+    const onContextMenu = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(FavoriteButton, {
+        favorite,
+        onContextMenu,
+        onOpen: vi.fn(),
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn()
+      }));
+    });
+
+    container.querySelector(".favorite-button")?.dispatchEvent(new KeyboardEvent("keydown", {
+      bubbles: true,
+      key: "ContextMenu"
+    }));
+
+    expect(onContextMenu).toHaveBeenCalledWith(expect.objectContaining({ type: "contextmenu" }), favorite);
+
+    act(() => root.unmount());
+  });
+
   it("uses the visible tab button as the drag source", () => {
     const tab = createTab("Docs", "https://docs.example");
     const setDraggingTabId = vi.fn();
