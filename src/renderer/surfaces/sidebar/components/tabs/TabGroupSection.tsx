@@ -2,6 +2,7 @@ import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent } from "react"
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { getSidebarSearchTargetElementId } from "../../sidebarFiltering";
@@ -76,11 +77,12 @@ export function TabGroupSection({
         }}
         onDragEnd={() => setDraggingGroupId(null)}
         onDragOver={(event) => {
+          const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
           if (draggingGroupId && draggingGroupId !== group.id) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
             updateDropPlacement(event.currentTarget, event, "vertical");
-          } else if (draggingTabId) {
+          } else if (draggedTabId) {
             event.preventDefault();
           }
         }}
@@ -97,7 +99,7 @@ export function TabGroupSection({
             return;
           }
           event.preventDefault();
-          const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
+          const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
           if (tabId) onAssignTab(tabId, group.id);
           setDraggingTabId(null);
         }}

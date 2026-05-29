@@ -7,6 +7,7 @@ import { join } from "node:path";
 
 import { createDefaultState, createFavorite, createTab, type TabGroup } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
+import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { FavoriteButton, TabRow } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
 import { SidebarPinnedTabs } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs";
 import { TabGroupSection } from "../src/renderer/surfaces/sidebar/components/tabs/TabGroupSection";
@@ -49,6 +50,42 @@ describe("sidebar drag placement", () => {
     row.dispatchEvent(createDragEvent("drop", { clientY: 5 }));
     expect(onDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), targetTab.id);
     expect(row.dataset.dropPlacement).toBeUndefined();
+
+    act(() => root.unmount());
+  });
+
+  it("accepts payload-backed tab drags when React drag state is not synced yet", () => {
+    const targetTab = createTab("Docs", "https://docs.example");
+    const onDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabRow, {
+        activeTabId: targetTab.id,
+        draggingTabId: null,
+        splitTabIds: [],
+        tab: targetTab,
+        onClose: vi.fn(),
+        onContextMenu: vi.fn(),
+        onDrop,
+        onPreview: vi.fn(),
+        onSelect: vi.fn(),
+        onSplit: vi.fn(),
+        setDraggingTabId: vi.fn()
+      }));
+    });
+
+    const row = container.querySelector<HTMLElement>(".tab-row")!;
+    stubRect(row, { top: 0, height: 40 });
+    const dragOver = createDragEvent("dragover", { clientY: 35 }, { [SIDEBAR_TAB_DRAG_TYPE]: "dragged-tab" });
+
+    row.dispatchEvent(dragOver);
+    expect(dragOver.defaultPrevented).toBe(true);
+    expect(row.dataset.dropPlacement).toBe("after");
+
+    row.dispatchEvent(createDragEvent("drop", { clientY: 35 }, { [SIDEBAR_TAB_DRAG_TYPE]: "dragged-tab" }));
+    expect(onDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), targetTab.id);
 
     act(() => root.unmount());
   });
@@ -115,6 +152,36 @@ describe("sidebar drag placement", () => {
     button.dispatchEvent(createDragEvent("drop", { clientX: 32 }));
     expect(onTabDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), pinned.id, "horizontal");
     expect(button.dataset.dropPlacement).toBeUndefined();
+
+    act(() => root.unmount());
+  });
+
+  it("accepts payload-backed drags over pinned tabs", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarPinnedTabs, {
+        actions: createActions(),
+        activeTab: pinned,
+        draggingTabId: null,
+        pinnedTabs: [pinned],
+        splitTabIds: [],
+        onPinDrop: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        setDraggingTabId: vi.fn()
+      }));
+    });
+
+    const button = container.querySelector<HTMLElement>(".pinned-tab-button")!;
+    stubRect(button, { left: 0, width: 40 });
+    const dragOver = createDragEvent("dragover", { clientX: 8 }, { "text/plain": "other-tab" });
+
+    button.dispatchEvent(dragOver);
+    expect(dragOver.defaultPrevented).toBe(true);
+    expect(button.dataset.dropPlacement).toBe("before");
 
     act(() => root.unmount());
   });
@@ -213,6 +280,49 @@ describe("sidebar drag placement", () => {
     act(() => root.unmount());
   });
 
+  it("assigns payload-backed tab drags to tab groups", () => {
+    const group = tabGroup("target", "Target");
+    const tab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onAssignTab = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, {
+        activeTab: tab,
+        draggingGroupId: null,
+        draggingTabId: null,
+        group,
+        onAssignTab,
+        onClose: vi.fn(),
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onGroupContextMenu: vi.fn(),
+        onGroupDrop: vi.fn(),
+        onPreview: vi.fn(),
+        onSelect: vi.fn(),
+        onSplit: vi.fn(),
+        onToggle: vi.fn(),
+        onUpdate: vi.fn(),
+        searchSelectedTabId: undefined,
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tabs: [tab]
+      }));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    const dragOver = createDragEvent("dragover", {}, { "text/plain": "dragged-tab" });
+    header.dispatchEvent(dragOver);
+    expect(dragOver.defaultPrevented).toBe(true);
+
+    header.dispatchEvent(createDragEvent("drop", {}, { "text/plain": "dragged-tab" }));
+    expect(onAssignTab).toHaveBeenCalledWith("dragged-tab", group.id);
+
+    act(() => root.unmount());
+  });
+
   it("styles tab group insertion indicators", () => {
     expect(sidebarGroupsCss).toContain(".tab-group-header[data-drop-placement]::before");
     expect(sidebarGroupsCss).toContain('.tab-group-header[data-drop-placement="before"]::before');
@@ -229,7 +339,11 @@ function createActions() {
   } as unknown as BrowserController["actions"];
 }
 
-function createDragEvent(type: string, pointer: Partial<Pick<DragEvent, "clientX" | "clientY">>) {
+function createDragEvent(
+  type: string,
+  pointer: Partial<Pick<DragEvent, "clientX" | "clientY">>,
+  dragData: Record<string, string> = {}
+) {
   const event = new Event(type, { bubbles: true, cancelable: true });
   Object.defineProperty(event, "clientX", { value: pointer.clientX ?? 0 });
   Object.defineProperty(event, "clientY", { value: pointer.clientY ?? 0 });
@@ -237,8 +351,10 @@ function createDragEvent(type: string, pointer: Partial<Pick<DragEvent, "clientX
     value: {
       dropEffect: "none",
       effectAllowed: "all",
-      getData: vi.fn(() => ""),
-      setData: vi.fn()
+      getData: vi.fn((type: string) => dragData[type] ?? ""),
+      setData: vi.fn((type: string, value: string) => {
+        dragData[type] = value;
+      })
     }
   });
   return event;

@@ -1,16 +1,17 @@
 .sidebar-item-action-hints {
-  position: absolute;
-  top: 50%;
-  right: 6px;
   min-width: 0;
+  max-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
   color: var(--muted);
   opacity: 0;
-  transform: translate(3px, -50%);
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(3px);
   transition:
+    max-width 140ms ease,
     opacity 120ms ease,
     transform 120ms ease;
 }
@@ -21,27 +22,36 @@
 .favorite-button:focus-visible .sidebar-item-action-hints,
 .closed-tab-button:hover .sidebar-item-action-hints,
 .closed-tab-button:focus-visible .sidebar-item-action-hints {
+  max-width: 132px;
   opacity: 1;
-  transform: translate(0, -50%);
+  transform: translateX(0);
 }
 
 .pinned-tab-button .sidebar-item-action-hints {
-  top: calc(100% + 6px);
-  right: 50%;
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 3px;
   z-index: 5;
-  padding: 5px 6px;
-  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
-  border-radius: 8px;
-  background: rgba(11, 12, 15, 0.94);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
-  transform: translate(50%, -2px);
-  pointer-events: none;
+  max-width: none;
+  justify-content: center;
+  transform: translateY(2px);
 }
 
 .pinned-tab-button:hover .sidebar-item-action-hints,
 .pinned-tab-button:focus-visible .sidebar-item-action-hints {
   opacity: 1;
-  transform: translate(50%, 0);
+  transform: translateY(0);
+}
+
+.pinned-tab-button .sidebar-item-action-hint span {
+  display: none;
+}
+
+.pinned-tab-button .sidebar-item-action-hint kbd {
+  min-width: 18px;
+  height: 14px;
+  font-size: 8px;
 }
 
 .sidebar-item-action-hint {

@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { getPointerDropPlacement, type DropAxis } from "../../common/drag-drop/dropPlacement";
+import { readSidebarTabDragPayload } from "../../common/drag-drop/sidebarDragPayload";
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
 import { getGroupedTabs } from "../../domain/tabs/groups";
@@ -96,19 +97,20 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const handleTabDrop = (event: DragEvent<HTMLElement>, targetTabId: string, axis: DropAxis = "vertical") => {
     event.preventDefault();
     event.stopPropagation();
-    if (!draggingTabId || draggingTabId === targetTabId) {
+    const tabId = getDroppedTabId(event);
+    if (!tabId || tabId === targetTabId) {
       setDraggingTabId(null);
       return;
     }
 
     const placement = getPointerDropPlacement(event.currentTarget, event, axis);
-    const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === draggingTabId);
+    const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
     const targetTab = activeWorkspace.tabs.find((candidate) => candidate.id === targetTabId);
     const intent = getSidebarTabDropIntent(draggedTab, targetTab);
     if (intent.type === "unpinToRegularPosition") {
-      actions.unpinTabToRegularPosition(draggingTabId, targetTabId, placement);
+      actions.unpinTabToRegularPosition(tabId, targetTabId, placement);
     } else {
-      actions.reorderTab(draggingTabId, targetTabId, placement);
+      actions.reorderTab(tabId, targetTabId, placement);
     }
     setDraggingTabId(null);
   };
@@ -124,7 +126,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     setDraggingTabId(null);
   };
 
-  const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || event.dataTransfer.getData("text/plain");
+  const getDroppedTabId = (event: DragEvent<HTMLElement>) => draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
 
   const handlePinDrop = (event: DragEvent<HTMLElement>) => {
     const tabId = getDroppedTabId(event);

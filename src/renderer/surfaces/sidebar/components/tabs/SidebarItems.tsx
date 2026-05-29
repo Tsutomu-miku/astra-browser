@@ -3,6 +3,7 @@ import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icon
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { readSidebarTabDragPayload, writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getQuickEntryAccessibilityLabel, type QuickEntryKind } from "../../model/quickEntryItemState";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
@@ -107,7 +108,8 @@ export function TabRow({
       aria-selected={isSearchSelected}
       data-dragging={draggingTabId === tab.id}
       onDragOver={(event) => {
-        if (draggingTabId && draggingTabId !== tab.id) {
+        const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+        if (draggedTabId && draggedTabId !== tab.id) {
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
           updateDropPlacement(event.currentTarget, event, dropAxis);
@@ -127,8 +129,7 @@ export function TabRow({
         draggable
         onDragStart={(event) => {
           setDraggingTabId(tab.id);
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData("text/plain", tab.id);
+          writeSidebarTabDragPayload(event.dataTransfer, tab.id);
         }}
         onDragEnd={() => setDraggingTabId(null)}
         onAuxClick={(event) => {

@@ -52,6 +52,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar recently closed rows must expose accessible labels with restore position and dragging state.
 - Users must be able to duplicate the active tab.
 - Users must be able to reorder sidebar tabs by drag and drop.
+- Sidebar tab drag-and-drop must remain reliable even when drag state is recovered from the native drag payload instead of React state.
 - Sidebar drag reordering must show a before/after insertion indicator for tabs, pinned tabs, Essentials, favorites, and Spaces.
 - Users must be able to move tabs between Spaces from the command palette or by dragging onto Space buttons.
 - Users must be able to drag sidebar tabs onto the New Space button to create a Space from that tab.
@@ -121,6 +122,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar items must support Alt-click Glance preview and Shift-click split opening.
 - Focused sidebar tabs, pinned tabs, quick entries, and recently closed rows must support Enter, Alt+Enter Glance preview, and Shift+Enter split opening.
 - Sidebar tab and favorite rows must reveal Alt preview and Shift split hints on hover or keyboard focus.
+- Sidebar row hover hints must not cover tab or favorite titles; they should reserve inline space or stay inside their tile.
 - Pinned tab buttons must reveal Alt preview and Shift split hints on hover or keyboard focus.
 
 ### Navigation, Address Bar, And Omnibox

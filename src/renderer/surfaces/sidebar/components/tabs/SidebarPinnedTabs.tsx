@@ -2,6 +2,7 @@ import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { FiLoader } from "react-icons/fi";
 
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { readSidebarTabDragPayload, writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
@@ -50,7 +51,7 @@ export function SidebarPinnedTabs({
         aria-label="Pinned tabs"
         data-drop-target={Boolean(draggingTabId)}
         onDragOver={(event) => {
-          if (draggingTabId) {
+          if (draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "copy";
           }
@@ -111,12 +112,12 @@ export function SidebarPinnedTabs({
               onContextMenu={(event) => onTabContextMenu(event, tab)}
               onDragStart={(event) => {
                 setDraggingTabId(tab.id);
-                event.dataTransfer.effectAllowed = "move";
-                event.dataTransfer.setData("text/plain", tab.id);
+                writeSidebarTabDragPayload(event.dataTransfer, tab.id);
               }}
               onDragEnd={() => setDraggingTabId(null)}
               onDragOver={(event) => {
-                if (draggingTabId && draggingTabId !== tab.id) {
+                const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+                if (draggedTabId && draggedTabId !== tab.id) {
                   event.preventDefault();
                   event.dataTransfer.dropEffect = "move";
                   updateDropPlacement(event.currentTarget, event, "horizontal");

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -5,7 +7,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
+import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { FavoriteButton, TabRow } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
+
+const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
+const sidebarActionHintsCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-action-hints.css"), "utf8");
 
 describe("sidebar item action hints", () => {
   it("renders preview and split hints for tab rows", () => {
@@ -257,9 +263,18 @@ describe("sidebar item action hints", () => {
 
     expect(container.querySelector(".tab-button")?.getAttribute("draggable")).toBe("true");
     expect(setDraggingTabId).toHaveBeenCalledWith(tab.id);
+    expect(data.get(SIDEBAR_TAB_DRAG_TYPE)).toBe(tab.id);
     expect(data.get("text/plain")).toBe(tab.id);
 
     act(() => root.unmount());
+  });
+
+  it("uses in-flow action hints so hover labels do not cover tab titles", () => {
+    expect(sidebarCss).toContain("grid-template-columns: 24px minmax(0, 1fr) auto");
+    expect(sidebarCss).toContain("grid-template-columns: 22px minmax(0, 1fr) auto");
+    expect(sidebarActionHintsCss).toContain("max-width: 0");
+    expect(sidebarActionHintsCss).toContain("max-width: 132px");
+    expect(sidebarActionHintsCss).not.toContain("right: 6px");
   });
 
   it("renders preview and split hints for favorite rows", () => {

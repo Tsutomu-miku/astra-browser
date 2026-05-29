@@ -2,6 +2,7 @@ import type { DragEvent, MouseEvent } from "react";
 
 import { getPointerDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
@@ -77,7 +78,11 @@ export function SidebarTabsSection({
         aria-label="Tabs"
         data-drop-target={canUnpinDraggedTabToTabs}
         onDragOver={(event) => {
-          if (canUnpinDraggedTabToTabs) {
+          const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+          const canUnpinDraggedTab = Boolean(
+            draggedTabId && filteredItems.pinnedTabs.some((tab) => tab.id === draggedTabId)
+          );
+          if (canUnpinDraggedTab) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
           }
