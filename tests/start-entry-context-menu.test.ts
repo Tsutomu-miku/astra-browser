@@ -1,4 +1,6 @@
 import { createElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -68,6 +70,33 @@ describe("start entry context menu", () => {
     }));
 
     expect(html).toContain("Remove History");
+  });
+
+  it("opens with the full item identity", () => {
+    const favorite = createFavorite("Docs", "https://docs.example", "tab-docs");
+    const onOpen = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(StartEntryContextMenu, {
+        item: favorite,
+        kind: "favorite",
+        left: 10,
+        top: 20,
+        onClose: vi.fn(),
+        onOpen,
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn(),
+        onRemove: vi.fn()
+      }));
+    });
+
+    container.querySelector("button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(onOpen).toHaveBeenCalledWith(favorite);
+
+    act(() => root.unmount());
   });
 
   it("keeps tile action hints while supporting contextual management", () => {

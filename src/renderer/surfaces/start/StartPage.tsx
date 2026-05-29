@@ -137,7 +137,7 @@ export function StartPage({
             left={menu.left}
             top={menu.top}
             onClose={closeMenu}
-            onOpen={() => runQuickEntry(menu.item)}
+            onOpen={runQuickEntry}
             onOpenInSplit={actions.openUrlInSplit}
             onPreview={actions.openGlance}
             onRemove={(item, kind) => {
@@ -146,7 +146,7 @@ export function StartPage({
               } else if (kind === "essential") {
                 actions.removeEssential(item.url);
               } else {
-                actions.removeWorkspaceFavorite(item.url);
+                actions.removeWorkspaceFavorite(item.id);
               }
             }}
           />

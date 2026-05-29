@@ -15,7 +15,7 @@ export function StartEntryContextMenu({
   kind: StartEntryContextMenuKind;
   left: number;
   onClose: () => void;
-  onOpen: (url: string, title?: string) => void;
+  onOpen: (item: StartEntryContextMenuItem) => void;
   onOpenInSplit: (url: string, title?: string) => void;
   onPreview: (url: string, title?: string) => void;
   onRemove: (item: StartEntryContextMenuItem, kind: StartEntryContextMenuKind) => void;
@@ -34,7 +34,7 @@ export function StartEntryContextMenu({
       style={{ left, top }}
       onContextMenu={(event) => event.preventDefault()}
     >
-      <button type="button" role="menuitem" onClick={() => run(() => onOpen(item.url, item.title))}>
+      <button type="button" role="menuitem" onClick={() => run(() => onOpen(item))}>
         Open
       </button>
       <button type="button" role="menuitem" onClick={() => run(() => onPreview(item.url, item.title))}>
