@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+
+import { getChromeAccent } from "../common/theme/chromeTheme";
 import { useBrowserController } from "./controller/useBrowserController";
 import { CommandPalette } from "../surfaces/command/CommandPalette";
 import { FindBar } from "../surfaces/find/FindBar";
@@ -11,6 +14,14 @@ import { WebviewGrid } from "../surfaces/webview/WebviewGrid";
 
 export function App() {
   const controller = useBrowserController();
+  const chromeAccent = getChromeAccent(controller.state.settings, controller.activeWorkspace);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--accent", chromeAccent);
+    return () => {
+      document.documentElement.style.removeProperty("--accent");
+    };
+  }, [chromeAccent]);
 
   return (
     <>

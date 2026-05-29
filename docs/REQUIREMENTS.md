@@ -135,6 +135,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Sidebar primary items and section headers must support Arrow, Home, and End keyboard focus navigation without stealing editing keys from text fields.
 - Sidebar Essentials, pinned tabs, favorites, and tabs must be visually separated into scannable sections.
 - Sidebar iconography must be consistent across primary chrome, row actions, tab status, Space controls, Split/Glance affordances, and fallback favicons.
+- Browser chrome accent must default to a restrained neutral palette and offer an option to match the active Space accent.
 - Sidebar sections must be individually collapsible, while filtering must reveal matching contents even when a section was collapsed.
 - Sidebar collapsible section headers must support `ArrowLeft` to collapse and `ArrowRight` to expand.
 - Dragging tabs or quick entries should not temporarily reveal collapsed sidebar sections just to advertise drop targets; collapsed sections remain under user control unless search filtering needs to reveal matches.

@@ -2,6 +2,7 @@ import {
   normalizeAddress,
   SEARCH_ENGINES,
   type BrowserSettings,
+  type ChromeAccentMode,
   type SearchEngineKey,
   type StartupBehavior
 } from "../../../../domain/browser";
@@ -24,6 +25,16 @@ export function GlobalSettingsSection({
           onChange={(event) => onUpdateSettings({ homepage: event.target.value })}
           onBlur={(event) => onUpdateSettings({ homepage: normalizeAddress(event.target.value, settings.searchEngine) })}
         />
+      </label>
+      <label className="field">
+        <span>Chrome color</span>
+        <select
+          value={settings.chromeAccentMode}
+          onChange={(event) => onUpdateSettings({ chromeAccentMode: event.target.value as ChromeAccentMode })}
+        >
+          <option value="neutral">Neutral</option>
+          <option value="space">Match current Space</option>
+        </select>
       </label>
       <label className="field">
         <span>Search engine</span>

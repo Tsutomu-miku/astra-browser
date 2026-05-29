@@ -48,6 +48,7 @@ export function createDefaultState(): BrowserState {
     downloads: [],
     sitePermissions: [],
     settings: {
+      chromeAccentMode: "neutral",
       homepage: DEFAULT_URL,
       memorySaverEnabled: true,
       memorySaverIdleMinutes: 30,

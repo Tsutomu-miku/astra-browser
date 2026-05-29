@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createDefaultState } from "../src/renderer/domain/browser";
 import { getMemorySaverState } from "../src/renderer/common/memory/memorySaverState";
+import { getChromeAccent, NEUTRAL_CHROME_ACCENT } from "../src/renderer/common/theme/chromeTheme";
 import { DataSettingsSection } from "../src/renderer/surfaces/panels/settings/components/DataSettingsSection";
 import { GlobalSettingsSection } from "../src/renderer/surfaces/panels/settings/components/GlobalSettingsSection";
 import { MemorySaverSection } from "../src/renderer/surfaces/panels/settings/components/MemorySaverSection";
@@ -26,7 +27,7 @@ describe("settings panel sections", () => {
     expect(html).toContain("Space");
     expect(html).toContain("Data");
     expect(html).toContain("Spaces");
-    expect(html).toContain("Homepage, search, startup");
+    expect(html).toContain("Appearance, homepage, search");
   });
 
   it("renders global and Space settings as separate panes", () => {
@@ -42,9 +43,19 @@ describe("settings panel sections", () => {
     }));
 
     expect(globalHtml).toContain('aria-label="Global settings"');
+    expect(globalHtml).toContain("Chrome color");
+    expect(globalHtml).toContain("Match current Space");
     expect(globalHtml).toContain("Search engine");
     expect(spaceHtml).toContain('aria-label="Space settings"');
     expect(spaceHtml).toContain("Workspace accent");
+  });
+
+  it("resolves neutral or Space-matched chrome accent", () => {
+    const state = createDefaultState();
+    const workspace = { ...state.workspaces[0], accent: "#7dd3fc" };
+
+    expect(getChromeAccent(state.settings, workspace)).toBe(NEUTRAL_CHROME_ACCENT);
+    expect(getChromeAccent({ ...state.settings, chromeAccentMode: "space" }, workspace)).toBe("#7dd3fc");
   });
 
   it("renders data and workspace management panes", () => {

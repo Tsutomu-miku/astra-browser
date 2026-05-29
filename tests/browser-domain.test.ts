@@ -49,6 +49,7 @@ describe("browser domain primitives", () => {
     expect(state.activeWorkspaceId).toBe("space");
     expect(state.settings.searchEngine).toBe("google");
     expect(state.settings.startupBehavior).toBe("restore");
+    expect(state.settings.chromeAccentMode).toBe("neutral");
     expect(state.settings.memorySaverEnabled).toBe(true);
     expect(state.settings.memorySaverIdleMinutes).toBe(30);
     expect(state.workspaces[0].name).toBe("Space");

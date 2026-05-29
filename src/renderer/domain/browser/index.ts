@@ -34,6 +34,7 @@ export type {
   BrowserState,
   BrowserSettings,
   BrowserTab,
+  ChromeAccentMode,
   ClosedTab,
   DownloadEntry,
   FaviconCache,

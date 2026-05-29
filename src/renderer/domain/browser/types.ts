@@ -1,5 +1,6 @@
 export type SearchEngineKey = "google" | "duckduckgo" | "bing";
 export type StartupBehavior = "restore" | "homepage";
+export type ChromeAccentMode = "neutral" | "space";
 
 export interface SearchEngine {
   name: string;
@@ -75,6 +76,7 @@ export interface SitePermissionRule {
 }
 
 export interface BrowserSettings {
+  chromeAccentMode: ChromeAccentMode;
   homepage: string;
   memorySaverEnabled: boolean;
   memorySaverIdleMinutes: number;

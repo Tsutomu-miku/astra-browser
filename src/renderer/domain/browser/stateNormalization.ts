@@ -44,6 +44,10 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
     state.settings.startupBehavior = fallback.settings.startupBehavior;
   }
 
+  if (!isChromeAccentMode(state.settings.chromeAccentMode)) {
+    state.settings.chromeAccentMode = fallback.settings.chromeAccentMode;
+  }
+
   state.settings.memorySaverEnabled = state.settings.memorySaverEnabled !== false;
   state.settings.memorySaverIdleMinutes = normalizeMemorySaverIdleMinutes(state.settings.memorySaverIdleMinutes);
   state.settings.homepage = normalizeAddress(state.settings.homepage || DEFAULT_URL, state.settings.searchEngine);
@@ -180,6 +184,10 @@ function isSearchEngineKey(value: unknown): value is SearchEngineKey {
 
 function isStartupBehavior(value: unknown): value is StartupBehavior {
   return value === "restore" || value === "homepage";
+}
+
+function isChromeAccentMode(value: unknown): value is BrowserState["settings"]["chromeAccentMode"] {
+  return value === "neutral" || value === "space";
 }
 
 function normalizeTimestamp(value: unknown): number {
