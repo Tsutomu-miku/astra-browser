@@ -180,6 +180,73 @@ describe("sidebar section drop zones", () => {
     act(() => root.unmount());
   });
 
+  it("accepts Favorite-backed tab drops on the empty Tabs folder", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const favorite = createFavorite("Docs", tab.url, tab.id);
+    const onTabsDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab: tab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: favorite.id,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [favorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: []
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onTabsDrop,
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        workspaceTabs: [tab]
+      }));
+    });
+
+    const tabsSection = container.querySelector<HTMLElement>(".tabs-section")!;
+    expect(tabsSection.textContent).toContain("Tabs");
+    expect(container.querySelector(".tabs .tab-row")).toBeNull();
+
+    const dragOverEvent = createDragEvent("dragover", {
+      [SIDEBAR_TAB_DRAG_TYPE]: tab.id,
+      "text/favorite-id": favorite.id
+    });
+    tabsSection.dispatchEvent(dragOverEvent);
+    expect(dragOverEvent.defaultPrevented).toBe(true);
+
+    tabsSection.dispatchEvent(createDragEvent("drop", {
+      [SIDEBAR_TAB_DRAG_TYPE]: tab.id,
+      "text/favorite-id": favorite.id
+    }));
+    expect(onTabsDrop).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("accepts tab drops on an existing Favorite item", () => {
     const tab = createTab("Docs", "https://docs.example");
     const favorite = createFavorite("MDN", "https://developer.mozilla.org");

@@ -2,9 +2,9 @@ import type { DragEvent, MouseEvent } from "react";
 
 import { getPointerDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
-import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
+import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarSectionHeader, TabRow } from "./SidebarItems";
 import { TabGroupSection } from "./TabGroupSection";
@@ -59,7 +59,16 @@ export function SidebarTabsSection({
   };
 
   return (
-    <section className="sidebar-section tabs-section">
+    <section
+      className="sidebar-section tabs-section"
+      onDragEnter={(event) => {
+        acceptSidebarTabFolderDrag(event, draggingTabId);
+      }}
+      onDragOver={(event) => {
+        acceptSidebarTabFolderDrag(event, draggingTabId);
+      }}
+      onDrop={onTabsDrop}
+    >
       <SidebarSectionHeader
         count={tabCount}
         isCollapsed={isCollapsed}
@@ -69,23 +78,6 @@ export function SidebarTabsSection({
       {!isCollapsed && <nav
         className="tabs"
         aria-label="Tabs"
-        onDragEnter={(event) => {
-          const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
-          if (draggedTabId && filteredItems.pinnedTabs.some((tab) => tab.id === draggedTabId)) {
-            event.preventDefault();
-          }
-        }}
-        onDragOver={(event) => {
-          const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
-          const canUnpinDraggedTab = Boolean(
-            draggedTabId && filteredItems.pinnedTabs.some((tab) => tab.id === draggedTabId)
-          );
-          if (canUnpinDraggedTab) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "move";
-          }
-        }}
-        onDrop={onTabsDrop}
       >
         {filteredItems.groupedTabs.map(({ group, tabs }) => (
           <TabGroupSection

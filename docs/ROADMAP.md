@@ -109,7 +109,7 @@ Small requirements:
 - P0-3.9 Dragging tabs does not render separate target-region sections or New Group/Ungroup target buttons.
 - P0-3.10 Dragging a Favorite-backed tab into Tabs, Pinned, or a group removes it from the Favorites folder.
 - P0-3.11 Tabs, Pinned, and tab groups share one folder move path instead of separate pin/unpin/drop-intent branches.
-- P0-3.12 Empty Pinned and Favorites folders stay visible as ordinary headers and accept tab drops without special target UI.
+- P0-3.12 Empty Tabs, Pinned, and Favorites folders stay visible as ordinary headers and accept tab drops without special target UI.
 
 ### P0-4 Spaces And Profiles
 
