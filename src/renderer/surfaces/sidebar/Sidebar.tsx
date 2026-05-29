@@ -326,39 +326,41 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             setActiveSearchIndex(0);
           }}
         />
-        <SidebarSections
-          actions={actions}
-          activeSearchTarget={activeSearchTarget}
-          activeTab={activeTab}
-          closedTabs={activeWorkspace.closedTabs}
-          draggingEssentialId={draggingEssentialId}
-          faviconCache={state.faviconCache}
-          draggingFavoriteId={draggingFavoriteId}
-          draggingClosedTabIndex={draggingClosedTabIndex}
-          draggingGroupId={draggingGroupId}
-          draggingTabId={draggingTabId}
-          filteredItems={filteredItems}
-          onEssentialDragStart={handleEssentialDragStart}
-          onEssentialDrop={handleEssentialDrop}
-          onEssentialReorderDrop={handleEssentialReorderDrop}
-          onFavoriteDragStart={handleFavoriteDragStart}
-          onFavoriteDrop={handleFavoritesDrop}
-          onFavoriteReorderDrop={handleFavoriteReorderDrop}
-          onClosedTabContextMenu={openClosedTabMenu}
-          onTabGroupContextMenu={openTabGroupMenu}
-          splitTabIds={state.splitTabIds}
-          onQuickEntryContextMenu={openQuickEntryMenu}
-          onPinDrop={handlePinDrop}
-          onTabContextMenu={openTabMenu}
-          onTabDrop={handleTabDrop}
-          onTabsDrop={handleTabsDrop}
-          setDraggingEssentialId={setDraggingEssentialId}
-          setDraggingFavoriteId={setDraggingFavoriteId}
-          setDraggingClosedTabIndex={setDraggingClosedTabIndex}
-          setDraggingGroupId={setDraggingGroupId}
-          setDraggingTabId={setDraggingTabId}
-          workspaceTabs={activeWorkspace.tabs}
-        />
+        <div className="sidebar-scroll-area">
+          <SidebarSections
+            actions={actions}
+            activeSearchTarget={activeSearchTarget}
+            activeTab={activeTab}
+            closedTabs={activeWorkspace.closedTabs}
+            draggingEssentialId={draggingEssentialId}
+            faviconCache={state.faviconCache}
+            draggingFavoriteId={draggingFavoriteId}
+            draggingClosedTabIndex={draggingClosedTabIndex}
+            draggingGroupId={draggingGroupId}
+            draggingTabId={draggingTabId}
+            filteredItems={filteredItems}
+            onEssentialDragStart={handleEssentialDragStart}
+            onEssentialDrop={handleEssentialDrop}
+            onEssentialReorderDrop={handleEssentialReorderDrop}
+            onFavoriteDragStart={handleFavoriteDragStart}
+            onFavoriteDrop={handleFavoritesDrop}
+            onFavoriteReorderDrop={handleFavoriteReorderDrop}
+            onClosedTabContextMenu={openClosedTabMenu}
+            onTabGroupContextMenu={openTabGroupMenu}
+            splitTabIds={state.splitTabIds}
+            onQuickEntryContextMenu={openQuickEntryMenu}
+            onPinDrop={handlePinDrop}
+            onTabContextMenu={openTabMenu}
+            onTabDrop={handleTabDrop}
+            onTabsDrop={handleTabsDrop}
+            setDraggingEssentialId={setDraggingEssentialId}
+            setDraggingFavoriteId={setDraggingFavoriteId}
+            setDraggingClosedTabIndex={setDraggingClosedTabIndex}
+            setDraggingGroupId={setDraggingGroupId}
+            setDraggingTabId={setDraggingTabId}
+            workspaceTabs={activeWorkspace.tabs}
+          />
+        </div>
       </section>
 
       <SidebarFooter

@@ -11,4 +11,14 @@ describe("sidebar compact focus styles", () => {
     expect(sidebarCss).toContain(".sidebar.is-collapsed:focus-within .tab-stack");
     expect(sidebarCss).toContain(".sidebar.is-collapsed:focus-within .sidebar-footer");
   });
+
+  it("keeps sidebar sections in one scrollable area above the footer", () => {
+    expect(sidebarCss).toContain("height: 100vh");
+    expect(sidebarCss).toContain("overflow: hidden");
+    expect(sidebarCss).toContain("grid-template-rows: 58px auto auto minmax(0, 1fr)");
+    expect(sidebarCss).toContain(".sidebar-scroll-area");
+    expect(sidebarCss).toContain("overflow-y: auto");
+    expect(sidebarCss).toContain("overflow-x: hidden");
+    expect(sidebarCss).toContain("scrollbar-width: thin");
+  });
 });
