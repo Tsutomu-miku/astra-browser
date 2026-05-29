@@ -17,7 +17,7 @@ export function SidebarTabStatusBadges({
   return (
     <span className={containerClassName} aria-label={badges.map((badge) => badge.label).join(", ")}>
       {badges.map((badge) => (
-        <span className={`${badgeClassName} is-${badge.id}`} key={badge.id} title={badge.title}>
+        <span className={`${badgeClassName} is-${badge.id}`} key={badge.id} aria-hidden="true">
           <TabStatusIcon badge={badge} />
           {variant === "row" && <span>{badge.label}</span>}
         </span>

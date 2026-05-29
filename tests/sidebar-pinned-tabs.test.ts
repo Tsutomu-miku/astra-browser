@@ -256,6 +256,8 @@ describe("sidebar pinned tabs", () => {
     expect(html).toContain('aria-label="Split, Muted"');
     expect(html).toContain('class="pinned-tab-status-badge is-split"');
     expect(html).toContain('class="pinned-tab-status-badge is-muted"');
+    expect(html).not.toContain('title="Visible in split view"');
+    expect(html).not.toContain('title="Audio muted"');
   });
 
   it("collapses pinned tab contents behind the section header", () => {

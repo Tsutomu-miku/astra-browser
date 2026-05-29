@@ -3,7 +3,6 @@ import type { BrowserTab, Favorite } from "../../../domain/browser";
 export interface TabStatusBadge {
   id: "muted" | "sleeping" | "split";
   label: string;
-  title: string;
 }
 
 export function isSidebarUrlActive(activeUrl: string, itemUrl: string): boolean {
@@ -24,13 +23,13 @@ export function getTabStatusBadges(
   const badges: TabStatusBadge[] = [];
 
   if (splitTabIds.includes(tab.id)) {
-    badges.push({ id: "split", label: "Split", title: "Visible in split view" });
+    badges.push({ id: "split", label: "Split" });
   }
   if (tab.isMuted) {
-    badges.push({ id: "muted", label: "Muted", title: "Audio muted" });
+    badges.push({ id: "muted", label: "Muted" });
   }
   if (tab.isSleeping) {
-    badges.push({ id: "sleeping", label: "Asleep", title: "Sleeping tab" });
+    badges.push({ id: "sleeping", label: "Asleep" });
   }
 
   return badges;
@@ -43,7 +42,7 @@ export function getSidebarTabAccessibilityLabel({
   tab
 }: {
   isActive: boolean;
-    kind: "favorite tab" | "pinned tab" | "tab";
+  kind: "favorite tab" | "pinned tab" | "tab";
   statusBadges: TabStatusBadge[];
   tab: Pick<BrowserTab, "title" | "url">;
 }): string {

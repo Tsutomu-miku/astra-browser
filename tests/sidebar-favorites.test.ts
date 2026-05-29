@@ -342,6 +342,8 @@ describe("sidebar favorites", () => {
     expect(favoriteButton?.querySelector(".favorite-title-stack")).not.toBeNull();
     expect(favoriteButton?.querySelector(".tab-status-badge.is-split")).not.toBeNull();
     expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")).not.toBeNull();
+    expect(favoriteButton?.querySelector(".tab-status-badge.is-split")?.hasAttribute("title")).toBe(false);
+    expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")?.hasAttribute("title")).toBe(false);
 
     act(() => root.unmount());
   });
