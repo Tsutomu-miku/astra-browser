@@ -7,6 +7,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 import { createDefaultState } from "../src/renderer/domain/browser";
+import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { WorkspaceStrip } from "../src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip";
 
@@ -80,6 +81,48 @@ describe("workspace strip compact controls", () => {
     expect(tabHtml).toContain('class="workspace-button workspace-new-button"');
     expect(tabHtml).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
     expect(groupHtml).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
+  });
+
+  it("accepts payload-backed tab drags on New Space before React drag state syncs", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const onNewWorkspaceDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace: vi.fn(),
+        onNewWorkspaceDrop,
+        onOpenSettings: vi.fn(),
+        onSelect: vi.fn(),
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    const newSpace = container.querySelector<HTMLButtonElement>(".workspace-new-button")!;
+    const dragOver = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: "tab" });
+    newSpace.dispatchEvent(dragOver);
+    newSpace.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: "tab" }));
+
+    expect(dragOver.defaultPrevented).toBe(true);
+    expect(onNewWorkspaceDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }));
+
+    act(() => root.unmount());
   });
 
   it("marks New Space as a drop target while dragging a recently closed tab", () => {
@@ -496,4 +539,19 @@ function renderStrip({
     sidebarCollapsed,
     workspaces: state.workspaces
   }));
+}
+
+function createDragEvent(type: string, dragData: Record<string, string> = {}) {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "dataTransfer", {
+    value: {
+      dropEffect: "none",
+      effectAllowed: "all",
+      getData: vi.fn((dataType: string) => dragData[dataType] ?? ""),
+      setData: vi.fn((dataType: string, value: string) => {
+        dragData[dataType] = value;
+      })
+    }
+  });
+  return event;
 }

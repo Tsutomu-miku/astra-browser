@@ -210,7 +210,7 @@ export function TabRow({
         className="tab-button"
         type="button"
         aria-label={tabLabel}
-        draggable
+        draggable={false}
         onAuxClick={(event) => {
           if (event.button === 1) {
             event.preventDefault();

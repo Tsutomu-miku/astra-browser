@@ -140,6 +140,40 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       setDraggingTabId(null);
       return;
     }
+    const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
+
+    const targetWorkspaceButton = target.closest<HTMLElement>(".workspace-button[data-workspace-id]");
+    const targetWorkspaceId = targetWorkspaceButton?.dataset.workspaceId;
+    if (targetWorkspaceId && targetWorkspaceId !== activeWorkspace.id) {
+      actions.moveTabToWorkspace(tabId, targetWorkspaceId);
+      setDraggingTabId(null);
+      return;
+    }
+
+    if (target.closest(".workspace-new-button")) {
+      actions.moveTabToNewWorkspace(tabId);
+      setDraggingTabId(null);
+      return;
+    }
+
+    if (target.closest("[data-sidebar-split-button]")) {
+      if (tabId !== activeTab.id) actions.openTabInSplit(tabId);
+      setDraggingTabId(null);
+      return;
+    }
+
+    const organizationTarget = target.closest<HTMLElement>("[data-tab-organization-target]");
+    if (organizationTarget?.dataset.tabOrganizationTarget === "create-group") {
+      actions.groupTab(tabId);
+      setDraggingTabId(null);
+      return;
+    }
+
+    if (organizationTarget?.dataset.tabOrganizationTarget === "ungroup") {
+      actions.ungroupTab(tabId);
+      setDraggingTabId(null);
+      return;
+    }
 
     const targetRow = target.closest<HTMLElement>(".tab-row[data-tab-id]");
     const targetTabId = targetRow?.dataset.tabId;
@@ -170,8 +204,13 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     }
 
     if (target.closest(".pinned-tabs")) {
-      const tab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
-      if (tab && !tab.isPinned) actions.toggleTabPinned(tab.id);
+      if (draggedTab && !draggedTab.isPinned) actions.toggleTabPinned(draggedTab.id);
+      setDraggingTabId(null);
+      return;
+    }
+
+    if (target.closest(".tabs")) {
+      if (draggedTab?.isPinned) actions.unpinTabToRegularEnd(tabId);
       setDraggingTabId(null);
       return;
     }

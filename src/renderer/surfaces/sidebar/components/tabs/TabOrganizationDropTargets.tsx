@@ -27,6 +27,7 @@ export function TabOrganizationDropTargets({
           icon={<FiFolderPlus />}
           label="New group"
           ariaLabel="Create new group from dragged tab"
+          dropTarget="create-group"
           draggingTabId={draggingTabId}
           onDropTab={onCreateGroup}
           setDraggingTabId={setDraggingTabId}
@@ -37,6 +38,7 @@ export function TabOrganizationDropTargets({
           icon={<FiCornerUpRight />}
           label="Ungroup tab"
           ariaLabel="Remove dragged tab from group"
+          dropTarget="ungroup"
           draggingTabId={draggingTabId}
           onDropTab={onUngroupTab}
           setDraggingTabId={setDraggingTabId}
@@ -48,6 +50,7 @@ export function TabOrganizationDropTargets({
 
 function TabDropTarget({
   ariaLabel,
+  dropTarget,
   draggingTabId,
   icon,
   label,
@@ -55,6 +58,7 @@ function TabDropTarget({
   setDraggingTabId
 }: {
   ariaLabel: string;
+  dropTarget: "create-group" | "ungroup";
   draggingTabId: string;
   icon: ReactNode;
   label: string;
@@ -89,6 +93,7 @@ function TabDropTarget({
       type="button"
       aria-label={ariaLabel}
       data-drop-target="true"
+      data-tab-organization-target={dropTarget}
       tabIndex={0}
       onDragOver={(event) => {
         event.preventDefault();

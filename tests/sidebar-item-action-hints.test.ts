@@ -264,7 +264,7 @@ describe("sidebar item action hints", () => {
     container.querySelector(".tab-row")?.dispatchEvent(event);
 
     expect(container.querySelector(".tab-row")?.getAttribute("draggable")).toBe("true");
-    expect(container.querySelector(".tab-button")?.getAttribute("draggable")).toBe("true");
+    expect(container.querySelector(".tab-button")?.getAttribute("draggable")).toBe("false");
     expect(setDraggingTabId).toHaveBeenCalledWith(tab.id);
     expect(data.get(SIDEBAR_TAB_DRAG_TYPE)).toBe(tab.id);
     expect(data.get("text/plain")).toBe(tab.id);
@@ -272,10 +272,10 @@ describe("sidebar item action hints", () => {
     act(() => root.unmount());
   });
 
-  it("starts native tab drags from the visible tab button", () => {
+  it("starts pointer tab drags from the visible tab button", () => {
     const tab = createTab("Docs", "https://docs.example");
     const setDraggingTabId = vi.fn();
-    const data = new Map<string, string>();
+    const onPointerDrop = vi.fn();
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -286,6 +286,7 @@ describe("sidebar item action hints", () => {
         onClose: vi.fn(),
         onContextMenu: vi.fn(),
         onDrop: vi.fn(),
+        onPointerDrop,
         onPreview: vi.fn(),
         onSelect: vi.fn(),
         onSplit: vi.fn(),
@@ -295,18 +296,27 @@ describe("sidebar item action hints", () => {
       }));
     });
 
-    const event = new Event("dragstart", { bubbles: true });
-    Object.defineProperty(event, "dataTransfer", {
-      value: {
-        effectAllowed: "",
-        setData: (type: string, value: string) => data.set(type, value)
-      }
-    });
-    container.querySelector(".tab-button")?.dispatchEvent(event);
+    container.querySelector(".tab-button")?.dispatchEvent(createPointerEvent("pointerdown", {
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+      isPrimary: true,
+      pointerId: 1
+    }));
+    document.dispatchEvent(createPointerEvent("pointermove", {
+      clientX: 28,
+      clientY: 14,
+      pointerId: 1
+    }));
+    document.dispatchEvent(createPointerEvent("pointerup", {
+      clientX: 46,
+      clientY: 28,
+      pointerId: 1
+    }));
 
     expect(setDraggingTabId).toHaveBeenCalledWith(tab.id);
-    expect(data.get(SIDEBAR_TAB_DRAG_TYPE)).toBe(tab.id);
-    expect(data.get("text/plain")).toBe(tab.id);
+    expect(setDraggingTabId).toHaveBeenLastCalledWith(null);
+    expect(onPointerDrop).toHaveBeenCalledWith(tab.id, 46, 28);
 
     act(() => root.unmount());
   });
