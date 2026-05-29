@@ -133,6 +133,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Sidebar context menus must focus the first action when opened and support Arrow, Home, and End keyboard navigation.
 - Sidebar context menus must restore focus to their triggering sidebar item when closed by Escape or a menu action.
 - Sidebar primary items and section headers must support Arrow, Home, and End keyboard focus navigation without stealing editing keys from text fields.
+- Sidebar keyboard focus navigation must keep the newly focused item scrolled into view inside long folders.
 - Sidebar Essentials, pinned tabs, favorites, and tabs must be visually separated into scannable sections.
 - Sidebar iconography must be consistent across primary chrome, row actions, tab status, Space controls, Split/Glance affordances, and fallback favicons.
 - Browser chrome accent must default to a restrained neutral palette and offer an option to match the active Space accent.

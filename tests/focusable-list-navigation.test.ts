@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { handleFocusableListNavigation } from "../src/renderer/common/focus/focusableListNavigation";
 
@@ -41,6 +41,22 @@ describe("focusable list navigation", () => {
       document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "End" }));
     });
     expect(document.activeElement).toBe(buttons[2]);
+
+    cleanup();
+  });
+
+  it("keeps the newly focused item visible", () => {
+    const { buttons, cleanup } = renderList();
+    const scrollIntoView = vi.fn();
+    buttons[1]!.scrollIntoView = scrollIntoView;
+    buttons[0]?.focus();
+
+    act(() => {
+      buttons[0]?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
+    });
+
+    expect(document.activeElement).toBe(buttons[1]);
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest", inline: "nearest" });
 
     cleanup();
   });
