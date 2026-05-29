@@ -1,6 +1,7 @@
 import type { CSSProperties, DragEvent, MouseEvent } from "react";
 
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
+import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { TabRow } from "./SidebarItems";
 
 export function TabGroupSection({
@@ -54,6 +55,7 @@ export function TabGroupSection({
         data-dragging={draggingGroupId === group.id}
         data-drop-target={Boolean(draggingTabId)}
         onContextMenu={(event) => onGroupContextMenu(event, group)}
+        onKeyDown={openSidebarKeyboardContextMenu}
         onDragStart={(event) => {
           setDraggingGroupId(group.id);
           event.dataTransfer.effectAllowed = "move";

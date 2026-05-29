@@ -1,4 +1,5 @@
 import { getHostInitial, type ClosedTab } from "../../../../domain/browser";
+import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import type { MouseEvent } from "react";
 
@@ -25,6 +26,7 @@ export function ClosedTabButton({
       type="button"
       title={`Restore ${title}`}
       onContextMenu={(event) => onContextMenu(event, tab, closedIndex)}
+      onKeyDown={openSidebarKeyboardContextMenu}
       onClick={(event) => {
         if (event.altKey) {
           onPreview(tab.url, tab.title);

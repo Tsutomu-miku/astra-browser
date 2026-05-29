@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -73,6 +75,33 @@ describe("sidebar recently closed tabs", () => {
     expect(renderToStaticMarkup(menu)).toContain("Copy URL");
     expect(onCopyText).toHaveBeenCalledWith("https://docs.example/");
     expect(onCopyText).toHaveBeenCalledWith("Docs");
+  });
+
+  it("opens recently closed context menus from the keyboard", () => {
+    const tab = closedTab();
+    const onContextMenu = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(ClosedTabButton, {
+        closedIndex: 2,
+        onContextMenu,
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn(),
+        onRestore: vi.fn(),
+        tab
+      }));
+    });
+
+    container.querySelector(".closed-tab-button")?.dispatchEvent(new KeyboardEvent("keydown", {
+      bubbles: true,
+      key: "ContextMenu"
+    }));
+
+    expect(onContextMenu).toHaveBeenCalledWith(expect.objectContaining({ type: "contextmenu" }), tab, 2);
+
+    act(() => root.unmount());
   });
 
   it("styles the recently closed sidebar section", () => {
