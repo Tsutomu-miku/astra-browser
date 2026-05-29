@@ -47,12 +47,13 @@ export function SidebarTabsSection({
   const onGroupDrop = (event: DragEvent<HTMLElement>, targetGroupId: string) => {
     event.preventDefault();
     event.stopPropagation();
-    if (!draggingGroupId || draggingGroupId === targetGroupId) {
+    const groupId = draggingGroupId || event.dataTransfer.getData("text/group-id");
+    if (!groupId || groupId === targetGroupId) {
       setDraggingGroupId(null);
       return;
     }
 
-    actions.reorderTabGroup(draggingGroupId, targetGroupId, getPointerDropPlacement(event.currentTarget, event, "vertical"));
+    actions.reorderTabGroup(groupId, targetGroupId, getPointerDropPlacement(event.currentTarget, event, "vertical"));
     setDraggingGroupId(null);
   };
   const acceptTabsFolderDrag = (event: DragEvent<HTMLElement>) => {

@@ -52,6 +52,9 @@ export function TabGroupSection({
   tabs: BrowserTab[];
 }) {
   const hasActiveTab = tabs.some((tab) => tab.id === activeTab.id);
+  const getDraggedGroupId = (event: DragEvent<HTMLElement>) => (
+    draggingGroupId || event.dataTransfer.getData("text/group-id")
+  );
   const handleToggleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     const intent = getDisclosureKeyboardToggleIntent(event.key, group.isCollapsed);
     if (!intent) return;
@@ -79,7 +82,8 @@ export function TabGroupSection({
         onDragEnd={() => setDraggingGroupId(null)}
         onDragOver={(event) => {
           const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
-          if (draggingGroupId && draggingGroupId !== group.id) {
+          const draggedGroupId = getDraggedGroupId(event);
+          if (draggedGroupId && draggedGroupId !== group.id) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
             updateDropPlacement(event.currentTarget, event, "vertical");
@@ -90,20 +94,21 @@ export function TabGroupSection({
         onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
         onDrop={(event) => {
           clearDropPlacement(event.currentTarget);
-          if (draggingGroupId && draggingGroupId !== group.id) {
+          const draggedGroupId = getDraggedGroupId(event);
+          if (draggedGroupId && draggedGroupId !== group.id) {
             onGroupDrop(event, group.id);
             return;
           }
-          if (draggingGroupId) {
+          if (draggedGroupId) {
             event.preventDefault();
             setDraggingGroupId(null);
             return;
           }
-          event.preventDefault();
           const tabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
-          if (tabId) {
-            onMoveTabToGroupFolder(tabId, group.id);
-          }
+          if (!tabId) return;
+
+          event.preventDefault();
+          onMoveTabToGroupFolder(tabId, group.id);
           setDraggingTabId(null);
         }}
       >

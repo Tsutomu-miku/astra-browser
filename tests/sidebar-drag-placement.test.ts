@@ -10,6 +10,7 @@ import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { FavoriteButton, TabRow } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
 import { SidebarPinnedTabs } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs";
+import { SidebarTabsSection } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarTabsSection";
 import { TabGroupSection } from "../src/renderer/surfaces/sidebar/components/tabs/TabGroupSection";
 import { WorkspaceStrip } from "../src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip";
 
@@ -257,6 +258,36 @@ describe("sidebar drag placement", () => {
     act(() => root.unmount());
   });
 
+  it("ignores non-tab payload drops on pinned tab buttons", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const onTabDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarPinnedTabs, {
+        actions: createActions(),
+        activeTab: pinned,
+        draggingTabId: null,
+        pinnedTabs: [pinned],
+        splitTabIds: [],
+        onPinDrop: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop,
+        setDraggingTabId: vi.fn()
+      }));
+    });
+
+    const button = container.querySelector<HTMLElement>(".pinned-tab-button")!;
+    const drop = createDragEvent("drop", {}, { "text/favorite-id": "favorite" });
+    button.dispatchEvent(drop);
+
+    expect(onTabDrop).not.toHaveBeenCalled();
+    expect(drop.defaultPrevented).toBe(false);
+
+    act(() => root.unmount());
+  });
+
   it("marks before and after insertion placement while reordering Spaces", () => {
     const state = createDefaultState();
     const container = document.createElement("div");
@@ -347,6 +378,101 @@ describe("sidebar drag placement", () => {
     header.dispatchEvent(createDragEvent("drop", { clientY: 4 }));
     expect(onGroupDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), group.id);
     expect(header.dataset.dropPlacement).toBeUndefined();
+
+    act(() => root.unmount());
+  });
+
+  it("accepts payload-backed tab group reorders when React drag state is not synced yet", () => {
+    const group = tabGroup("target", "Target");
+    const tab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onGroupDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, {
+        activeTab: tab,
+        draggingGroupId: null,
+        draggingTabId: null,
+        group,
+        onClose: vi.fn(),
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onGroupContextMenu: vi.fn(),
+        onGroupDrop,
+        onMoveTabToGroupFolder: vi.fn(),
+        onPreview: vi.fn(),
+        onSelect: vi.fn(),
+        onSplit: vi.fn(),
+        onToggle: vi.fn(),
+        onUpdate: vi.fn(),
+        searchSelectedTabId: undefined,
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tabs: [tab]
+      }));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    stubRect(header, { top: 0, height: 36 });
+    const dragOver = createDragEvent("dragover", { clientY: 4 }, { "text/group-id": "dragged-group" });
+
+    header.dispatchEvent(dragOver);
+    expect(dragOver.defaultPrevented).toBe(true);
+    expect(header.dataset.dropPlacement).toBe("before");
+
+    header.dispatchEvent(createDragEvent("drop", { clientY: 4 }, { "text/group-id": "dragged-group" }));
+    expect(onGroupDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), group.id);
+
+    act(() => root.unmount());
+  });
+
+  it("recovers payload-backed tab group reorders in the Tabs section", () => {
+    const group = tabGroup("target", "Target");
+    const tab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const actions = {
+      ...createActions(),
+      reorderTabGroup: vi.fn(),
+      toggleTabGroupCollapsed: vi.fn(),
+      updateTabGroup: vi.fn()
+    } as unknown as BrowserController["actions"];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarTabsSection, {
+        actions,
+        activeTab: tab,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [],
+          groupedTabs: [{ group, tabs: [tab] }],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: []
+        },
+        isCollapsed: false,
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onToggle: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tabCount: 1
+      }));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    stubRect(header, { top: 0, height: 36 });
+    header.dispatchEvent(createDragEvent("drop", { clientY: 32 }, { "text/group-id": "dragged-group" }));
+
+    expect(actions.reorderTabGroup).toHaveBeenCalledWith("dragged-group", group.id, "after");
 
     act(() => root.unmount());
   });

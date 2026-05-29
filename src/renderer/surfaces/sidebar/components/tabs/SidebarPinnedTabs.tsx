@@ -119,6 +119,7 @@ export function SidebarPinnedTabs({
               onContextMenu={(event) => onTabContextMenu(event, tab)}
               onDragStart={(event) => {
                 setDraggingTabId(tab.id);
+                event.dataTransfer.effectAllowed = "move";
                 writeSidebarTabDragPayload(event.dataTransfer, tab.id);
               }}
               onDragEnd={() => setDraggingTabId(null)}
@@ -133,6 +134,9 @@ export function SidebarPinnedTabs({
               onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
               onDrop={(event) => {
                 clearDropPlacement(event.currentTarget);
+                const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
+                if (!draggedTabId || draggedTabId === tab.id) return;
+
                 event.stopPropagation();
                 onTabDrop(event, tab.id, "horizontal");
               }}
