@@ -1,4 +1,6 @@
 import { createElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -66,6 +68,28 @@ describe("sidebar tab group context menu", () => {
     expect(onUpdate).toHaveBeenCalledWith("group", { name: "Planning" });
     expect(onUpdate).toHaveBeenCalledWith("group", { color: "#f0abfc" });
     expect(onUngroupGroup).toHaveBeenCalledWith("group");
+  });
+
+  it("keeps group name editing keys inside the input", () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupContextMenu, props()));
+    });
+
+    const input = container.querySelector<HTMLInputElement>(".tab-group-menu-field input");
+    input?.focus();
+
+    act(() => {
+      input?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
+    });
+
+    expect(document.activeElement).toBe(input);
+
+    act(() => root.unmount());
+    container.remove();
   });
 });
 

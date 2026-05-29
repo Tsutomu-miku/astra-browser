@@ -96,6 +96,7 @@ describe("workspace strip compact controls", () => {
     const activeWorkspace = getActiveWorkspace(state);
     const onSelect = vi.fn();
     const container = document.createElement("div");
+    document.body.append(container);
     const root = createRoot(container);
 
     act(() => {
@@ -133,9 +134,19 @@ describe("workspace strip compact controls", () => {
     expect(container.textContent).toContain("Space settings");
     expect(container.textContent).toContain("Switch to Space");
     expect(container.textContent).toContain("New Space");
+    expect(document.activeElement?.textContent).toBe("Space settings");
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "ArrowDown"
+      }));
+    });
+    expect(document.activeElement?.textContent).toBe("Switch to Space");
     expect(onSelect).not.toHaveBeenCalled();
 
     act(() => root.unmount());
+    container.remove();
   });
 
   it("runs Space settings and creation from the Space context menu", () => {

@@ -1,3 +1,6 @@
+import { useRef } from "react";
+
+import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { Favorite } from "../../../../domain/browser";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
@@ -30,6 +33,8 @@ export function QuickEntryContextMenu({
   onRemove: (url: string) => void;
   top: number;
 }) {
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useMenuInitialFocus(menuRef);
   const label = kind === "essential" ? "Essential" : "Favorite";
   const canMoveFavorite = kind === "favorite" && (Boolean(onMoveToNewWorkspace) || Boolean(onMoveToWorkspace));
   const run = (action: () => void) => {
@@ -39,10 +44,12 @@ export function QuickEntryContextMenu({
 
   return (
     <div
+      ref={menuRef}
       className="tab-context-menu quick-entry-context-menu"
       role="menu"
       style={{ left, top }}
       onContextMenu={(event) => event.preventDefault()}
+      onKeyDown={handleMenuKeyboardNavigation}
     >
       <button type="button" role="menuitem" onClick={() => run(() => onOpen(item.url, item.title))}>
         Open

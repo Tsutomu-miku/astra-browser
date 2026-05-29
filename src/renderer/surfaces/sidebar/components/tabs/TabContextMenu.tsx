@@ -1,3 +1,6 @@
+import { useRef } from "react";
+
+import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { BrowserTab } from "../../../../domain/browser";
 import type { MoveWorkspaceTarget, TabCleanupState, TabGroupMenuState } from "../../model/tabContextMenuState";
 
@@ -60,6 +63,8 @@ export function TabContextMenu({
   tab,
   top
 }: TabContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useMenuInitialFocus(menuRef);
   const run = (action: () => void) => {
     action();
     onClose();
@@ -67,10 +72,12 @@ export function TabContextMenu({
 
   return (
     <div
+      ref={menuRef}
       className="tab-context-menu"
       role="menu"
       style={{ left, top }}
       onContextMenu={(event) => event.preventDefault()}
+      onKeyDown={handleMenuKeyboardNavigation}
     >
       <button type="button" role="menuitem" onClick={() => run(() => onSelect(tab.id))}>Open</button>
       <button type="button" role="menuitem" onClick={() => run(() => onOpenGlance(tab.url, tab.title))}>Preview in Glance</button>

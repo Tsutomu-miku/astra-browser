@@ -1,3 +1,6 @@
+import { useRef } from "react";
+
+import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { ClosedTab } from "../../../../domain/browser";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
@@ -28,6 +31,8 @@ export function ClosedTabContextMenu({
   tab: ClosedTab;
   top: number;
 }) {
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useMenuInitialFocus(menuRef);
   const title = tab.title || tab.url;
   const run = (action: () => void) => {
     action();
@@ -36,10 +41,12 @@ export function ClosedTabContextMenu({
 
   return (
     <div
+      ref={menuRef}
       className="tab-context-menu closed-tab-context-menu"
       role="menu"
       style={{ left, top }}
       onContextMenu={(event) => event.preventDefault()}
+      onKeyDown={handleMenuKeyboardNavigation}
     >
       <button type="button" role="menuitem" onClick={() => run(() => onRestore(closedIndex))}>Restore</button>
       <button type="button" role="menuitem" onClick={() => run(() => onPreview(tab.url, tab.title))}>Preview in Glance</button>

@@ -1,6 +1,7 @@
-import { useEffect, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
 import { FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiTrash2, FiUnlock } from "react-icons/fi";
 
+import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { Workspace } from "../../../../domain/browser";
 import {
   WORKSPACE_ACCENT_SWATCHES,
@@ -203,6 +204,8 @@ function WorkspaceContextMenu({
   top: number;
   workspace: Workspace;
 }) {
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useMenuInitialFocus(menuRef);
   const run = (action: () => void) => {
     action();
     onClose();
@@ -210,11 +213,13 @@ function WorkspaceContextMenu({
 
   return (
     <div
+      ref={menuRef}
       className="workspace-context-menu"
       role="menu"
       style={{ left, top, "--accent": workspace.accent } as CSSProperties}
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
+      onKeyDown={handleMenuKeyboardNavigation}
     >
       <button type="button" role="menuitem" onClick={() => run(() => onOpenSettings(workspace.id))}>
         Space settings

@@ -120,6 +120,50 @@ describe("sidebar quick entry context menu", () => {
     act(() => root.unmount());
   });
 
+  it("focuses and navigates quick entry menu actions from the keyboard", () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(QuickEntryContextMenu, {
+        item: createFavorite("Docs", "https://docs.example"),
+        kind: "favorite",
+        left: 10,
+        moveWorkspaceTargets: [{ id: "work", name: "Work" }],
+        top: 20,
+        onClose: vi.fn(),
+        onCopyText: vi.fn(),
+        onMoveToNewWorkspace: vi.fn(),
+        onMoveToWorkspace: vi.fn(),
+        onOpen: vi.fn(),
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn(),
+        onRemove: vi.fn()
+      }));
+    });
+
+    expect(document.activeElement?.textContent).toBe("Open");
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
+    });
+    expect(document.activeElement?.textContent).toBe("Preview in Glance");
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "End" }));
+    });
+    expect(document.activeElement?.textContent).toBe("Remove Favorite");
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home" }));
+    });
+    expect(document.activeElement?.textContent).toBe("Open");
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it("opens quick entries from the sidebar context menu in the active tab", () => {
     const state = createDefaultState();
     const activeWorkspace = state.workspaces[0];

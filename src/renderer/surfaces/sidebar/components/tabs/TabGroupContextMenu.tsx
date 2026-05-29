@@ -1,5 +1,6 @@
-import type { CSSProperties, KeyboardEvent } from "react";
+import { useRef, type CSSProperties, type KeyboardEvent } from "react";
 
+import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { TabGroup } from "../../../../domain/browser";
 import { TAB_GROUP_COLOR_SWATCHES } from "../../../../domain/tabs/groups";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
@@ -37,6 +38,8 @@ export function TabGroupContextMenu({
   tabCount,
   top
 }: TabGroupContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useMenuInitialFocus(menuRef);
   const run = (action: () => void) => {
     action();
     onClose();
@@ -47,11 +50,13 @@ export function TabGroupContextMenu({
 
   return (
     <div
+      ref={menuRef}
       className="tab-context-menu tab-group-context-menu"
       role="menu"
       style={{ left, top, "--group-color": group.color } as CSSProperties}
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
+      onKeyDown={handleMenuKeyboardNavigation}
     >
       <button type="button" role="menuitem" onClick={() => run(() => onToggleCollapsed(group.id))}>
         {group.isCollapsed ? "Expand group" : "Collapse group"}
