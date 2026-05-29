@@ -1,9 +1,9 @@
-export type SidebarSectionKeyboardToggleIntent = "collapse" | "expand";
+export type DisclosureKeyboardToggleIntent = "collapse" | "expand";
 
-export function getSidebarSectionKeyboardToggleIntent(
+export function getDisclosureKeyboardToggleIntent(
   key: string,
   isCollapsed: boolean
-): SidebarSectionKeyboardToggleIntent | null {
+): DisclosureKeyboardToggleIntent | null {
   if (key === "ArrowLeft" && !isCollapsed) return "collapse";
   if (key === "ArrowRight" && isCollapsed) return "expand";
   return null;

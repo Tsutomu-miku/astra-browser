@@ -1,5 +1,6 @@
-import type { CSSProperties, DragEvent, MouseEvent } from "react";
+import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent } from "react";
 
+import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, TabGroup } from "../../../../domain/browser";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
@@ -48,6 +49,14 @@ export function TabGroupSection({
   tabs: BrowserTab[];
 }) {
   const hasActiveTab = tabs.some((tab) => tab.id === activeTab.id);
+  const handleToggleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const intent = getDisclosureKeyboardToggleIntent(event.key, group.isCollapsed);
+    if (!intent) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    onToggle();
+  };
 
   return (
     <section className="tab-group" style={{ "--group-color": group.color } as CSSProperties}>
@@ -78,8 +87,10 @@ export function TabGroupSection({
           className="tab-group-toggle"
           type="button"
           aria-expanded={!group.isCollapsed}
+          aria-label={`${group.isCollapsed ? "Expand" : "Collapse"} tab group ${group.name}`}
           title={group.isCollapsed ? "Expand group" : "Collapse group"}
           onClick={onToggle}
+          onKeyDown={handleToggleKeyDown}
         >
           <span className="tab-group-dot" />
         </button>

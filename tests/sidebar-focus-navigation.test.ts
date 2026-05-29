@@ -154,6 +154,73 @@ describe("sidebar focus navigation", () => {
     container.remove();
   });
 
+  it("includes tab group toggles in sidebar item focus navigation", () => {
+    const groupedTab = { ...createTab("Docs", "https://docs.example"), groupId: "group" };
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement("div", {
+        onKeyDown: handleSidebarFocusNavigation
+      }, createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab: groupedTab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [],
+          groupedTabs: [{
+            group: { color: "#7dd3fc", id: "group", isCollapsed: false, name: "Research" },
+            tabs: [groupedTab]
+          }],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: []
+        },
+        onClosedTabContextMenu: vi.fn(),
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        setDraggingClosedTabIndex: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      })));
+    });
+
+    const tabsHeader = container.querySelector<HTMLButtonElement>(".sidebar-section-header-button")!;
+    tabsHeader.focus();
+
+    act(() => {
+      tabsHeader.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
+    });
+    expect(document.activeElement?.classList.contains("tab-group-toggle")).toBe(true);
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
+    });
+    expect(document.activeElement?.classList.contains("tab-button")).toBe(true);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it("keeps tab group title editing keys inside the input", () => {
     const groupedTab = { ...createTab("Docs", "https://docs.example"), groupId: "group" };
     const container = document.createElement("div");

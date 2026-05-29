@@ -1,12 +1,12 @@
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icons/fi";
 
+import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
-import { getSidebarSectionKeyboardToggleIntent } from "../../model/sidebarSectionKeyboard";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
@@ -23,7 +23,7 @@ export function SidebarSectionHeader({
   title: string;
 }) {
   const handleKeyboardToggle = (event: KeyboardEvent<HTMLButtonElement>) => {
-    const intent = getSidebarSectionKeyboardToggleIntent(event.key, isCollapsed);
+    const intent = getDisclosureKeyboardToggleIntent(event.key, isCollapsed);
     if (!intent) return;
 
     event.preventDefault();

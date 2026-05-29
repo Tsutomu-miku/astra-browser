@@ -7,6 +7,56 @@ import { createTab, type TabGroup } from "../src/renderer/domain/browser";
 import { TabGroupSection } from "../src/renderer/surfaces/sidebar/components/tabs/TabGroupSection";
 
 describe("sidebar tab group section", () => {
+  it("collapses and expands tab groups with Left and Right arrows", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onToggle = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        group,
+        onToggle,
+        tabs: [activeTab]
+      })));
+    });
+
+    let toggle = container.querySelector<HTMLButtonElement>(".tab-group-toggle")!;
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toggle.getAttribute("aria-label")).toBe("Collapse tab group Research");
+
+    act(() => {
+      toggle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
+      toggle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));
+    });
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        group: { ...group, isCollapsed: true },
+        onToggle,
+        tabs: [activeTab]
+      })));
+    });
+
+    toggle = container.querySelector<HTMLButtonElement>(".tab-group-toggle")!;
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-label")).toBe("Expand tab group Research");
+
+    act(() => {
+      toggle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));
+      toggle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
+    });
+
+    expect(onToggle).toHaveBeenCalledTimes(2);
+
+    act(() => root.unmount());
+  });
+
   it("opens tab group context menus from the keyboard", () => {
     const group = tabGroup();
     const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
@@ -16,24 +66,14 @@ describe("sidebar tab group section", () => {
 
     act(() => {
       root.render(createElement(TabGroupSection, {
-        activeTab,
-        draggingGroupId: null,
-        draggingTabId: null,
-        group,
-        onAssignTab: vi.fn(),
-        onClose: vi.fn(),
-        onContextMenu: vi.fn(),
-        onDrop: vi.fn(),
+        ...props({
+          activeTab,
+          group,
+          onGroupContextMenu,
+          tabs: [activeTab]
+        }),
         onGroupContextMenu,
-        onPreview: vi.fn(),
-        onSelect: vi.fn(),
-        onSplit: vi.fn(),
-        onToggle: vi.fn(),
-        onUpdate: vi.fn(),
-        setDraggingGroupId: vi.fn(),
-        setDraggingTabId: vi.fn(),
-        splitTabIds: [],
-        tabs: [activeTab]
+        onToggle: vi.fn()
       }));
     });
 
@@ -48,6 +88,33 @@ describe("sidebar tab group section", () => {
     act(() => root.unmount());
   });
 });
+
+function props(overrides: Partial<Parameters<typeof TabGroupSection>[0]> = {}): Parameters<typeof TabGroupSection>[0] {
+  const group = tabGroup();
+  const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+
+  return {
+    activeTab,
+    draggingGroupId: null,
+    draggingTabId: null,
+    group,
+    onAssignTab: vi.fn(),
+    onClose: vi.fn(),
+    onContextMenu: vi.fn(),
+    onDrop: vi.fn(),
+    onGroupContextMenu: vi.fn(),
+    onPreview: vi.fn(),
+    onSelect: vi.fn(),
+    onSplit: vi.fn(),
+    onToggle: vi.fn(),
+    onUpdate: vi.fn(),
+    setDraggingGroupId: vi.fn(),
+    setDraggingTabId: vi.fn(),
+    splitTabIds: [],
+    tabs: [activeTab],
+    ...overrides
+  };
+}
 
 function tabGroup(): TabGroup {
   return {

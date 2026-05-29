@@ -4,6 +4,7 @@ import { handleFocusableListNavigation } from "../../../common/focus/focusableLi
 
 const SIDEBAR_FOCUSABLE_ITEM_SELECTOR = [
   ".sidebar-section-header-button",
+  ".tab-group-toggle",
   ".favorite-button",
   ".pinned-tab-button",
   ".closed-tab-button",

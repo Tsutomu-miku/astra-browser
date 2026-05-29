@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { getSidebarSectionKeyboardToggleIntent } from "../src/renderer/surfaces/sidebar/model/sidebarSectionKeyboard";
+import { getDisclosureKeyboardToggleIntent } from "../src/renderer/common/disclosure/disclosureKeyboard";
 
-describe("sidebar section keyboard toggles", () => {
+describe("disclosure keyboard toggles", () => {
   it("maps horizontal arrows to tree-style section toggles", () => {
-    expect(getSidebarSectionKeyboardToggleIntent("ArrowLeft", false)).toBe("collapse");
-    expect(getSidebarSectionKeyboardToggleIntent("ArrowRight", true)).toBe("expand");
+    expect(getDisclosureKeyboardToggleIntent("ArrowLeft", false)).toBe("collapse");
+    expect(getDisclosureKeyboardToggleIntent("ArrowRight", true)).toBe("expand");
   });
 
   it("ignores arrows that would not change the current section state", () => {
-    expect(getSidebarSectionKeyboardToggleIntent("ArrowLeft", true)).toBeNull();
-    expect(getSidebarSectionKeyboardToggleIntent("ArrowRight", false)).toBeNull();
-    expect(getSidebarSectionKeyboardToggleIntent("ArrowDown", false)).toBeNull();
+    expect(getDisclosureKeyboardToggleIntent("ArrowLeft", true)).toBeNull();
+    expect(getDisclosureKeyboardToggleIntent("ArrowRight", false)).toBeNull();
+    expect(getDisclosureKeyboardToggleIntent("ArrowDown", false)).toBeNull();
   });
 });
