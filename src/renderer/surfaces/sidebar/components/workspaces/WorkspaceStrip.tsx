@@ -10,6 +10,7 @@ import {
   getWorkspaceTabCount,
   getWorkspaceWheelDirection
 } from "../../model/workspaceStripState";
+import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 
 export function WorkspaceStrip({
   activeWorkspaceId,
@@ -119,6 +120,7 @@ export function WorkspaceStrip({
           onDragOver={(event) => onDragOver(event, workspace.id)}
           onDrop={(event) => onDrop(event, workspace.id)}
           onContextMenu={(event) => openWorkspaceMenu(event, workspace.id)}
+          onKeyDown={openSidebarKeyboardContextMenu}
           onClick={() => onSelect(workspace.id)}
         >
           <span className="workspace-initial">{getWorkspaceInitial(workspace)}</span>

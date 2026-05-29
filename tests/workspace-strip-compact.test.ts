@@ -1,4 +1,6 @@
 import { createElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -48,6 +50,50 @@ describe("workspace strip compact controls", () => {
     expect(tabHtml).toContain('class="workspace-button workspace-new-button"');
     expect(tabHtml).toContain('aria-label="New Space" data-drop-target="true"');
     expect(groupHtml).toContain('aria-label="New Space" data-drop-target="true"');
+  });
+
+  it("opens Space context menus from the keyboard", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const onSelect = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace: vi.fn(),
+        onNewWorkspaceDrop: vi.fn(),
+        onSelect,
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    act(() => {
+      container.querySelector(".workspace-button")?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "ContextMenu"
+      }));
+    });
+
+    expect(container.querySelector(".workspace-context-menu")).not.toBeNull();
+    expect(container.textContent).toContain("Switch to Space");
+    expect(onSelect).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
   });
 });
 
