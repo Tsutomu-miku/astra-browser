@@ -13,6 +13,7 @@ import {
   getWorkspaceWheelDirection
 } from "../../model/workspaceStripState";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
+import { handleWorkspaceFocusNavigation } from "../../model/workspaceFocusNavigation";
 
 export function WorkspaceStrip({
   activeWorkspaceId,
@@ -106,7 +107,12 @@ export function WorkspaceStrip({
   }
 
   return (
-    <section className="workspace-strip" aria-label="Workspaces" onWheel={onWorkspaceWheel}>
+    <section
+      className="workspace-strip"
+      aria-label="Workspaces"
+      onKeyDown={handleWorkspaceFocusNavigation}
+      onWheel={onWorkspaceWheel}
+    >
       {workspaces.map((workspace) => (
         <button
           className="workspace-button"

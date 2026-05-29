@@ -149,6 +149,124 @@ describe("workspace strip compact controls", () => {
     container.remove();
   });
 
+  it("moves focus through Space controls with Arrow, Home, and End", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace: vi.fn(),
+        onNewWorkspaceDrop: vi.fn(),
+        onOpenSettings: vi.fn(),
+        onSelect: vi.fn(),
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    const buttons = container.querySelectorAll<HTMLButtonElement>(".workspace-button");
+    buttons[0]?.focus();
+
+    act(() => {
+      buttons[0]?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "ArrowDown"
+      }));
+    });
+    expect(document.activeElement).toBe(buttons[1]);
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "End"
+      }));
+    });
+    expect(document.activeElement).toBe(buttons[buttons.length - 1]);
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Collapse sidebar");
+
+    act(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "Home"
+      }));
+    });
+    expect(document.activeElement).toBe(buttons[0]);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it("keeps Space menu name editing keys inside the input", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace: vi.fn(),
+        onNewWorkspaceDrop: vi.fn(),
+        onOpenSettings: vi.fn(),
+        onSelect: vi.fn(),
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    act(() => {
+      container.querySelector(".workspace-button")?.dispatchEvent(new MouseEvent("contextmenu", {
+        bubbles: true,
+        clientX: 10,
+        clientY: 10
+      }));
+    });
+
+    const input = container.querySelector<HTMLInputElement>(".workspace-menu-field input");
+    input?.focus();
+
+    act(() => {
+      input?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "ArrowDown"
+      }));
+    });
+
+    expect(document.activeElement).toBe(input);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it("runs Space settings and creation from the Space context menu", () => {
     const state = createDefaultState();
     const activeWorkspace = getActiveWorkspace(state);
