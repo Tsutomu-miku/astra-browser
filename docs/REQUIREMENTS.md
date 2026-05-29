@@ -118,6 +118,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Users must be able to reorder Space favorites directly from the sidebar with drag and drop.
 - Space favorite reordering must work across mixed tab-backed and legacy URL Favorite rows.
 - Users must be able to drag Space favorites onto Space buttons or the New Space button to move them between Spaces.
+- Dragging Space favorites onto Space buttons or New Space must recover from native `DataTransfer` payloads when React drag state has not synced yet.
 - Sidebar Essentials and favorites must support context menus for opening, Glance preview, split opening, and removing the entry.
 - Sidebar Space favorite context menus must support moving favorites to another Space or to a new Space.
 - Opening an Essential from its sidebar context menu must navigate the current tab instead of creating a new tab.

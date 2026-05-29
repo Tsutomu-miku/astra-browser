@@ -169,7 +169,14 @@ export function WorkspaceStrip({
         aria-label={getNewWorkspaceAccessibilityLabel(Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId))}
         data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId)}
         onDragOver={(event) => {
-          if (draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId || draggingTabId || readSidebarTabDragPayload(event.dataTransfer)) {
+          if (
+            draggingClosedTabIndex !== null ||
+            draggingFavoriteId ||
+            event.dataTransfer.getData("text/favorite-id") ||
+            draggingGroupId ||
+            draggingTabId ||
+            readSidebarTabDragPayload(event.dataTransfer)
+          ) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
           }

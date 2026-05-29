@@ -138,7 +138,8 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   };
 
   const handleWorkspaceDragOverWithFavorites = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    if (draggingFavoriteId && workspaceId !== activeWorkspace.id) {
+    const favoriteId = draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
+    if (favoriteId && workspaceId !== activeWorkspace.id) {
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
       return;

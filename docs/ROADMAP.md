@@ -96,7 +96,7 @@ Small requirements:
 - Dragging tabs to groups, Spaces, New Space, and split targets must use consistent payload recovery.
 - Dragging tabs should not show explicit target-region overlays; destinations accept drops directly, while reordering shows local insertion position only.
 
-Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. The domain folder move action owns moving tabs into Favorites and moving Favorite-backed tabs back out to Tabs, Pinned, or groups, so the UI no longer manually removes Favorites before moving tabs. Tabs folder drops now accept the same real tab payload path as the other sidebar folders, and Favorites/Essentials reorder targets recover from native payloads when React drag state has not synced yet. Real Electron manual QA is still required.
+Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. The domain folder move action owns moving tabs into Favorites and moving Favorite-backed tabs back out to Tabs, Pinned, or groups, so the UI no longer manually removes Favorites before moving tabs. Tabs folder drops now accept the same real tab payload path as the other sidebar folders, and Favorites/Essentials reorder targets plus Space/New Space favorite drops recover from native payloads when React drag state has not synced yet. Real Electron manual QA is still required.
 
 Small requirements:
 
@@ -113,6 +113,7 @@ Small requirements:
 - P0-3.11 Tabs, Pinned, Favorites, and tab groups share one folder move path instead of separate pin/unpin/favorite-removal/drop-intent branches.
 - P0-3.12 Empty Tabs, Pinned, and Favorites folders stay visible as ordinary headers and accept tab drops without special target UI.
 - P0-3.13 Tabs folder drops accept the same real tab payloads as other sidebar folders; regular tab ordering remains row-level before/after placement.
+- P0-3.14 Space and New Space Favorite drops accept native Favorite payloads even when React drag state is missing.
 
 ### P0-4 Spaces And Profiles
 
