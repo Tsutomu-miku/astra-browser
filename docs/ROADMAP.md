@@ -61,7 +61,7 @@ Status: active.
 - P0-2 Tab identity and cross-surface Favorite semantics.
 - P0-3 Sidebar drag-and-drop semantics and Electron manual QA.
 - P0-6 Memory safety baseline, especially webview sleep/wake lifecycle and protected tabs.
-- P0-5 Packaging baseline, including per-arch macOS artifacts and Linux metadata.
+- P0-5 Packaging baseline, including per-arch macOS/Windows artifacts and Linux metadata.
 
 Exit criteria:
 
@@ -191,10 +191,11 @@ Progress: mostly implemented.
 
 - macOS, Windows, and Linux package scripts must produce distributable artifacts.
 - macOS x64 and arm64 artifacts must be generated separately, not as a universal package by default.
+- Windows x64 and arm64 artifacts must be generated separately, not from one mixed-architecture builder invocation.
 - GitHub Release publishing must be controlled by CI release workflow, not local package scripts requiring `GH_TOKEN`.
 - Linux package metadata must include maintainer or author email.
 
-Progress: mostly implemented.
+Progress: mostly implemented. macOS and Windows now expose per-architecture local package scripts and CI release matrices, with all-architecture commands invoking x64 and arm64 builds separately.
 
 ### P0-6 Memory Safety Baseline
 

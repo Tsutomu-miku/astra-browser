@@ -293,13 +293,14 @@ For tab-related features, requirements must specify object identity. In particul
 ### Packaging And Release
 
 - The app must package with Electron Builder.
-- Windows packaging must produce portable executables.
+- Windows packaging must produce portable x64 and arm64 executables as separate architecture-specific builds.
 - macOS packaging must produce DMG and ZIP artifacts.
 - Linux packaging must produce AppImage, DEB, and tar.gz artifacts.
 - Local package scripts must clean stale release output before building new artifacts.
 - Default macOS packaging must build the current architecture, while release packaging must build x64 and arm64 artifacts as separate jobs and upload assets by architecture and package type.
 - Local all-architecture macOS packaging must run x64 and arm64 as separate Electron Builder invocations instead of producing a universal package.
-- Full local multi-platform packaging must also invoke macOS x64 and arm64 package builds separately so ZIP and DMG outputs stay architecture-specific.
+- Local all-architecture Windows packaging must run x64 and arm64 as separate Electron Builder invocations instead of mixing architectures in one local package command.
+- Full local multi-platform packaging must also invoke macOS and Windows x64/arm64 package builds separately so outputs stay architecture-specific.
 - Package scripts must remove unpacked Electron Builder staging directories from `release/` after distributable artifacts are written.
 - Application package metadata must include author email and Linux maintainer information for DEB builds.
 - GitHub Releases must publish all platform artifacts for version-matching tags.

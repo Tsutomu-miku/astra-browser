@@ -16,6 +16,19 @@ describe("package configuration", () => {
     expect(packageJson.build.mac.artifactName).toContain("${arch}");
   });
 
+  it("builds Windows x64 and arm64 as separate artifacts", () => {
+    expect(packageJson.scripts["package:win:x64"]).toContain("--x64");
+    expect(packageJson.scripts["package:win:x64"]).not.toContain("--arm64");
+    expect(packageJson.scripts["package:win:arm64"]).toContain("--arm64");
+    expect(packageJson.scripts["package:win:arm64"]).not.toContain("--x64");
+    expect(packageJson.scripts["package:win:all"]).toContain("electron-builder --win portable --x64");
+    expect(packageJson.scripts["package:win:all"]).toContain("electron-builder --win portable --arm64");
+    expect(packageJson.scripts["package:all"]).toContain("electron-builder --win portable --x64");
+    expect(packageJson.scripts["package:all"]).toContain("electron-builder --win portable --arm64");
+    expect(packageJson.scripts["package:all"]).not.toContain("electron-builder --win portable --x64 --arm64");
+    expect(packageJson.build.win.artifactName).toContain("${arch}");
+  });
+
   it("cleans unpacked package staging output after packaging", () => {
     expect(packageJson.scripts["clean:package-output"]).toBe("node scripts/clean-package-output.mjs");
 
@@ -27,7 +40,10 @@ describe("package configuration", () => {
       "package:mac:x64",
       "package:mac:all",
       "package:linux",
-      "package:win"
+      "package:win",
+      "package:win:arm64",
+      "package:win:x64",
+      "package:win:all"
     ]) {
       expect(packageJson.scripts[scriptName]).toContain("pnpm clean:package-output");
     }
@@ -42,7 +58,10 @@ describe("package configuration", () => {
       "package:mac:x64",
       "package:mac:all",
       "package:linux",
-      "package:win"
+      "package:win",
+      "package:win:arm64",
+      "package:win:x64",
+      "package:win:all"
     ]) {
       expect(packageJson.scripts[scriptName]).toContain("--publish never");
     }
