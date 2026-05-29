@@ -118,6 +118,58 @@ describe("sidebar favorites", () => {
 
     act(() => root.unmount());
   });
+
+  it("marks tab-backed Favorites active only when their tab id matches", () => {
+    const activeTab = createTab("Docs clone", "https://docs.example");
+    const docsTab = createTab("Docs", "https://docs.example");
+    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [favorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [activeTab, docsTab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        workspaceTabs: [activeTab, docsTab]
+      }));
+    });
+
+    expect(container.querySelector(".favorite-button")?.getAttribute("aria-current")).toBe("false");
+    expect(container.querySelector(".favorite-button")?.getAttribute("aria-label")).toBe("Docs, Favorite");
+
+    act(() => root.unmount());
+  });
 });
 
 function createActions() {

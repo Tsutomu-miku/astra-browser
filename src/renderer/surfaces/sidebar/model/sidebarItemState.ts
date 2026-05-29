@@ -1,4 +1,4 @@
-import type { BrowserTab } from "../../../domain/browser";
+import type { BrowserTab, Favorite } from "../../../domain/browser";
 
 export interface TabStatusBadge {
   id: "muted" | "sleeping" | "split";
@@ -8,6 +8,13 @@ export interface TabStatusBadge {
 
 export function isSidebarUrlActive(activeUrl: string, itemUrl: string): boolean {
   return normalizeComparableUrl(activeUrl) === normalizeComparableUrl(itemUrl);
+}
+
+export function isSidebarFavoriteActive(
+  activeTab: Pick<BrowserTab, "id" | "url">,
+  favorite: Pick<Favorite, "tabId" | "url">
+): boolean {
+  return favorite.tabId ? activeTab.id === favorite.tabId : isSidebarUrlActive(activeTab.url, favorite.url);
 }
 
 export function getTabStatusBadges(

@@ -4,7 +4,7 @@ import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
-import { isSidebarUrlActive } from "../../model/sidebarItemState";
+import { isSidebarFavoriteActive, isSidebarUrlActive } from "../../model/sidebarItemState";
 import { hasSidebarSectionDragReveal, type SidebarSectionId } from "../../model/sidebarSectionState";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
@@ -231,7 +231,7 @@ export function SidebarSections({
                 draggingQuickEntryId={draggingFavoriteId}
                 favorite={favorite}
                 id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
-                isActive={isSidebarUrlActive(activeTab.url, favorite.url)}
+                isActive={isSidebarFavoriteActive(activeTab, favorite)}
                 isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
                 kind="favorite"
                 onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "favorite")}

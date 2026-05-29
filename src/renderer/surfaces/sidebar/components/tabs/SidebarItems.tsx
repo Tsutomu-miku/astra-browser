@@ -115,6 +115,13 @@ export function TabRow({
     statusBadges,
     tab
   });
+  const startTabDrag = (event: DragEvent<HTMLElement>) => {
+    nativeDragStartedRef.current = true;
+    pointerDragRef.current = null;
+    setDraggingTabId(tab.id);
+    writeSidebarTabDragPayload(event.dataTransfer, tab.id);
+    event.dataTransfer.effectAllowed = "move";
+  };
 
   return (
     <div
@@ -125,13 +132,7 @@ export function TabRow({
       draggable
       data-dragging={draggingTabId === tab.id}
       data-tab-id={tab.id}
-      onDragStart={(event) => {
-        nativeDragStartedRef.current = true;
-        pointerDragRef.current = null;
-        setDraggingTabId(tab.id);
-        writeSidebarTabDragPayload(event.dataTransfer, tab.id);
-        event.dataTransfer.effectAllowed = "move";
-      }}
+      onDragStart={startTabDrag}
       onDragEnd={() => {
         nativeDragStartedRef.current = false;
         setDraggingTabId(null);
@@ -209,7 +210,7 @@ export function TabRow({
         className="tab-button"
         type="button"
         aria-label={tabLabel}
-        draggable={false}
+        draggable
         onAuxClick={(event) => {
           if (event.button === 1) {
             event.preventDefault();
