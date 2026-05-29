@@ -53,6 +53,7 @@ export interface BrowserStore {
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
   moveTabGroupToWorkspace: (groupId: string, workspaceId: string) => void;
+  moveWorkspaceFavoriteToWorkspace: (favoriteId: string, workspaceId: string) => void;
   moveTabToNewWorkspace: (tabId: string) => void;
   moveTabGroupToNewWorkspace: (groupId: string) => void;
   restoreClosedTabToNewWorkspace: (closedIndex: number) => void;

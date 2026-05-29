@@ -25,6 +25,7 @@ import {
   deleteWorkspace,
   moveTabToWorkspace,
   moveTabGroupToWorkspace,
+  moveWorkspaceFavoriteToWorkspace,
   moveTabToNewWorkspace,
   moveTabGroupToNewWorkspace,
   restoreClosedTabToNewWorkspace,
@@ -162,6 +163,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   moveTabToWorkspace: (tabId, workspaceId) => update(set, (state) => moveTabToWorkspace(state, tabId, workspaceId)),
   moveTabGroupToWorkspace: (groupId, workspaceId) =>
     update(set, (state) => moveTabGroupToWorkspace(state, groupId, workspaceId)),
+  moveWorkspaceFavoriteToWorkspace: (favoriteId, workspaceId) =>
+    update(set, (state) => moveWorkspaceFavoriteToWorkspace(state, favoriteId, workspaceId)),
   moveTabToNewWorkspace: (tabId) => update(set, (state) => moveTabToNewWorkspace(state, tabId)),
   moveTabGroupToNewWorkspace: (groupId) =>
     update(set, (state) => moveTabGroupToNewWorkspace(state, groupId)),

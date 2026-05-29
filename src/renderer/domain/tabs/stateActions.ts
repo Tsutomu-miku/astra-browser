@@ -5,7 +5,7 @@ import {
   getReadableUrlTitle
 } from "../browser";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
-import { getSplitTabIds, setSplitTabIds } from "./splitView";
+import { clearSplitView, getSplitTabIds, setSplitTabIds } from "./splitView";
 import { pruneEmptyTabGroups } from "./groups";
 import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "../browser/zoom";
 import { updateBrowserState } from "../browser/updateState";
@@ -152,6 +152,34 @@ export function removeWorkspaceFavorite(state: BrowserState, url: string): Brows
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
     workspace.favorites = workspace.favorites.filter((favorite) => favorite.url !== url);
+  });
+}
+
+export function moveWorkspaceFavoriteToWorkspace(
+  state: BrowserState,
+  favoriteId: string,
+  workspaceId: string
+): BrowserState {
+  const source = getActiveWorkspace(state);
+  const target = state.workspaces.find((workspace) => workspace.id === workspaceId);
+  if (!target || target.id === source.id || !source.favorites.some((favorite) => favorite.id === favoriteId)) {
+    return state;
+  }
+
+  return updateBrowserState(state, (draft) => {
+    const source = getActiveWorkspace(draft);
+    const target = draft.workspaces.find((workspace) => workspace.id === workspaceId);
+    if (!target || target.id === source.id) return;
+
+    const index = source.favorites.findIndex((favorite) => favorite.id === favoriteId);
+    if (index < 0) return;
+
+    const [favorite] = source.favorites.splice(index, 1);
+    if (!target.favorites.some((candidate) => candidate.url === favorite.url)) {
+      target.favorites.push(favorite);
+    }
+    draft.activeWorkspaceId = target.id;
+    clearSplitView(draft);
   });
 }
 

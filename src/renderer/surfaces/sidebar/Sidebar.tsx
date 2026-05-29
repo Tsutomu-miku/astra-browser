@@ -132,6 +132,28 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     setDraggingTabId(null);
   };
 
+  const handleWorkspaceDragOverWithFavorites = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    if (draggingFavoriteId && workspaceId !== activeWorkspace.id) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      return;
+    }
+
+    handleWorkspaceDragOver(event, workspaceId);
+  };
+
+  const handleWorkspaceDropWithFavorites = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    const favoriteId = draggingFavoriteId || event.dataTransfer.getData("text/favorite-id");
+    if (favoriteId && workspaceId !== activeWorkspace.id) {
+      event.preventDefault();
+      actions.moveWorkspaceFavoriteToWorkspace(favoriteId, workspaceId);
+      setDraggingFavoriteId(null);
+      return;
+    }
+
+    handleWorkspaceDrop(event, workspaceId);
+  };
+
   useEffect(() => {
     setTabQuery("");
     setActiveSearchIndex(0);
@@ -185,15 +207,16 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         compactMode={compactMode}
         draggingGroupId={draggingGroupId}
         draggingClosedTabIndex={draggingClosedTabIndex}
+        draggingFavoriteId={draggingFavoriteId}
         draggingTabId={draggingTabId}
         draggingWorkspaceId={draggingWorkspaceId}
         floatingSidebarOpen={floatingSidebarOpen}
         sidebarCollapsed={sidebarCollapsed}
         workspaces={state.workspaces}
         onDragEnd={clearWorkspaceDrag}
-        onDragOver={handleWorkspaceDragOver}
+        onDragOver={handleWorkspaceDragOverWithFavorites}
         onDragStart={handleWorkspaceDragStart}
-        onDrop={handleWorkspaceDrop}
+        onDrop={handleWorkspaceDropWithFavorites}
         onDeleteWorkspace={actions.deleteWorkspace}
         onNewWorkspace={actions.addWorkspace}
         onNewWorkspaceDrop={handleNewWorkspaceDrop}

@@ -37,6 +37,7 @@ export {
   openUrlInSplit,
   removeTabFromSplit,
   removeEssential,
+  moveWorkspaceFavoriteToWorkspace,
   removeWorkspaceFavorite,
   reorderEssential,
   reorderWorkspaceFavorite,

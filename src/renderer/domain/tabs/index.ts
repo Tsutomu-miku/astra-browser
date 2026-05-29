@@ -51,6 +51,7 @@ export {
   sleepTab,
   stepActiveTabZoom,
   removeEssential,
+  moveWorkspaceFavoriteToWorkspace,
   removeWorkspaceFavorite,
   reorderEssential,
   reorderWorkspaceFavorite,

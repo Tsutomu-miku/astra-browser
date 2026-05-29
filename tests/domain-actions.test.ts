@@ -19,6 +19,7 @@ import {
   focusSplitPane,
   assignTabToGroup,
   groupActiveTab,
+  moveWorkspaceFavoriteToWorkspace,
   moveTabToNewWorkspace,
   moveTabToWorkspace,
   openTabInSplit,
@@ -459,6 +460,24 @@ describe("domain actions", () => {
     expect(getActiveWorkspace(movedBefore).favorites.map((favorite) => favorite.title)).toEqual(["Third", "First", "Second"]);
     expect(getActiveWorkspace(movedAfter).favorites.map((favorite) => favorite.title)).toEqual(["Third", "Second", "First"]);
     expect(getActiveWorkspace(ignored).favorites.map((favorite) => favorite.title)).toEqual(["Third", "Second", "First"]);
+  });
+
+  it("moves a Space favorite to another workspace", () => {
+    const initial = createDefaultState();
+    const workspace = getActiveWorkspace(initial);
+    const favorite = createFavorite("Docs", "https://docs.example");
+    workspace.favorites = [favorite];
+
+    const moved = moveWorkspaceFavoriteToWorkspace(initial, favorite.id, "work");
+    const personal = moved.workspaces.find((candidate) => candidate.id === "personal")!;
+    const work = moved.workspaces.find((candidate) => candidate.id === "work")!;
+
+    expect(moved.activeWorkspaceId).toBe("work");
+    expect(personal.favorites).toHaveLength(0);
+    expect(work.favorites.at(-1)).toMatchObject({
+      title: "Docs",
+      url: "https://docs.example/"
+    });
   });
 
   it("reorders global essentials", () => {

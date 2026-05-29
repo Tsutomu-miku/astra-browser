@@ -17,6 +17,7 @@ export function WorkspaceStrip({
   compactMode,
   draggingGroupId,
   draggingClosedTabIndex = null,
+  draggingFavoriteId = null,
   draggingTabId,
   draggingWorkspaceId,
   floatingSidebarOpen,
@@ -37,6 +38,7 @@ export function WorkspaceStrip({
   compactMode: boolean;
   draggingGroupId: string | null;
   draggingClosedTabIndex?: number | null;
+  draggingFavoriteId?: string | null;
   draggingTabId: string | null;
   draggingWorkspaceId: string | null;
   floatingSidebarOpen: boolean;
@@ -115,6 +117,7 @@ export function WorkspaceStrip({
           data-drop-target={Boolean(
             (draggingGroupId && workspace.id !== activeWorkspaceId) ||
             draggingClosedTabIndex !== null ||
+            (draggingFavoriteId && workspace.id !== activeWorkspaceId) ||
             (draggingTabId && workspace.id !== activeWorkspaceId) ||
             (draggingWorkspaceId && workspace.id !== draggingWorkspaceId)
           )}
