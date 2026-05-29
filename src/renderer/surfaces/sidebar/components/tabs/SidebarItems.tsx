@@ -217,6 +217,7 @@ export function FavoriteButton({
   onDrop,
   onOpen,
   onOpenInSplit,
+  onOpenTabInSplit,
   onContextMenu,
   onPreview,
   dropAxis = "vertical"
@@ -238,6 +239,7 @@ export function FavoriteButton({
   onDrop?: (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis) => void;
   onOpen: (url: string, title?: string) => void;
   onOpenInSplit: (url: string, title?: string) => void;
+  onOpenTabInSplit?: (tabId: string) => void;
   onPreview: (url: string, title?: string) => void;
   dropAxis?: DropAxis;
 }) {
@@ -251,6 +253,14 @@ export function FavoriteButton({
     isSearchSelected,
     kind
   });
+  const openSplit = () => {
+    if (tabId && onOpenTabInSplit) {
+      onOpenTabInSplit(tabId);
+      return;
+    }
+
+    onOpenInSplit(favorite.url, favorite.title);
+  };
 
   return (
     <button
@@ -290,7 +300,7 @@ export function FavoriteButton({
         if (runSidebarItemKeyboardActivation(event, {
           primary: () => onOpen(favorite.url, favorite.title),
           preview: () => onPreview(favorite.url, favorite.title),
-          split: () => onOpenInSplit(favorite.url, favorite.title)
+          split: openSplit
         })) return;
         if (tabId && onCloseTab && isCloseTabKey(event.key)) {
           event.preventDefault();
@@ -302,7 +312,7 @@ export function FavoriteButton({
         if (event.altKey) {
           onPreview(favorite.url, favorite.title);
         } else if (event.shiftKey) {
-          onOpenInSplit(favorite.url, favorite.title);
+          openSplit();
         } else {
           onOpen(favorite.url, favorite.title);
         }

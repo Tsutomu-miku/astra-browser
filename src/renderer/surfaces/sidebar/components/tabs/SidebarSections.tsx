@@ -233,6 +233,7 @@ export function SidebarSections({
                   onDrop={onFavoriteReorderDrop}
                   onOpen={() => openFavorite(favorite)}
                   onOpenInSplit={actions.openUrlInSplit}
+                  onOpenTabInSplit={tab ? actions.openTabInSplit : undefined}
                   onPreview={actions.openGlance}
                 />
               );

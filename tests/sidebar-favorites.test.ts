@@ -233,6 +233,64 @@ describe("sidebar favorites", () => {
     act(() => root.unmount());
   });
 
+  it("opens tab-backed Favorites in split by tab id", () => {
+    const activeTab = createTab("Active", "https://active.example");
+    const docsTab = createTab("Docs", "https://docs.example");
+    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions,
+        activeTab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [favorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [activeTab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        workspaceTabs: [activeTab, docsTab]
+      }));
+    });
+
+    const favoriteButton = container.querySelector(".favorites .favorite-button")!;
+    favoriteButton.dispatchEvent(new MouseEvent("click", { bubbles: true, shiftKey: true }));
+    favoriteButton.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter", shiftKey: true }));
+
+    expect(actions.openTabInSplit).toHaveBeenCalledWith(docsTab.id);
+    expect(actions.openTabInSplit).toHaveBeenCalledTimes(2);
+    expect(actions.openUrlInSplit).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("renders tab status on tab-backed Favorites", () => {
     const activeTab = createTab("Active", "https://active.example");
     const docsTab = { ...createTab("Docs", "https://docs.example"), isMuted: true };
@@ -340,10 +398,13 @@ describe("sidebar favorites", () => {
     favoriteButton.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true }));
     favoriteButton.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete" }));
     favoriteButton.dispatchEvent(new MouseEvent("auxclick", { bubbles: true, button: 1 }));
+    favoriteButton.dispatchEvent(new MouseEvent("click", { bubbles: true, shiftKey: true }));
 
     expect(onQuickEntryContextMenu).toHaveBeenCalledWith(expect.objectContaining({ type: "contextmenu" }), favorite, "favorite");
     expect(onTabContextMenu).not.toHaveBeenCalled();
     expect(actions.closeTab).not.toHaveBeenCalled();
+    expect(actions.openUrlInSplit).toHaveBeenCalledWith(favorite.url, favorite.title);
+    expect(actions.openTabInSplit).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });
