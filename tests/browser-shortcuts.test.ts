@@ -41,11 +41,18 @@ describe("browser shortcuts", () => {
   it("selects the last tab using sidebar visual order for Alt 9", () => {
     const state = createDefaultState();
     const firstRegular = createTab("Docs", "https://docs.example");
+    const hiddenGrouped = { ...createTab("Hidden", "https://hidden.example"), groupId: "group" };
     const lastRegular = createTab("News", "https://news.example");
     const trailingPinned = { ...createTab("Pinned", "https://pinned.example"), isPinned: true };
     const activeWorkspace = {
       ...state.workspaces[0],
-      tabs: [firstRegular, lastRegular, trailingPinned]
+      tabGroups: [{
+        color: "#7dd3fc",
+        id: "group",
+        isCollapsed: true,
+        name: "Collapsed"
+      }],
+      tabs: [firstRegular, hiddenGrouped, lastRegular, trailingPinned]
     };
     const actions = createActions();
     let runShortcut: ((intent: ShortcutIntent) => void) | undefined;

@@ -5,10 +5,10 @@ import {
   getNumberShortcutTarget,
   getNumberShortcutTabs
 } from "../src/renderer/common/shortcuts/numberShortcutTargets";
-import { createFavorite, createTab, type Workspace } from "../src/renderer/domain/browser";
+import { createFavorite, createTab, type TabGroup, type Workspace } from "../src/renderer/domain/browser";
 
-function workspaceWithTabs(tabs: Workspace["tabs"]): Pick<Workspace, "tabs"> {
-  return { tabs };
+function workspaceWithTabs(tabs: Workspace["tabs"], tabGroups: Workspace["tabGroups"] = []): Pick<Workspace, "tabs" | "tabGroups"> {
+  return { tabGroups, tabs };
 }
 
 describe("getNumberShortcutTarget", () => {
@@ -35,6 +35,39 @@ describe("getNumberShortcutTarget", () => {
     ]);
   });
 
+  it("orders grouped tabs by sidebar group order before regular tabs", () => {
+    const firstRegular = createTab("Docs", "https://docs.example");
+    const groupedInSecondGroup = { ...createTab("Design", "https://design.example"), groupId: "group-b" };
+    const groupedInFirstGroup = { ...createTab("Planning", "https://planning.example"), groupId: "group-a" };
+    const lastRegular = createTab("News", "https://news.example");
+    const pinned = { ...createTab("Pinned", "https://pinned.example"), isPinned: true };
+    const workspace = workspaceWithTabs(
+      [firstRegular, groupedInSecondGroup, lastRegular, pinned, groupedInFirstGroup],
+      [tabGroup("group-a", "Group A"), tabGroup("group-b", "Group B")]
+    );
+
+    expect(getNumberShortcutTabs(workspace).map((tab) => tab.id)).toEqual([
+      pinned.id,
+      groupedInFirstGroup.id,
+      groupedInSecondGroup.id,
+      firstRegular.id,
+      lastRegular.id
+    ]);
+    expect(getNumberShortcutTarget([], workspace, 1)).toEqual({ type: "tab", tabId: groupedInFirstGroup.id });
+  });
+
+  it("skips tabs hidden inside collapsed groups for visual-order shortcuts", () => {
+    const hiddenGrouped = { ...createTab("Hidden", "https://hidden.example"), groupId: "group" };
+    const regular = createTab("Docs", "https://docs.example");
+    const workspace = workspaceWithTabs(
+      [hiddenGrouped, regular],
+      [tabGroup("group", "Group", true)]
+    );
+
+    expect(getNumberShortcutTabs(workspace).map((tab) => tab.id)).toEqual([regular.id]);
+    expect(getLastNumberShortcutTabTarget(workspace)).toEqual({ type: "tab", tabId: regular.id });
+  });
+
   it("selects the last tab using sidebar visual order", () => {
     const trailingPinned = { ...createTab("Pinned", "https://pinned.example"), isPinned: true };
     const firstRegular = createTab("Docs", "https://docs.example");
@@ -51,3 +84,12 @@ describe("getNumberShortcutTarget", () => {
     expect(getNumberShortcutTarget([], workspace, 1)).toBeNull();
   });
 });
+
+function tabGroup(id: string, name: string, isCollapsed = false): TabGroup {
+  return {
+    color: "#7dd3fc",
+    id,
+    isCollapsed,
+    name
+  };
+}
