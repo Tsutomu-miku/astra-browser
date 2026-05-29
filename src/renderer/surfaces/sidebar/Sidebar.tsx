@@ -26,7 +26,7 @@ import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
 import { handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
 import { scrollSidebarSearchTargetIntoView } from "./model/sidebarSearchTargetDom";
 import { getSidebarTabDropIntent, getSidebarTabsAreaDropIntent } from "./model/sidebarTabDropIntent";
-import { getSidebarTabLocations } from "./model/sidebarTabLocations";
+import { getSidebarTabFolders } from "./model/sidebarTabFolders";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -55,7 +55,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     groupedTabs,
     pinnedTabs,
     regularTabs
-  } = useMemo(() => getSidebarTabLocations(activeWorkspace), [activeWorkspace]);
+  } = useMemo(() => getSidebarTabFolders(activeWorkspace), [activeWorkspace]);
   const memorySaver = useMemo(() => getMemorySaverState(activeWorkspace, state), [activeWorkspace, state]);
   const filteredItems = useMemo(() => filterSidebarItems({
     essentials: state.essentials,

@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { createFavorite, createTab, type Workspace } from "../src/renderer/domain/browser";
 import { createTabGroup } from "../src/renderer/domain/tabs/groups";
-import { getSidebarTabLocations } from "../src/renderer/surfaces/sidebar/model/sidebarTabLocations";
+import { getSidebarTabFolders } from "../src/renderer/surfaces/sidebar/model/sidebarTabFolders";
 
-describe("sidebar tab locations", () => {
-  it("keeps tab-backed Favorites out of pinned, grouped, and regular sections", () => {
+describe("sidebar tab folders", () => {
+  it("keeps tab-backed Favorites in the Favorites folder only", () => {
     const group = createTabGroup("Research");
     const favoriteTab = createTab("Docs", "https://docs.example");
     const pinnedFavoriteTab = { ...createTab("Mail", "https://mail.example"), isPinned: true };
@@ -23,23 +23,21 @@ describe("sidebar tab locations", () => {
       tabs: [favoriteTab, pinnedFavoriteTab, groupedFavoriteTab, groupedTab, pinnedTab, regularTab]
     });
 
-    const locations = getSidebarTabLocations(workspace);
+    const folders = getSidebarTabFolders(workspace);
 
-    expect([...locations.favoriteTabIds]).toEqual([favoriteTab.id, pinnedFavoriteTab.id, groupedFavoriteTab.id]);
-    expect(locations.pinnedTabs.map((tab) => tab.title)).toEqual(["Calendar"]);
-    expect(locations.groupedTabs[0].tabs.map((tab) => tab.title)).toEqual(["Chromium"]);
-    expect(locations.regularTabs.map((tab) => tab.title)).toEqual(["News"]);
+    expect(folders.pinnedTabs.map((tab) => tab.title)).toEqual(["Calendar"]);
+    expect(folders.groupedTabs[0].tabs.map((tab) => tab.title)).toEqual(["Chromium"]);
+    expect(folders.regularTabs.map((tab) => tab.title)).toEqual(["News"]);
   });
 
-  it("uses URL fallback only for legacy Favorites when deriving the Favorite location", () => {
+  it("uses URL fallback only for legacy Favorites when deriving the Favorites folder", () => {
     const tab = createTab("Docs", "https://docs.example");
     const workspace = createWorkspace({
       favorites: [createFavorite("Legacy Docs", tab.url)],
       tabs: [tab]
     });
 
-    expect(getSidebarTabLocations(workspace).regularTabs).toHaveLength(0);
-    expect([...getSidebarTabLocations(workspace).favoriteTabIds]).toEqual([tab.id]);
+    expect(getSidebarTabFolders(workspace).regularTabs).toHaveLength(0);
   });
 });
 

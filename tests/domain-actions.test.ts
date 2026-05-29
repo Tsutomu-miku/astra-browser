@@ -437,7 +437,7 @@ describe("domain actions", () => {
     });
   });
 
-  it("moves tabs into Favorites as their only sidebar location", () => {
+  it("moves tabs into Favorites as their only sidebar folder", () => {
     const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
     const docsTab = getActiveTab(getActiveWorkspace(grouped));
     const pinned = toggleTabPinned(grouped, docsTab.id);
