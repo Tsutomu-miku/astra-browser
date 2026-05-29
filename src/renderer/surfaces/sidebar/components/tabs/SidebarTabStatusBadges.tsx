@@ -1,4 +1,4 @@
-import { FiColumns, FiMoon, FiVolumeX } from "react-icons/fi";
+import { FiColumns, FiVolumeX } from "react-icons/fi";
 
 import type { TabStatusBadge } from "../../model/sidebarItemState";
 
@@ -28,6 +28,5 @@ export function SidebarTabStatusBadges({
 
 function TabStatusIcon({ badge }: { badge: TabStatusBadge }) {
   if (badge.id === "split") return <FiColumns />;
-  if (badge.id === "muted") return <FiVolumeX />;
-  return <FiMoon />;
+  return <FiVolumeX />;
 }

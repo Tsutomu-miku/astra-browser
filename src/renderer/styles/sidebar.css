@@ -487,8 +487,7 @@ h1 {
   color: color-mix(in srgb, var(--accent) 78%, white);
 }
 
-.pinned-tab-status-badge.is-muted,
-.pinned-tab-status-badge.is-sleeping {
+.pinned-tab-status-badge.is-muted {
   color: color-mix(in srgb, var(--muted) 86%, white);
 }
 
@@ -916,8 +915,7 @@ h1 {
   color: color-mix(in srgb, var(--accent) 76%, white);
 }
 
-.tab-status-badge.is-muted,
-.tab-status-badge.is-sleeping {
+.tab-status-badge.is-muted {
   color: var(--muted);
 }
 

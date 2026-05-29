@@ -276,7 +276,6 @@ export function FavoriteButton({
 
     onOpenInSplit(favorite.url, favorite.title);
   };
-  const iconStatus = tabStatusBadges.some((badge) => badge.id === "sleeping") ? "sleeping" : undefined;
 
   return (
     <button
@@ -336,7 +335,7 @@ export function FavoriteButton({
         }
       }}
     >
-      <SidebarItemIcon className="favorite-icon" faviconCache={faviconCache} status={iconStatus} url={favorite.url} />
+      <SidebarItemIcon className="favorite-icon" faviconCache={faviconCache} url={favorite.url} />
       {tabStatusBadges.length > 0 ? (
         <span className="favorite-title-stack">
           <span className="favorite-title">{favorite.title}</span>

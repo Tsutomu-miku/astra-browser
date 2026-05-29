@@ -37,7 +37,7 @@ describe("sidebar item state", () => {
       id: "tab",
       isMuted: true,
       isSleeping: true
-    }, ["tab"]).map((badge) => badge.id)).toEqual(["split", "muted", "sleeping"]);
+    }, ["tab"]).map((badge) => badge.id)).toEqual(["split", "muted"]);
   });
 
   it("omits tab status badges when no state needs attention", () => {
@@ -63,7 +63,7 @@ describe("sidebar item state", () => {
     })).toBe("Mail, active, pinned tab, Split, Muted");
   });
 
-  it("builds accessible Favorite tab labels with tab status state", () => {
+  it("keeps sleeping state out of text labels because the icon already shows it", () => {
     const badges = getTabStatusBadges({
       id: "tab",
       isMuted: false,
@@ -75,6 +75,6 @@ describe("sidebar item state", () => {
       kind: "favorite tab",
       statusBadges: badges,
       tab: { title: "Docs", url: "https://docs.example" }
-    })).toBe("Docs, favorite tab, Split, Asleep");
+    })).toBe("Docs, favorite tab, Split");
   });
 });

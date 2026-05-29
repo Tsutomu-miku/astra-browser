@@ -1,7 +1,7 @@
 import type { BrowserTab, Favorite } from "../../../domain/browser";
 
 export interface TabStatusBadge {
-  id: "muted" | "sleeping" | "split";
+  id: "muted" | "split";
   label: string;
 }
 
@@ -27,9 +27,6 @@ export function getTabStatusBadges(
   }
   if (tab.isMuted) {
     badges.push({ id: "muted", label: "Muted" });
-  }
-  if (tab.isSleeping) {
-    badges.push({ id: "sleeping", label: "Asleep" });
   }
 
   return badges;
