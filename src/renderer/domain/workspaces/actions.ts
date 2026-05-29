@@ -85,6 +85,29 @@ export function moveTabGroupToNewWorkspace(state: BrowserState, groupId: string)
   });
 }
 
+export function restoreClosedTabToNewWorkspace(state: BrowserState, closedIndex: number): BrowserState {
+  const source = getActiveWorkspace(state);
+  if (!Number.isInteger(closedIndex) || closedIndex < 0 || !source.closedTabs[closedIndex]) {
+    return state;
+  }
+
+  return updateBrowserState(state, (draft) => {
+    const source = getActiveWorkspace(draft);
+    const [closed] = source.closedTabs.splice(closedIndex, 1);
+    if (!closed) return;
+
+    const tab = createTab(closed.title, closed.url);
+    const workspace = createWorkspace(draft, {
+      name: closed.title || getReadableUrlTitle(closed.url),
+      tabs: [tab],
+      activeTabId: tab.id
+    });
+    draft.workspaces.push(workspace);
+    draft.activeWorkspaceId = workspace.id;
+    clearSplitView(draft);
+  });
+}
+
 export function deleteWorkspace(state: BrowserState, workspaceId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     if (draft.workspaces.length <= 1) return;

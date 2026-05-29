@@ -45,8 +45,8 @@ describe("workspace strip compact controls", () => {
       sidebarCollapsed: false
     });
 
-    expect(html.match(/data-drop-target="true"/g)).toHaveLength(2);
-    expect(html).toContain('aria-label="New Space" data-drop-target="false"');
+    expect(html.match(/data-drop-target="true"/g)).toHaveLength(3);
+    expect(html).toContain('aria-label="New Space" data-drop-target="true"');
   });
 
   it("marks New Space as a drop target while dragging tabs or groups", () => {
@@ -66,6 +66,17 @@ describe("workspace strip compact controls", () => {
     expect(tabHtml).toContain('class="workspace-button workspace-new-button"');
     expect(tabHtml).toContain('aria-label="New Space" data-drop-target="true"');
     expect(groupHtml).toContain('aria-label="New Space" data-drop-target="true"');
+  });
+
+  it("marks New Space as a drop target while dragging a recently closed tab", () => {
+    const html = renderStrip({
+      compactMode: false,
+      draggingClosedTabIndex: 0,
+      floatingSidebarOpen: false,
+      sidebarCollapsed: false
+    });
+
+    expect(html).toContain('aria-label="New Space" data-drop-target="true"');
   });
 
   it("opens Space context menus from the keyboard", () => {

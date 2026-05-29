@@ -95,6 +95,10 @@ export function useBrowserActions({
       store.moveTabGroupToNewWorkspace(groupId);
       peekCompactChrome();
     },
+    restoreClosedTabToNewWorkspace: (closedIndex: number) => {
+      store.restoreClosedTabToNewWorkspace(closedIndex);
+      peekCompactChrome();
+    },
     focusSplitPane: (tabId: string) => {
       store.focusSplitPane(tabId);
       peekCompactChrome();

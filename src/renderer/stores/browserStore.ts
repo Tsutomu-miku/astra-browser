@@ -27,6 +27,7 @@ import {
   moveTabGroupToWorkspace,
   moveTabToNewWorkspace,
   moveTabGroupToNewWorkspace,
+  restoreClosedTabToNewWorkspace,
   openTabInSplit,
   openUrlInSplit,
   removeTabFromSplit,
@@ -164,6 +165,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   moveTabToNewWorkspace: (tabId) => update(set, (state) => moveTabToNewWorkspace(state, tabId)),
   moveTabGroupToNewWorkspace: (groupId) =>
     update(set, (state) => moveTabGroupToNewWorkspace(state, groupId)),
+  restoreClosedTabToNewWorkspace: (closedIndex) =>
+    update(set, (state) => restoreClosedTabToNewWorkspace(state, closedIndex)),
   focusSplitPane: (tabId) => update(set, (state) => focusSplitPane(state, tabId)),
   closeGlance: () => set({ glance: null }),
   openGlance: (url, title) => set({ glance: { title: title || url, url } }),

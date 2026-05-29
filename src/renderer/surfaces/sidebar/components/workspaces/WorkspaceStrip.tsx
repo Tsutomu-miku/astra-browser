@@ -135,9 +135,9 @@ export function WorkspaceStrip({
         title="New Space"
         type="button"
         aria-label="New Space"
-        data-drop-target={Boolean(draggingGroupId || draggingTabId)}
+        data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingGroupId || draggingTabId)}
         onDragOver={(event) => {
-          if (draggingGroupId || draggingTabId) {
+          if (draggingClosedTabIndex !== null || draggingGroupId || draggingTabId) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "move";
           }

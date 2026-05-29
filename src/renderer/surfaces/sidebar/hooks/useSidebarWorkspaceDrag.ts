@@ -9,6 +9,7 @@ type SidebarWorkspaceDragActions = Pick<
   | "moveTabToNewWorkspace"
   | "moveTabToWorkspace"
   | "reorderWorkspace"
+  | "restoreClosedTabToNewWorkspace"
   | "restoreClosedTabToWorkspace"
 >;
 
@@ -77,16 +78,20 @@ export function useSidebarWorkspaceDrag({
   };
 
   const handleNewWorkspaceDrop = (event: DragEvent<HTMLButtonElement>) => {
+    const closedTabIndex = draggingClosedTabIndex ?? Number.parseInt(event.dataTransfer.getData("text/closed-tab-index"), 10);
     const groupId = draggingGroupId || event.dataTransfer.getData("text/group-id");
     const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
-    if (!groupId && !tabId) return;
+    if (!Number.isInteger(closedTabIndex) && !groupId && !tabId) return;
 
     event.preventDefault();
-    if (groupId) {
+    if (Number.isInteger(closedTabIndex)) {
+      actions.restoreClosedTabToNewWorkspace(closedTabIndex);
+    } else if (groupId) {
       actions.moveTabGroupToNewWorkspace(groupId);
     } else if (tabId) {
       actions.moveTabToNewWorkspace(tabId);
     }
+    setDraggingClosedTabIndex(null);
     setDraggingGroupId(null);
     setDraggingTabId(null);
   };

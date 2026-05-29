@@ -31,6 +31,7 @@ import {
   reorderTab,
   resetActiveTabZoom,
   restoreClosedTab,
+  restoreClosedTabToNewWorkspace,
   restoreClosedTabToWorkspace,
   restoreLastClosedTab,
   selectAdjacentTab,
@@ -126,6 +127,18 @@ describe("domain actions", () => {
     expect(personal.closedTabs).toHaveLength(0);
     expect(work.tabs.at(-1)?.title).toBe("Example");
     expect(work.activeTabId).toBe(work.tabs.at(-1)?.id);
+  });
+
+  it("restores a recently closed tab into a new workspace", () => {
+    const opened = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const closed = closeActiveTab(opened);
+    const restored = restoreClosedTabToNewWorkspace(closed, 0);
+    const workspace = getActiveWorkspace(restored);
+
+    expect(restored.workspaces).toHaveLength(closed.workspaces.length + 1);
+    expect(workspace.name).toBe("Example");
+    expect(getActiveTab(workspace).url).toBe("https://example.com/");
+    expect(restored.workspaces.find((candidate) => candidate.id === "personal")?.closedTabs).toHaveLength(0);
   });
 
   it("ignores invalid recently closed indexes", () => {
