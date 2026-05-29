@@ -4,7 +4,12 @@ import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { resolveFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
-import { isSidebarFavoriteActive, isSidebarUrlActive } from "../../model/sidebarItemState";
+import {
+  getSidebarTabAccessibilityLabel,
+  getTabStatusBadges,
+  isSidebarFavoriteActive,
+  isSidebarUrlActive
+} from "../../model/sidebarItemState";
 import { hasSidebarSectionDragReveal, type SidebarSectionId } from "../../model/sidebarSectionState";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
@@ -199,6 +204,7 @@ export function SidebarSections({
           >
             {filteredItems.favorites.map((favorite) => {
               const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
+              const statusBadges = tab ? getTabStatusBadges(tab, splitTabIds) : [];
 
               return (
                 <FavoriteButton
@@ -211,6 +217,13 @@ export function SidebarSections({
                   isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
                   kind="favorite"
                   tabId={tab?.id}
+                  tabLabel={tab ? getSidebarTabAccessibilityLabel({
+                    isActive: tab.id === activeTab.id,
+                    kind: "favorite tab",
+                    statusBadges,
+                    tab
+                  }) : undefined}
+                  tabStatusBadges={statusBadges}
                   onCloseTab={tab ? actions.closeTab : undefined}
                   onContextMenu={(event, item) => {
                     tab ? onTabContextMenu(event, tab) : onQuickEntryContextMenu(event, item, "favorite");

@@ -743,6 +743,7 @@ h1 {
   white-space: nowrap;
 }
 
+.favorite-title-stack,
 .tab-title-stack {
   min-width: 0;
   display: grid;

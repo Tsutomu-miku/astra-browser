@@ -43,7 +43,7 @@ export function getSidebarTabAccessibilityLabel({
   tab
 }: {
   isActive: boolean;
-  kind: "pinned tab" | "tab";
+    kind: "favorite tab" | "pinned tab" | "tab";
   statusBadges: TabStatusBadge[];
   tab: Pick<BrowserTab, "title" | "url">;
 }): string {

@@ -62,4 +62,19 @@ describe("sidebar item state", () => {
       tab: { title: "Mail", url: "https://mail.example" }
     })).toBe("Mail, active, pinned tab, Split, Muted");
   });
+
+  it("builds accessible Favorite tab labels with tab status state", () => {
+    const badges = getTabStatusBadges({
+      id: "tab",
+      isMuted: false,
+      isSleeping: true
+    }, ["tab"]);
+
+    expect(getSidebarTabAccessibilityLabel({
+      isActive: false,
+      kind: "favorite tab",
+      statusBadges: badges,
+      tab: { title: "Docs", url: "https://docs.example" }
+    })).toBe("Docs, favorite tab, Split, Asleep");
+  });
 });

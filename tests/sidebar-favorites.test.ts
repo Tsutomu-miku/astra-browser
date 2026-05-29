@@ -111,7 +111,7 @@ describe("sidebar favorites", () => {
 
     container.querySelector(".favorite-button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(container.querySelector(".favorite-button")?.getAttribute("aria-label")).toBe("Docs, Favorite");
+    expect(container.querySelector(".favorite-button")?.getAttribute("aria-label")).toBe("Docs, favorite tab");
     expect(actions.selectTab).toHaveBeenCalledWith(docsTab.id);
     expect(actions.navigateActiveTab).not.toHaveBeenCalled();
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
@@ -166,7 +166,7 @@ describe("sidebar favorites", () => {
     });
 
     expect(container.querySelector(".favorite-button")?.getAttribute("aria-current")).toBe("false");
-    expect(container.querySelector(".favorite-button")?.getAttribute("aria-label")).toBe("Docs, Favorite");
+    expect(container.querySelector(".favorite-button")?.getAttribute("aria-label")).toBe("Docs, favorite tab");
 
     act(() => root.unmount());
   });
@@ -229,6 +229,61 @@ describe("sidebar favorites", () => {
     expect(onQuickEntryContextMenu).not.toHaveBeenCalled();
     expect(actions.closeTab).toHaveBeenCalledWith(docsTab.id);
     expect(actions.closeTab).toHaveBeenCalledTimes(2);
+
+    act(() => root.unmount());
+  });
+
+  it("renders tab status on tab-backed Favorites", () => {
+    const activeTab = createTab("Active", "https://active.example");
+    const docsTab = { ...createTab("Docs", "https://docs.example"), isMuted: true };
+    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [favorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [activeTab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [docsTab.id],
+        workspaceTabs: [activeTab, docsTab]
+      }));
+    });
+
+    const favoriteButton = container.querySelector(".favorites .favorite-button");
+    expect(favoriteButton?.getAttribute("aria-label")).toBe("Docs, favorite tab, Split, Muted");
+    expect(favoriteButton?.querySelector(".favorite-title-stack")).not.toBeNull();
+    expect(favoriteButton?.querySelector(".tab-status-badge.is-split")).not.toBeNull();
+    expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")).not.toBeNull();
 
     act(() => root.unmount());
   });

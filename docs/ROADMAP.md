@@ -69,7 +69,7 @@ Acceptance:
 - Adding a tab to Favorites records the tab relationship.
 - Removing a Favorite does not close the tab unless a separate close action is used.
 
-Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites use tab actions for context menus and close shortcuts while staying in the Favorites folder. Full cross-surface QA is still needed.
+Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites use tab actions, tab status badges, and tab accessibility labels while staying in the Favorites folder. Full cross-surface QA is still needed.
 
 Small requirements:
 
@@ -80,6 +80,7 @@ Small requirements:
 - P0-2.5 Context-menu Open for Favorites selects tab.
 - P0-2.6 Legacy Favorites without `tabId` use URL fallback without replacing active tab.
 - P0-2.7 Tab-backed Favorites use tab context-menu and close shortcuts; legacy URL Favorites keep quick-entry behavior.
+- P0-2.8 Tab-backed Favorites expose tab status and accessible labels while remaining in the Favorites folder.
 
 ### P0-3 Sidebar Drag And Drop
 

@@ -6,7 +6,7 @@ import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../..
 import { readSidebarTabDragPayload, writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getQuickEntryAccessibilityLabel, type QuickEntryKind } from "../../model/quickEntryItemState";
-import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
+import { getSidebarTabAccessibilityLabel, getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
@@ -209,6 +209,8 @@ export function FavoriteButton({
   isSearchSelected = false,
   kind = "favorite",
   tabId,
+  tabLabel,
+  tabStatusBadges = [],
   onCloseTab,
   onDragEnd,
   onDragStart,
@@ -227,6 +229,8 @@ export function FavoriteButton({
   isSearchSelected?: boolean;
   kind?: QuickEntryKind;
   tabId?: string;
+  tabLabel?: string;
+  tabStatusBadges?: TabStatusBadge[];
   onCloseTab?: (tabId: string) => void;
   onContextMenu?: (event: MouseEvent, favorite: Favorite) => void;
   onDragEnd?: () => void;
@@ -239,20 +243,21 @@ export function FavoriteButton({
 }) {
   const isDragging = draggable && draggingQuickEntryId === favorite.id;
   const isDropTarget = draggable && Boolean(draggingQuickEntryId && draggingQuickEntryId !== favorite.id);
+  const quickEntryLabel = getQuickEntryAccessibilityLabel({
+    entry: favorite,
+    isActive,
+    isDragging,
+    isDropTarget,
+    isSearchSelected,
+    kind
+  });
 
   return (
     <button
       className="favorite-button"
       id={id}
       type="button"
-      aria-label={getQuickEntryAccessibilityLabel({
-        entry: favorite,
-        isActive,
-        isDragging,
-        isDropTarget,
-        isSearchSelected,
-        kind
-      })}
+      aria-label={tabLabel ?? quickEntryLabel}
       aria-current={isActive}
       aria-selected={isSearchSelected}
       draggable={draggable}
@@ -304,7 +309,14 @@ export function FavoriteButton({
       }}
     >
       <span className="favorite-icon">{getHostInitial(favorite.url)}</span>
-      <span className="favorite-title">{favorite.title}</span>
+      {tabStatusBadges.length > 0 ? (
+        <span className="favorite-title-stack">
+          <span className="favorite-title">{favorite.title}</span>
+          <SidebarTabStatusBadges badges={tabStatusBadges} />
+        </span>
+      ) : (
+        <span className="favorite-title">{favorite.title}</span>
+      )}
       <SidebarItemActionHints />
     </button>
   );
