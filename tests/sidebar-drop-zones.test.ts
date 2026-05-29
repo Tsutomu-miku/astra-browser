@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
+import { TabOrganizationDropTargets } from "../src/renderer/surfaces/sidebar/components/tabs/TabOrganizationDropTargets";
 
 describe("sidebar section drop zones", () => {
   it("shows Pinned, Essentials, and Favorites drop targets while dragging a regular tab", () => {
@@ -143,8 +144,45 @@ describe("sidebar section drop zones", () => {
     }));
 
     expect(html).toContain("Ungroup tab");
+    expect(html).toContain('type="button"');
     expect(html).toContain('aria-label="Remove dragged tab from group"');
+    expect(html).toContain('tabindex="0"');
     expect(html).not.toContain("New group");
+  });
+
+  it("activates and cancels tab organization targets from the keyboard", () => {
+    const onCreateGroup = vi.fn();
+    const onUngroupTab = vi.fn();
+    const setDraggingTabId = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabOrganizationDropTargets, {
+        canCreateGroup: true,
+        canUngroup: true,
+        draggingTabId: "tab-1",
+        onCreateGroup,
+        onUngroupTab,
+        setDraggingTabId
+      }));
+    });
+
+    const targets = container.querySelectorAll<HTMLElement>(".tab-organization-drop-target");
+    expect(targets[0]?.tagName).toBe("BUTTON");
+    expect(targets[0]?.getAttribute("tabindex")).toBe("0");
+
+    act(() => {
+      targets[0]?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+      targets[1]?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: " " }));
+      targets[0]?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Escape" }));
+    });
+
+    expect(onCreateGroup).toHaveBeenCalledWith("tab-1");
+    expect(onUngroupTab).toHaveBeenCalledWith("tab-1");
+    expect(setDraggingTabId).toHaveBeenCalledWith(null);
+
+    act(() => root.unmount());
   });
 
   it("marks Essentials as reorderable drop targets while dragging an Essential", () => {

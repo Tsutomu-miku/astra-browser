@@ -78,6 +78,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar tab context menus must support creating a new group from a tab, moving tabs to existing groups, and ungrouping grouped tabs.
 - Users must be able to drag a regular sidebar tab onto a New Group target to create a tab group.
 - Users must be able to drag a grouped sidebar tab onto an Ungroup target to remove it from its group.
+- Sidebar New Group and Ungroup drop targets must expose button semantics with keyboard activation and Escape cancellation while a tab is being organized.
 - Users must be able to pin tabs per Space.
 - Users must be able to drag sidebar tabs into Pinned to pin them in the active Space.
 - Users must be able to drag pinned tabs back into the regular Tabs section to unpin and place them near the drop target.

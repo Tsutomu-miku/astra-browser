@@ -273,6 +273,8 @@ describe("sidebar pinned tabs", () => {
     expect(dropZoneCss).toContain('.favorite-button[data-dragging="true"]');
     expect(dropZoneCss).toContain('.favorite-button[data-drop-target="true"]');
     expect(dropZoneCss).toContain(".tab-organization-drop-target");
+    expect(dropZoneCss).toContain("font: inherit");
+    expect(dropZoneCss).toContain("cursor: pointer");
     expect(dropZoneCss).toContain(".sidebar-drop-empty");
     expect(sidebarCss).toContain("cursor: grabbing");
   });

@@ -1,5 +1,7 @@
-import type { DragEvent, ReactNode } from "react";
+import type { DragEvent, KeyboardEvent, ReactNode } from "react";
 import { FiCornerUpRight, FiFolderPlus } from "react-icons/fi";
+
+import { getTabOrganizationTargetKeyboardIntent } from "../../model/tabOrganizationTargetKeyboard";
 
 export function TabOrganizationDropTargets({
   canCreateGroup,
@@ -62,25 +64,41 @@ function TabDropTarget({
   const handleDrop = (event: DragEvent<HTMLElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    const tabId = draggingTabId || event.dataTransfer.getData("text/plain");
-    if (tabId) onDropTab(tabId);
+    activateTarget();
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const intent = getTabOrganizationTargetKeyboardIntent(event.key);
+    if (!intent) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (intent === "activate") {
+      activateTarget();
+    } else {
+      setDraggingTabId(null);
+    }
+  };
+  const activateTarget = () => {
+    onDropTab(draggingTabId);
     setDraggingTabId(null);
   };
 
   return (
-    <div
+    <button
       className="tab-organization-drop-target"
-      role="button"
+      type="button"
       aria-label={ariaLabel}
       data-drop-target="true"
+      tabIndex={0}
       onDragOver={(event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
       }}
       onDrop={handleDrop}
+      onKeyDown={handleKeyDown}
     >
       {icon}
       <span>{label}</span>
-    </div>
+    </button>
   );
 }
