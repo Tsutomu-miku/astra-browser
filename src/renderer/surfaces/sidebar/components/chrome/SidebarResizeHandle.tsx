@@ -3,6 +3,7 @@ import { useEffect, useState, type KeyboardEvent, type PointerEvent } from "reac
 import {
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH,
+  SIDEBAR_DEFAULT_WIDTH,
   clampSidebarWidth,
   getSidebarKeyboardResizeWidth,
   getSidebarPointerResizeWidth
@@ -81,6 +82,7 @@ export function SidebarResizeHandle({ isCollapsed, onResize, width }: SidebarRes
       aria-valuenow={clampedWidth}
       tabIndex={0}
       data-dragging={Boolean(dragState)}
+      onDoubleClick={() => onResize(SIDEBAR_DEFAULT_WIDTH)}
       onKeyDown={onKeyDown}
       onPointerDown={onPointerDown}
     />

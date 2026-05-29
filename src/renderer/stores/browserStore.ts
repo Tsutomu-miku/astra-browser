@@ -88,11 +88,13 @@ import {
 } from "../domain/browser";
 import { getPermissionRule } from "../domain/permissions/sitePermissions";
 import { loadBrowserState, saveBrowserState } from "../platform/persistence/browserStorage";
+import { loadBrowserUiState, saveBrowserUiState } from "../platform/persistence/browserUiStorage";
 import { getActiveProfileId, getActiveUrl } from "./browserStoreSelectors";
 import type { BrowserStore } from "./browserStoreTypes";
 import { syncMuted, syncZoom } from "./browserStoreWebviewSync";
 
 const initialState = loadBrowserState();
+const initialUiState = loadBrowserUiState();
 
 export const useBrowserStore = create<BrowserStore>((set) => ({
   addressValue: "",
@@ -107,7 +109,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   panel: null,
   permissionRequest: null,
   sidebarCollapsed: false,
-  sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
+  sidebarWidth: initialUiState.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH,
   splitLayout: "horizontal",
   state: initialState,
   glance: null,
@@ -248,7 +250,11 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   setFindQuery: (findQuery) => set({ findQuery }),
   setFindResult: (findResult) => set({ findResult }),
   setPanel: (panel) => set({ panel }),
-  setSidebarWidth: (width) => set({ sidebarWidth: clampSidebarWidth(width) }),
+  setSidebarWidth: (width) => {
+    const sidebarWidth = clampSidebarWidth(width);
+    saveBrowserUiState({ sidebarWidth });
+    set({ sidebarWidth });
+  },
   setSplitLayout: (splitLayout) => set({ splitLayout }),
   setSitePermission: (profileId, origin, permission, decision) =>
     update(set, (state) => setSitePermission(state, { profileId, origin, permission, decision })),

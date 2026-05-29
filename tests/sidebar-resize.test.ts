@@ -76,6 +76,27 @@ describe("sidebar resize", () => {
     act(() => root.unmount());
   });
 
+  it("resets to default width on double click", () => {
+    const onResize = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarResizeHandle, {
+        isCollapsed: false,
+        onResize,
+        width: 360
+      }));
+    });
+
+    container.querySelector<HTMLElement>(".sidebar-resize-handle")
+      ?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+    expect(onResize).toHaveBeenCalledWith(292);
+
+    act(() => root.unmount());
+  });
+
   it("resizes from pointer drag and clears dragging state", () => {
     const onResize = vi.fn();
     const container = document.createElement("div");

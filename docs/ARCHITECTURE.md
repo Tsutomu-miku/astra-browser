@@ -24,7 +24,7 @@ The project is split around runtime boundaries rather than feature folders.
 
 Compact mode is renderer-owned UI state. It does not alter persisted browser data; it composes the existing collapsible sidebar with a floating topbar and compact sidebar address field so the content grid can reclaim the full viewport while browser chrome remains available on hover or focus.
 
-Sidebar sizing is renderer-owned UI state. Width clamping and keyboard resize rules live in `src/renderer/common/layout` so the store, sidebar handle, and tests share one range without coupling store code to a sidebar surface module.
+Sidebar sizing is renderer-owned UI state. Width clamping and keyboard resize rules live in `src/renderer/common/layout` so the store, sidebar handle, and tests share one range without coupling store code to a sidebar surface module. Non-domain UI preferences such as sidebar width persist through a small platform adapter separate from browser-state backup/export.
 
 Compact chrome peeking is isolated in a controller hook so tab changes, shortcuts, and the top-edge peek target all share the same temporary reveal timer without leaking timer state into browser domain logic.
 
