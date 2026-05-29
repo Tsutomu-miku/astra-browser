@@ -94,12 +94,12 @@ Small requirements:
 - Dragging tabs to groups, Spaces, New Space, and split targets must use consistent payload recovery.
 - Dragging tabs should not show explicit target-region overlays; destinations accept drops directly, while reordering shows local insertion position only.
 
-Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. Real Electron manual QA is still required.
+Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. Tabs folder drops now accept the same real tab payload path as the other sidebar folders. Real Electron manual QA is still required.
 
 Small requirements:
 
-- P0-3.1 Visible tab button is the drag source.
-- P0-3.2 Tab row stays a drop target, not a competing drag source.
+- P0-3.1 Visible tab row is the drag source.
+- P0-3.2 Tab row stays the tab item drop target; the inner button is not a competing native drag source.
 - P0-3.3 Drag payload is recoverable from native `DataTransfer` when React state is missing.
 - P0-3.4 Drop on Favorites adds tab-backed Favorite.
 - P0-3.5 Drop on existing Favorite area is accepted.
@@ -110,7 +110,7 @@ Small requirements:
 - P0-3.10 Dragging a Favorite-backed tab into Tabs, Pinned, or a group removes it from the Favorites folder.
 - P0-3.11 Tabs, Pinned, and tab groups share one folder move path instead of separate pin/unpin/drop-intent branches.
 - P0-3.12 Empty Tabs, Pinned, and Favorites folders stay visible as ordinary headers and accept tab drops without special target UI.
-- P0-3.13 Tabs folder drops only accept real folder moves; regular tab ordering remains row-level before/after placement.
+- P0-3.13 Tabs folder drops accept the same real tab payloads as other sidebar folders; regular tab ordering remains row-level before/after placement.
 
 ### P0-4 Spaces And Profiles
 
@@ -203,7 +203,7 @@ Progress: started.
 | Spaces | Mostly done | Creation, switching, reordering, profiles, settings are present. |
 | Regular tabs | Mostly done | Lifecycle, selection, closing, duplication, sleeping, webviews are present. |
 | Favorites as tabs | Partial | `tabId` exists, opening semantics are fixed, and Favorite-backed tabs are excluded from other sidebar tab folders. |
-| Drag-and-drop | Partial | Workspace drag works; tab drag uses a native payload from the visible tab button; Favorite-backed drags can move back into tab folders; needs manual Electron QA. |
+| Drag-and-drop | Partial | Workspace drag works; tab drag uses a native payload from the whole visible tab row; Favorite-backed drags can move back into tab folders; needs manual Electron QA. |
 | Pinned tabs | Partial | Pin/unpin and drag behavior exist; should be reviewed with Favorite-as-tab model. |
 | Tab groups | Partial | Grouping, context menus, drag targets exist; needs integrated DnD QA. |
 | Essentials | Partial | Global quick entries exist; semantics intentionally remain URL-entry based for now. |

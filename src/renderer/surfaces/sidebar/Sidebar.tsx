@@ -118,9 +118,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     const tabId = getDroppedTabId(event);
     if (!tabId) return;
 
-    const draggedTab = activeWorkspace.tabs.find((candidate) => candidate.id === tabId);
     const favoriteId = getDroppedFavoriteId(event);
-    if (!favoriteId && !draggedTab?.isPinned && !draggedTab?.groupId) return;
 
     event.preventDefault();
     if (favoriteId) removeFavoriteFromFolder(favoriteId);

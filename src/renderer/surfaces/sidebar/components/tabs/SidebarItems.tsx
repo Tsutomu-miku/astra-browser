@@ -117,9 +117,11 @@ export function TabRow({
       id={id}
       aria-current={tab.id === activeTabId}
       aria-selected={isSearchSelected}
-      draggable={false}
+      draggable
       data-dragging={draggingTabId === tab.id}
       data-tab-id={tab.id}
+      onDragStart={startTabDrag}
+      onDragEnd={() => setDraggingTabId(null)}
       onDragOver={(event) => {
         const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
         if (draggedTabId && draggedTabId !== tab.id) {
@@ -139,9 +141,7 @@ export function TabRow({
         className="tab-button"
         type="button"
         aria-label={tabLabel}
-        draggable
-        onDragStart={startTabDrag}
-        onDragEnd={() => setDraggingTabId(null)}
+        draggable={false}
         onAuxClick={(event) => {
           if (event.button === 1) {
             event.preventDefault();

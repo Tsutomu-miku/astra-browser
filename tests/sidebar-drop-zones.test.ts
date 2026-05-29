@@ -362,7 +362,7 @@ describe("sidebar section drop zones", () => {
     act(() => root.unmount());
   });
 
-  it("does not accept regular tab drops on the Tabs folder when no folder move is needed", () => {
+  it("accepts regular tab drops on the Tabs folder through the same folder path", () => {
     const tab = createTab("Docs", "https://docs.example");
     const onTabsDrop = vi.fn();
     const container = document.createElement("div");
@@ -410,9 +410,10 @@ describe("sidebar section drop zones", () => {
     const tabsSection = container.querySelector<HTMLElement>(".tabs-section")!;
     const dragOverEvent = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id });
     tabsSection.dispatchEvent(dragOverEvent);
-    expect(dragOverEvent.defaultPrevented).toBe(false);
+    expect(dragOverEvent.defaultPrevented).toBe(true);
 
     tabsSection.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
+    expect(onTabsDrop).toHaveBeenCalled();
 
     act(() => root.unmount());
   });
