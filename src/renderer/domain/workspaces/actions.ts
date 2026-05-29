@@ -11,6 +11,7 @@ import {
   type Workspace
 } from "../browser";
 import { getActiveWorkspace } from "../browser/selectors";
+import { takeFavoriteBackingTab } from "../common/favoriteTabs";
 import { pruneEmptyTabGroups } from "../tabs/groups";
 import { clearSplitView } from "../tabs/splitView";
 import { updateBrowserState } from "../browser/updateState";
@@ -121,7 +122,7 @@ export function moveWorkspaceFavoriteToNewWorkspace(state: BrowserState, favorit
     if (index < 0) return;
 
     const [favorite] = source.favorites.splice(index, 1);
-    const tab = createTab(favorite.title || getReadableUrlTitle(favorite.url), favorite.url);
+    const tab = takeFavoriteBackingTab(draft, source, favorite);
     const workspace = createWorkspace(draft, {
       favorites: [favorite],
       name: favorite.title || getReadableUrlTitle(favorite.url),

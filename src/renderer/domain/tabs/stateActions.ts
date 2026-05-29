@@ -5,6 +5,7 @@ import {
   getReadableUrlTitle
 } from "../browser";
 import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
+import { mergeFavoriteByUrl, moveFavoriteBackingTabToWorkspace } from "../common/favoriteTabs";
 import { clearSplitView, getSplitTabIds, setSplitTabIds } from "./splitView";
 import { pruneEmptyTabGroups } from "./groups";
 import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "../browser/zoom";
@@ -186,9 +187,8 @@ export function moveWorkspaceFavoriteToWorkspace(
     if (index < 0) return;
 
     const [favorite] = source.favorites.splice(index, 1);
-    if (!target.favorites.some((candidate) => candidate.url === favorite.url)) {
-      target.favorites.push(favorite);
-    }
+    moveFavoriteBackingTabToWorkspace(draft, source, target, favorite);
+    mergeFavoriteByUrl(target.favorites, favorite);
     draft.activeWorkspaceId = target.id;
     clearSplitView(draft);
   });

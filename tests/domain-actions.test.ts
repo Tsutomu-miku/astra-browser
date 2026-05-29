@@ -465,9 +465,10 @@ describe("domain actions", () => {
   });
 
   it("moves a Space favorite to another workspace", () => {
-    const initial = createDefaultState();
+    const initial = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
     const workspace = getActiveWorkspace(initial);
-    const favorite = createFavorite("Docs", "https://docs.example");
+    const docsTab = getActiveTab(workspace);
+    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
     workspace.favorites = [favorite];
 
     const moved = moveWorkspaceFavoriteToWorkspace(initial, favorite.id, "work");
@@ -476,16 +477,39 @@ describe("domain actions", () => {
 
     expect(moved.activeWorkspaceId).toBe("work");
     expect(personal.favorites).toHaveLength(0);
+    expect(personal.tabs.some((tab) => tab.id === docsTab.id)).toBe(false);
+    expect(work.tabs.some((tab) => tab.id === docsTab.id)).toBe(true);
+    expect(work.activeTabId).toBe(docsTab.id);
     expect(work.favorites.at(-1)).toMatchObject({
+      tabId: docsTab.id,
       title: "Docs",
       url: "https://docs.example/"
     });
   });
 
-  it("moves a Space favorite to a new workspace", () => {
+  it("creates a backing tab when moving a legacy Space favorite to another workspace", () => {
     const initial = createDefaultState();
     const workspace = getActiveWorkspace(initial);
     const favorite = createFavorite("Docs", "https://docs.example");
+    workspace.favorites = [favorite];
+
+    const moved = moveWorkspaceFavoriteToWorkspace(initial, favorite.id, "work");
+    const work = moved.workspaces.find((candidate) => candidate.id === "work")!;
+    const movedFavorite = work.favorites.at(-1)!;
+    const createdTab = work.tabs.find((tab) => tab.id === movedFavorite.tabId)!;
+
+    expect(createdTab).toMatchObject({
+      title: "Docs",
+      url: "https://docs.example/"
+    });
+    expect(work.activeTabId).toBe(createdTab.id);
+  });
+
+  it("moves a Space favorite to a new workspace", () => {
+    const initial = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const workspace = getActiveWorkspace(initial);
+    const docsTab = getActiveTab(workspace);
+    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
     workspace.favorites = [favorite];
 
     const moved = moveWorkspaceFavoriteToNewWorkspace(initial, favorite.id);
@@ -494,8 +518,25 @@ describe("domain actions", () => {
 
     expect(moved.workspaces).toHaveLength(initial.workspaces.length + 1);
     expect(source.favorites).toHaveLength(0);
+    expect(source.tabs.some((tab) => tab.id === docsTab.id)).toBe(false);
     expect(target.name).toBe("Docs");
     expect(target.favorites).toHaveLength(1);
+    expect(target.favorites[0].tabId).toBe(docsTab.id);
+    expect(target.tabs.map((tab) => tab.id)).toEqual([docsTab.id]);
+    expect(getActiveTab(target).id).toBe(docsTab.id);
+  });
+
+  it("creates a backing tab when moving a legacy Space favorite to a new workspace", () => {
+    const initial = createDefaultState();
+    const workspace = getActiveWorkspace(initial);
+    const favorite = createFavorite("Docs", "https://docs.example");
+    workspace.favorites = [favorite];
+
+    const moved = moveWorkspaceFavoriteToNewWorkspace(initial, favorite.id);
+    const target = getActiveWorkspace(moved);
+
+    expect(target.favorites[0].tabId).toBe(target.tabs[0].id);
+    expect(target.tabs).toHaveLength(1);
     expect(getActiveTab(target).url).toBe("https://docs.example/");
   });
 
