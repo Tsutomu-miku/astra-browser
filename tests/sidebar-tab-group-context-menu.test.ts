@@ -18,6 +18,7 @@ describe("sidebar tab group context menu", () => {
     expect(html).toContain("Name");
     expect(html).toContain("Group color");
     expect(html).toContain("Move group to Work");
+    expect(html).toContain("Move group to New Space");
     expect(html).toContain("Close group");
     expect(html).toContain("Ungroup 2 tabs");
     expect(html).toContain(TAB_GROUP_COLOR_SWATCHES[0]);
@@ -35,6 +36,7 @@ describe("sidebar tab group context menu", () => {
     const onClose = vi.fn();
     const onCloseGroup = vi.fn();
     const onDuplicateGroup = vi.fn();
+    const onMoveToNewWorkspace = vi.fn();
     const onMoveToWorkspace = vi.fn();
     const onSleepGroup = vi.fn();
     const onToggleCollapsed = vi.fn();
@@ -44,6 +46,7 @@ describe("sidebar tab group context menu", () => {
       onClose,
       onCloseGroup,
       onDuplicateGroup,
+      onMoveToNewWorkspace,
       onMoveToWorkspace,
       onSleepGroup,
       onToggleCollapsed,
@@ -53,6 +56,7 @@ describe("sidebar tab group context menu", () => {
 
     menu.props.onCloseGroup("group");
     menu.props.onDuplicateGroup("group");
+    menu.props.onMoveToNewWorkspace("group");
     menu.props.onMoveToWorkspace("group", "work");
     menu.props.onSleepGroup("group");
     menu.props.onToggleCollapsed("group");
@@ -62,12 +66,51 @@ describe("sidebar tab group context menu", () => {
 
     expect(onCloseGroup).toHaveBeenCalledWith("group");
     expect(onDuplicateGroup).toHaveBeenCalledWith("group");
+    expect(onMoveToNewWorkspace).toHaveBeenCalledWith("group");
     expect(onMoveToWorkspace).toHaveBeenCalledWith("group", "work");
     expect(onSleepGroup).toHaveBeenCalledWith("group");
     expect(onToggleCollapsed).toHaveBeenCalledWith("group");
     expect(onUpdate).toHaveBeenCalledWith("group", { name: "Planning" });
     expect(onUpdate).toHaveBeenCalledWith("group", { color: "#f0abfc" });
     expect(onUngroupGroup).toHaveBeenCalledWith("group");
+  });
+
+  it("keeps moving groups to a new Space available without other Space targets", () => {
+    const html = renderToStaticMarkup(createElement(TabGroupContextMenu, props({
+      moveWorkspaceTargets: []
+    })));
+
+    expect(html).not.toContain("Move group to Work");
+    expect(html).toContain("Move group to New Space");
+  });
+
+  it("moves groups to a new Space from the menu", () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const onClose = vi.fn();
+    const onMoveToNewWorkspace = vi.fn();
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupContextMenu, props({
+        onClose,
+        onMoveToNewWorkspace
+      })));
+    });
+
+    const newSpaceButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Move group to New Space"
+    );
+
+    act(() => {
+      newSpaceButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(onMoveToNewWorkspace).toHaveBeenCalledWith("group");
+    expect(onClose).toHaveBeenCalled();
+
+    act(() => root.unmount());
+    container.remove();
   });
 
   it("keeps group name editing keys inside the input", () => {
@@ -114,6 +157,7 @@ function props(overrides: Partial<TabGroupContextMenuProps> = {}): TabGroupConte
     onClose: vi.fn(),
     onCloseGroup: vi.fn(),
     onDuplicateGroup: vi.fn(),
+    onMoveToNewWorkspace: vi.fn(),
     onMoveToWorkspace: vi.fn(),
     onSleepGroup: vi.fn(),
     onToggleCollapsed: vi.fn(),

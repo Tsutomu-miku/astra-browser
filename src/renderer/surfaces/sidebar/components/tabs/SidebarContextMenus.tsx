@@ -99,6 +99,7 @@ export function SidebarContextMenus({
           onClose={closeMenus}
           onCloseGroup={actions.closeTabGroup}
           onDuplicateGroup={actions.duplicateTabGroup}
+          onMoveToNewWorkspace={actions.moveTabGroupToNewWorkspace}
           onMoveToWorkspace={actions.moveTabGroupToWorkspace}
           onSleepGroup={actions.sleepTabGroup}
           onToggleCollapsed={actions.toggleTabGroupCollapsed}

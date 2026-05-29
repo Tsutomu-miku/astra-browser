@@ -13,6 +13,7 @@ interface TabGroupContextMenuProps {
   onCloseGroup: (groupId: string) => void;
   onClose: () => void;
   onDuplicateGroup: (groupId: string) => void;
+  onMoveToNewWorkspace: (groupId: string) => void;
   onMoveToWorkspace: (groupId: string, workspaceId: string) => void;
   onSleepGroup: (groupId: string) => void;
   onToggleCollapsed: (groupId: string) => void;
@@ -30,6 +31,7 @@ export function TabGroupContextMenu({
   onClose,
   onCloseGroup,
   onDuplicateGroup,
+  onMoveToNewWorkspace,
   onMoveToWorkspace,
   onSleepGroup,
   onToggleCollapsed,
@@ -90,21 +92,20 @@ export function TabGroupContextMenu({
           />
         ))}
       </div>
-      {moveWorkspaceTargets.length > 0 && (
-        <>
-          <span className="tab-context-menu-separator" />
-          {moveWorkspaceTargets.map((workspace) => (
-            <button
-              key={workspace.id}
-              type="button"
-              role="menuitem"
-              onClick={() => run(() => onMoveToWorkspace(group.id, workspace.id))}
-            >
-              Move group to {workspace.name}
-            </button>
-          ))}
-        </>
-      )}
+      <span className="tab-context-menu-separator" />
+      {moveWorkspaceTargets.map((workspace) => (
+        <button
+          key={workspace.id}
+          type="button"
+          role="menuitem"
+          onClick={() => run(() => onMoveToWorkspace(group.id, workspace.id))}
+        >
+          Move group to {workspace.name}
+        </button>
+      ))}
+      <button type="button" role="menuitem" onClick={() => run(() => onMoveToNewWorkspace(group.id))}>
+        Move group to New Space
+      </button>
       <span className="tab-context-menu-separator" />
       <button type="button" role="menuitem" onClick={() => run(() => onCloseGroup(group.id))}>
         Close group
