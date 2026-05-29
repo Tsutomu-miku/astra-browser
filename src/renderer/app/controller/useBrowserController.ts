@@ -33,7 +33,7 @@ export function useBrowserController() {
   const removeWebview = useCallback((tabId: string, webview: WebviewElement) => {
     unregisterWebview(webviews.current, tabId, webview);
   }, []);
-  const focusAddressBar = useAddressBarFocus(store);
+  const focusAddressBar = useAddressBarFocus(store, peekCompactSidebar);
   const actions = useBrowserActions({
     activeWebview,
     focusAddressBar,
