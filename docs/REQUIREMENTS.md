@@ -66,7 +66,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Users must be able to move tabs between Spaces from the command palette or by dragging onto Space buttons.
 - Users must be able to drag sidebar tabs onto the New Space button to create a Space from that tab.
 - Sidebar Space context menus must support switching, renaming, recoloring, deleting, and keyboard opening via `ContextMenu` or `Shift+F10`.
-- Sidebar Space rail buttons must expose active and drop-target state in accessible labels, including the New Space drop target.
+- Sidebar Space rail buttons must expose active and drop-target state in accessible labels, including tab and New Space drop targets.
 - Users must be able to move tabs between Spaces from the sidebar tab context menu.
 - Sidebar tab context menus must support opening, split-view targeting, duplication, pinning, muting, and closing.
 - Sidebar tab context menus must support copying the tab URL and title without selecting the tab.

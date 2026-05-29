@@ -9,6 +9,7 @@ import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
   getNewWorkspaceAccessibilityLabel,
+  getNewWorkspaceDropTargetState,
   getWorkspaceAccessibilityLabel,
   getWorkspaceDropTargetState,
   getWorkspaceInitial,
@@ -69,6 +70,12 @@ export function WorkspaceStrip({
   const sidebarToggleLabel = compactMode
     ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
     : sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar";
+  const isNewWorkspaceDropTarget = getNewWorkspaceDropTargetState({
+    draggingClosedTabIndex,
+    draggingFavoriteId,
+    draggingGroupId,
+    draggingTabId
+  });
 
   useEffect(() => {
     if (!menu) return;
@@ -166,8 +173,8 @@ export function WorkspaceStrip({
       <button
         className="workspace-button workspace-new-button"
         type="button"
-        aria-label={getNewWorkspaceAccessibilityLabel(Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId))}
-        data-drop-target={Boolean(draggingClosedTabIndex !== null || draggingFavoriteId || draggingGroupId)}
+        aria-label={getNewWorkspaceAccessibilityLabel(isNewWorkspaceDropTarget)}
+        data-drop-target={isNewWorkspaceDropTarget}
         onDragOver={(event) => {
           if (
             draggingClosedTabIndex !== null ||

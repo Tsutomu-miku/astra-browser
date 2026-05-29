@@ -5,6 +5,7 @@ import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
   getNewWorkspaceAccessibilityLabel,
+  getNewWorkspaceDropTargetState,
   getWorkspaceAccessibilityLabel,
   getWorkspaceButtonLabel,
   getWorkspaceDropTargetState,
@@ -49,7 +50,7 @@ describe("workspace strip state", () => {
     expect(getNewWorkspaceAccessibilityLabel(true)).toBe("Drop to create New Space");
   });
 
-  it("does not mark workspace drop targets while dragging a tab", () => {
+  it("marks other Spaces as drop targets while dragging a tab", () => {
     expect(getWorkspaceDropTargetState({
       activeWorkspaceId: "personal",
       draggingClosedTabIndex: null,
@@ -58,7 +59,7 @@ describe("workspace strip state", () => {
       draggingTabId: "tab",
       draggingWorkspaceId: null,
       workspaceId: "work"
-    })).toBe(false);
+    })).toBe(true);
     expect(getWorkspaceDropTargetState({
       activeWorkspaceId: "personal",
       draggingClosedTabIndex: null,
@@ -68,6 +69,27 @@ describe("workspace strip state", () => {
       draggingWorkspaceId: null,
       workspaceId: "personal"
     })).toBe(false);
+  });
+
+  it("marks New Space as a drop target for any object that can create a Space", () => {
+    expect(getNewWorkspaceDropTargetState({
+      draggingClosedTabIndex: null,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      draggingTabId: null
+    })).toBe(false);
+    expect(getNewWorkspaceDropTargetState({
+      draggingClosedTabIndex: null,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      draggingTabId: "tab"
+    })).toBe(true);
+    expect(getNewWorkspaceDropTargetState({
+      draggingClosedTabIndex: 0,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      draggingTabId: null
+    })).toBe(true);
   });
 
   it("marks workspace drop targets for cross-Space drag types that need visible destinations", () => {

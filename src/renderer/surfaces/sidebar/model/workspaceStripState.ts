@@ -43,6 +43,25 @@ export function getNewWorkspaceAccessibilityLabel(isDropTarget: boolean): string
   return isDropTarget ? "Drop to create New Space" : "New Space";
 }
 
+export function getNewWorkspaceDropTargetState({
+  draggingClosedTabIndex,
+  draggingFavoriteId,
+  draggingGroupId,
+  draggingTabId
+}: {
+  draggingClosedTabIndex: number | null;
+  draggingFavoriteId: string | null;
+  draggingGroupId: string | null;
+  draggingTabId: string | null;
+}): boolean {
+  return Boolean(
+    draggingClosedTabIndex !== null ||
+    draggingFavoriteId ||
+    draggingGroupId ||
+    draggingTabId
+  );
+}
+
 export function getWorkspaceDropTargetState({
   activeWorkspaceId,
   draggingClosedTabIndex,
@@ -65,6 +84,7 @@ export function getWorkspaceDropTargetState({
     (draggingGroupId && !isActive) ||
     draggingClosedTabIndex !== null ||
     (draggingFavoriteId && !isActive) ||
+    (draggingTabId && !isActive) ||
     (draggingWorkspaceId && workspaceId !== draggingWorkspaceId)
   );
 }

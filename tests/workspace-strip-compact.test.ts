@@ -124,7 +124,7 @@ describe("workspace strip compact controls", () => {
     expect(html).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
   });
 
-  it("keeps New Space visually quiet while dragging tabs but marks it for groups", () => {
+  it("marks Space rail drop targets while dragging tabs or groups", () => {
     const tabHtml = renderStrip({
       compactMode: false,
       draggingTabId: "tab",
@@ -139,7 +139,8 @@ describe("workspace strip compact controls", () => {
     });
 
     expect(tabHtml).toContain('class="workspace-button workspace-new-button"');
-    expect(tabHtml).toContain('aria-label="New Space" data-drop-target="false"');
+    expect(tabHtml).toContain('aria-label="Work, 1 tab, Space, drop target"');
+    expect(tabHtml).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
     expect(groupHtml).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
   });
 
