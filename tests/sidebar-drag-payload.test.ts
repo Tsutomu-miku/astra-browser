@@ -13,6 +13,10 @@ import {
   readSidebarTabDragId,
   SIDEBAR_DRAG_DATA
 } from "../src/renderer/surfaces/sidebar/model/sidebarDragSources";
+import {
+  getSidebarNewWorkspaceDropIntent,
+  getSidebarWorkspaceDropIntent
+} from "../src/renderer/surfaces/sidebar/model/sidebarWorkspaceDropIntent";
 
 describe("sidebar drag payload", () => {
   it("writes and reads the explicit sidebar tab payload before falling back to plain text", () => {
@@ -53,5 +57,53 @@ describe("sidebar drag payload", () => {
   it("treats missing or invalid closed-tab payloads as no source", () => {
     expect(readSidebarClosedTabDragIndex({ draggingClosedTabIndex: null }, () => "")).toBeNull();
     expect(readSidebarClosedTabDragIndex({ draggingClosedTabIndex: null }, () => "abc")).toBeNull();
+  });
+
+  it("derives Space drop intents from the shared drag source model", () => {
+    expect(getSidebarWorkspaceDropIntent({
+      activeWorkspaceId: "personal",
+      draggingClosedTabIndex: null,
+      draggingEssentialId: null,
+      draggingFavoriteId: "favorite",
+      draggingGroupId: null,
+      draggingTabId: null,
+      draggingWorkspaceId: null,
+      targetWorkspaceId: "work"
+    })).toEqual({ favoriteId: "favorite", type: "favorite" });
+    expect(getSidebarWorkspaceDropIntent({
+      activeWorkspaceId: "personal",
+      draggingClosedTabIndex: null,
+      draggingEssentialId: null,
+      draggingFavoriteId: "favorite",
+      draggingGroupId: null,
+      draggingTabId: null,
+      draggingWorkspaceId: null,
+      targetWorkspaceId: "personal"
+    })).toBeNull();
+    expect(getSidebarWorkspaceDropIntent({
+      activeWorkspaceId: "personal",
+      draggingClosedTabIndex: null,
+      draggingEssentialId: null,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      draggingTabId: "tab",
+      draggingWorkspaceId: null,
+      targetWorkspaceId: "work"
+    })).toEqual({ tabId: "tab", type: "tab" });
+  });
+
+  it("derives New Space drop intents without component-specific branches", () => {
+    expect(getSidebarNewWorkspaceDropIntent({
+      draggingClosedTabIndex: null,
+      draggingFavoriteId: "favorite",
+      draggingGroupId: null,
+      draggingTabId: null
+    })).toEqual({ favoriteId: "favorite", type: "favorite" });
+    expect(getSidebarNewWorkspaceDropIntent({
+      draggingClosedTabIndex: null,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      draggingTabId: null
+    }, (type) => type === SIDEBAR_DRAG_DATA.groupId ? "group" : "")).toEqual({ groupId: "group", type: "group" });
   });
 });

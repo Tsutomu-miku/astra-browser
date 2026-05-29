@@ -24,9 +24,10 @@ import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
 import { handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
-import { readSidebarFavoriteDragId, readSidebarTabDragEventId } from "./model/sidebarDragSources";
+import { readSidebarTabDragEventId, type SidebarDragState } from "./model/sidebarDragSources";
 import { scrollSidebarSearchTargetIntoView } from "./model/sidebarSearchTargetDom";
 import { getSidebarTabFolders } from "./model/sidebarTabFolders";
+import { getSidebarNewWorkspaceDropIntent, getSidebarWorkspaceDropIntent, type SidebarWorkspaceDropIntent } from "./model/sidebarWorkspaceDropIntent";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -75,14 +76,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     draggingGroupId,
     draggingTabId,
     draggingWorkspaceId,
-    handleNewWorkspaceDrop,
-    handleWorkspaceDragOver,
     handleWorkspaceDragStart,
-    handleWorkspaceDrop,
     setDraggingClosedTabIndex,
     setDraggingGroupId,
-    setDraggingTabId
-  } = useSidebarWorkspaceDrag({ actions, activeWorkspaceId: activeWorkspace.id });
+    setDraggingTabId,
+    setDraggingWorkspaceId
+  } = useSidebarWorkspaceDrag();
   const {
     draggingEssentialId,
     draggingFavoriteId,
@@ -139,27 +138,29 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     handleTabFolderDrop(event, { type: "pinned" });
   };
 
-  const handleWorkspaceDragOverWithFavorites = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    const favoriteId = readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type));
-    if (favoriteId && workspaceId !== activeWorkspace.id) {
+  const handleWorkspaceDragOver = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    const intent = getSidebarWorkspaceDropIntent({
+      ...getWorkspaceDragState(),
+      activeWorkspaceId: activeWorkspace.id,
+      targetWorkspaceId: workspaceId
+    }, (type) => event.dataTransfer.getData(type));
+    if (intent) {
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
-      return;
     }
-
-    handleWorkspaceDragOver(event, workspaceId);
   };
 
-  const handleWorkspaceDropWithFavorites = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    const favoriteId = readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type));
-    if (favoriteId && workspaceId !== activeWorkspace.id) {
-      event.preventDefault();
-      actions.moveWorkspaceFavoriteToWorkspace(favoriteId, workspaceId);
-      setDraggingFavoriteId(null);
-      return;
-    }
+  const handleWorkspaceDrop = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
+    const intent = getSidebarWorkspaceDropIntent({
+      ...getWorkspaceDragState(),
+      activeWorkspaceId: activeWorkspace.id,
+      targetWorkspaceId: workspaceId
+    }, (type) => event.dataTransfer.getData(type));
+    if (!intent) return;
 
-    handleWorkspaceDrop(event, workspaceId);
+    event.preventDefault();
+    runWorkspaceDropIntent(intent, event, workspaceId);
+    clearSidebarDropState();
   };
 
   const openWorkspaceSettings = (workspaceId: string) => {
@@ -167,16 +168,64 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     setPanel("settings");
   };
 
-  const handleNewWorkspaceDropWithFavorites = (event: DragEvent<HTMLButtonElement>) => {
-    const favoriteId = readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type));
-    if (favoriteId) {
-      event.preventDefault();
-      actions.moveWorkspaceFavoriteToNewWorkspace(favoriteId);
-      setDraggingFavoriteId(null);
-      return;
-    }
+  const handleNewWorkspaceDrop = (event: DragEvent<HTMLButtonElement>) => {
+    const intent = getSidebarNewWorkspaceDropIntent(
+      getWorkspaceDragState(),
+      (type) => event.dataTransfer.getData(type)
+    );
+    if (!intent) return;
 
-    handleNewWorkspaceDrop(event);
+    event.preventDefault();
+    runNewWorkspaceDropIntent(intent);
+    clearSidebarDropState();
+  };
+
+  const getWorkspaceDragState = (): Required<SidebarDragState> => ({
+    draggingClosedTabIndex,
+    draggingEssentialId,
+    draggingFavoriteId,
+    draggingGroupId,
+    draggingTabId,
+    draggingWorkspaceId
+  });
+
+  const clearSidebarDropState = () => {
+    setDraggingClosedTabIndex(null);
+    setDraggingEssentialId(null);
+    setDraggingFavoriteId(null);
+    setDraggingGroupId(null);
+    setDraggingTabId(null);
+    setDraggingWorkspaceId(null);
+  };
+
+  const runWorkspaceDropIntent = (
+    intent: SidebarWorkspaceDropIntent,
+    event: DragEvent<HTMLButtonElement>,
+    workspaceId: string
+  ) => {
+    if (intent.type === "workspace") {
+      actions.reorderWorkspace(intent.workspaceId, workspaceId, getPointerDropPlacement(event.currentTarget, event, "vertical"));
+    } else if (intent.type === "closedTab") {
+      actions.restoreClosedTabToWorkspace(intent.closedTabIndex, workspaceId);
+    } else if (intent.type === "favorite") {
+      actions.moveWorkspaceFavoriteToWorkspace(intent.favoriteId, workspaceId);
+    } else if (intent.type === "group") {
+      actions.moveTabGroupToWorkspace(intent.groupId, workspaceId);
+    } else {
+      actions.moveTabToWorkspace(intent.tabId, workspaceId);
+    }
+  };
+
+  const runNewWorkspaceDropIntent = (intent: Exclude<SidebarWorkspaceDropIntent, { type: "workspace" }>) => {
+    if (intent.type === "closedTab") {
+      actions.restoreClosedTabToNewWorkspace(intent.closedTabIndex);
+    } else if (intent.type === "favorite") {
+      actions.moveWorkspaceFavoriteToNewWorkspace(intent.favoriteId);
+    } else if (intent.type === "group") {
+      actions.moveTabGroupToNewWorkspace(intent.groupId);
+    } else {
+      actions.moveTabToNewWorkspace(intent.tabId);
+    }
   };
 
   useEffect(() => {
@@ -249,12 +298,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         sidebarCollapsed={sidebarCollapsed}
         workspaces={state.workspaces}
         onDragEnd={clearWorkspaceDrag}
-        onDragOver={handleWorkspaceDragOverWithFavorites}
+        onDragOver={handleWorkspaceDragOver}
         onDragStart={handleWorkspaceDragStart}
-        onDrop={handleWorkspaceDropWithFavorites}
+        onDrop={handleWorkspaceDrop}
         onDeleteWorkspace={actions.deleteWorkspace}
         onNewWorkspace={actions.addWorkspace}
-        onNewWorkspaceDrop={handleNewWorkspaceDropWithFavorites}
+        onNewWorkspaceDrop={handleNewWorkspaceDrop}
         onOpenSettings={openWorkspaceSettings}
         onSelect={actions.switchWorkspace}
         onToggleSidebar={actions.toggleSidebar}
