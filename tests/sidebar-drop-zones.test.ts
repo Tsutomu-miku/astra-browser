@@ -770,7 +770,7 @@ describe("sidebar section drop zones", () => {
     act(() => root.unmount());
   });
 
-  it("temporarily reveals collapsed quick-entry sections while reordering them", () => {
+  it("keeps collapsed quick-entry sections hidden while reordering them", () => {
     const activeTab = createTab("Docs", "https://docs.example");
     const firstEssential = createFavorite("Calendar", "https://calendar.example");
     const secondEssential = createFavorite("Mail", "https://mail.example");
@@ -836,7 +836,7 @@ describe("sidebar section drop zones", () => {
       }));
     });
 
-    expect(container.querySelector(".essentials")).not.toBeNull();
+    expect(container.querySelector(".essentials")).toBeNull();
     expect(container.querySelector(".favorites")).toBeNull();
 
     act(() => {
@@ -848,7 +848,7 @@ describe("sidebar section drop zones", () => {
     });
 
     expect(container.querySelector(".essentials")).toBeNull();
-    expect(container.querySelector(".favorites")).not.toBeNull();
+    expect(container.querySelector(".favorites")).toBeNull();
 
     act(() => root.unmount());
   });

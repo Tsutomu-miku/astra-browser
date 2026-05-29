@@ -8,7 +8,6 @@ import {
   isSidebarFavoriteActive,
   isSidebarUrlActive
 } from "../../model/sidebarItemState";
-import { hasSidebarSectionDragReveal, type SidebarSectionId } from "../../model/sidebarSectionState";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
@@ -17,6 +16,8 @@ import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
 import { SidebarTabsSection } from "./SidebarTabsSection";
 
 const SIDEBAR_RECENTLY_CLOSED_LIMIT = 4;
+
+type SidebarSectionId = "essentials" | "favorites" | "pinned" | "recentlyClosed" | "tabs";
 
 export function SidebarSections({
   actions,
@@ -92,11 +93,6 @@ export function SidebarSections({
   const recentlyClosedTabs = closedTabs.slice(0, SIDEBAR_RECENTLY_CLOSED_LIMIT);
   const isSectionCollapsed = (sectionId: SidebarSectionId) => (
     !filteredItems.isFiltering &&
-    !hasSidebarSectionDragReveal(sectionId, {
-      essentialId: draggingEssentialId,
-      favoriteId: draggingFavoriteId,
-      tabId: draggingTabId
-    }) &&
     collapsedSections[sectionId]
   );
   const toggleSection = (sectionId: SidebarSectionId) => {

@@ -151,7 +151,7 @@ Progress: partially implemented.
 - Section collapse, search reveal, and drag reveal must feel predictable.
 - Keyboard focus navigation must work across sections and context menus.
 
-Progress: partially implemented. Row action hints reserve stable inline space, pinned tab hints reveal inside the icon tile, status badges, list controls, Space rail controls, sidebar chrome controls, and sidebar menu swatches avoid native title tooltips, hover/focus no longer overlays or squeezes row titles, and close controls reveal on keyboard focus without using absolute overlays.
+Progress: partially implemented. Row action hints reserve stable inline space, pinned tab hints reveal inside the icon tile, status badges, list controls, Space rail controls, sidebar chrome controls, and sidebar menu swatches avoid native title tooltips, hover/focus no longer overlays or squeezes row titles, and close controls reveal on keyboard focus without using absolute overlays. Collapsed sidebar sections now stay collapsed during tab, Essential, and Favorite drags; search filtering is the only automatic section reveal path.
 
 ### P1-2 Split View And Glance
 
