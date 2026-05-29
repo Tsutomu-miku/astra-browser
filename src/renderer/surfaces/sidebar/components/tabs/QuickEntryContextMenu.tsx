@@ -27,7 +27,7 @@ export function QuickEntryContextMenu({
   onCopyText: (text: string) => void;
   onMoveToNewWorkspace?: (favoriteId: string) => void;
   onMoveToWorkspace?: (favoriteId: string, workspaceId: string) => void;
-  onOpen: (item: Favorite) => void;
+  onOpen: (item: Favorite, kind: "essential" | "favorite") => void;
   onOpenInSplit: (item: Favorite, kind: "essential" | "favorite") => void;
   onPreview: (url: string, title?: string) => void;
   onRemove: (url: string) => void;
@@ -51,7 +51,7 @@ export function QuickEntryContextMenu({
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={handleMenuKeyboardNavigation}
     >
-      <button type="button" role="menuitem" onClick={() => run(() => onOpen(item))}>
+      <button type="button" role="menuitem" onClick={() => run(() => onOpen(item, kind))}>
         Open
       </button>
       <button type="button" role="menuitem" onClick={() => run(() => onPreview(item.url, item.title))}>

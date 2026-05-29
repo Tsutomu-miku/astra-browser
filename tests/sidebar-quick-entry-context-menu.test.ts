@@ -264,6 +264,44 @@ describe("sidebar quick entry context menu", () => {
     act(() => root.unmount());
   });
 
+  it("navigates the active tab from Essential sidebar context-menu Open", () => {
+    const state = createDefaultState();
+    const activeWorkspace = state.workspaces[0];
+    const matchingTab = activeWorkspace.tabs[0];
+    matchingTab.title = "Docs";
+    matchingTab.url = "https://docs.example/";
+    const item = createFavorite("Docs", matchingTab.url);
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarContextMenus, {
+        actions,
+        activeWorkspace,
+        closedTabMenu: null,
+        closeMenus: vi.fn(),
+        quickEntryMenu: {
+          item,
+          kind: "essential",
+          left: 10,
+          top: 20
+        },
+        state,
+        tabGroupMenu: null,
+        tabMenu: null
+      }));
+    });
+
+    container.querySelector(".quick-entry-context-menu button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(actions.navigateActiveTab).toHaveBeenCalledWith(item.url);
+    expect(actions.selectTab).not.toHaveBeenCalled();
+    expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("selects Favorite tabs by tab id before URL fallback from the sidebar context menu", () => {
     const state = createDefaultState();
     const activeWorkspace = state.workspaces[0];

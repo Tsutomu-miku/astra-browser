@@ -37,7 +37,12 @@ export function SidebarContextMenus({
     ? tabGroupTabs.length
     : 0;
   const canSleepTabGroup = tabGroupTabs.some((tab) => !tab.isSleeping && !protectedTabIds.has(tab.id));
-  const openQuickEntry = (item: Favorite) => {
+  const openQuickEntry = (item: Favorite, kind: "essential" | "favorite") => {
+    if (kind === "essential") {
+      actions.navigateActiveTab(item.url);
+      return;
+    }
+
     const tab = resolveFavoriteTab(activeWorkspace, item);
     tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(item.url, item.title);
   };
