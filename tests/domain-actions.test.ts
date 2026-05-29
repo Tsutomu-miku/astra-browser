@@ -801,6 +801,23 @@ describe("domain actions", () => {
     expect(slept.splitMode).toBe(false);
   });
 
+  it("moves focus forward before sleeping the first active tab", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const workspace = getActiveWorkspace(second);
+    const firstTab = workspace.tabs.find((tab) => tab.title === "New Tab")!;
+    const secondTab = workspace.tabs.find((tab) => tab.title === "First")!;
+    secondTab.isSleeping = true;
+    workspace.activeTabId = firstTab.id;
+
+    const slept = sleepTab(second, firstTab.id);
+    const sleptWorkspace = getActiveWorkspace(slept);
+
+    expect(sleptWorkspace.tabs.find((tab) => tab.id === firstTab.id)?.isSleeping).toBe(true);
+    expect(getActiveTab(sleptWorkspace).id).toBe(secondTab.id);
+    expect(getActiveTab(sleptWorkspace).isSleeping).toBe(false);
+  });
+
   it("sleeps a tab group while protecting active and split tabs", () => {
     const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.test", "Docs"));
     const group = getActiveWorkspace(grouped).tabGroups[0];

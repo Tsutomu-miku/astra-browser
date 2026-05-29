@@ -263,14 +263,21 @@ describe("sidebar item action hints", () => {
   });
 
   it("renders preview and split hints for favorite rows", () => {
+    const favorite = createFavorite("Docs", "https://docs.example");
     const html = renderToStaticMarkup(createElement(FavoriteButton, {
-      favorite: createFavorite("Docs", "https://docs.example"),
+      draggingQuickEntryId: "other-favorite",
+      draggable: true,
+      favorite,
+      isActive: true,
+      isSearchSelected: true,
+      kind: "favorite",
       onOpen: vi.fn(),
       onOpenInSplit: vi.fn(),
       onPreview: vi.fn()
     }));
 
     expect(html).toContain('class="sidebar-item-action-hints"');
+    expect(html).toContain('aria-label="Docs, Favorite, current page, selected search result, drop target"');
     expect(html).toContain("Alt");
     expect(html).toContain("Preview");
     expect(html).toContain("Shift");
@@ -302,6 +309,34 @@ describe("sidebar item action hints", () => {
     expect(onOpen).toHaveBeenCalledWith(favorite.url, favorite.title);
     expect(onPreview).toHaveBeenCalledWith(favorite.url, favorite.title);
     expect(onOpenInSplit).toHaveBeenCalledWith(favorite.url, favorite.title);
+
+    act(() => root.unmount());
+  });
+
+  it("does not run quick entry activation when opening its keyboard context menu", () => {
+    const favorite = createFavorite("Docs", "https://docs.example");
+    const onContextMenu = vi.fn();
+    const onOpen = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(FavoriteButton, {
+        favorite,
+        onContextMenu,
+        onOpen,
+        onOpenInSplit: vi.fn(),
+        onPreview: vi.fn()
+      }));
+    });
+
+    container.querySelector(".favorite-button")?.dispatchEvent(new KeyboardEvent("keydown", {
+      bubbles: true,
+      key: "ContextMenu"
+    }));
+
+    expect(onContextMenu).toHaveBeenCalledWith(expect.objectContaining({ type: "contextmenu" }), favorite);
+    expect(onOpen).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });

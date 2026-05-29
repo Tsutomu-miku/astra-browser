@@ -55,6 +55,7 @@ describe("sidebar favorites", () => {
 
     container.querySelector(".essentials .favorite-button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
+    expect(container.querySelector(".essentials .favorite-button")?.getAttribute("aria-label")).toBe("Docs, Essential");
     expect(actions.navigateActiveTab).toHaveBeenCalledWith(essential.url, essential.title);
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
 
@@ -108,6 +109,7 @@ describe("sidebar favorites", () => {
 
     container.querySelector(".favorite-button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
+    expect(container.querySelector(".favorite-button")?.getAttribute("aria-label")).toBe("Docs, Favorite");
     expect(actions.navigateActiveTab).toHaveBeenCalledWith(favorite.url, favorite.title);
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
 

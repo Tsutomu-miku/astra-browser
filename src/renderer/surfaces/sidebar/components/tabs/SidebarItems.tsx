@@ -4,6 +4,7 @@ import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icon
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
+import { getQuickEntryAccessibilityLabel, type QuickEntryKind } from "../../model/quickEntryItemState";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
@@ -190,6 +191,7 @@ export function FavoriteButton({
   id,
   isActive = false,
   isSearchSelected = false,
+  kind = "favorite",
   onDragEnd,
   onDragStart,
   onDrop,
@@ -205,6 +207,7 @@ export function FavoriteButton({
   id?: string;
   isActive?: boolean;
   isSearchSelected?: boolean;
+  kind?: QuickEntryKind;
   onContextMenu?: (event: MouseEvent, favorite: Favorite) => void;
   onDragEnd?: () => void;
   onDragStart?: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
@@ -214,17 +217,28 @@ export function FavoriteButton({
   onPreview: (url: string, title?: string) => void;
   dropAxis?: DropAxis;
 }) {
+  const isDragging = draggable && draggingQuickEntryId === favorite.id;
+  const isDropTarget = draggable && Boolean(draggingQuickEntryId && draggingQuickEntryId !== favorite.id);
+
   return (
     <button
       className="favorite-button"
       id={id}
       type="button"
       title={favorite.url}
+      aria-label={getQuickEntryAccessibilityLabel({
+        entry: favorite,
+        isActive,
+        isDragging,
+        isDropTarget,
+        isSearchSelected,
+        kind
+      })}
       aria-current={isActive}
       aria-selected={isSearchSelected}
       draggable={draggable}
-      data-dragging={draggable && draggingQuickEntryId === favorite.id}
-      data-drop-target={draggable && Boolean(draggingQuickEntryId && draggingQuickEntryId !== favorite.id)}
+      data-dragging={isDragging}
+      data-drop-target={isDropTarget}
       onDragStart={draggable && onDragStart ? (event) => onDragStart(event, favorite.id) : undefined}
       onDragEnd={draggable ? onDragEnd : undefined}
       onDragOver={(event) => {
@@ -241,7 +255,7 @@ export function FavoriteButton({
       }}
       onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
       onKeyDown={(event) => {
-        if (onContextMenu) openSidebarKeyboardContextMenu(event);
+        if (onContextMenu && openSidebarKeyboardContextMenu(event)) return;
         runSidebarItemKeyboardActivation(event, {
           primary: () => onOpen(favorite.url, favorite.title),
           preview: () => onPreview(favorite.url, favorite.title),

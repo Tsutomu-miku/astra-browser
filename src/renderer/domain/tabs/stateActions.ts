@@ -49,8 +49,12 @@ export function sleepTab(state: BrowserState, tabId: string): BrowserState {
     if (!workspace || !tab || workspace.tabs.length <= 1) return;
 
     if (workspace.activeTabId === tab.id) {
-      const index = workspace.tabs.findIndex((candidate) => candidate.id === tab.id);
-      workspace.activeTabId = workspace.tabs[Math.max(0, index - 1)].id;
+      const fallback = getSleepTabFocusFallback(workspace.tabs, tab.id);
+      if (!fallback) return;
+
+      fallback.isSleeping = false;
+      fallback.lastActiveAt = Date.now();
+      workspace.activeTabId = fallback.id;
     }
 
     setSplitTabIds(draft, getSplitTabIds(draft).filter((tabId) => tabId !== tab.id));
@@ -60,6 +64,13 @@ export function sleepTab(state: BrowserState, tabId: string): BrowserState {
     tab.canGoBack = false;
     tab.canGoForward = false;
   });
+}
+
+function getSleepTabFocusFallback(tabs: BrowserTab[], tabId: string): BrowserTab | null {
+  const index = tabs.findIndex((candidate) => candidate.id === tabId);
+  if (index < 0) return null;
+
+  return tabs[index - 1] ?? tabs[index + 1] ?? null;
 }
 
 export function sleepTabGroup(state: BrowserState, groupId: string): BrowserState {

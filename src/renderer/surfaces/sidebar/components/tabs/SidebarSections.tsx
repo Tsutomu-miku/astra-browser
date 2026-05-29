@@ -133,6 +133,7 @@ export function SidebarSections({
                 id={getSidebarSearchTargetElementId({ type: "essential", id: essential.id, title: essential.title, url: essential.url })}
                 isActive={isSidebarUrlActive(activeTab.url, essential.url)}
                 isSearchSelected={activeSearchTarget?.type === "essential" && activeSearchTarget.id === essential.id}
+                kind="essential"
                 dropAxis="horizontal"
                 onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "essential")}
                 onDragStart={onEssentialDragStart}
@@ -194,6 +195,7 @@ export function SidebarSections({
                 id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
                 isActive={isSidebarUrlActive(activeTab.url, favorite.url)}
                 isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
+                kind="favorite"
                 onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "favorite")}
                 onDragStart={onFavoriteDragStart}
                 onDragEnd={() => setDraggingFavoriteId(null)}

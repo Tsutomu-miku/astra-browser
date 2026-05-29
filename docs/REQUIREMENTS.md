@@ -43,6 +43,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - The sidebar footer controls must support ArrowLeft, ArrowRight, Home, and End keyboard focus navigation with explicit labels for icon-only actions.
 - Sleeping tabs must expose a direct wake action from the sidebar tab context menu.
 - Active tabs, split-view tabs, and pinned tabs must be protected from bulk sleep.
+- Manually sleeping the current tab must move focus to a neighboring tab first and wake that fallback if needed.
 - Users must be able to close tabs directly from the sidebar with recently closed recovery.
 - The sidebar must expose a compact recently closed section for restoring the active Space's latest closed tabs.
 - Sidebar recently closed rows must support Alt-click Glance preview and Shift-click split opening.
@@ -99,6 +100,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar Space favorite context menus must support moving favorites to another Space or to a new Space.
 - Opening an Essential or favorite from its sidebar context menu must navigate the current tab instead of creating a new tab.
 - Sidebar Essentials and favorites context menus must support copying the entry URL and title.
+- Sidebar Essentials and favorites must expose accessible labels with kind, current-page, search selection, dragging, and drop-target state.
 - Sidebar tab, pinned tab, tab group, recently closed tab, Essential, and favorite context menus must open from the keyboard with `ContextMenu` or `Shift+F10`.
 - Sidebar context menus must focus the first action when opened and support Arrow, Home, and End keyboard navigation.
 - Sidebar context menus must restore focus to their triggering sidebar item when closed by Escape or a menu action.
