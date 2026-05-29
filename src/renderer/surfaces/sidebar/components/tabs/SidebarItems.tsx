@@ -71,8 +71,11 @@ export function TabRow({
   activeTabId,
   draggingTabId,
   id,
+  labelKind = "tab",
   onClose,
   onContextMenu,
+  onDragEndExtra,
+  onDragStartExtra,
   onDrop,
   onPreview,
   onSelect,
@@ -86,8 +89,11 @@ export function TabRow({
   activeTabId: string;
   draggingTabId: string | null;
   id?: string;
+  labelKind?: "favorite tab" | "pinned tab" | "tab";
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
+  onDragEndExtra?: () => void;
+  onDragStartExtra?: (event: DragEvent<HTMLElement>, tab: BrowserTab) => void;
   onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
   onPreview: (url: string, title?: string) => void;
   onSelect: (tabId: string) => void;
@@ -101,7 +107,7 @@ export function TabRow({
   const statusBadges = getTabStatusBadges(tab, splitTabIds);
   const tabLabel = getSidebarTabAccessibilityLabel({
     isActive: tab.id === activeTabId,
-    kind: "tab",
+    kind: labelKind,
     statusBadges,
     tab
   });
@@ -109,6 +115,7 @@ export function TabRow({
     setDraggingTabId(tab.id);
     writeSidebarTabDragPayload(event.dataTransfer, tab.id);
     event.dataTransfer.effectAllowed = "move";
+    onDragStartExtra?.(event, tab);
   };
 
   return (
@@ -121,7 +128,10 @@ export function TabRow({
       data-dragging={draggingTabId === tab.id}
       data-tab-id={tab.id}
       onDragStart={startTabDrag}
-      onDragEnd={() => setDraggingTabId(null)}
+      onDragEnd={() => {
+        setDraggingTabId(null);
+        onDragEndExtra?.();
+      }}
       onDragOver={(event) => {
         const draggedTabId = draggingTabId || readSidebarTabDragPayload(event.dataTransfer);
         if (draggedTabId && draggedTabId !== tab.id) {
@@ -234,7 +244,7 @@ export function FavoriteButton({
   onCloseTab?: (tabId: string) => void;
   onContextMenu?: (event: MouseEvent, favorite: Favorite) => void;
   onDragEnd?: () => void;
-  onDragStart?: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
+  onDragStart?: (event: DragEvent<HTMLElement>, favoriteId: string) => void;
   onDrop?: (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis) => void;
   onOpen: (url: string, title?: string) => void;
   onOpenInSplit: (url: string, title?: string) => void;

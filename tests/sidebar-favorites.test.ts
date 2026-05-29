@@ -1,8 +1,9 @@
-import { createElement } from "react";
+import { createElement, type DragEvent as ReactDragEvent } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
+import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
@@ -109,12 +110,13 @@ describe("sidebar favorites", () => {
       }));
     });
 
-    container.querySelector(".favorite-button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    container.querySelector(".favorites .tab-button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(container.querySelector(".favorite-button")?.getAttribute("aria-label")).toBe("Docs, favorite tab");
+    expect(container.querySelector(".favorites .tab-button")?.getAttribute("aria-label")).toBe("Docs, favorite tab");
     expect(actions.selectTab).toHaveBeenCalledWith(docsTab.id);
     expect(actions.navigateActiveTab).not.toHaveBeenCalled();
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
+    expect(container.querySelector(".favorites .favorite-button")).toBeNull();
 
     act(() => root.unmount());
   });
@@ -165,8 +167,8 @@ describe("sidebar favorites", () => {
       }));
     });
 
-    expect(container.querySelector(".favorite-button")?.getAttribute("aria-current")).toBe("false");
-    expect(container.querySelector(".favorite-button")?.getAttribute("aria-label")).toBe("Docs, favorite tab");
+    expect(container.querySelector(".favorites .tab-row")?.getAttribute("aria-current")).toBe("false");
+    expect(container.querySelector(".favorites .tab-button")?.getAttribute("aria-label")).toBe("Docs, favorite tab");
 
     act(() => root.unmount());
   });
@@ -220,8 +222,9 @@ describe("sidebar favorites", () => {
       }));
     });
 
-    const favoriteButton = container.querySelector(".favorites .favorite-button")!;
-    favoriteButton.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true }));
+    const favoriteRow = container.querySelector(".favorites .tab-row")!;
+    const favoriteButton = container.querySelector(".favorites .tab-button")!;
+    favoriteRow.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true }));
     favoriteButton.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete" }));
     favoriteButton.dispatchEvent(new MouseEvent("auxclick", { bubbles: true, button: 1 }));
 
@@ -280,7 +283,7 @@ describe("sidebar favorites", () => {
       }));
     });
 
-    const favoriteButton = container.querySelector(".favorites .favorite-button")!;
+    const favoriteButton = container.querySelector(".favorites .tab-button")!;
     favoriteButton.dispatchEvent(new MouseEvent("click", { bubbles: true, shiftKey: true }));
     favoriteButton.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter", shiftKey: true }));
 
@@ -337,13 +340,82 @@ describe("sidebar favorites", () => {
       }));
     });
 
-    const favoriteButton = container.querySelector(".favorites .favorite-button");
+    const favoriteButton = container.querySelector(".favorites .tab-button");
     expect(favoriteButton?.getAttribute("aria-label")).toBe("Docs, favorite tab, Split, Muted");
-    expect(favoriteButton?.querySelector(".favorite-title-stack")).not.toBeNull();
+    expect(favoriteButton?.querySelector(".tab-title-stack")).not.toBeNull();
     expect(favoriteButton?.querySelector(".tab-status-badge.is-split")).not.toBeNull();
     expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")).not.toBeNull();
     expect(favoriteButton?.querySelector(".tab-status-badge.is-split")?.hasAttribute("title")).toBe(false);
     expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")?.hasAttribute("title")).toBe(false);
+
+    act(() => root.unmount());
+  });
+
+  it("drags tab-backed Favorites as tab rows while preserving the Favorite payload", () => {
+    const activeTab = createTab("Active", "https://active.example");
+    const docsTab = createTab("Docs", "https://docs.example");
+    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
+    const setDraggingTabId = vi.fn();
+    const onFavoriteDragStart = vi.fn((event: ReactDragEvent<HTMLElement>, favoriteId: string) => {
+      event.dataTransfer.setData("text/favorite-id", favoriteId);
+    });
+    const data = new Map<string, string>();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [favorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [activeTab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart,
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId,
+        splitTabIds: [],
+        workspaceTabs: [activeTab, docsTab]
+      }));
+    });
+
+    const event = new Event("dragstart", { bubbles: true });
+    Object.defineProperty(event, "dataTransfer", {
+      value: {
+        effectAllowed: "",
+        getData: (type: string) => data.get(type) ?? "",
+        setData: (type: string, value: string) => data.set(type, value)
+      }
+    });
+    container.querySelector(".favorites .tab-row")?.dispatchEvent(event);
+
+    expect(setDraggingTabId).toHaveBeenCalledWith(docsTab.id);
+    expect(onFavoriteDragStart).toHaveBeenCalledWith(expect.objectContaining({ type: "dragstart" }), favorite.id);
+    expect(data.get(SIDEBAR_TAB_DRAG_TYPE)).toBe(docsTab.id);
+    expect(data.get("text/favorite-id")).toBe(favorite.id);
 
     act(() => root.unmount());
   });

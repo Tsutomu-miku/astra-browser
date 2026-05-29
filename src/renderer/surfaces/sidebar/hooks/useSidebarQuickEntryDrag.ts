@@ -55,13 +55,13 @@ export function useSidebarQuickEntryDrag({
     setDraggingTabId(null);
   };
 
-  const handleEssentialDragStart = (event: DragEvent<HTMLButtonElement>, essentialId: string) => {
+  const handleEssentialDragStart = (event: DragEvent<HTMLElement>, essentialId: string) => {
     setDraggingEssentialId(essentialId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/essential-id", essentialId);
   };
 
-  const handleFavoriteDragStart = (event: DragEvent<HTMLButtonElement>, favoriteId: string) => {
+  const handleFavoriteDragStart = (event: DragEvent<HTMLElement>, favoriteId: string) => {
     setDraggingFavoriteId(favoriteId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/favorite-id", favoriteId);

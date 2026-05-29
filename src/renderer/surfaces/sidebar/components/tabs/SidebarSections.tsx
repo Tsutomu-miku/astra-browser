@@ -5,8 +5,6 @@ import { readSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarD
 import { resolveFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import {
-  getSidebarTabAccessibilityLabel,
-  getTabStatusBadges,
   isSidebarFavoriteActive,
   isSidebarUrlActive
 } from "../../model/sidebarItemState";
@@ -14,7 +12,7 @@ import { hasSidebarSectionDragReveal, type SidebarSectionId } from "../../model/
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
-import { FavoriteButton, SidebarSectionHeader } from "./SidebarItems";
+import { FavoriteButton, SidebarSectionHeader, TabRow } from "./SidebarItems";
 import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
 import { SidebarTabsSection } from "./SidebarTabsSection";
 
@@ -62,10 +60,10 @@ export function SidebarSections({
   draggingGroupId: string | null;
   draggingTabId: string | null;
   filteredItems: SidebarFilterResult;
-  onEssentialDragStart: (event: DragEvent<HTMLButtonElement>, essentialId: string) => void;
+  onEssentialDragStart: (event: DragEvent<HTMLElement>, essentialId: string) => void;
   onEssentialDrop: (event: DragEvent<HTMLElement>) => void;
   onEssentialReorderDrop: (event: DragEvent<HTMLElement>, targetEssentialId: string, axis: DropAxis) => void;
-  onFavoriteDragStart: (event: DragEvent<HTMLButtonElement>, favoriteId: string) => void;
+  onFavoriteDragStart: (event: DragEvent<HTMLElement>, favoriteId: string) => void;
   onFavoriteDrop: (event: DragEvent<HTMLElement>) => void;
   onFavoriteReorderDrop: (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis) => void;
   onClosedTabContextMenu: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
@@ -203,7 +201,29 @@ export function SidebarSections({
           >
             {filteredItems.favorites.map((favorite) => {
               const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
-              const statusBadges = tab ? getTabStatusBadges(tab, splitTabIds) : [];
+              if (tab) {
+                return (
+                  <TabRow
+                    key={favorite.id}
+                    activeTabId={activeTab.id}
+                    draggingTabId={draggingTabId}
+                    id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
+                    isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
+                    labelKind="favorite tab"
+                    splitTabIds={splitTabIds}
+                    tab={tab}
+                    onClose={actions.closeTab}
+                    onContextMenu={onTabContextMenu}
+                    onDragEndExtra={() => setDraggingFavoriteId(null)}
+                    onDragStartExtra={(event) => onFavoriteDragStart(event, favorite.id)}
+                    onDrop={onTabDrop}
+                    onPreview={actions.openGlance}
+                    onSelect={actions.selectTab}
+                    onSplit={actions.openTabInSplit}
+                    setDraggingTabId={setDraggingTabId}
+                  />
+                );
+              }
 
               return (
                 <FavoriteButton
@@ -215,24 +235,12 @@ export function SidebarSections({
                   isActive={isSidebarFavoriteActive(activeTab, favorite)}
                   isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
                   kind="favorite"
-                  tabId={tab?.id}
-                  tabLabel={tab ? getSidebarTabAccessibilityLabel({
-                    isActive: tab.id === activeTab.id,
-                    kind: "favorite tab",
-                    statusBadges,
-                    tab
-                  }) : undefined}
-                  tabStatusBadges={statusBadges}
-                  onCloseTab={tab ? actions.closeTab : undefined}
-                  onContextMenu={(event, item) => {
-                    tab ? onTabContextMenu(event, tab) : onQuickEntryContextMenu(event, item, "favorite");
-                  }}
+                  onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "favorite")}
                   onDragStart={onFavoriteDragStart}
                   onDragEnd={() => setDraggingFavoriteId(null)}
                   onDrop={onFavoriteReorderDrop}
                   onOpen={() => openFavorite(favorite)}
                   onOpenInSplit={actions.openUrlInSplit}
-                  onOpenTabInSplit={tab ? actions.openTabInSplit : undefined}
                   onPreview={actions.openGlance}
                 />
               );
