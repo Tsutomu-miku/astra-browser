@@ -183,6 +183,37 @@ describe("sidebar recently closed tabs", () => {
     act(() => root.unmount());
   });
 
+  it("runs recently closed keyboard restore, preview, and split activation", () => {
+    const tab = closedTab();
+    const onOpenInSplit = vi.fn();
+    const onPreview = vi.fn();
+    const onRestore = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(ClosedTabButton, {
+        closedIndex: 2,
+        onContextMenu: vi.fn(),
+        onOpenInSplit,
+        onPreview,
+        onRestore,
+        tab
+      }));
+    });
+
+    const button = container.querySelector(".closed-tab-button");
+    button?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+    button?.dispatchEvent(new KeyboardEvent("keydown", { altKey: true, bubbles: true, key: "Enter" }));
+    button?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter", shiftKey: true }));
+
+    expect(onRestore).toHaveBeenCalledWith(2);
+    expect(onPreview).toHaveBeenCalledWith(tab.url, tab.title);
+    expect(onOpenInSplit).toHaveBeenCalledWith(tab.url, tab.title);
+
+    act(() => root.unmount());
+  });
+
   it("marks recently closed rows as draggable restore sources", () => {
     const html = renderToStaticMarkup(createElement(ClosedTabButton, {
       closedIndex: 2,

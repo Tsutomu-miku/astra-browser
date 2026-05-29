@@ -140,6 +140,37 @@ describe("sidebar pinned tabs", () => {
     act(() => root.unmount());
   });
 
+  it("runs pinned tab keyboard preview and split activation", () => {
+    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarPinnedTabs, {
+        actions,
+        activeTab: { ...createTab("Active", "https://active.example") },
+        draggingTabId: null,
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onPinDrop: vi.fn(),
+        pinnedTabs: [pinned],
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const button = container.querySelector(".pinned-tab-button");
+    button?.dispatchEvent(new KeyboardEvent("keydown", { altKey: true, bubbles: true, key: "Enter" }));
+    button?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter", shiftKey: true }));
+
+    expect(actions.openGlance).toHaveBeenCalledWith(pinned.url, pinned.title);
+    expect(actions.openTabInSplit).toHaveBeenCalledWith(pinned.id);
+    expect(actions.selectTab).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("opens pinned tab context menus from the keyboard", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const onTabContextMenu = vi.fn();

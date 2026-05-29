@@ -104,6 +104,7 @@ Astra Browser should feel like a Chromium-based browser shaped by Zen and Arc in
 - Sidebar search must support Arrow, Home, End, Enter, Alt+Enter preview, and Shift+Enter split-open flows.
 - Sidebar search must visually hint Alt preview and Shift split actions while filtering.
 - Sidebar items must support Alt-click Glance preview and Shift-click split opening.
+- Focused sidebar tabs, pinned tabs, quick entries, and recently closed rows must support Enter, Alt+Enter Glance preview, and Shift+Enter split opening.
 - Sidebar tab and favorite rows must reveal Alt preview and Shift split hints on hover or keyboard focus.
 - Pinned tab buttons must reveal Alt preview and Shift split hints on hover or keyboard focus.
 

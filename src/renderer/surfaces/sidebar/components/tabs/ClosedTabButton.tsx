@@ -1,4 +1,5 @@
 import { getHostInitial, type ClosedTab } from "../../../../domain/browser";
+import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import type { DragEvent, MouseEvent } from "react";
@@ -36,7 +37,14 @@ export function ClosedTabButton({
       onContextMenu={(event) => onContextMenu(event, tab, closedIndex)}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onKeyDown={openSidebarKeyboardContextMenu}
+      onKeyDown={(event) => {
+        if (openSidebarKeyboardContextMenu(event)) return;
+        runSidebarItemKeyboardActivation(event, {
+          primary: () => onRestore(closedIndex),
+          preview: () => onPreview(tab.url, tab.title),
+          split: () => onOpenInSplit(tab.url, tab.title)
+        });
+      }}
       onClick={(event) => {
         if (event.altKey) {
           onPreview(tab.url, tab.title);

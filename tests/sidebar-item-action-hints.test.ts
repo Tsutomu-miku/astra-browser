@@ -95,6 +95,41 @@ describe("sidebar item action hints", () => {
     act(() => root.unmount());
   });
 
+  it("runs tab row keyboard preview and split activation", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const onPreview = vi.fn();
+    const onSelect = vi.fn();
+    const onSplit = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabRow, {
+        activeTabId: "other-tab",
+        draggingTabId: null,
+        onClose: vi.fn(),
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onPreview,
+        onSelect,
+        onSplit,
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tab
+      }));
+    });
+
+    const button = container.querySelector(".tab-button");
+    button?.dispatchEvent(new KeyboardEvent("keydown", { altKey: true, bubbles: true, key: "Enter" }));
+    button?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter", shiftKey: true }));
+
+    expect(onPreview).toHaveBeenCalledWith(tab.url, tab.title);
+    expect(onSplit).toHaveBeenCalledWith(tab.id);
+    expect(onSelect).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("opens tab row context menus from the keyboard", () => {
     const tab = createTab("Docs", "https://docs.example");
     const onContextMenu = vi.fn();
@@ -206,5 +241,34 @@ describe("sidebar item action hints", () => {
     expect(html).toContain("Preview");
     expect(html).toContain("Shift");
     expect(html).toContain("Split");
+  });
+
+  it("runs favorite keyboard open, preview, and split activation", () => {
+    const favorite = createFavorite("Docs", "https://docs.example");
+    const onOpen = vi.fn();
+    const onOpenInSplit = vi.fn();
+    const onPreview = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(FavoriteButton, {
+        favorite,
+        onOpen,
+        onOpenInSplit,
+        onPreview
+      }));
+    });
+
+    const button = container.querySelector(".favorite-button");
+    button?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+    button?.dispatchEvent(new KeyboardEvent("keydown", { altKey: true, bubbles: true, key: "Enter" }));
+    button?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter", shiftKey: true }));
+
+    expect(onOpen).toHaveBeenCalledWith(favorite.url, favorite.title);
+    expect(onPreview).toHaveBeenCalledWith(favorite.url, favorite.title);
+    expect(onOpenInSplit).toHaveBeenCalledWith(favorite.url, favorite.title);
+
+    act(() => root.unmount());
   });
 });

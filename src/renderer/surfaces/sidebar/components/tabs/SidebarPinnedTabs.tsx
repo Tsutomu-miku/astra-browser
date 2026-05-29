@@ -5,6 +5,7 @@ import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../..
 import { getHostInitial, type BrowserTab } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
+import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import type { SidebarSearchTarget } from "../../sidebarFiltering";
@@ -88,6 +89,11 @@ export function SidebarPinnedTabs({
               }}
               onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
                 if (openSidebarKeyboardContextMenu(event)) return;
+                if (runSidebarItemKeyboardActivation(event, {
+                  primary: () => actions.selectTab(tab.id),
+                  preview: () => actions.openGlance(tab.url, tab.title),
+                  split: () => actions.openTabInSplit(tab.id)
+                })) return;
                 if (isCloseTabKey(event.key)) {
                   event.preventDefault();
                   actions.closeTab(tab.id);

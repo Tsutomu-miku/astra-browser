@@ -4,6 +4,7 @@ import { FiChevronDown, FiChevronRight, FiLoader, FiMoon, FiX } from "react-icon
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { getHostInitial, type BrowserTab, type Favorite } from "../../../../domain/browser";
 import { getTabStatusBadges } from "../../model/sidebarItemState";
+import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
@@ -124,6 +125,11 @@ export function TabRow({
         }}
         onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
           if (openSidebarKeyboardContextMenu(event)) return;
+          if (runSidebarItemKeyboardActivation(event, {
+            primary: () => onSelect(tab.id),
+            preview: () => onPreview(tab.url, tab.title),
+            split: () => onSplit(tab.id)
+          })) return;
           if (isCloseTabKey(event.key)) {
             event.preventDefault();
             onClose(tab.id);
@@ -209,6 +215,11 @@ export function FavoriteButton({
       onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
       onKeyDown={(event) => {
         if (onContextMenu) openSidebarKeyboardContextMenu(event);
+        runSidebarItemKeyboardActivation(event, {
+          primary: () => onOpen(favorite.url, favorite.title),
+          preview: () => onPreview(favorite.url, favorite.title),
+          split: () => onOpenInSplit(favorite.url, favorite.title)
+        });
       }}
       onClick={(event) => {
         if (event.altKey) {
