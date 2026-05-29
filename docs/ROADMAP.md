@@ -145,7 +145,7 @@ Progress: partially implemented.
 - Section collapse, search reveal, and drag reveal must feel predictable.
 - Keyboard focus navigation must work across sections and context menus.
 
-Progress: partially implemented.
+Progress: partially implemented. Row action hints and close controls reveal on keyboard focus without using absolute overlays.
 
 ### P1-2 Split View And Glance
 

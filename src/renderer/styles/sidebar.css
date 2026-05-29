@@ -808,6 +808,7 @@ h1 {
 }
 
 .tab-row:hover .tab-close,
+.tab-row:focus-within .tab-close,
 .tab-close:focus-visible {
   opacity: 1;
 }

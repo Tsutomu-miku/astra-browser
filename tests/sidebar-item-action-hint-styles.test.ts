@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-action-hints.css"), "utf8");
+const sidebarLayoutCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 
 describe("sidebar item action hint styles", () => {
   it("reveals row action hints in flow on hover and keyboard focus", () => {
@@ -15,5 +16,10 @@ describe("sidebar item action hint styles", () => {
     expect(sidebarCss).toContain(".favorite-button:focus-visible .sidebar-item-action-hints");
     expect(sidebarCss).toContain(".closed-tab-button:hover .sidebar-item-action-hints");
     expect(sidebarCss).toContain(".closed-tab-button:focus-visible .sidebar-item-action-hints");
+  });
+
+  it("reveals tab close controls on keyboard row focus", () => {
+    expect(sidebarLayoutCss).toContain(".tab-row:focus-within .tab-close");
+    expect(sidebarLayoutCss).toContain(".tab-close:focus-visible");
   });
 });
