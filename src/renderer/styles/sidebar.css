@@ -903,44 +903,33 @@ h1 {
 .tab-title-stack {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
 }
 
 .tab-status-badges {
   min-width: 0;
   display: flex;
-  gap: 4px;
+  gap: 3px;
   overflow: hidden;
 }
 
 .tab-status-badge {
-  min-width: 0;
-  max-width: 72px;
+  width: 16px;
   height: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+  display: inline-grid;
+  place-items: center;
   border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
   border-radius: 999px;
-  padding: 0 5px;
+  padding: 0;
   background: rgba(255, 255, 255, 0.055);
   color: color-mix(in srgb, var(--muted) 74%, white);
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 1;
 }
 
 .tab-status-badge svg {
-  flex: 0 0 auto;
   width: 10px;
   height: 10px;
-}
-
-.tab-status-badge span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tab-status-badge.is-split {

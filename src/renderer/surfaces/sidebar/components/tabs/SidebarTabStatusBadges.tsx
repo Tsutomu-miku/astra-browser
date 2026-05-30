@@ -19,7 +19,6 @@ export function SidebarTabStatusBadges({
       {badges.map((badge) => (
         <span className={`${badgeClassName} is-${badge.id}`} key={badge.id} aria-hidden="true">
           <TabStatusIcon badge={badge} />
-          {variant === "row" && <span>{badge.label}</span>}
         </span>
       ))}
     </span>

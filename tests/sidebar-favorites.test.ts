@@ -347,6 +347,8 @@ describe("sidebar favorites", () => {
     expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")).not.toBeNull();
     expect(favoriteButton?.querySelector(".tab-status-badge.is-split")?.hasAttribute("title")).toBe(false);
     expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")?.hasAttribute("title")).toBe(false);
+    expect(favoriteButton?.querySelector(".tab-status-badge.is-split")?.textContent).toBe("");
+    expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")?.textContent).toBe("");
 
     act(() => root.unmount());
   });
