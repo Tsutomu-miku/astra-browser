@@ -169,6 +169,7 @@ For tab-related features, requirements must specify object identity. In particul
 - The address bar must be focusable with `Ctrl+L`, `Cmd+L`, `Ctrl+J`, `Cmd+J`, and `Alt+D`.
 - The address identity control must expose a context menu for site information, copying page details, Glance preview, and split opening.
 - Address bar suggestions must include open tabs, Essentials, workspace favorites, and browsing history.
+- Address bar Favorite suggestions backed by tabs must use the backing tab's current title and URL for display, matching, completion, and tab selection.
 - Address bar suggestions must support Arrow, Home, End, Enter, and Alt+Enter split opening.
 - Address bar suggestions must visually hint Alt split opening where suggestions are shown.
 - Compact mode must expose a sidebar address field with the same suggestion, keyboard behavior, and combobox/listbox accessibility semantics as the top bar.

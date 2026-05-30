@@ -38,7 +38,8 @@ describe("buildOmniboxSuggestions", () => {
     expect(suggestions.some((suggestion) => suggestion.type === "tab" && suggestion.title === "Docs")).toBe(true);
     expect(suggestions.some((suggestion) => (
       suggestion.type === "favorite" &&
-      suggestion.title === "Docs Favorite" &&
+      suggestion.title === "Docs" &&
+      suggestion.subtitle === `Favorite tab · ${favoriteTab.url}` &&
       suggestion.tabId === favoriteTab.id
     ))).toBe(true);
     expect(suggestions.some((suggestion) => suggestion.type === "essential" && suggestion.title === "Docs Essential")).toBe(true);
@@ -55,7 +56,26 @@ describe("buildOmniboxSuggestions", () => {
 
     expect(favoriteSuggestion).toMatchObject({
       tabId: tab.id,
+      title: "Docs",
       type: "favorite"
+    });
+  });
+
+  it("matches tab-backed Favorites by current backing tab title and URL", () => {
+    const opened = openUrlInActiveWorkspace(createDefaultState(), "docs.example/current", "Current Project Brief");
+    const tab = getActiveTab(getActiveWorkspace(opened));
+    getActiveWorkspace(opened).favorites.push(createFavorite("Old Docs", "https://docs.example", tab.id));
+
+    const suggestion = buildOmniboxSuggestions(opened, "brief")
+      .find((candidate) => candidate.type === "favorite");
+
+    expect(suggestion).toMatchObject({
+      completion: "docs.example/current",
+      subtitle: `Favorite tab · ${tab.url}`,
+      tabId: tab.id,
+      title: "Current Project Brief",
+      type: "favorite",
+      url: tab.url
     });
   });
 

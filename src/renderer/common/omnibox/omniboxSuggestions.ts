@@ -1,4 +1,4 @@
-import { resolveFavoriteTab, type BrowserState } from "../../domain/browser";
+import { resolveFavoriteTab, type BrowserState, type Favorite, type Workspace } from "../../domain/browser";
 import { getActiveWorkspace } from "../../domain/browser/selectors";
 
 type OmniboxSuggestionBase = {
@@ -52,15 +52,7 @@ export function buildOmniboxSuggestions(state: BrowserState, query: string): Omn
       subtitle: `Essential · ${essential.url}`,
       url: essential.url
     })),
-    ...workspace.favorites.map((favorite) => ({
-      type: "favorite" as const,
-      completion: getDisplayUrl(favorite.url),
-      id: `favorite-${favorite.id}`,
-      tabId: resolveFavoriteTab(workspace, favorite)?.id,
-      title: favorite.title,
-      subtitle: `Favorite · ${favorite.url}`,
-      url: favorite.url
-    })),
+    ...workspace.favorites.map((favorite) => toFavoriteSuggestion(workspace, favorite)),
     ...workspace.tabs.map((tab) => ({
       type: "tab" as const,
       completion: getDisplayUrl(tab.url),
@@ -89,6 +81,22 @@ export function buildOmniboxSuggestions(state: BrowserState, query: string): Omn
     : entries;
 
   return [...suggestions, ...matches].slice(0, SUGGESTION_LIMIT);
+}
+
+function toFavoriteSuggestion(workspace: Workspace, favorite: Favorite): OmniboxSuggestion {
+  const tab = resolveFavoriteTab(workspace, favorite);
+  const url = tab?.url ?? favorite.url;
+  const title = tab?.title || favorite.title || url;
+
+  return {
+    type: "favorite",
+    completion: getDisplayUrl(url),
+    id: `favorite-${favorite.id}`,
+    ...(tab ? { tabId: tab.id } : {}),
+    title,
+    subtitle: `${tab ? "Favorite tab" : "Favorite"} · ${url}`,
+    url
+  };
 }
 
 export function getOmniboxInlineCompletion(

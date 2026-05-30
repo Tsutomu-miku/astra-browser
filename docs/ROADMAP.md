@@ -255,7 +255,7 @@ Progress: partially implemented. Sidebar, Start page, omnibox, command palette, 
 - Essentials navigate current tab unless later changed to tab-backed Essentials.
 - History entries open a tab or preview/split based on modifier.
 
-Progress: partially implemented.
+Progress: partially implemented. Omnibox Favorite suggestions now use current backing-tab title and URL when a Favorite is tab-backed, matching sidebar search object semantics while still selecting the tab identity.
 
 ### P1-4 Settings, Permissions, History, Downloads
 
