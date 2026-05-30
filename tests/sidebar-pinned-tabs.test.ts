@@ -367,7 +367,9 @@ describe("sidebar pinned tabs", () => {
     expect(actionHintCss).toContain(".pinned-tab-button:focus-visible .sidebar-item-action-hints");
     expect(actionHintCss).toContain("width: 30px");
     expect(actionHintCss).toContain("bottom: 3px");
-    expect(actionHintCss).toContain("translate(-50%, 0)");
+    expect(actionHintCss).toContain("translateX(-50%)");
+    expect(actionHintCss).not.toContain("translate(-50%, 3px)");
+    expect(actionHintCss).not.toContain("translate(-50%, 0)");
     expect(sidebarCss).toContain(".pinned-tab-button:hover .pinned-tab-icon");
     expect(getRuleBlock(sidebarCss, ".pinned-tab-button:hover .pinned-tab-icon,\n.pinned-tab-button:focus-visible .pinned-tab-icon")).not.toContain("transform:");
   });

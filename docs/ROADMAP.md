@@ -242,6 +242,7 @@ Small requirements:
 - P1-1.10 Pinned tab and Space rail hover states stay visually stable with neutral fills rather than lifted tile motion.
 - P1-1.11 Space rail tab counts use quiet text treatment instead of badge-like pills.
 - P1-1.12 Sidebar section drop labels use the same quiet text treatment as section counts.
+- P1-1.13 Sidebar row action hints fade in from stable positions without hover slide motion.
 
 ### P1-2 Split View And Glance
 

@@ -23,6 +23,20 @@ describe("sidebar item action hint styles", () => {
     expect(sidebarCss).toContain(".pinned-tab-button:focus-visible .sidebar-item-action-hints");
   });
 
+  it("fades action hints in without hover slide motion", () => {
+    const rowHintsBlock = getRuleBlock(sidebarCss, ".sidebar-item-action-hints");
+    const rowRevealBlock = getRuleBlock(sidebarCss, ".tab-row:hover .sidebar-item-action-hints,\n.tab-row:focus-within .sidebar-item-action-hints,\n.favorite-button:hover .sidebar-item-action-hints,\n.favorite-button:focus-visible .sidebar-item-action-hints,\n.closed-tab-button:hover .sidebar-item-action-hints,\n.closed-tab-button:focus-visible .sidebar-item-action-hints");
+    const pinnedHintsBlock = getRuleBlock(sidebarCss, ".pinned-tab-button .sidebar-item-action-hints");
+    const pinnedRevealBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:hover .sidebar-item-action-hints,\n.pinned-tab-button:focus-visible .sidebar-item-action-hints");
+
+    expect(rowHintsBlock).toContain("transition: opacity 120ms ease");
+    expect(rowHintsBlock).not.toContain("transform:");
+    expect(rowRevealBlock).not.toContain("transform:");
+    expect(pinnedHintsBlock).toContain("transform: translateX(-50%)");
+    expect(pinnedHintsBlock).not.toContain("translate(-50%, 3px)");
+    expect(pinnedRevealBlock).not.toContain("transform:");
+  });
+
   it("keeps action hints as quiet inline glyphs instead of keycaps", () => {
     const hintBlock = getRuleBlock(sidebarCss, "\n.sidebar-item-action-hint {");
 

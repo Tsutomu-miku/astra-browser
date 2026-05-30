@@ -10,10 +10,7 @@
   opacity: 0;
   overflow: hidden;
   pointer-events: none;
-  transform: translateX(3px);
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease;
+  transition: opacity 120ms ease;
 }
 
 .tab-row:hover .sidebar-item-action-hints,
@@ -23,7 +20,6 @@
 .closed-tab-button:hover .sidebar-item-action-hints,
 .closed-tab-button:focus-visible .sidebar-item-action-hints {
   opacity: 1;
-  transform: translateX(0);
 }
 
 .pinned-tab-button .sidebar-item-action-hints {
@@ -34,13 +30,12 @@
   min-width: 30px;
   justify-content: center;
   gap: 3px;
-  transform: translate(-50%, 3px);
+  transform: translateX(-50%);
 }
 
 .pinned-tab-button:hover .sidebar-item-action-hints,
 .pinned-tab-button:focus-visible .sidebar-item-action-hints {
   opacity: 1;
-  transform: translate(-50%, 0);
 }
 
 .sidebar-item-action-hint {
