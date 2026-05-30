@@ -125,7 +125,7 @@ describe("sidebar tab group context menu", () => {
       root.render(createElement(TabGroupContextMenu, props()));
     });
 
-    const input = container.querySelector<HTMLInputElement>(".tab-group-menu-field input");
+    const input = container.querySelector<HTMLInputElement>(".sidebar-menu-field input");
     input?.focus();
 
     act(() => {

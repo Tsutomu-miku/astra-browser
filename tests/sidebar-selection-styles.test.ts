@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 const sidebarDropZonesCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-drop-zones.css"), "utf8");
 const workspaceCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-workspaces.css"), "utf8");
-const contextMenuCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-context-menu.css"), "utf8");
+const sidebarMenuCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-menu.css"), "utf8");
 const baseCss = readFileSync(join(__dirname, "../src/renderer/styles/base.css"), "utf8");
 
 describe("sidebar selection styles", () => {
@@ -145,9 +145,9 @@ describe("sidebar selection styles", () => {
     const newWorkspaceBlock = getRuleBlock(workspaceCss, ".workspace-new-button");
     const newWorkspaceHoverBlock = getRuleBlock(workspaceCss, ".workspace-new-button:hover");
     const workspaceMenuBlock = getRuleBlock(workspaceCss, ".workspace-context-menu");
-    const workspaceLabelBlock = getRuleBlock(workspaceCss, ".workspace-menu-field span");
-    const workspaceInputBlock = getRuleBlock(workspaceCss, ".workspace-menu-field input");
-    const workspaceInputFocusBlock = getRuleBlock(workspaceCss, ".workspace-menu-field input:focus");
+    const workspaceLabelBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field span");
+    const workspaceInputBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field input");
+    const workspaceInputFocusBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field input:focus,\n.sidebar-menu-field input:focus-visible");
 
     for (const block of [
       resizeBlock,
@@ -172,13 +172,11 @@ describe("sidebar selection styles", () => {
   });
 
   it("keeps sidebar menu color pickers quiet while preserving selected state", () => {
-    const groupInputBlock = getRuleBlock(contextMenuCss, ".tab-group-menu-field input");
-    const groupInputFocusBlock = getRuleBlock(contextMenuCss, ".tab-group-menu-field input:focus-visible");
-    const groupSwatchBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .tab-group-menu-swatch");
-    const groupSwatchHoverBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .tab-group-menu-swatch:hover,\n.tab-context-menu .tab-group-menu-swatch:focus-visible");
-    const groupSwatchSelectedBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .tab-group-menu-swatch[aria-pressed=\"true\"]");
-    const workspaceSwatchHoverBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .workspace-menu-swatch:hover,\n.workspace-context-menu .workspace-menu-swatch:focus-visible");
-    const workspaceSwatchSelectedBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .workspace-menu-swatch[aria-pressed=\"true\"]");
+    const groupInputBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field input");
+    const groupInputFocusBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field input:focus,\n.sidebar-menu-field input:focus-visible");
+    const groupSwatchBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface .sidebar-menu-swatch");
+    const groupSwatchHoverBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface .sidebar-menu-swatch:hover,\n.sidebar-menu-surface .sidebar-menu-swatch:focus-visible");
+    const groupSwatchSelectedBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface .sidebar-menu-swatch[aria-pressed=\"true\"]");
 
     expect(groupInputBlock).toContain("border: 1px solid transparent");
     expect(groupInputBlock).toContain("background: transparent");
@@ -192,9 +190,7 @@ describe("sidebar selection styles", () => {
 
     for (const block of [
       groupSwatchHoverBlock,
-      groupSwatchSelectedBlock,
-      workspaceSwatchHoverBlock,
-      workspaceSwatchSelectedBlock
+      groupSwatchSelectedBlock
     ]) {
       expect(block).toContain("box-shadow: inset");
       expect(block).not.toContain("color-mix");

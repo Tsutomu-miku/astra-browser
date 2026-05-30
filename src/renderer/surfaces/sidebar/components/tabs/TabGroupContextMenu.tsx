@@ -71,7 +71,7 @@ export function TabGroupContextMenu({
       <SidebarMenuItem icon={FiCopy} role="menuitem" onClick={() => run(() => onDuplicateGroup(group.id))}>
         Duplicate group
       </SidebarMenuItem>
-      <label className="tab-group-menu-field">
+      <label className="sidebar-menu-field">
         <span>Name</span>
         <input
           aria-label="Group name"
@@ -80,11 +80,11 @@ export function TabGroupContextMenu({
           onKeyDown={closeOnEnter}
         />
       </label>
-      <div className="tab-group-menu-swatches" role="group" aria-label="Group color">
+      <div className="sidebar-menu-swatches" role="group" aria-label="Group color">
         {TAB_GROUP_COLOR_SWATCHES.map((color) => (
           <button
             key={color}
-            className="tab-group-menu-swatch"
+            className="sidebar-menu-swatch"
             type="button"
             aria-label={`Use ${color}`}
             aria-pressed={group.color.toLowerCase() === color}

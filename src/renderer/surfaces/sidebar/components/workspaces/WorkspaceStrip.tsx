@@ -275,9 +275,10 @@ function WorkspaceContextMenu({
         New Space
       </SidebarMenuItem>
       <SidebarMenuSeparator />
-      <label className="workspace-menu-field">
+      <label className="sidebar-menu-field">
         <span>Name</span>
         <input
+          aria-label="Space name"
           value={workspace.name}
           onChange={(event) => onUpdate(workspace.id, { name: event.target.value })}
           onKeyDown={(event) => {
@@ -285,11 +286,11 @@ function WorkspaceContextMenu({
           }}
         />
       </label>
-      <div className="workspace-menu-swatches" role="group" aria-label="Space accent">
+      <div className="sidebar-menu-swatches" role="group" aria-label="Space accent">
         {WORKSPACE_ACCENT_SWATCHES.map((accent) => (
           <button
             key={accent}
-            className="workspace-menu-swatch"
+            className="sidebar-menu-swatch"
             type="button"
             aria-label={`Use ${accent}`}
             aria-pressed={workspace.accent.toLowerCase() === accent}

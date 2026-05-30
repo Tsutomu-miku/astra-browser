@@ -81,7 +81,7 @@ describe("workspace strip compact controls", () => {
       }));
     });
 
-    const swatch = container.querySelector<HTMLButtonElement>(".workspace-menu-swatch");
+    const swatch = container.querySelector<HTMLButtonElement>(".sidebar-menu-swatch");
     expect(swatch?.getAttribute("aria-label")).toBe("Use #7dd3fc");
     expect(swatch?.hasAttribute("title")).toBe(false);
 
@@ -562,7 +562,7 @@ describe("workspace strip compact controls", () => {
       }));
     });
 
-    const input = container.querySelector<HTMLInputElement>(".workspace-menu-field input");
+    const input = container.querySelector<HTMLInputElement>(".sidebar-menu-field input");
     input?.focus();
 
     act(() => {
@@ -691,10 +691,14 @@ describe("workspace strip compact controls", () => {
     const iconBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-icon");
     const labelBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-label");
     const dangerBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface button.danger");
+    const fieldBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field input");
+    const swatchBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface .sidebar-menu-swatch");
 
     expect(itemBlock).toContain("grid-template-columns: 18px minmax(0, 1fr)");
     expect(iconBlock).toContain("color: color-mix");
     expect(labelBlock).toContain("text-overflow: ellipsis");
+    expect(fieldBlock).toContain("background: transparent");
+    expect(swatchBlock).toContain("border-radius: 6px");
     expect(sidebarMenuCss).toContain(".sidebar-menu-separator");
     expect(dangerBlock).not.toContain("inline-flex");
   });
