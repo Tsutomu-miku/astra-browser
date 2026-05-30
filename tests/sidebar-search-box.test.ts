@@ -123,8 +123,11 @@ describe("sidebar search box", () => {
     const searchInputBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search input {");
     const searchEmptyBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search:not(:has(button)) input");
     const searchFocusBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search input:focus");
+    const searchClearBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search .icon-button");
+    const searchClearPressedBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search .icon-button:active");
     const addressBlock = getRuleBlock(sidebarCss, ".sidebar-address-form");
     const addressFocusBlock = getRuleBlock(sidebarCss, ".sidebar-address-form:focus-within");
+    const addressSuggestionsBlock = getRuleBlock(sidebarCss, ".sidebar-omnibox-suggestions");
     const metaBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-meta {");
     const hintBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-action-hint {");
 
@@ -135,12 +138,18 @@ describe("sidebar search box", () => {
     expect(searchFocusBlock).toContain("background: rgba(255, 255, 255, 0.075)");
     expect(searchFocusBlock).toContain("box-shadow: none");
     expect(searchFocusBlock).not.toContain("var(--accent)");
+    expect(searchClearBlock).toContain("width: 28px");
+    expect(searchClearBlock).toContain("background: transparent");
+    expect(searchClearBlock).toContain("box-shadow: none");
+    expect(searchClearPressedBlock).toContain("transform: none");
     expect(addressBlock).toContain("border: 1px solid transparent");
     expect(addressBlock).toContain("background: transparent");
     expect(addressFocusBlock).toContain("border-color: transparent");
     expect(addressFocusBlock).toContain("background: rgba(255, 255, 255, 0.075)");
     expect(addressFocusBlock).toContain("box-shadow: none");
     expect(addressFocusBlock).not.toContain("var(--accent)");
+    expect(addressSuggestionsBlock).toContain("box-shadow: 0 18px 46px rgba(0, 0, 0, 0.32)");
+    expect(addressSuggestionsBlock).not.toContain("var(--shadow-floating)");
     expect(metaBlock).toContain("justify-content: space-between");
     expect(metaBlock).not.toContain("var(--accent)");
     expect(hintBlock).toContain("width: 16px");

@@ -31,6 +31,27 @@
   box-shadow: none;
 }
 
+.sidebar-search .icon-button {
+  width: 28px;
+  height: 28px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.sidebar-search .icon-button:hover,
+.sidebar-search .icon-button:focus-visible {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  outline: none;
+}
+
+.sidebar-search .icon-button:active {
+  transform: none;
+}
+
 .sidebar-search-meta {
   grid-column: 1 / -1;
   min-width: 0;
