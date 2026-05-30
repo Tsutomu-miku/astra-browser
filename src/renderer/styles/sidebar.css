@@ -488,13 +488,13 @@ h1 {
 }
 
 .pinned-tab-status-badge {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  border: 0;
   border-radius: 999px;
-  background: rgba(9, 10, 13, 0.9);
+  background: transparent;
   color: var(--muted);
 }
 
@@ -651,7 +651,7 @@ h1 {
   position: relative;
   min-height: 34px;
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) 46px;
+  grid-template-columns: 22px minmax(0, 1fr) 38px;
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
@@ -776,7 +776,7 @@ h1 {
   min-width: 0;
   min-height: 34px;
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) 46px;
+  grid-template-columns: 22px minmax(0, 1fr) 38px;
   align-items: center;
   gap: 8px;
   border: 1px solid transparent;
@@ -878,7 +878,7 @@ h1 {
   position: relative;
   min-height: 38px;
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 46px;
+  grid-template-columns: 24px minmax(0, 1fr) 38px;
   align-items: center;
   gap: 9px;
   padding: 7px 5px 7px 9px;
@@ -915,14 +915,14 @@ h1 {
 }
 
 .tab-status-badge {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   display: inline-grid;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border: 0;
   border-radius: 999px;
   padding: 0;
-  background: rgba(255, 255, 255, 0.055);
+  background: transparent;
   color: color-mix(in srgb, var(--muted) 74%, white);
 }
 

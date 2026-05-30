@@ -48,6 +48,15 @@ describe("sidebar selection styles", () => {
     }
   });
 
+  it("keeps row status indicators as inline glyphs instead of badges", () => {
+    const statusBlock = getRuleBlock(sidebarCss, "\n.tab-status-badge {");
+
+    expect(statusBlock).toContain("width: 14px");
+    expect(statusBlock).toContain("height: 14px");
+    expect(statusBlock).toContain("border: 0");
+    expect(statusBlock).toContain("background: transparent");
+  });
+
   it("keeps workspace active state quiet and removes accent wash from the app background", () => {
     const activeWorkspaceBlock = getRuleBlock(workspaceCss, ".workspace-button[aria-current=\"true\"]");
 

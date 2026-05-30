@@ -346,9 +346,13 @@ describe("sidebar pinned tabs", () => {
   });
 
   it("styles compact pinned tab status badges", () => {
+    const statusBlock = getRuleBlock(sidebarCss, "\n.pinned-tab-status-badge {");
+
     expect(sidebarCss).toContain(".pinned-tab-status-badges");
     expect(sidebarCss).toContain(".pinned-tab-status-badge.is-split");
     expect(sidebarCss).toContain(".pinned-tab-status-badge.is-muted");
+    expect(statusBlock).toContain("border: 0");
+    expect(statusBlock).toContain("background: transparent");
   });
 
   it("styles collapsible section headers", () => {
@@ -361,7 +365,7 @@ describe("sidebar pinned tabs", () => {
     expect(actionHintCss).toContain(".pinned-tab-button .sidebar-item-action-hints");
     expect(actionHintCss).toContain(".pinned-tab-button:hover .sidebar-item-action-hints");
     expect(actionHintCss).toContain(".pinned-tab-button:focus-visible .sidebar-item-action-hints");
-    expect(actionHintCss).toContain("width: 34px");
+    expect(actionHintCss).toContain("width: 30px");
     expect(actionHintCss).toContain("bottom: 3px");
     expect(actionHintCss).toContain("translate(-50%, 0)");
     expect(sidebarCss).toContain(".pinned-tab-button:hover .pinned-tab-icon");
@@ -380,4 +384,12 @@ function createDragEvent(type: string, dragData: Record<string, string>) {
     }
   });
   return event;
+}
+
+function getRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const bodyStart = css.indexOf("{", start);
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return css.slice(bodyStart + 1, bodyEnd);
 }
