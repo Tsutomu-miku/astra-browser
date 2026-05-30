@@ -860,13 +860,19 @@ h1 {
   grid-column: 3;
   grid-row: 1;
   justify-self: end;
-  border-radius: 999px;
-  padding: 4px 6px;
-  background: rgba(255, 255, 255, 0.06);
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--muted);
-  font-size: 10px;
-  font-weight: 450;
   transition: opacity 120ms ease;
+}
+
+.closed-tab-action svg {
+  width: 13px;
+  height: 13px;
 }
 
 .closed-tab-button .sidebar-item-action-hints {

@@ -57,6 +57,15 @@ describe("sidebar selection styles", () => {
     expect(statusBlock).toContain("background: transparent");
   });
 
+  it("keeps recently closed restore affordance icon-only", () => {
+    const restoreBlock = getRuleBlock(sidebarCss, "\n.closed-tab-action {");
+
+    expect(restoreBlock).toContain("width: 22px");
+    expect(restoreBlock).toContain("display: inline-grid");
+    expect(restoreBlock).toContain("background: transparent");
+    expect(restoreBlock).not.toContain("font-weight");
+  });
+
   it("keeps sidebar status and internal-page colors neutral", () => {
     const rowSplitBlock = getRuleBlock(sidebarCss, "\n.tab-status-badge.is-split");
     const pinnedSplitBlock = getRuleBlock(sidebarCss, "\n.pinned-tab-status-badge.is-split");

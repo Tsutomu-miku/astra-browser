@@ -5,6 +5,7 @@ import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardConte
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarItemIcon } from "./SidebarItemIcon";
 import type { DragEvent, MouseEvent } from "react";
+import { FiRotateCcw } from "react-icons/fi";
 
 export function ClosedTabButton({
   closedIndex,
@@ -65,7 +66,9 @@ export function ClosedTabButton({
         <span className="closed-tab-title">{title}</span>
         <span className="closed-tab-url">{tab.url}</span>
       </span>
-      <span className="closed-tab-action">Restore</span>
+      <span className="closed-tab-action" aria-hidden="true">
+        <FiRotateCcw />
+      </span>
       <SidebarItemActionHints />
     </button>
   );

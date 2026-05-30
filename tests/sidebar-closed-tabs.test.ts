@@ -37,6 +37,9 @@ describe("sidebar recently closed tabs", () => {
     expect(html).not.toContain("<kbd");
     expect(html).not.toContain(">Preview<");
     expect(html).not.toContain(">Split<");
+    expect(html).not.toContain(">Restore<");
+    expect(html).toContain('class="closed-tab-action"');
+    expect(html).toContain('aria-hidden="true"');
     expect(html).not.toContain('title="Restore Docs"');
     expect(html).toContain('aria-label="Docs, recently closed tab, restore position 3"');
   });
