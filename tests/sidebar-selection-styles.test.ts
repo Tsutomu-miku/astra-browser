@@ -91,6 +91,7 @@ describe("sidebar selection styles", () => {
     expect(statusBlock).toContain("height: 14px");
     expect(statusBlock).toContain("border: 0");
     expect(statusBlock).toContain("background: transparent");
+    expect(statusBlock).not.toContain("border-radius");
     expect(sidebarCss).not.toContain(".tab-row.is-split-tab .tab-favicon::after");
   });
 

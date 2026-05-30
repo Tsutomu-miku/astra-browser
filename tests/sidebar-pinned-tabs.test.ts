@@ -237,7 +237,7 @@ describe("sidebar pinned tabs", () => {
     act(() => root.unmount());
   });
 
-  it("renders compact status badges for split and muted pinned tabs", () => {
+  it("renders compact status glyphs for split and muted pinned tabs", () => {
     const pinned = { ...createTab("Mail", "https://mail.example"), isMuted: true, isPinned: true };
     const html = renderToStaticMarkup(createElement(SidebarPinnedTabs, {
       actions: createActions(),
@@ -345,7 +345,7 @@ describe("sidebar pinned tabs", () => {
     expect(sidebarCss).toContain("cursor: grabbing");
   });
 
-  it("styles compact pinned tab status badges", () => {
+  it("styles compact pinned tab status glyphs", () => {
     const statusBlock = getRuleBlock(sidebarCss, "\n.pinned-tab-status-badge {");
 
     expect(sidebarCss).toContain(".pinned-tab-status-badges");
@@ -353,6 +353,7 @@ describe("sidebar pinned tabs", () => {
     expect(sidebarCss).toContain(".pinned-tab-status-badge.is-muted");
     expect(statusBlock).toContain("border: 0");
     expect(statusBlock).toContain("background: transparent");
+    expect(statusBlock).not.toContain("border-radius");
   });
 
   it("styles collapsible section headers", () => {
