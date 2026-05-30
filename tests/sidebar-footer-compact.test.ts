@@ -260,6 +260,18 @@ describe("sidebar footer compact controls", () => {
     expect(sidebarCss).toContain(".sidebar-memory-saver:disabled");
   });
 
+  it("keeps footer controls visually quiet", () => {
+    const iconButtonBlock = getRuleBlock(sidebarCss, ".sidebar-footer .icon-button");
+    const memorySaverBlock = getRuleBlock(sidebarCss, ".sidebar-memory-saver");
+
+    expect(iconButtonBlock).toContain("background: transparent");
+    expect(iconButtonBlock).toContain("box-shadow: none");
+    expect(iconButtonBlock).not.toContain("var(--accent)");
+    expect(memorySaverBlock).toContain("border: 1px solid transparent");
+    expect(memorySaverBlock).toContain("rgba(255, 255, 255, 0.045)");
+    expect(memorySaverBlock).not.toContain("var(--accent)");
+  });
+
   it("moves focus through footer controls with ArrowLeft, ArrowRight, Home, and End", () => {
     const container = document.createElement("div");
     document.body.append(container);
@@ -469,6 +481,14 @@ function splitDropState() {
       { ...createTab("Docs", "https://docs.example"), id: "other-tab" }
     ]
   };
+}
+
+function getRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const bodyStart = css.indexOf("{", start);
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return css.slice(bodyStart + 1, bodyEnd);
 }
 
 function createDragEvent(type: string) {

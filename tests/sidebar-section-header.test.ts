@@ -40,6 +40,14 @@ describe("sidebar section header", () => {
     expect(countBlock).not.toContain("border-radius");
     expect(countBlock).not.toContain("var(--accent)");
   });
+
+  it("uses natural-cased quiet section labels", () => {
+    const headerBlock = getRuleBlock(sidebarCss, ".sidebar-section-header");
+
+    expect(headerBlock).toContain("font-weight: 500");
+    expect(headerBlock).toContain("text-transform: none");
+    expect(headerBlock).not.toContain("uppercase");
+  });
 });
 
 function getRuleBlock(css: string, selector: string): string {
