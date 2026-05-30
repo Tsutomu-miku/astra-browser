@@ -10,7 +10,7 @@
   min-width: 0;
   height: 30px;
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto 24px;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   border: 1px solid transparent;
@@ -95,13 +95,16 @@
 .tab-group-count {
   color: var(--muted);
   font-size: 11px;
+  opacity: 0;
+  transform: translateX(2px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
 }
 
-.tab-group-color {
-  width: 22px;
-  height: 22px;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
+.tab-group-header:hover .tab-group-count,
+.tab-group-header:focus-within .tab-group-count,
+.tab-group-header[data-collapsed="true"] .tab-group-count {
+  opacity: 1;
+  transform: translateX(0);
 }

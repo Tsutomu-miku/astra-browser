@@ -74,6 +74,7 @@ export function TabGroupSection({
       <div
         className="tab-group-header"
         draggable
+        data-collapsed={group.isCollapsed}
         data-group-id={group.id}
         data-dragging={draggingGroupId === group.id}
         data-drop-target={Boolean(draggingGroupId && draggingGroupId !== group.id)}
@@ -133,13 +134,6 @@ export function TabGroupSection({
           onChange={(event) => onUpdate(group.id, { name: event.target.value })}
         />
         <span className="tab-group-count">{tabs.length}</span>
-        <input
-          className="tab-group-color"
-          aria-label="Tab group color"
-          type="color"
-          value={group.color}
-          onChange={(event) => onUpdate(group.id, { color: event.target.value })}
-        />
       </div>
       {(!group.isCollapsed || hasActiveTab) && tabs.map((tab) => (
         <TabRow

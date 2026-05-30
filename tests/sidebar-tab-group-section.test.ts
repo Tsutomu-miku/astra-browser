@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -5,6 +7,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createTab, type TabGroup } from "../src/renderer/domain/browser";
 import { TabGroupSection } from "../src/renderer/surfaces/sidebar/components/tabs/TabGroupSection";
+
+const sidebarGroupsCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-groups.css"), "utf8");
 
 describe("sidebar tab group section", () => {
   it("collapses and expands tab groups with Left and Right arrows", () => {
@@ -121,6 +125,45 @@ describe("sidebar tab group section", () => {
     act(() => root.unmount());
   });
 
+  it("keeps tab group headers compact and moves color editing to the context menu", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        group,
+        tabs: [activeTab]
+      })));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+
+    expect(header.getAttribute("data-collapsed")).toBe("false");
+    expect(container.querySelector(".tab-group-dot")).not.toBeNull();
+    expect(container.querySelector(".tab-group-count")?.textContent).toBe("1");
+    expect(container.querySelector(".tab-group-color")).toBeNull();
+    expect(container.querySelector('input[type="color"]')).toBeNull();
+
+    act(() => root.unmount());
+  });
+
+  it("keeps expanded tab group counts quiet until the header is engaged", () => {
+    const headerBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-header");
+    const countBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-count");
+    const revealBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-header:hover .tab-group-count,\n.tab-group-header:focus-within .tab-group-count,\n.tab-group-header[data-collapsed=\"true\"] .tab-group-count");
+
+    expect(headerBlock).toContain("grid-template-columns: 22px minmax(0, 1fr) auto");
+    expect(headerBlock).not.toContain("24px");
+    expect(countBlock).toContain("opacity: 0");
+    expect(countBlock).toContain("transform: translateX(2px)");
+    expect(revealBlock).toContain("opacity: 1");
+    expect(revealBlock).toContain("transform: translateX(0)");
+    expect(sidebarGroupsCss).not.toContain(".tab-group-color");
+  });
+
   it("moves dropped tabs into the group folder through the shared tab folder action", () => {
     const group = tabGroup();
     const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
@@ -201,4 +244,12 @@ function createDragEvent(type: string, data: Record<string, string>) {
     }
   });
   return event;
+}
+
+function getRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const bodyStart = css.indexOf("{", start);
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return css.slice(bodyStart + 1, bodyEnd);
 }
