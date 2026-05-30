@@ -533,6 +533,20 @@ describe("sidebar drag placement", () => {
     expect(sidebarGroupsCss).toContain('.tab-group-header[data-drop-placement="before"]::before');
     expect(sidebarGroupsCss).toContain('.tab-group-header[data-drop-placement="after"]::before');
   });
+
+  it("keeps tab group drag and hover feedback quiet", () => {
+    const headerBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-header");
+    const hoverBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-header:hover");
+    const dropIndicatorBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-header[data-drop-placement]::before");
+
+    expect(headerBlock).toContain("border: 1px solid transparent");
+    expect(headerBlock).toContain("background: rgba(255, 255, 255, 0.045)");
+    expect(headerBlock).not.toContain("var(--group-color)");
+    expect(hoverBlock).toContain("border-color: transparent");
+    expect(hoverBlock).not.toContain("var(--group-color)");
+    expect(dropIndicatorBlock).toContain("box-shadow: none");
+    expect(dropIndicatorBlock).not.toContain("var(--group-color)");
+  });
 });
 
 function createActions() {
@@ -579,6 +593,14 @@ function stubRect(target: HTMLElement, rect: Partial<DOMRect>) {
       toJSON: () => undefined
     })
   });
+}
+
+function getRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const bodyStart = css.indexOf("{", start);
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return css.slice(bodyStart + 1, bodyEnd);
 }
 
 function tabGroup(id: string, name: string): TabGroup {
