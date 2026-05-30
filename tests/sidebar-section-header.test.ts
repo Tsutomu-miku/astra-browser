@@ -1,8 +1,12 @@
 import { createElement } from "react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { SidebarSectionHeader } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
+
+const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 
 describe("sidebar section header", () => {
   it("renders collapsible section state", () => {
@@ -28,4 +32,20 @@ describe("sidebar section header", () => {
     expect(html).not.toContain("<button");
     expect(html).toContain("Favorites");
   });
+
+  it("keeps section counts as quiet text instead of badges", () => {
+    const countBlock = getRuleBlock(sidebarCss, ".sidebar-section-count");
+
+    expect(countBlock).not.toContain("background");
+    expect(countBlock).not.toContain("border-radius");
+    expect(countBlock).not.toContain("var(--accent)");
+  });
 });
+
+function getRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const bodyStart = css.indexOf("{", start);
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return css.slice(bodyStart + 1, bodyEnd);
+}
