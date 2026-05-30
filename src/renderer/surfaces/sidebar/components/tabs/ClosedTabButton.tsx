@@ -64,7 +64,6 @@ export function ClosedTabButton({
       <SidebarItemIcon className="closed-tab-icon" faviconCache={faviconCache} faviconUrl={tab.faviconUrl} url={tab.url} />
       <span className="closed-tab-main">
         <span className="closed-tab-title">{title}</span>
-        <span className="closed-tab-url">{tab.url}</span>
       </span>
       <span className="closed-tab-action" aria-hidden="true">
         <FiRotateCcw />

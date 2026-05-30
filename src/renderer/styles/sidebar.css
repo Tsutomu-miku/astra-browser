@@ -846,26 +846,17 @@ h1 {
 
 .closed-tab-main {
   min-width: 0;
-  display: grid;
-  gap: 2px;
+  display: block;
 }
 
-.closed-tab-title,
-.closed-tab-url {
+.closed-tab-title {
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.closed-tab-title {
   font-size: 12px;
   font-weight: 450;
-}
-
-.closed-tab-url {
-  color: var(--muted);
-  font-size: 10px;
 }
 
 .closed-tab-action {

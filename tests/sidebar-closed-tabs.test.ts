@@ -28,7 +28,8 @@ describe("sidebar recently closed tabs", () => {
 
     expect(html).toContain('class="closed-tab-button"');
     expect(html).toContain("Docs");
-    expect(html).toContain("https://docs.example/");
+    expect(html).not.toContain('class="closed-tab-url"');
+    expect(html).not.toContain(">https://docs.example/<");
     expect(html).toContain("Restore");
     expect(html).toContain('class="sidebar-item-action-hints"');
     expect(html).toContain('aria-hidden="true"');
@@ -244,6 +245,7 @@ describe("sidebar recently closed tabs", () => {
     expect(sidebarCss).toContain(".closed-tab-button");
     expect(sidebarCss).toContain('.closed-tab-button[data-dragging="true"]');
     expect(sidebarCss).toContain(".closed-tab-action");
+    expect(sidebarCss).not.toContain(".closed-tab-url");
   });
 });
 

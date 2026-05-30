@@ -60,11 +60,14 @@ describe("sidebar selection styles", () => {
 
   it("keeps recently closed restore affordance icon-only", () => {
     const restoreBlock = getRuleBlock(sidebarCss, "\n.closed-tab-action {");
+    const closedMainBlock = getRuleBlock(sidebarCss, ".closed-tab-main");
 
     expect(restoreBlock).toContain("width: 22px");
     expect(restoreBlock).toContain("display: inline-grid");
     expect(restoreBlock).toContain("background: transparent");
     expect(restoreBlock).not.toContain("font-weight");
+    expect(closedMainBlock).toContain("display: block");
+    expect(sidebarCss).not.toContain(".closed-tab-url");
   });
 
   it("keeps sidebar status and internal-page colors neutral", () => {
