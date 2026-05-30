@@ -13,6 +13,6 @@ const sidebarCss = [
 
 describe("sidebar font weight", () => {
   it("keeps sidebar typography restrained", () => {
-    expect(sidebarCss).not.toMatch(/font-weight:\s*(7|8|9)\d{2}/);
+    expect(sidebarCss).not.toMatch(/font-weight:\s*(6|7|8|9)\d{2}/);
   });
 });
