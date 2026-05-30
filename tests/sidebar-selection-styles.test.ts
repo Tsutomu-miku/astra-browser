@@ -65,6 +65,30 @@ describe("sidebar selection styles", () => {
     expect(activeWorkspaceBlock).not.toContain("var(--accent)");
     expect(baseCss).not.toContain("radial-gradient");
   });
+
+  it("keeps primary sidebar chrome neutral by default", () => {
+    const resizeBlock = getRuleBlock(sidebarCss, ".sidebar-resize-handle:hover::before,\n.sidebar-resize-handle:focus-visible::before,\n.sidebar-resize-handle[data-dragging=\"true\"]::before");
+    const essentialBlock = getRuleBlock(sidebarCss, ".essentials .favorite-button");
+    const essentialIconBlock = getRuleBlock(sidebarCss, ".essentials .favorite-icon");
+    const newWorkspaceHoverBlock = getRuleBlock(workspaceCss, ".workspace-new-button:hover");
+    const workspaceMenuBlock = getRuleBlock(workspaceCss, ".workspace-context-menu");
+    const workspaceInputFocusBlock = getRuleBlock(workspaceCss, ".workspace-menu-field input:focus");
+
+    for (const block of [
+      resizeBlock,
+      essentialBlock,
+      essentialIconBlock,
+      newWorkspaceHoverBlock,
+      workspaceMenuBlock,
+      workspaceInputFocusBlock
+    ]) {
+      expect(block).not.toContain("var(--accent)");
+    }
+    expect(essentialBlock).toContain("border-color: transparent");
+    expect(essentialIconBlock).toContain("background: var(--control)");
+    expect(newWorkspaceHoverBlock).toContain("border-color: transparent");
+    expect(workspaceInputFocusBlock).toContain("box-shadow: none");
+  });
 });
 
 function getRuleBlock(css: string, selector: string): string {

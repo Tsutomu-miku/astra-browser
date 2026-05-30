@@ -44,7 +44,7 @@ describe("sidebar section header", () => {
   it("uses natural-cased quiet section labels", () => {
     const headerBlock = getRuleBlock(sidebarCss, ".sidebar-section-header");
 
-    expect(headerBlock).toContain("font-weight: 500");
+    expect(headerBlock).toContain("font-weight: 450");
     expect(headerBlock).toContain("text-transform: none");
     expect(headerBlock).not.toContain("uppercase");
   });

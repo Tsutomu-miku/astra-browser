@@ -23,7 +23,7 @@
   background: rgba(255, 255, 255, 0.07);
   color: var(--text);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 450;
   transition:
     background 140ms ease,
     border-color 140ms ease,
@@ -100,20 +100,20 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
   background: rgba(8, 9, 12, 0.86);
-  color: color-mix(in srgb, var(--text) 84%, var(--accent));
+  color: color-mix(in srgb, var(--text) 84%, var(--muted));
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 450;
 }
 
 .workspace-new-button {
   border-color: var(--line);
   background: rgba(255, 255, 255, 0.045);
   color: var(--muted);
-  font-weight: 500;
+  font-weight: 450;
 }
 
 .workspace-new-button:hover {
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-color: transparent;
   background: rgba(255, 255, 255, 0.075);
   color: var(--text);
 }
@@ -125,7 +125,7 @@
   display: grid;
   gap: 8px;
   padding: 8px;
-  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  border: 1px solid var(--line);
   border-radius: 8px;
   background: #1f2630;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
@@ -169,7 +169,7 @@
 .workspace-menu-field span {
   color: var(--muted);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 450;
   text-transform: uppercase;
 }
 
@@ -184,9 +184,9 @@
 }
 
 .workspace-menu-field input:focus {
-  border-color: color-mix(in srgb, var(--accent) 62%, white);
+  border-color: var(--line-strong);
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
+  box-shadow: none;
 }
 
 .workspace-menu-swatches {

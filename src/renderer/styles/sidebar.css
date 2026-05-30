@@ -138,7 +138,7 @@
   bottom: 12px;
   width: 2px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: rgba(255, 255, 255, 0.12);
   opacity: 0;
   transition:
     opacity 140ms ease,
@@ -150,7 +150,7 @@
 .sidebar-resize-handle:focus-visible::before,
 .sidebar-resize-handle[data-dragging="true"]::before {
   width: 3px;
-  background: color-mix(in srgb, var(--accent) 72%, white);
+  background: color-mix(in srgb, var(--muted) 82%, white);
   opacity: 1;
 }
 
@@ -193,7 +193,7 @@ h1 {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 18px;
-  font-weight: 560;
+  font-weight: 500;
 }
 
 .sidebar-address {
@@ -351,7 +351,7 @@ h1 {
   padding: 0 4px;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 450;
   text-transform: none;
   letter-spacing: 0;
 }
@@ -423,7 +423,7 @@ h1 {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.055);
   color: color-mix(in srgb, var(--muted) 76%, white);
-  font-weight: 500;
+  font-weight: 450;
   white-space: nowrap;
 }
 
@@ -442,7 +442,7 @@ h1 {
   background: rgba(255, 255, 255, 0.07);
   color: var(--text);
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 450;
   overflow: visible;
   transition:
     background 140ms ease,
@@ -485,7 +485,7 @@ h1 {
   border-radius: 10px;
   background: var(--control);
   color: var(--text);
-  font-weight: 500;
+  font-weight: 450;
   transition:
     opacity 120ms ease,
     transform 120ms ease;
@@ -546,8 +546,8 @@ h1 {
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   padding: 6px;
-  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
-  background: color-mix(in srgb, var(--accent) 15%, rgba(255, 255, 255, 0.08));
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.062);
 }
 
 .essentials .favorite-title {
@@ -558,7 +558,7 @@ h1 {
   width: 28px;
   height: 28px;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--accent) 22%, rgba(255, 255, 255, 0.09));
+  background: var(--control);
 }
 
 .favorite-button,
@@ -637,7 +637,7 @@ h1 {
 .tab-row[aria-current="true"] .tab-title,
 .favorite-button[aria-current="true"] .favorite-title {
   color: var(--text);
-  font-weight: 500;
+  font-weight: 450;
 }
 
 .tab-row.is-split-tab .tab-favicon::after {
@@ -699,8 +699,8 @@ h1 {
   place-items: center;
   border-radius: var(--radius-sm);
   background: var(--control);
-  color: var(--accent);
-  font-weight: 500;
+  color: color-mix(in srgb, var(--muted) 86%, white);
+  font-weight: 450;
 }
 
 .favorite-icon svg,
@@ -848,7 +848,7 @@ h1 {
 
 .closed-tab-title {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 450;
 }
 
 .closed-tab-url {
@@ -865,7 +865,7 @@ h1 {
   background: rgba(255, 255, 255, 0.06);
   color: var(--muted);
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 450;
   transition: opacity 120ms ease;
 }
 
