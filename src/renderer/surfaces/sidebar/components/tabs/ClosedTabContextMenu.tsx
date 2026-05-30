@@ -1,8 +1,10 @@
 import { useRef } from "react";
+import { FiArrowRight, FiColumns, FiEye, FiGrid, FiLink, FiPlus, FiType } from "react-icons/fi";
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { ClosedTab } from "../../../../domain/browser";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
+import { SidebarMenuItem } from "./SidebarMenuItem";
 
 export function ClosedTabContextMenu({
   closedIndex,
@@ -48,31 +50,31 @@ export function ClosedTabContextMenu({
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={handleMenuKeyboardNavigation}
     >
-      <button type="button" role="menuitem" onClick={() => run(() => onRestore(closedIndex))}>Restore</button>
-      <button type="button" role="menuitem" onClick={() => run(() => onPreview(tab.url, tab.title))}>Preview in Glance</button>
-      <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(tab.url, tab.title))}>Open in split view</button>
+      <SidebarMenuItem icon={FiArrowRight} role="menuitem" onClick={() => run(() => onRestore(closedIndex))}>Restore</SidebarMenuItem>
+      <SidebarMenuItem icon={FiEye} role="menuitem" onClick={() => run(() => onPreview(tab.url, tab.title))}>Preview in Glance</SidebarMenuItem>
+      <SidebarMenuItem icon={FiColumns} role="menuitem" onClick={() => run(() => onOpenInSplit(tab.url, tab.title))}>Open in split view</SidebarMenuItem>
       {(moveWorkspaceTargets?.length || onRestoreToNewWorkspace) && (
         <>
           <span className="tab-context-menu-separator" />
           {moveWorkspaceTargets?.map((workspace) => (
-            <button
+            <SidebarMenuItem
               key={workspace.id}
-              type="button"
+              icon={FiGrid}
               role="menuitem"
               onClick={() => run(() => onRestoreToWorkspace?.(closedIndex, workspace.id))}
             >
               Restore to {workspace.name}
-            </button>
+            </SidebarMenuItem>
           ))}
           {onRestoreToNewWorkspace && (
-            <button type="button" role="menuitem" onClick={() => run(() => onRestoreToNewWorkspace(closedIndex))}>
+            <SidebarMenuItem icon={FiPlus} role="menuitem" onClick={() => run(() => onRestoreToNewWorkspace(closedIndex))}>
               Restore to New Space
-            </button>
+            </SidebarMenuItem>
           )}
         </>
       )}
-      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(tab.url))}>Copy URL</button>
-      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(title))}>Copy title</button>
+      <SidebarMenuItem icon={FiLink} role="menuitem" onClick={() => run(() => onCopyText(tab.url))}>Copy URL</SidebarMenuItem>
+      <SidebarMenuItem icon={FiType} role="menuitem" onClick={() => run(() => onCopyText(title))}>Copy title</SidebarMenuItem>
     </div>
   );
 }

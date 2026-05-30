@@ -39,6 +39,15 @@ describe("sidebar tab context menu", () => {
     expect(onCopyText).toHaveBeenCalledWith("https://docs.example");
     expect(onCopyText).toHaveBeenCalledWith("Docs");
   });
+
+  it("renders quiet icon menu items without native tooltips", () => {
+    const html = renderMenu(false);
+
+    expect(html).toContain('class="sidebar-menu-item"');
+    expect(html).toContain('class="sidebar-menu-item-icon" aria-hidden="true"');
+    expect(html).toContain('class="sidebar-menu-item-label"');
+    expect(html).not.toContain('title="');
+  });
 });
 
 function renderMenu(isSleeping: boolean): string {

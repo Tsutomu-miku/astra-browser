@@ -1,8 +1,28 @@
 import { useRef } from "react";
+import {
+  FiArrowRight,
+  FiBookmark,
+  FiColumns,
+  FiCopy,
+  FiEye,
+  FiFolder,
+  FiFolderMinus,
+  FiFolderPlus,
+  FiGrid,
+  FiLink,
+  FiMoon,
+  FiStar,
+  FiSun,
+  FiType,
+  FiVolume2,
+  FiVolumeX,
+  FiX
+} from "react-icons/fi";
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { BrowserTab } from "../../../../domain/browser";
 import type { MoveWorkspaceTarget, TabCleanupState, TabGroupMenuState } from "../../model/tabContextMenuState";
+import { SidebarMenuItem } from "./SidebarMenuItem";
 
 interface TabContextMenuProps {
   left: number;
@@ -79,37 +99,37 @@ export function TabContextMenu({
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={handleMenuKeyboardNavigation}
     >
-      <button type="button" role="menuitem" onClick={() => run(() => onSelect(tab.id))}>Open</button>
-      <button type="button" role="menuitem" onClick={() => run(() => onOpenGlance(tab.url, tab.title))}>Preview in Glance</button>
-      <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</button>
-      <button type="button" role="menuitem" onClick={() => run(() => onDuplicate(tab.id))}>Duplicate</button>
-      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(tab.url))}>Copy URL</button>
-      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(tab.title || tab.url))}>Copy title</button>
-      <button
-        type="button"
+      <SidebarMenuItem icon={FiArrowRight} role="menuitem" onClick={() => run(() => onSelect(tab.id))}>Open</SidebarMenuItem>
+      <SidebarMenuItem icon={FiEye} role="menuitem" onClick={() => run(() => onOpenGlance(tab.url, tab.title))}>Preview in Glance</SidebarMenuItem>
+      <SidebarMenuItem icon={FiColumns} role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</SidebarMenuItem>
+      <SidebarMenuItem icon={FiCopy} role="menuitem" onClick={() => run(() => onDuplicate(tab.id))}>Duplicate</SidebarMenuItem>
+      <SidebarMenuItem icon={FiLink} role="menuitem" onClick={() => run(() => onCopyText(tab.url))}>Copy URL</SidebarMenuItem>
+      <SidebarMenuItem icon={FiType} role="menuitem" onClick={() => run(() => onCopyText(tab.title || tab.url))}>Copy title</SidebarMenuItem>
+      <SidebarMenuItem
+        icon={tab.isSleeping ? FiSun : FiMoon}
         role="menuitem"
         onClick={() => run(() => tab.isSleeping ? onSelect(tab.id) : onSleepTab(tab.id))}
       >
         {tab.isSleeping ? "Wake tab" : "Sleep tab"}
-      </button>
+      </SidebarMenuItem>
       {(groupMenuState.canCreateGroup || groupMenuState.canUngroup || groupMenuState.moveGroupTargets.length > 0) && (
         <>
           <span className="tab-context-menu-separator" />
           {groupMenuState.canCreateGroup && (
-            <button type="button" role="menuitem" onClick={() => run(() => onGroupTab(tab.id))}>New group from tab</button>
+            <SidebarMenuItem icon={FiFolderPlus} role="menuitem" onClick={() => run(() => onGroupTab(tab.id))}>New group from tab</SidebarMenuItem>
           )}
           {groupMenuState.canUngroup && (
-            <button type="button" role="menuitem" onClick={() => run(() => onUngroupTab(tab.id))}>Ungroup tab</button>
+            <SidebarMenuItem icon={FiFolderMinus} role="menuitem" onClick={() => run(() => onUngroupTab(tab.id))}>Ungroup tab</SidebarMenuItem>
           )}
           {groupMenuState.moveGroupTargets.map((group) => (
-            <button
+            <SidebarMenuItem
               key={group.id}
-              type="button"
+              icon={FiFolder}
               role="menuitem"
               onClick={() => run(() => onMoveToGroup(tab.id, group.id))}
             >
               Move to {group.name}
-            </button>
+            </SidebarMenuItem>
           ))}
         </>
       )}
@@ -117,56 +137,56 @@ export function TabContextMenu({
         <>
           <span className="tab-context-menu-separator" />
           {moveWorkspaceTargets.map((workspace) => (
-            <button
+            <SidebarMenuItem
               key={workspace.id}
-              type="button"
+              icon={FiGrid}
               role="menuitem"
               onClick={() => run(() => onMoveToWorkspace(tab.id, workspace.id))}
             >
               Move to {workspace.name}
-            </button>
+            </SidebarMenuItem>
           ))}
         </>
       )}
-      <button type="button" role="menuitem" onClick={() => run(() => onToggleFavorite(tab.id))}>
+      <SidebarMenuItem icon={FiStar} role="menuitem" onClick={() => run(() => onToggleFavorite(tab.id))}>
         {tabIsFavorite ? "Remove favorite" : "Add favorite"}
-      </button>
-      <button type="button" role="menuitem" onClick={() => run(() => onToggleEssential(tab.id))}>
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiBookmark} role="menuitem" onClick={() => run(() => onToggleEssential(tab.id))}>
         {tabIsEssential ? "Remove essential" : "Add essential"}
-      </button>
-      <button type="button" role="menuitem" onClick={() => run(() => onTogglePinned(tab.id))}>
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiGrid} role="menuitem" onClick={() => run(() => onTogglePinned(tab.id))}>
         {tab.isPinned ? "Unpin" : "Pin"}
-      </button>
-      <button type="button" role="menuitem" onClick={() => run(() => onToggleMuted(tab.id))}>
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={tab.isMuted ? FiVolume2 : FiVolumeX} role="menuitem" onClick={() => run(() => onToggleMuted(tab.id))}>
         {tab.isMuted ? "Unmute" : "Mute"}
-      </button>
+      </SidebarMenuItem>
       <span className="tab-context-menu-separator" />
-      <button
-        type="button"
+      <SidebarMenuItem
+        icon={FiX}
         role="menuitem"
         disabled={!cleanupState.canCloseOtherTabs}
         onClick={() => run(() => onCloseOtherTabs(tab.id))}
       >
         Close other tabs
-      </button>
-      <button
-        type="button"
+      </SidebarMenuItem>
+      <SidebarMenuItem
+        icon={FiX}
         role="menuitem"
         disabled={!cleanupState.canCloseTabsToLeft}
         onClick={() => run(() => onCloseTabsToLeft(tab.id))}
       >
         Close tabs to the left
-      </button>
-      <button
-        type="button"
+      </SidebarMenuItem>
+      <SidebarMenuItem
+        icon={FiX}
         role="menuitem"
         disabled={!cleanupState.canCloseTabsToRight}
         onClick={() => run(() => onCloseTabsToRight(tab.id))}
       >
         Close tabs to the right
-      </button>
+      </SidebarMenuItem>
       <span className="tab-context-menu-separator" />
-      <button type="button" role="menuitem" className="danger" onClick={() => run(() => onCloseTab(tab.id))}>Close</button>
+      <SidebarMenuItem icon={FiX} role="menuitem" className="danger" onClick={() => run(() => onCloseTab(tab.id))}>Close</SidebarMenuItem>
     </div>
   );
 }

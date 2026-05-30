@@ -1,8 +1,10 @@
 import { useRef } from "react";
+import { FiArrowRight, FiColumns, FiEye, FiGrid, FiLink, FiPlus, FiTrash2, FiType } from "react-icons/fi";
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { Favorite } from "../../../../domain/browser";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
+import { SidebarMenuItem } from "./SidebarMenuItem";
 
 export function QuickEntryContextMenu({
   item,
@@ -51,43 +53,43 @@ export function QuickEntryContextMenu({
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={handleMenuKeyboardNavigation}
     >
-      <button type="button" role="menuitem" onClick={() => run(() => onOpen(item, kind))}>
+      <SidebarMenuItem icon={FiArrowRight} role="menuitem" onClick={() => run(() => onOpen(item, kind))}>
         Open
-      </button>
-      <button type="button" role="menuitem" onClick={() => run(() => onPreview(item.url, item.title))}>
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiEye} role="menuitem" onClick={() => run(() => onPreview(item.url, item.title))}>
         Preview in Glance
-      </button>
-      <button type="button" role="menuitem" onClick={() => run(() => onOpenInSplit(item, kind))}>
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiColumns} role="menuitem" onClick={() => run(() => onOpenInSplit(item, kind))}>
         Open in split view
-      </button>
+      </SidebarMenuItem>
       {canMoveFavorite && (
         <>
           <span className="tab-context-menu-separator" />
           {moveWorkspaceTargets?.map((workspace) => (
-            <button
+            <SidebarMenuItem
               key={workspace.id}
-              type="button"
+              icon={FiGrid}
               role="menuitem"
               onClick={() => run(() => onMoveToWorkspace?.(item.id, workspace.id))}
             >
               Move to {workspace.name}
-            </button>
+            </SidebarMenuItem>
           ))}
-          <button type="button" role="menuitem" onClick={() => run(() => onMoveToNewWorkspace?.(item.id))}>
+          <SidebarMenuItem icon={FiPlus} role="menuitem" onClick={() => run(() => onMoveToNewWorkspace?.(item.id))}>
             Move to New Space
-          </button>
+          </SidebarMenuItem>
         </>
       )}
-      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(item.url))}>
+      <SidebarMenuItem icon={FiLink} role="menuitem" onClick={() => run(() => onCopyText(item.url))}>
         Copy URL
-      </button>
-      <button type="button" role="menuitem" onClick={() => run(() => onCopyText(item.title || item.url))}>
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiType} role="menuitem" onClick={() => run(() => onCopyText(item.title || item.url))}>
         Copy title
-      </button>
+      </SidebarMenuItem>
       <span className="tab-context-menu-separator" />
-      <button type="button" role="menuitem" className="danger" onClick={() => run(() => onRemove(kind === "favorite" ? item.id : item.url))}>
+      <SidebarMenuItem icon={FiTrash2} role="menuitem" className="danger" onClick={() => run(() => onRemove(kind === "favorite" ? item.id : item.url))}>
         Remove {label}
-      </button>
+      </SidebarMenuItem>
     </div>
   );
 }

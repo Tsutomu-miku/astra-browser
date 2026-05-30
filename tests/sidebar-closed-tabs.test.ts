@@ -69,6 +69,8 @@ describe("sidebar recently closed tabs", () => {
     expect(html).toContain("Open in split view");
     expect(html).toContain("Copy URL");
     expect(html).toContain("Copy title");
+    expect(html).toContain('class="sidebar-menu-item-icon" aria-hidden="true"');
+    expect(html).not.toContain('title="Restore');
   });
 
   it("copies recently closed URL and title", () => {

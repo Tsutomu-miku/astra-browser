@@ -37,7 +37,9 @@ describe("sidebar quick entry context menu", () => {
     expect(html).toContain("Copy URL");
     expect(html).toContain("Copy title");
     expect(html).toContain("Remove Essential");
+    expect(html).toContain('class="sidebar-menu-item-icon" aria-hidden="true"');
     expect(html).not.toContain("Move to New Space");
+    expect(html).not.toContain('title="');
   });
 
   it("copies quick entry URL and title", () => {
@@ -422,10 +424,25 @@ describe("sidebar quick entry context menu", () => {
   });
 
   it("styles quick entry menus with the shared sidebar menu surface", () => {
+    const itemBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .sidebar-menu-item");
+    const iconBlock = getRuleBlock(contextMenuCss, ".sidebar-menu-item-icon");
+    const labelBlock = getRuleBlock(contextMenuCss, ".sidebar-menu-item-label");
+
     expect(contextMenuCss).toContain(".quick-entry-context-menu");
     expect(contextMenuCss).toContain(".tab-context-menu button.danger");
+    expect(itemBlock).toContain("grid-template-columns: 18px minmax(0, 1fr)");
+    expect(iconBlock).toContain("color: color-mix");
+    expect(labelBlock).toContain("text-overflow: ellipsis");
   });
 });
+
+function getRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const bodyStart = css.indexOf("{", start);
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return css.slice(bodyStart + 1, bodyEnd);
+}
 
 function createActions() {
   return {

@@ -21,6 +21,7 @@ describe("sidebar tab group context menu", () => {
     expect(html).toContain("Move group to New Space");
     expect(html).toContain("Close group");
     expect(html).toContain("Ungroup 2 tabs");
+    expect(html).toContain('class="sidebar-menu-item-icon" aria-hidden="true"');
     expect(html).toContain(TAB_GROUP_COLOR_SWATCHES[0]);
     expect(html).toContain(`aria-label="Use ${TAB_GROUP_COLOR_SWATCHES[0]}"`);
     expect(html).not.toContain(`title="${TAB_GROUP_COLOR_SWATCHES[0]}"`);
