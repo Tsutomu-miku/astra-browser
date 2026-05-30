@@ -53,7 +53,7 @@ export function CommandPalette({ controller }: { controller: BrowserController }
   }, [commandQuery]);
 
   useEffect(() => {
-    itemRefs.current[activeIndex]?.scrollIntoView({ block: "nearest" });
+    itemRefs.current[activeIndex]?.scrollIntoView?.({ block: "nearest" });
   }, [activeIndex, displayedCommands.length]);
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {

@@ -30,7 +30,7 @@ export function handleFocusableListNavigation(
   const activeIndex = Math.max(0, activeItem ? items.indexOf(activeItem) : -1);
   const nextItem = items[getNextListIndex(activeIndex, items.length, navigationKey)];
   nextItem?.focus({ preventScroll: true });
-  nextItem?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  nextItem?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   return true;
 }
 

@@ -39,6 +39,7 @@ describe("getStartPageContent", () => {
     const workspace = getActiveWorkspace(state);
     const tab = createTab("Current Docs", "https://docs.example/current");
     workspace.tabs = [tab];
+    workspace.favorites = [];
     workspace.favorites.push(createFavorite("Old Docs", "https://docs.example/old", tab.id));
 
     const content = getStartPageContent(state, workspace);

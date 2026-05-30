@@ -7,6 +7,6 @@ export function scrollSidebarSearchTargetIntoView(
   const element = root.getElementById(getSidebarSearchTargetElementId(target));
   if (!element) return false;
 
-  element.scrollIntoView({ block: "nearest" });
+  element.scrollIntoView?.({ block: "nearest" });
   return true;
 }

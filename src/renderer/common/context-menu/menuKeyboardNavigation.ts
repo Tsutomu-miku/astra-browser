@@ -30,7 +30,7 @@ export function handleMenuKeyboardNavigation(event: KeyboardEvent<HTMLElement>):
   const activeIndex = Math.max(0, items.indexOf(document.activeElement as HTMLElement));
   const nextItem = items[getNextListIndex(activeIndex, items.length, event.key)];
   nextItem?.focus({ preventScroll: true });
-  nextItem?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  nextItem?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   return true;
 }
 
