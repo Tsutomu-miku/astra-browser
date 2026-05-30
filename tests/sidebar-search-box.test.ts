@@ -1,10 +1,15 @@
 import { createElement } from "react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import { SidebarSearchBox } from "../src/renderer/surfaces/sidebar/components/chrome/SidebarSearchBox";
+
+const sidebarSearchCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-search.css"), "utf8");
+const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 
 describe("sidebar search box", () => {
   it("renders an explicitly labelled clear control while searching", () => {
@@ -73,4 +78,48 @@ describe("sidebar search box", () => {
 
     act(() => root.unmount());
   });
+
+  it("renders search action hints as icon-only glyphs", () => {
+    const html = renderToStaticMarkup(createElement(SidebarSearchBox, {
+      activeSearchTarget: {
+        id: "docs",
+        title: "Docs",
+        type: "tab",
+        url: "https://docs.example"
+      },
+      query: "docs",
+      onClear: vi.fn(),
+      onKeyDown: vi.fn(),
+      onQueryChange: vi.fn()
+    }));
+
+    expect(html).toContain('class="sidebar-search-action-hints"');
+    expect(html).toContain('aria-label="Alt Preview, Shift Split"');
+    expect(html).toContain('data-action-hint="preview"');
+    expect(html).toContain('data-action-hint="split"');
+    expect(html).not.toContain("<kbd");
+  });
+
+  it("keeps sidebar search and compact address focus states quiet", () => {
+    const searchFocusBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search input:focus");
+    const addressFocusBlock = getRuleBlock(sidebarCss, ".sidebar-address-form:focus-within");
+    const hintBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search-action-hint");
+
+    expect(searchFocusBlock).toContain("border-color: transparent");
+    expect(searchFocusBlock).toContain("box-shadow: none");
+    expect(searchFocusBlock).not.toContain("var(--accent)");
+    expect(addressFocusBlock).toContain("border-color: transparent");
+    expect(addressFocusBlock).toContain("box-shadow: none");
+    expect(addressFocusBlock).not.toContain("var(--accent)");
+    expect(hintBlock).toContain("width: 16px");
+    expect(sidebarSearchCss).not.toContain("kbd");
+  });
 });
+
+function getRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const bodyStart = css.indexOf("{", start);
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return css.slice(bodyStart + 1, bodyEnd);
+}

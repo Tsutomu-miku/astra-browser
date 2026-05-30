@@ -1,5 +1,5 @@
 import { useRef, type KeyboardEvent } from "react";
-import { FiX } from "react-icons/fi";
+import { FiColumns, FiEye, FiX } from "react-icons/fi";
 
 import {
   getSidebarSearchActionHints,
@@ -53,9 +53,8 @@ export function SidebarSearchBox({
       {query && actionHints.length > 0 && (
         <div className="sidebar-search-action-hints" aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}>
           {actionHints.map((hint) => (
-            <span className={`sidebar-search-action-hint is-${hint.id}`} key={hint.id}>
-              <kbd>{hint.modifier}</kbd>
-              <span>{hint.label}</span>
+            <span className={`sidebar-search-action-hint is-${hint.id}`} data-action-hint={hint.id} key={hint.id} aria-hidden="true">
+              {hint.id === "preview" ? <FiEye /> : <FiColumns />}
             </span>
           ))}
         </div>

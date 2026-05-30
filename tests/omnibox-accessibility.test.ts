@@ -98,6 +98,9 @@ describe("omnibox accessibility", () => {
     const option = container.querySelector('[role="option"]');
     expect(option?.id).toBe("sidebar-address-suggestion-0");
     expect(option?.hasAttribute("title")).toBe(false);
+    expect(option?.querySelector(".omnibox-action-hints")?.getAttribute("aria-label")).toBe("Alt Split");
+    expect(option?.querySelector(".omnibox-action-hint")?.getAttribute("data-action-hint")).toBe("split");
+    expect(option?.querySelector("kbd")).toBeNull();
 
     act(() => {
       input.dispatchEvent(new KeyboardEvent("keydown", {

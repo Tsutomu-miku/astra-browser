@@ -1,4 +1,4 @@
-import { FiSearch } from "react-icons/fi";
+import { FiColumns, FiSearch } from "react-icons/fi";
 
 import type { BrowserController } from "../../../../app/controller/types";
 import { useOmniboxController } from "../../../../app/controller/useOmniboxController";
@@ -41,31 +41,36 @@ export function SidebarAddress({ controller }: { controller: BrowserController }
       </form>
       {omnibox.suggestionsOpen && omnibox.suggestions.length > 0 && (
         <div className="sidebar-omnibox-suggestions" id="sidebar-address-suggestions" role="listbox" aria-label="Sidebar address suggestions">
-          {omnibox.suggestions.map((suggestion, index) => (
-            <button
-              className="sidebar-omnibox-suggestion"
-              id={`sidebar-address-suggestion-${index}`}
-              key={suggestion.id}
-              type="button"
-              role="option"
-              aria-selected={index === omnibox.activeIndex}
-              onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
-              onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
-            >
-              <span className="sidebar-suggestion-main">
-                <span>{suggestion.title}</span>
-                <span className="omnibox-action-hints" aria-label="Alt Split">
-                  {getOmniboxActionHints(suggestion).map((hint) => (
-                    <span className={`omnibox-action-hint is-${hint.id}`} key={hint.id}>
-                      <kbd>{hint.modifier}</kbd>
-                      <span>{hint.label}</span>
+          {omnibox.suggestions.map((suggestion, index) => {
+            const actionHints = getOmniboxActionHints(suggestion);
+
+            return (
+              <button
+                className="sidebar-omnibox-suggestion"
+                id={`sidebar-address-suggestion-${index}`}
+                key={suggestion.id}
+                type="button"
+                role="option"
+                aria-selected={index === omnibox.activeIndex}
+                onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
+                onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
+              >
+                <span className="sidebar-suggestion-main">
+                  <span>{suggestion.title}</span>
+                  {actionHints.length > 0 && (
+                    <span className="omnibox-action-hints" aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}>
+                      {actionHints.map((hint) => (
+                        <span className={`omnibox-action-hint is-${hint.id}`} data-action-hint={hint.id} key={hint.id} aria-hidden="true">
+                          <FiColumns />
+                        </span>
+                      ))}
                     </span>
-                  ))}
+                  )}
                 </span>
-              </span>
-              <small>{suggestion.subtitle}</small>
-            </button>
-          ))}
+                <small>{suggestion.subtitle}</small>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
