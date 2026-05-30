@@ -88,11 +88,15 @@ describe("sidebar search box", () => {
         url: "https://docs.example"
       },
       query: "docs",
+      resultCount: 3,
       onClear: vi.fn(),
       onKeyDown: vi.fn(),
       onQueryChange: vi.fn()
     }));
 
+    expect(html).toContain('class="sidebar-search-meta"');
+    expect(html).toContain('class="sidebar-search-status"');
+    expect(html).toContain(">3 results<");
     expect(html).toContain('class="sidebar-search-action-hints"');
     expect(html).toContain('aria-label="Alt Preview, Shift Split"');
     expect(html).toContain('data-action-hint="preview"');
@@ -100,9 +104,25 @@ describe("sidebar search box", () => {
     expect(html).not.toContain("<kbd");
   });
 
+  it("renders a quiet no-match search status", () => {
+    const html = renderToStaticMarkup(createElement(SidebarSearchBox, {
+      query: "missing",
+      resultCount: 0,
+      onClear: vi.fn(),
+      onKeyDown: vi.fn(),
+      onQueryChange: vi.fn()
+    }));
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain(">No matches<");
+    expect(html).not.toContain('class="sidebar-search-action-hints"');
+  });
+
   it("keeps sidebar search and compact address focus states quiet", () => {
     const searchFocusBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search input:focus");
     const addressFocusBlock = getRuleBlock(sidebarCss, ".sidebar-address-form:focus-within");
+    const metaBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-meta {");
     const hintBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-action-hint {");
 
     expect(searchFocusBlock).toContain("border-color: transparent");
@@ -111,6 +131,8 @@ describe("sidebar search box", () => {
     expect(addressFocusBlock).toContain("border-color: transparent");
     expect(addressFocusBlock).toContain("box-shadow: none");
     expect(addressFocusBlock).not.toContain("var(--accent)");
+    expect(metaBlock).toContain("justify-content: space-between");
+    expect(metaBlock).not.toContain("var(--accent)");
     expect(hintBlock).toContain("width: 16px");
     expect(sidebarSearchCss).not.toContain("kbd");
   });

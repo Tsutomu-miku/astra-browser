@@ -130,7 +130,7 @@ export function SidebarTabsSection({
           />
         ))}
         {filteredItems.isFiltering && !filteredItems.hasMatches && (
-          <p className="sidebar-empty">No matching tabs</p>
+          <p className="sidebar-empty" role="status">No matches</p>
         )}
       </nav>}
     </section>

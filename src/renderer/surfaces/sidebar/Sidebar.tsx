@@ -349,6 +349,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         <SidebarSearchBox
           activeSearchTarget={activeSearchTarget}
           query={tabQuery}
+          resultCount={filteredItems.isFiltering ? searchTargets.length : undefined}
           onClear={() => {
             setTabQuery("");
             setActiveSearchIndex(0);

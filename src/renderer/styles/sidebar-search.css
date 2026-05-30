@@ -27,15 +27,31 @@
   box-shadow: none;
 }
 
-.sidebar-search-action-hints {
+.sidebar-search-meta {
   grid-column: 1 / -1;
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   padding: 0 2px;
   color: color-mix(in srgb, var(--muted) 78%, white);
+  font-size: 11px;
+}
+
+.sidebar-search-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-search-action-hints {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .sidebar-search-action-hint {
