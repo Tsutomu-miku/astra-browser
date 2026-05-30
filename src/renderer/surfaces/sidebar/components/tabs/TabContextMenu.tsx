@@ -21,7 +21,7 @@ import {
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { BrowserTab } from "../../../../domain/browser";
-import { SidebarMenuItem } from "../common/SidebarMenuItem";
+import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
 import type { MoveWorkspaceTarget, TabCleanupState, TabGroupMenuState } from "../../model/tabContextMenuState";
 
 interface TabContextMenuProps {
@@ -93,7 +93,7 @@ export function TabContextMenu({
   return (
     <div
       ref={menuRef}
-      className="tab-context-menu"
+      className="sidebar-menu-surface tab-context-menu"
       role="menu"
       style={{ left, top }}
       onContextMenu={(event) => event.preventDefault()}
@@ -114,7 +114,7 @@ export function TabContextMenu({
       </SidebarMenuItem>
       {(groupMenuState.canCreateGroup || groupMenuState.canUngroup || groupMenuState.moveGroupTargets.length > 0) && (
         <>
-          <span className="tab-context-menu-separator" />
+          <SidebarMenuSeparator />
           {groupMenuState.canCreateGroup && (
             <SidebarMenuItem icon={FiFolderPlus} role="menuitem" onClick={() => run(() => onGroupTab(tab.id))}>New group from tab</SidebarMenuItem>
           )}
@@ -135,7 +135,7 @@ export function TabContextMenu({
       )}
       {moveWorkspaceTargets.length > 0 && (
         <>
-          <span className="tab-context-menu-separator" />
+          <SidebarMenuSeparator />
           {moveWorkspaceTargets.map((workspace) => (
             <SidebarMenuItem
               key={workspace.id}
@@ -160,7 +160,7 @@ export function TabContextMenu({
       <SidebarMenuItem icon={tab.isMuted ? FiVolume2 : FiVolumeX} role="menuitem" onClick={() => run(() => onToggleMuted(tab.id))}>
         {tab.isMuted ? "Unmute" : "Mute"}
       </SidebarMenuItem>
-      <span className="tab-context-menu-separator" />
+      <SidebarMenuSeparator />
       <SidebarMenuItem
         icon={FiX}
         role="menuitem"
@@ -185,7 +185,7 @@ export function TabContextMenu({
       >
         Close tabs to the right
       </SidebarMenuItem>
-      <span className="tab-context-menu-separator" />
+      <SidebarMenuSeparator />
       <SidebarMenuItem icon={FiX} role="menuitem" className="danger" onClick={() => run(() => onCloseTab(tab.id))}>Close</SidebarMenuItem>
     </div>
   );

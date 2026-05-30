@@ -138,65 +138,6 @@
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
 }
 
-.workspace-context-menu button {
-  min-height: 30px;
-  border: 0;
-  border-radius: 6px;
-  padding: 0 10px;
-  background: transparent;
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-}
-
-.workspace-context-menu .sidebar-menu-item {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-}
-
-.workspace-context-menu .sidebar-menu-item-icon {
-  width: 18px;
-  height: 18px;
-  display: inline-grid;
-  place-items: center;
-  color: color-mix(in srgb, var(--muted) 82%, white);
-}
-
-.workspace-context-menu .sidebar-menu-item-icon svg {
-  width: 14px;
-  height: 14px;
-  stroke-width: 2;
-}
-
-.workspace-context-menu .sidebar-menu-item-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.workspace-context-menu button:hover,
-.workspace-context-menu button:focus-visible {
-  background: var(--panel-soft);
-  outline: none;
-}
-
-.workspace-context-menu button:disabled {
-  color: var(--muted);
-  cursor: default;
-  opacity: 0.48;
-}
-
-.workspace-context-menu button.danger {
-  color: #fda4af;
-}
-
-.workspace-context-menu button.danger .sidebar-menu-item-icon {
-  color: color-mix(in srgb, #fda4af 78%, var(--muted));
-}
-
 .workspace-menu-field {
   display: grid;
   gap: 5px;

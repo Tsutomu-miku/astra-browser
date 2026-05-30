@@ -5,7 +5,7 @@ import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../c
 import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
 import { clearDropPlacement, updateDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { Workspace } from "../../../../domain/browser";
-import { SidebarMenuItem } from "../common/SidebarMenuItem";
+import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
 import { readSidebarFavoriteDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import {
   WORKSPACE_ACCENT_SWATCHES,
@@ -258,7 +258,7 @@ function WorkspaceContextMenu({
   return (
     <div
       ref={menuRef}
-      className="workspace-context-menu"
+      className="sidebar-menu-surface workspace-context-menu"
       role="menu"
       style={{ left, top, "--accent": workspace.accent } as CSSProperties}
       onClick={(event) => event.stopPropagation()}
@@ -274,7 +274,7 @@ function WorkspaceContextMenu({
       <SidebarMenuItem icon={FiPlus} role="menuitem" onClick={() => run(onNewWorkspace)}>
         New Space
       </SidebarMenuItem>
-      <span className="tab-context-menu-separator" />
+      <SidebarMenuSeparator />
       <label className="workspace-menu-field">
         <span>Name</span>
         <input

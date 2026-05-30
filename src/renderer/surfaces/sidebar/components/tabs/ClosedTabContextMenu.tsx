@@ -3,7 +3,7 @@ import { FiArrowRight, FiColumns, FiEye, FiGrid, FiLink, FiPlus, FiType } from "
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { ClosedTab } from "../../../../domain/browser";
-import { SidebarMenuItem } from "../common/SidebarMenuItem";
+import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
 export function ClosedTabContextMenu({
@@ -44,7 +44,7 @@ export function ClosedTabContextMenu({
   return (
     <div
       ref={menuRef}
-      className="tab-context-menu closed-tab-context-menu"
+      className="sidebar-menu-surface tab-context-menu closed-tab-context-menu"
       role="menu"
       style={{ left, top }}
       onContextMenu={(event) => event.preventDefault()}
@@ -55,7 +55,7 @@ export function ClosedTabContextMenu({
       <SidebarMenuItem icon={FiColumns} role="menuitem" onClick={() => run(() => onOpenInSplit(tab.url, tab.title))}>Open in split view</SidebarMenuItem>
       {(moveWorkspaceTargets?.length || onRestoreToNewWorkspace) && (
         <>
-          <span className="tab-context-menu-separator" />
+          <SidebarMenuSeparator />
           {moveWorkspaceTargets?.map((workspace) => (
             <SidebarMenuItem
               key={workspace.id}

@@ -12,6 +12,7 @@ import { getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { WorkspaceStrip } from "../src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip";
 
 const workspaceCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-workspaces.css"), "utf8");
+const sidebarMenuCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-menu.css"), "utf8");
 
 describe("workspace strip compact controls", () => {
   it("uses the always-visible sidebar toggle as a compact floating-sidebar pin", () => {
@@ -686,14 +687,15 @@ describe("workspace strip compact controls", () => {
   });
 
   it("styles Space context menu actions as quiet icon menu rows", () => {
-    const itemBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .sidebar-menu-item");
-    const iconBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .sidebar-menu-item-icon");
-    const labelBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .sidebar-menu-item-label");
-    const dangerBlock = getRuleBlock(workspaceCss, ".workspace-context-menu button.danger");
+    const itemBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface .sidebar-menu-item");
+    const iconBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-icon");
+    const labelBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-label");
+    const dangerBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface button.danger");
 
     expect(itemBlock).toContain("grid-template-columns: 18px minmax(0, 1fr)");
     expect(iconBlock).toContain("color: color-mix");
     expect(labelBlock).toContain("text-overflow: ellipsis");
+    expect(sidebarMenuCss).toContain(".sidebar-menu-separator");
     expect(dangerBlock).not.toContain("inline-flex");
   });
 });

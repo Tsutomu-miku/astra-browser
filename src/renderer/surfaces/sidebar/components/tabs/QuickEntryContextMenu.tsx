@@ -3,7 +3,7 @@ import { FiArrowRight, FiColumns, FiEye, FiGrid, FiLink, FiPlus, FiTrash2, FiTyp
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { Favorite } from "../../../../domain/browser";
-import { SidebarMenuItem } from "../common/SidebarMenuItem";
+import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
 export function QuickEntryContextMenu({
@@ -47,7 +47,7 @@ export function QuickEntryContextMenu({
   return (
     <div
       ref={menuRef}
-      className="tab-context-menu quick-entry-context-menu"
+      className="sidebar-menu-surface tab-context-menu quick-entry-context-menu"
       role="menu"
       style={{ left, top }}
       onContextMenu={(event) => event.preventDefault()}
@@ -64,7 +64,7 @@ export function QuickEntryContextMenu({
       </SidebarMenuItem>
       {canMoveFavorite && (
         <>
-          <span className="tab-context-menu-separator" />
+          <SidebarMenuSeparator />
           {moveWorkspaceTargets?.map((workspace) => (
             <SidebarMenuItem
               key={workspace.id}
@@ -86,7 +86,7 @@ export function QuickEntryContextMenu({
       <SidebarMenuItem icon={FiType} role="menuitem" onClick={() => run(() => onCopyText(item.title || item.url))}>
         Copy title
       </SidebarMenuItem>
-      <span className="tab-context-menu-separator" />
+      <SidebarMenuSeparator />
       <SidebarMenuItem icon={FiTrash2} role="menuitem" className="danger" onClick={() => run(() => onRemove(kind === "favorite" ? item.id : item.url))}>
         Remove {label}
       </SidebarMenuItem>

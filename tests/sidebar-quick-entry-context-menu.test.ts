@@ -12,6 +12,7 @@ import { QuickEntryContextMenu } from "../src/renderer/surfaces/sidebar/componen
 import { SidebarContextMenus } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarContextMenus";
 
 const contextMenuCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-context-menu.css"), "utf8");
+const sidebarMenuCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-menu.css"), "utf8");
 
 describe("sidebar quick entry context menu", () => {
   it("renders Essential actions for open, preview, split, and removal", () => {
@@ -424,12 +425,13 @@ describe("sidebar quick entry context menu", () => {
   });
 
   it("styles quick entry menus with the shared sidebar menu surface", () => {
-    const itemBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .sidebar-menu-item");
-    const iconBlock = getRuleBlock(contextMenuCss, ".sidebar-menu-item-icon");
-    const labelBlock = getRuleBlock(contextMenuCss, ".sidebar-menu-item-label");
+    const itemBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface .sidebar-menu-item");
+    const iconBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-icon");
+    const labelBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-label");
 
     expect(contextMenuCss).toContain(".quick-entry-context-menu");
-    expect(contextMenuCss).toContain(".tab-context-menu button.danger");
+    expect(sidebarMenuCss).toContain(".sidebar-menu-surface button.danger");
+    expect(sidebarMenuCss).toContain(".sidebar-menu-separator");
     expect(itemBlock).toContain("grid-template-columns: 18px minmax(0, 1fr)");
     expect(iconBlock).toContain("color: color-mix");
     expect(labelBlock).toContain("text-overflow: ellipsis");

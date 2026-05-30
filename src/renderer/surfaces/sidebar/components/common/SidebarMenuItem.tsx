@@ -24,3 +24,7 @@ export function SidebarMenuItem({
     </button>
   );
 }
+
+export function SidebarMenuSeparator() {
+  return <span className="sidebar-menu-separator" />;
+}

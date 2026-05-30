@@ -4,7 +4,7 @@ import { FiArchive, FiArrowRight, FiChevronDown, FiChevronRight, FiCopy, FiGrid,
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { TabGroup } from "../../../../domain/browser";
 import { TAB_GROUP_COLOR_SWATCHES } from "../../../../domain/tabs/groups";
-import { SidebarMenuItem } from "../common/SidebarMenuItem";
+import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
 interface TabGroupContextMenuProps {
@@ -55,7 +55,7 @@ export function TabGroupContextMenu({
   return (
     <div
       ref={menuRef}
-      className="tab-context-menu tab-group-context-menu"
+      className="sidebar-menu-surface tab-context-menu tab-group-context-menu"
       role="menu"
       style={{ left, top, "--group-color": group.color } as CSSProperties}
       onClick={(event) => event.stopPropagation()}
@@ -93,7 +93,7 @@ export function TabGroupContextMenu({
           />
         ))}
       </div>
-      <span className="tab-context-menu-separator" />
+      <SidebarMenuSeparator />
       {moveWorkspaceTargets.map((workspace) => (
         <SidebarMenuItem
           key={workspace.id}
@@ -107,7 +107,7 @@ export function TabGroupContextMenu({
       <SidebarMenuItem icon={FiPlus} role="menuitem" onClick={() => run(() => onMoveToNewWorkspace(group.id))}>
         Move group to New Space
       </SidebarMenuItem>
-      <span className="tab-context-menu-separator" />
+      <SidebarMenuSeparator />
       <SidebarMenuItem icon={FiX} role="menuitem" onClick={() => run(() => onCloseGroup(group.id))}>
         Close group
       </SidebarMenuItem>
