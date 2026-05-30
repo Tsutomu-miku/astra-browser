@@ -172,6 +172,7 @@ describe("sidebar selection styles", () => {
   });
 
   it("keeps sidebar menu color pickers quiet while preserving selected state", () => {
+    const groupInputBlock = getRuleBlock(contextMenuCss, ".tab-group-menu-field input");
     const groupInputFocusBlock = getRuleBlock(contextMenuCss, ".tab-group-menu-field input:focus-visible");
     const groupSwatchBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .tab-group-menu-swatch");
     const groupSwatchHoverBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .tab-group-menu-swatch:hover,\n.tab-context-menu .tab-group-menu-swatch:focus-visible");
@@ -179,10 +180,15 @@ describe("sidebar selection styles", () => {
     const workspaceSwatchHoverBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .workspace-menu-swatch:hover,\n.workspace-context-menu .workspace-menu-swatch:focus-visible");
     const workspaceSwatchSelectedBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .workspace-menu-swatch[aria-pressed=\"true\"]");
 
+    expect(groupInputBlock).toContain("border: 1px solid transparent");
+    expect(groupInputBlock).toContain("background: transparent");
     expect(groupInputFocusBlock).toContain("border-color: var(--line-strong)");
+    expect(groupInputFocusBlock).toContain("background: rgba(255, 255, 255, 0.06)");
     expect(groupInputFocusBlock).toContain("box-shadow: none");
     expect(groupInputFocusBlock).not.toContain("var(--group-color)");
     expect(groupSwatchBlock).toContain("border: 1px solid rgba(255, 255, 255, 0.14)");
+    expect(groupSwatchBlock).toContain("border-radius: 6px");
+    expect(groupSwatchBlock).not.toContain("border-radius: 999px");
 
     for (const block of [
       groupSwatchHoverBlock,

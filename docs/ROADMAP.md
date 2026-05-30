@@ -253,6 +253,7 @@ Small requirements:
 - P1-1.21 Space rail tab counts fade from stable positions and Space buttons do not reserve unused transform motion.
 - P1-1.22 New Space and Space menu fields use transparent default chrome with natural-cased labels and quiet focus fills.
 - P1-1.23 Sidebar no-match empty states render as quiet transparent rows instead of loose paragraph copy.
+- P1-1.24 Tab group context menu fields and color swatches use the same quiet transparent input and non-pill swatch treatment as Space menus.
 
 ### P1-2 Split View And Glance
 
