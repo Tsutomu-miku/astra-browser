@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
+const sidebarDropZonesCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-drop-zones.css"), "utf8");
 const workspaceCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-workspaces.css"), "utf8");
 const contextMenuCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-context-menu.css"), "utf8");
 const baseCss = readFileSync(join(__dirname, "../src/renderer/styles/base.css"), "utf8");
@@ -54,6 +55,8 @@ describe("sidebar selection styles", () => {
     const quickEntryPressedBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:active,\n.favorite-button:active,\n.closed-tab-button:active");
     const tabDraggingBlock = getRuleBlock(sidebarCss, ".tab-row[data-dragging=\"true\"]");
     const pinnedDraggingBlock = getRuleBlock(sidebarCss, ".pinned-tab-button[data-dragging=\"true\"]");
+    const closedDraggingBlock = getRuleBlock(sidebarCss, ".closed-tab-button[data-dragging=\"true\"]");
+    const quickEntryDraggingBlock = getRuleBlock(sidebarDropZonesCss, ".favorite-button[data-dragging=\"true\"]");
 
     for (const block of [tabPressedBlock, quickEntryPressedBlock]) {
       expect(block).toContain("background: var(--sidebar-selected-bg)");
@@ -61,9 +64,10 @@ describe("sidebar selection styles", () => {
       expect(block).not.toContain("cursor: grabbing");
       expect(block).not.toContain("var(--accent)");
     }
-    for (const block of [tabDraggingBlock, pinnedDraggingBlock]) {
+    for (const block of [tabDraggingBlock, pinnedDraggingBlock, closedDraggingBlock, quickEntryDraggingBlock]) {
       expect(block).toContain("cursor: grabbing");
     }
+    expect(sidebarDropZonesCss).not.toContain('.favorite-button[draggable="true"]:active');
   });
 
   it("keeps row status indicators as inline glyphs instead of badges", () => {
