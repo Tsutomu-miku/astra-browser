@@ -17,7 +17,7 @@ describe("topbar omnibox styles", () => {
 
   it("uses neutral selected suggestions without accent stripes or heavy titles", () => {
     const selectedBlock = getLastRuleBlock(topbarCss, '\n.omnibox-suggestion[aria-selected="true"]');
-    const titleBlock = getRuleBlock(topbarCss, ".suggestion-title");
+    const titleBlock = getRuleBlock(topbarCss, "\n.suggestion-title {");
 
     expect(selectedBlock).toContain("box-shadow: none");
     expect(selectedBlock).not.toContain("var(--accent)");
