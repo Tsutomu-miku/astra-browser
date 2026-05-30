@@ -10,11 +10,17 @@ describe("getOmniboxAction", () => {
       subtitle: "Open tab",
       tabId: "tab-1",
       title: "Docs",
-      type: "tab"
+      type: "tab",
+      url: "https://docs.example"
     };
 
     expect(getOmniboxAction(suggestion, "")).toEqual({ type: "selectTab", tabId: "tab-1" });
-    expect(getOmniboxAction(suggestion, "", true)).toEqual({ type: "openTabInSplit", tabId: "tab-1" });
+    expect(getOmniboxAction(suggestion, "", { altKey: true })).toEqual({
+      title: "Docs",
+      type: "openGlance",
+      url: "https://docs.example"
+    });
+    expect(getOmniboxAction(suggestion, "", { shiftKey: true })).toEqual({ type: "openTabInSplit", tabId: "tab-1" });
   });
 
   it("navigates or splits url-backed suggestions", () => {
@@ -30,7 +36,12 @@ describe("getOmniboxAction", () => {
       type: "navigateActiveTab",
       value: "https://mail.example"
     });
-    expect(getOmniboxAction(suggestion, "", true)).toEqual({
+    expect(getOmniboxAction(suggestion, "", { altKey: true })).toEqual({
+      title: "Mail",
+      type: "openGlance",
+      url: "https://mail.example"
+    });
+    expect(getOmniboxAction(suggestion, "", { shiftKey: true })).toEqual({
       title: "Mail",
       type: "openUrlInSplit",
       url: "https://mail.example"
@@ -63,11 +74,16 @@ describe("getOmniboxAction", () => {
       type: "openUrlInActiveWorkspace",
       url: "https://legacy.example"
     });
-    expect(getOmniboxAction(favoriteSuggestion, "", true)).toEqual({
+    expect(getOmniboxAction(favoriteSuggestion, "", { altKey: true })).toEqual({
+      title: "Docs",
+      type: "openGlance",
+      url: "https://docs.example"
+    });
+    expect(getOmniboxAction(favoriteSuggestion, "", { shiftKey: true })).toEqual({
       tabId: "tab-favorite-1",
       type: "openTabInSplit"
     });
-    expect(getOmniboxAction(legacyFavoriteSuggestion, "", true)).toEqual({
+    expect(getOmniboxAction(legacyFavoriteSuggestion, "", { shiftKey: true })).toEqual({
       title: "Legacy",
       type: "openUrlInSplit",
       url: "https://legacy.example"
@@ -79,7 +95,11 @@ describe("getOmniboxAction", () => {
       type: "navigateActiveTab",
       value: "example.com"
     });
-    expect(getOmniboxAction(undefined, "example.com", true)).toEqual({
+    expect(getOmniboxAction(undefined, "example.com", { altKey: true, shiftKey: true })).toEqual({
+      type: "openGlance",
+      url: "example.com"
+    });
+    expect(getOmniboxAction(undefined, "example.com", { shiftKey: true })).toEqual({
       type: "openUrlInSplit",
       url: "example.com"
     });
@@ -95,7 +115,8 @@ describe("getOmniboxAction", () => {
     };
 
     expect(getOmniboxActionHints(suggestion)).toEqual([
-      { id: "split", modifier: "Alt", label: "Split" }
+      { id: "preview", modifier: "Alt", label: "Preview" },
+      { id: "split", modifier: "Shift", label: "Split" }
     ]);
     expect(getOmniboxActionHints(undefined)).toEqual([]);
   });

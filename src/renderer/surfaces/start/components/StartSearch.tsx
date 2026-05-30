@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { FiClock, FiCommand, FiSearch, FiStar, FiZap } from "react-icons/fi";
+import { FiClock, FiColumns, FiCommand, FiEye, FiSearch, FiStar, FiZap } from "react-icons/fi";
 
 import { getOmniboxActionHints } from "../../../common/omnibox/omniboxActions";
 import type { OmniboxSuggestion } from "../../../common/omnibox/omniboxSuggestions";
@@ -53,34 +53,37 @@ export function StartSearch({
       </form>
       {suggestionsVisible && (
         <div className="start-search-suggestions" role="listbox" aria-label="Start search suggestions">
-          {omnibox.suggestions.map((suggestion, index) => (
-            <button
-              className="start-search-suggestion"
-              id={`start-search-suggestion-${index}`}
-              key={suggestion.id}
-              type="button"
-              role="option"
-              aria-selected={index === omnibox.activeIndex}
-              onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
-              onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
-            >
-              <span className="start-search-suggestion-icon">
-                <StartSuggestionIcon suggestion={suggestion} />
-              </span>
-              <span className="start-search-suggestion-copy">
-                <span>{suggestion.title}</span>
-                <small>{suggestion.subtitle}</small>
-              </span>
-              <span className="start-search-action-hints" aria-label="Alt Split">
-                {getOmniboxActionHints(suggestion).map((hint) => (
-                  <span className={`start-search-action-hint is-${hint.id}`} key={hint.id}>
-                    <kbd>{hint.modifier}</kbd>
-                    <span>{hint.label}</span>
-                  </span>
-                ))}
-              </span>
-            </button>
-          ))}
+          {omnibox.suggestions.map((suggestion, index) => {
+            const actionHints = getOmniboxActionHints(suggestion);
+
+            return (
+              <button
+                className="start-search-suggestion"
+                id={`start-search-suggestion-${index}`}
+                key={suggestion.id}
+                type="button"
+                role="option"
+                aria-selected={index === omnibox.activeIndex}
+                onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
+                onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
+              >
+                <span className="start-search-suggestion-icon">
+                  <StartSuggestionIcon suggestion={suggestion} />
+                </span>
+                <span className="start-search-suggestion-copy">
+                  <span>{suggestion.title}</span>
+                  <small>{suggestion.subtitle}</small>
+                </span>
+                <span className="start-search-action-hints" aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}>
+                  {actionHints.map((hint) => (
+                    <span className={`start-search-action-hint is-${hint.id}`} key={hint.id} aria-label={`${hint.modifier} ${hint.label}`}>
+                      {hint.id === "preview" ? <FiEye /> : <FiColumns />}
+                    </span>
+                  ))}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

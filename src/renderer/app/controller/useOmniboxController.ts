@@ -10,7 +10,7 @@ import {
 
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import type { BrowserController } from "./types";
-import { getOmniboxAction } from "../../common/omnibox/omniboxActions";
+import { getOmniboxAction, type OmniboxActionModifiers } from "../../common/omnibox/omniboxActions";
 import {
   buildOmniboxSuggestions,
   getOmniboxInlineCompletion,
@@ -54,10 +54,13 @@ export function useOmniboxController({
     setAcceptedCompletionSuggestionId(null);
   }, [acceptedCompletionSuggestionId, suggestions]);
 
-  const runSuggestion = useCallback((suggestion: OmniboxSuggestion | undefined, openInSplit = false) => {
-    const action = getOmniboxAction(suggestion, addressValue, openInSplit);
+  const runSuggestion = useCallback((suggestion: OmniboxSuggestion | undefined, modifiers: OmniboxActionModifiers = {}) => {
+    const action = getOmniboxAction(suggestion, addressValue, modifiers);
 
     switch (action.type) {
+      case "openGlance":
+        actions.openGlance(action.url, action.title);
+        break;
       case "selectTab":
         actions.selectTab(action.tabId);
         break;
@@ -121,7 +124,10 @@ export function useOmniboxController({
       setActiveSuggestionIndex((index) => getNextOmniboxIndex(index, suggestions.length, key));
     } else if (event.key === "Enter") {
       event.preventDefault();
-      runSuggestion(activeSuggestion, event.altKey);
+      runSuggestion(activeSuggestion, {
+        altKey: event.altKey,
+        shiftKey: event.shiftKey
+      });
     } else if (event.key === "Escape") {
       setAcceptedCompletionSuggestionId(null);
       setSuggestionsOpen(false);
@@ -130,7 +136,10 @@ export function useOmniboxController({
 
   const onSuggestionPointerDown = useCallback((event: MouseEvent, suggestion: OmniboxSuggestion) => {
     event.preventDefault();
-    runSuggestion(suggestion, event.altKey);
+    runSuggestion(suggestion, {
+      altKey: event.altKey,
+      shiftKey: event.shiftKey
+    });
   }, [runSuggestion]);
 
   const updateAddressValue = useCallback((value: string) => {

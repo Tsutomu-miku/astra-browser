@@ -26,6 +26,13 @@ describe("start surface styles", () => {
     expect(dotBlock).toContain("var(--start-accent) 12%");
     expect(suggestionBlock).toContain("background: var(--panel-soft)");
   });
+
+  it("uses compact glyph action hints in start search suggestions", () => {
+    const hintBlock = getRuleBlock(startCss, ".start-search-action-hint");
+
+    expect(hintBlock).toContain("inline-grid");
+    expect(startCss).not.toContain(".start-search-action-hint kbd");
+  });
 });
 
 function getRuleBlock(css: string, selector: string): string {

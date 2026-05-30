@@ -161,25 +161,16 @@
 }
 
 .start-search-action-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  width: 17px;
+  height: 17px;
+  display: inline-grid;
+  place-items: center;
   white-space: nowrap;
 }
 
-.start-search-action-hint kbd {
-  min-width: 22px;
-  height: 18px;
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-bottom-color: rgba(0, 0, 0, 0.3);
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 500;
+.start-search-action-hint svg {
+  width: 13px;
+  height: 13px;
 }
 
 .start-section {

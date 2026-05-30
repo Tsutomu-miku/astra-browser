@@ -1,4 +1,4 @@
-import { FiColumns, FiSearch } from "react-icons/fi";
+import { FiColumns, FiEye, FiSearch } from "react-icons/fi";
 
 import type { BrowserController } from "../../../../app/controller/types";
 import { useOmniboxController } from "../../../../app/controller/useOmniboxController";
@@ -61,7 +61,7 @@ export function SidebarAddress({ controller }: { controller: BrowserController }
                     <span className="omnibox-action-hints" aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}>
                       {actionHints.map((hint) => (
                         <span className={`omnibox-action-hint is-${hint.id}`} data-action-hint={hint.id} key={hint.id} aria-hidden="true">
-                          <FiColumns />
+                          {hint.id === "preview" ? <FiEye /> : <FiColumns />}
                         </span>
                       ))}
                     </span>

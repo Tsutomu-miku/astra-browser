@@ -38,8 +38,9 @@ describe("omnibox accessibility", () => {
     const option = container.querySelector('[role="option"]');
     expect(option?.getAttribute("aria-selected")).toBe("true");
     expect(option?.hasAttribute("title")).toBe(false);
-    expect(option?.querySelector(".omnibox-action-hints")?.getAttribute("aria-label")).toBe("Alt Split");
-    expect(option?.querySelector(".omnibox-action-hint")?.getAttribute("data-action-hint")).toBe("split");
+    expect(option?.querySelector(".omnibox-action-hints")?.getAttribute("aria-label")).toBe("Alt Preview, Shift Split");
+    expect(option?.querySelector(".omnibox-action-hint")?.getAttribute("data-action-hint")).toBe("preview");
+    expect(option?.querySelectorAll(".omnibox-action-hint")).toHaveLength(2);
     expect(option?.querySelector("kbd")).toBeNull();
     expect(input.getAttribute("aria-activedescendant")).toBe("address-suggestion-0");
 
@@ -143,8 +144,9 @@ describe("omnibox accessibility", () => {
     const option = container.querySelector('[role="option"]');
     expect(option?.id).toBe("sidebar-address-suggestion-0");
     expect(option?.hasAttribute("title")).toBe(false);
-    expect(option?.querySelector(".omnibox-action-hints")?.getAttribute("aria-label")).toBe("Alt Split");
-    expect(option?.querySelector(".omnibox-action-hint")?.getAttribute("data-action-hint")).toBe("split");
+    expect(option?.querySelector(".omnibox-action-hints")?.getAttribute("aria-label")).toBe("Alt Preview, Shift Split");
+    expect(option?.querySelector(".omnibox-action-hint")?.getAttribute("data-action-hint")).toBe("preview");
+    expect(option?.querySelectorAll(".omnibox-action-hint")).toHaveLength(2);
     expect(option?.querySelector("kbd")).toBeNull();
 
     act(() => {
@@ -154,7 +156,15 @@ describe("omnibox accessibility", () => {
         key: "Enter"
       }));
     });
+    act(() => {
+      input.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "Enter",
+        shiftKey: true
+      }));
+    });
 
+    expect(actions.openGlance).toHaveBeenCalled();
     expect(actions.openUrlInSplit).toHaveBeenCalled();
 
     act(() => root.unmount());
