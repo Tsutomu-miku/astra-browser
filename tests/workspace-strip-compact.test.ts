@@ -660,6 +660,9 @@ describe("workspace strip compact controls", () => {
   it("reveals Space tab counts only for active or engaged rail items", () => {
     const countBlock = getRuleBlock(workspaceCss, ".workspace-tab-count");
 
+    expect(countBlock).toContain("border: 0");
+    expect(countBlock).toContain("background: transparent");
+    expect(countBlock).not.toContain("border-radius");
     expect(countBlock).toContain("opacity: 0");
     expect(countBlock).toContain("transform: translateY(2px)");
     expect(workspaceCss).toContain(".workspace-button:hover .workspace-tab-count");
