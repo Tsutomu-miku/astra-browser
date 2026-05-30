@@ -1054,17 +1054,16 @@ h1 {
   grid-template-columns: 16px minmax(0, 1fr) auto;
   align-items: center;
   gap: 7px;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 8px;
   padding: 0 8px;
-  background: rgba(255, 255, 255, 0.045);
+  background: transparent;
   color: color-mix(in srgb, var(--text) 86%, var(--muted));
   cursor: pointer;
 }
 
 .sidebar-memory-saver:hover,
 .sidebar-memory-saver:focus-visible {
-  border-color: transparent;
   background: rgba(255, 255, 255, 0.075);
   color: var(--text);
   outline: none;

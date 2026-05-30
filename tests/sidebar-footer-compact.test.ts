@@ -259,7 +259,7 @@ describe("sidebar footer compact controls", () => {
     expect(html).toContain("disabled");
   });
 
-  it("styles the Memory Saver footer pill", () => {
+  it("styles the Memory Saver footer row", () => {
     expect(sidebarCss).toContain(".sidebar-memory-saver");
     expect(sidebarCss).toContain(".sidebar-memory-saver:disabled");
   });
@@ -267,13 +267,17 @@ describe("sidebar footer compact controls", () => {
   it("keeps footer controls visually quiet", () => {
     const iconButtonBlock = getRuleBlock(sidebarCss, ".sidebar-footer .icon-button");
     const memorySaverBlock = getRuleBlock(sidebarCss, ".sidebar-memory-saver");
+    const memorySaverHoverBlock = getRuleBlock(sidebarCss, ".sidebar-memory-saver:hover,\n.sidebar-memory-saver:focus-visible");
 
     expect(iconButtonBlock).toContain("background: transparent");
     expect(iconButtonBlock).toContain("box-shadow: none");
     expect(iconButtonBlock).not.toContain("var(--accent)");
-    expect(memorySaverBlock).toContain("border: 1px solid transparent");
-    expect(memorySaverBlock).toContain("rgba(255, 255, 255, 0.045)");
+    expect(memorySaverBlock).toContain("border: 0");
+    expect(memorySaverBlock).toContain("background: transparent");
     expect(memorySaverBlock).not.toContain("var(--accent)");
+    expect(memorySaverHoverBlock).toContain("background: rgba(255, 255, 255, 0.075)");
+    expect(memorySaverHoverBlock).not.toContain("border-color");
+    expect(memorySaverHoverBlock).not.toContain("var(--accent)");
   });
 
   it("moves focus through footer controls with ArrowLeft, ArrowRight, Home, and End", () => {
