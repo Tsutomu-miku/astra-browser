@@ -464,8 +464,7 @@ h1 {
   transition:
     background 140ms ease,
     border-color 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms ease;
+    box-shadow 140ms ease;
 }
 
 .pinned-tab-button:hover,
@@ -490,7 +489,6 @@ h1 {
 .pinned-tab-button[data-dragging="true"] {
   cursor: grabbing;
   opacity: 0.45;
-  transform: scale(0.96);
 }
 
 .pinned-tab-icon {
@@ -677,7 +675,7 @@ h1 {
   gap: 8px;
   padding: 6px 8px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.052);
+  background: transparent;
   cursor: pointer;
   transition:
     background 130ms ease,
@@ -804,7 +802,7 @@ h1 {
   border: 1px solid transparent;
   border-radius: 8px;
   padding: 6px 8px;
-  background: rgba(255, 255, 255, 0.045);
+  background: transparent;
   color: var(--text);
   cursor: pointer;
   text-align: left;
@@ -827,7 +825,6 @@ h1 {
 .closed-tab-button[data-dragging="true"] {
   cursor: grabbing;
   opacity: 0.5;
-  transform: translateX(2px);
 }
 
 .closed-tab-icon {
