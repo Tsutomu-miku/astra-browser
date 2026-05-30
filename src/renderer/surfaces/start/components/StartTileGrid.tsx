@@ -1,16 +1,19 @@
 import type { MouseEvent } from "react";
 
-import { getReadableUrlTitle, type Favorite } from "../../../domain/browser";
+import { BrowserItemIcon } from "../../../common/icons/BrowserItemIcon";
+import type { Favorite, FaviconCache } from "../../../domain/browser";
 import { StartEntryActionHints } from "./StartEntryActionHints";
 
 export function StartTileGrid({
   emptyText,
+  faviconCache,
   items,
   kind,
   onContextMenu,
   onOpen
 }: {
   emptyText: string;
+  faviconCache?: FaviconCache;
   items: Favorite[];
   kind: "essential" | "favorite";
   onContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
@@ -29,7 +32,7 @@ export function StartTileGrid({
           onContextMenu={(event) => onContextMenu(event, item, kind)}
           onClick={(event) => onOpen(event, item, kind)}
         >
-          <span className="start-tile-icon">{getReadableUrlTitle(item.url).slice(0, 1).toUpperCase()}</span>
+          <BrowserItemIcon className="start-tile-icon" faviconCache={faviconCache} url={item.url} />
           <span className="start-tile-title">{item.title}</span>
           <StartEntryActionHints />
         </button>

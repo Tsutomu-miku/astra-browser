@@ -2,12 +2,13 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { getSidebarItemIconState } from "../src/renderer/surfaces/sidebar/model/sidebarItemIcon";
+import { BrowserItemIcon } from "../src/renderer/common/icons/BrowserItemIcon";
+import { getBrowserItemIconState } from "../src/renderer/common/icons/browserItemIconState";
 import { SidebarItemIcon } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItemIcon";
 
 describe("sidebar item icon", () => {
   it("uses web host initials for normal pages", () => {
-    expect(getSidebarItemIconState("https://developer.mozilla.org/docs")).toEqual({
+    expect(getBrowserItemIconState("https://developer.mozilla.org/docs")).toEqual({
       kind: "web",
       label: "developer.mozilla.org",
       text: "D"
@@ -15,11 +16,11 @@ describe("sidebar item icon", () => {
   });
 
   it("uses symbolic icons for internal and file pages", () => {
-    expect(getSidebarItemIconState("astra://newtab")).toMatchObject({
+    expect(getBrowserItemIconState("astra://newtab")).toMatchObject({
       kind: "internal",
       text: null
     });
-    expect(getSidebarItemIconState("file:///Users/test/report.pdf")).toMatchObject({
+    expect(getBrowserItemIconState("file:///Users/test/report.pdf")).toMatchObject({
       kind: "file",
       text: null
     });
@@ -57,7 +58,7 @@ describe("sidebar item icon", () => {
   });
 
   it("uses cached site favicons when the item has no own favicon", () => {
-    const html = renderToStaticMarkup(createElement(SidebarItemIcon, {
+    const html = renderToStaticMarkup(createElement(BrowserItemIcon, {
       className: "favorite-icon",
       faviconCache: {
         "https://docs.example": "https://docs.example/cached.ico"

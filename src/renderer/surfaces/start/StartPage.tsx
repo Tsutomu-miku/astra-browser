@@ -98,6 +98,7 @@ export function StartPage({
           </div>
           <StartTileGrid
             emptyText="Essentials will appear across every Space."
+            faviconCache={state.faviconCache}
             items={content.essentials}
             kind="essential"
             onContextMenu={openMenu}
@@ -112,6 +113,7 @@ export function StartPage({
           </div>
           <StartTileGrid
             emptyText="Favorites in this Space will appear here."
+            faviconCache={state.faviconCache}
             items={content.favorites}
             kind="favorite"
             onContextMenu={openMenu}

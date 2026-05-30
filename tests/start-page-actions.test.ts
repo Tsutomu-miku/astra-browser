@@ -107,6 +107,34 @@ describe("StartPage actions", () => {
 
     act(() => root.unmount());
   });
+
+  it("renders Start tiles with cached site favicons instead of standalone initials", () => {
+    const state = createDefaultState();
+    const activeWorkspace = state.workspaces[0];
+    const favorite = createFavorite("Docs", "https://docs.example/page");
+    activeWorkspace.favorites = [favorite];
+    state.essentials = [];
+    state.history = [];
+    state.faviconCache = {
+      "https://docs.example": "https://docs.example/favicon.ico"
+    };
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(StartPage, {
+        controller: createController(state, activeWorkspace, actions),
+        isVisible: true
+      }));
+    });
+
+    const iconImage = container.querySelector<HTMLImageElement>(".start-tile .sidebar-item-icon-image");
+    expect(iconImage?.getAttribute("src")).toBe("https://docs.example/favicon.ico");
+    expect(container.querySelector(".start-tile-icon")?.getAttribute("data-icon-kind")).toBe("web");
+
+    act(() => root.unmount());
+  });
 });
 
 function createStateWithDuplicateFavoriteUrl() {
