@@ -146,6 +146,7 @@ export function WorkspaceStrip({
             draggable
             aria-label={getWorkspaceAccessibilityLabel(workspace, { isActive, isDropTarget })}
             aria-current={isActive}
+            tabIndex={isActive ? 0 : -1}
             data-dragging={draggingWorkspaceId === workspace.id}
             data-drop-target={isDropTarget}
             onDragStart={(event) => onDragStart(event, workspace.id)}

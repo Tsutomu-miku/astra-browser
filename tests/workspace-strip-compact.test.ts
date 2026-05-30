@@ -472,6 +472,54 @@ describe("workspace strip compact controls", () => {
     container.remove();
   });
 
+  it("keeps only the active Space in the normal Tab order while Arrow navigation reaches the rest", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace: vi.fn(),
+        onNewWorkspaceDrop: vi.fn(),
+        onOpenSettings: vi.fn(),
+        onSelect: vi.fn(),
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    const workspaceButtons = Array.from(container.querySelectorAll<HTMLButtonElement>(".workspace-button:not(.workspace-new-button):not(.sidebar-toggle)"));
+    expect(workspaceButtons.map((button) => button.tabIndex)).toEqual([0, -1]);
+
+    workspaceButtons[0]?.focus();
+    act(() => {
+      workspaceButtons[0]?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "ArrowDown"
+      }));
+    });
+
+    expect(document.activeElement).toBe(workspaceButtons[1]);
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it("keeps Space menu name editing keys inside the input", () => {
     const state = createDefaultState();
     const activeWorkspace = getActiveWorkspace(state);
