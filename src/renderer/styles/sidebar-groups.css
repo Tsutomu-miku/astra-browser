@@ -16,7 +16,7 @@
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 0 8px;
-  background: rgba(255, 255, 255, 0.045);
+  background: transparent;
   color: var(--text);
   cursor: pointer;
   transition:
@@ -27,7 +27,6 @@
 .tab-group-header[data-dragging="true"] {
   cursor: grabbing;
   opacity: 0.45;
-  transform: scale(0.985);
 }
 
 .tab-group-header[data-drop-placement]::before {
@@ -90,15 +89,11 @@
   color: var(--muted);
   font-size: 11px;
   opacity: 0;
-  transform: translateX(2px);
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease;
+  transition: opacity 120ms ease;
 }
 
 .tab-group-header:hover .tab-group-count,
 .tab-group-header:focus-within .tab-group-count,
 .tab-group-header[data-collapsed="true"] .tab-group-count {
   opacity: 1;
-  transform: translateX(0);
 }

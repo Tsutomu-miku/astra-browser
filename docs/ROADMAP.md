@@ -246,6 +246,7 @@ Small requirements:
 - P1-1.14 Split and muted status indicators render as plain glyphs without badge container styling.
 - P1-1.15 Memory Saver footer uses a quiet transparent row by default instead of pill styling.
 - P1-1.16 Favorites and Recently Closed rows use the same transparent default row treatment as Tabs, and drag feedback avoids scale or slide motion.
+- P1-1.17 Sidebar folder counts and tab group headers fade state changes from stable positions without slide or scale motion.
 
 ### P1-2 Split View And Glance
 

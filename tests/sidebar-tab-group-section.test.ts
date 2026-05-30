@@ -155,9 +155,10 @@ describe("sidebar tab group section", () => {
     expect(titleBlock).not.toContain("outline");
     expect(titleBlock).not.toContain("border");
     expect(countBlock).toContain("opacity: 0");
-    expect(countBlock).toContain("transform: translateX(2px)");
+    expect(countBlock).toContain("transition: opacity 120ms ease");
+    expect(countBlock).not.toContain("transform");
     expect(revealBlock).toContain("opacity: 1");
-    expect(revealBlock).toContain("transform: translateX(0)");
+    expect(revealBlock).not.toContain("transform");
     expect(sidebarGroupsCss).not.toContain(".tab-group-color");
     expect(sidebarGroupsCss).not.toContain(".tab-group-title-input");
   });

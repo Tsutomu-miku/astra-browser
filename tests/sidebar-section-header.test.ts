@@ -65,9 +65,10 @@ describe("sidebar section header", () => {
     const revealBlock = getRuleBlock(sidebarCss, ".sidebar-section-header:hover .sidebar-section-count,\n.sidebar-section-header:focus-within .sidebar-section-count,\n.sidebar-section-header[data-collapsed=\"true\"] .sidebar-section-count");
 
     expect(countBlock).toContain("opacity: 0");
-    expect(countBlock).toContain("transform: translateX(2px)");
+    expect(countBlock).toContain("transition: opacity 120ms ease");
+    expect(countBlock).not.toContain("transform");
     expect(revealBlock).toContain("opacity: 1");
-    expect(revealBlock).toContain("transform: translateX(0)");
+    expect(revealBlock).not.toContain("transform");
   });
 
   it("uses natural-cased quiet section labels", () => {

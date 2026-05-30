@@ -547,10 +547,11 @@ describe("sidebar drag placement", () => {
     const dropIndicatorBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-header[data-drop-placement]::before");
 
     expect(headerBlock).toContain("border: 1px solid transparent");
-    expect(headerBlock).toContain("background: rgba(255, 255, 255, 0.045)");
+    expect(headerBlock).toContain("background: transparent");
     expect(headerBlock).toContain("cursor: pointer");
     expect(headerBlock).not.toContain("var(--group-color)");
     expect(draggingBlock).toContain("cursor: grabbing");
+    expect(draggingBlock).not.toContain("transform");
     expect(hoverBlock).toContain("border-color: transparent");
     expect(hoverBlock).not.toContain("var(--group-color)");
     expect(dropIndicatorBlock).toContain("box-shadow: none");
