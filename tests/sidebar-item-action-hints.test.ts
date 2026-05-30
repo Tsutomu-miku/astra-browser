@@ -37,6 +37,7 @@ describe("sidebar item action hints", () => {
     expect(html).toContain('class="tab-row-actions"');
     expect(html).toContain('aria-label="Docs, active, tab"');
     expect(html).toContain('aria-label="Close Docs"');
+    expect(html).toContain('tabindex="-1"');
     expect(html).not.toContain('title="Close tab"');
     expect(html).not.toContain("<kbd");
     expect(html).not.toContain(">Preview<");
@@ -136,6 +137,33 @@ describe("sidebar item action hints", () => {
 
     expect(onClose).toHaveBeenCalledWith(tab.id);
     expect(onParentKeyDown).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("keeps hidden tab row close controls out of the normal Tab order", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabRow, {
+        activeTabId: tab.id,
+        draggingTabId: null,
+        onClose: vi.fn(),
+        onContextMenu: vi.fn(),
+        onDrop: vi.fn(),
+        onPreview: vi.fn(),
+        onSelect: vi.fn(),
+        onSplit: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        tab
+      }));
+    });
+
+    expect(container.querySelector<HTMLButtonElement>(".tab-close")?.tabIndex).toBe(-1);
+    expect(container.querySelector<HTMLButtonElement>(".tab-button")?.tabIndex).toBe(0);
 
     act(() => root.unmount());
   });

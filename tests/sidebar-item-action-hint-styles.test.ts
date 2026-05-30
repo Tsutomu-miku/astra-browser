@@ -39,6 +39,12 @@ describe("sidebar item action hint styles", () => {
     expect(sidebarLayoutCss).toContain(".tab-close:focus-visible");
   });
 
+  it("keeps tab close controls visually available without adding hidden Tab stops", () => {
+    expect(sidebarLayoutCss).toContain("opacity: 0");
+    expect(sidebarLayoutCss).toContain(".tab-row:hover .tab-close");
+    expect(sidebarLayoutCss).toContain(".tab-row:focus-within .tab-close");
+  });
+
   it("keeps tab row hints and close controls in one stable action rail", () => {
     const rowBlock = getRuleBlock(sidebarLayoutCss, ".tab-row");
     const buttonBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-button {");
