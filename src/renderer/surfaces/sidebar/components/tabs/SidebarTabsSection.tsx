@@ -7,7 +7,8 @@ import type { BrowserController } from "../../../../app/controller/types";
 import { readSidebarGroupDragId } from "../../model/sidebarDragSources";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
-import { SidebarSectionHeader, TabRow } from "./SidebarItems";
+import { SidebarSectionHeader } from "../common/SidebarSectionHeader";
+import { TabRow } from "./SidebarItems";
 import { TabGroupSection } from "./TabGroupSection";
 
 export function SidebarTabsSection({

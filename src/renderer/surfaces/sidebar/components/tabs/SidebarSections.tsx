@@ -17,7 +17,8 @@ import { readSidebarTabDragEventId, SIDEBAR_DRAG_DATA } from "../../model/sideba
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
-import { FavoriteButton, SidebarSectionHeader, TabRow } from "./SidebarItems";
+import { SidebarSectionHeader } from "../common/SidebarSectionHeader";
+import { FavoriteButton, TabRow } from "./SidebarItems";
 import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
 import { SidebarTabsSection } from "./SidebarTabsSection";
 

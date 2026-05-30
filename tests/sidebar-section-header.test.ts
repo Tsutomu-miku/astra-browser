@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { SidebarSectionHeader } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
+import { SidebarSectionHeader } from "../src/renderer/surfaces/sidebar/components/common/SidebarSectionHeader";
 
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 

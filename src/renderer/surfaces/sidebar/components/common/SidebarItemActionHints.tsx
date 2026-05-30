@@ -1,4 +1,4 @@
-import { SidebarModifierActionHints } from "../common/SidebarModifierActionHints";
+import { SidebarModifierActionHints } from "./SidebarModifierActionHints";
 
 export function SidebarItemActionHints() {
   return (

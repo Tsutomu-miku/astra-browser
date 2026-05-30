@@ -11,8 +11,8 @@ import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivat
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { getSidebarSearchTargetElementId, type SidebarSearchTarget } from "../../sidebarFiltering";
-import { SidebarSectionHeader } from "./SidebarItems";
-import { SidebarItemActionHints } from "./SidebarItemActionHints";
+import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
+import { SidebarSectionHeader } from "../common/SidebarSectionHeader";
 import { SidebarItemIcon } from "./SidebarItemIcon";
 import { SidebarTabStatusBadges } from "../common/SidebarTabStatusBadges";
 

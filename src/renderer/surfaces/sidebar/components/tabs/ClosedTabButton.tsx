@@ -2,7 +2,7 @@ import { type ClosedTab, type FaviconCache } from "../../../../domain/browser";
 import { getClosedTabAccessibilityLabel } from "../../model/closedTabItemState";
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
-import { SidebarItemActionHints } from "./SidebarItemActionHints";
+import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
 import { SidebarItemIcon } from "./SidebarItemIcon";
 import type { DragEvent, MouseEvent } from "react";
 import { FiRotateCcw } from "react-icons/fi";

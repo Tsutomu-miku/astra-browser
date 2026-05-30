@@ -1,7 +1,6 @@
 import { type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
-import { FiChevronDown, FiChevronRight, FiX } from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 
-import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { type BrowserTab, type Favorite } from "../../../../domain/browser";
@@ -12,64 +11,9 @@ import { getSidebarTabAccessibilityLabel, getTabStatusBadges, type TabStatusBadg
 import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
-import { SidebarItemActionHints } from "./SidebarItemActionHints";
+import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
 import { SidebarItemIcon } from "./SidebarItemIcon";
 import { SidebarTabStatusBadges } from "../common/SidebarTabStatusBadges";
-
-export function SidebarSectionHeader({
-  count,
-  dropLabel,
-  isCollapsed = false,
-  onToggle,
-  title
-}: {
-  count: number;
-  dropLabel?: string;
-  isCollapsed?: boolean;
-  onToggle?: () => void;
-  title: string;
-}) {
-  const handleKeyboardToggle = (event: KeyboardEvent<HTMLButtonElement>) => {
-    const intent = getDisclosureKeyboardToggleIntent(event.key, isCollapsed);
-    if (!intent) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    onToggle?.();
-  };
-
-  const content = (
-    <>
-      <span className="sidebar-section-title">
-        {onToggle && (isCollapsed ? <FiChevronRight /> : <FiChevronDown />)}
-        <span>{title}</span>
-      </span>
-      {dropLabel ? (
-        <span className="sidebar-section-drop-label">{dropLabel}</span>
-      ) : (
-        <span className="sidebar-section-count">{count}</span>
-      )}
-    </>
-  );
-
-  return (
-    <header className="sidebar-section-header" data-collapsed={isCollapsed}>
-      {onToggle ? (
-        <button
-          className="sidebar-section-header-button"
-          type="button"
-          data-collapsed={isCollapsed}
-          aria-expanded={!isCollapsed}
-          aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${title}`}
-          onClick={onToggle}
-          onKeyDown={handleKeyboardToggle}
-        >
-          {content}
-        </button>
-      ) : content}
-    </header>
-  );
-}
 
 export function TabRow({
   activeTabId,
