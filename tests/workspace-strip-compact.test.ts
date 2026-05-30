@@ -687,6 +687,7 @@ describe("workspace strip compact controls", () => {
   });
 
   it("styles Space context menu actions as quiet icon menu rows", () => {
+    const surfaceBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface");
     const itemBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface .sidebar-menu-item");
     const iconBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-icon");
     const labelBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-label");
@@ -694,6 +695,8 @@ describe("workspace strip compact controls", () => {
     const fieldBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field input");
     const swatchBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface .sidebar-menu-swatch");
 
+    expect(surfaceBlock).toContain("max-height: calc(100vh - 24px)");
+    expect(surfaceBlock).toContain("overflow: auto");
     expect(itemBlock).toContain("grid-template-columns: 18px minmax(0, 1fr)");
     expect(iconBlock).toContain("color: color-mix");
     expect(labelBlock).toContain("text-overflow: ellipsis");

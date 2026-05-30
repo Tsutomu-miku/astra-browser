@@ -14,6 +14,8 @@ describe("sidebar component structure", () => {
     const workspaceStrip = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip.tsx"), "utf8");
     const tabGroupContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabGroupContextMenu.tsx"), "utf8");
     const sidebarMenuCss = readFileSync(sidebarMenuCssPath, "utf8");
+    const workspaceCss = readFileSync(join(root, "src/renderer/styles/sidebar-workspaces.css"), "utf8");
+    const tabContextMenuCss = readFileSync(join(root, "src/renderer/styles/sidebar-context-menu.css"), "utf8");
 
     expect(existsSync(commonMenuItemPath)).toBe(true);
     expect(existsSync(oldTabsMenuItemPath)).toBe(false);
@@ -32,7 +34,12 @@ describe("sidebar component structure", () => {
     expect(tabGroupContextMenu).toContain("sidebar-menu-swatch");
     expect(tabGroupContextMenu).not.toContain("tab-group-menu-field");
     expect(tabGroupContextMenu).not.toContain("tab-group-menu-swatch");
+    expect(sidebarMenuCss).toContain(".sidebar-menu-surface");
     expect(sidebarMenuCss).toContain(".sidebar-menu-field");
     expect(sidebarMenuCss).toContain(".sidebar-menu-surface .sidebar-menu-swatch");
+    expect(tabContextMenuCss).not.toContain("box-shadow: 0 18px 48px");
+    expect(workspaceCss).not.toContain("box-shadow: 0 18px 48px");
+    expect(tabContextMenuCss).not.toContain("background: #1f2630");
+    expect(workspaceCss).not.toContain("background: #1f2630");
   });
 });

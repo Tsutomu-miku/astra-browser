@@ -144,7 +144,7 @@ describe("sidebar selection styles", () => {
     const essentialIconBlock = getRuleBlock(sidebarCss, ".essentials .favorite-icon");
     const newWorkspaceBlock = getRuleBlock(workspaceCss, ".workspace-new-button");
     const newWorkspaceHoverBlock = getRuleBlock(workspaceCss, ".workspace-new-button:hover");
-    const workspaceMenuBlock = getRuleBlock(workspaceCss, ".workspace-context-menu");
+    const sidebarMenuSurfaceBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface");
     const workspaceLabelBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field span");
     const workspaceInputBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field input");
     const workspaceInputFocusBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-field input:focus,\n.sidebar-menu-field input:focus-visible");
@@ -154,7 +154,7 @@ describe("sidebar selection styles", () => {
       essentialBlock,
       essentialIconBlock,
       newWorkspaceHoverBlock,
-      workspaceMenuBlock,
+      sidebarMenuSurfaceBlock,
       workspaceInputFocusBlock
     ]) {
       expect(block).not.toContain("var(--accent)");
@@ -164,6 +164,9 @@ describe("sidebar selection styles", () => {
     expect(newWorkspaceBlock).toContain("border-color: transparent");
     expect(newWorkspaceBlock).toContain("background: transparent");
     expect(newWorkspaceHoverBlock).toContain("border-color: transparent");
+    expect(sidebarMenuSurfaceBlock).toContain("position: fixed");
+    expect(sidebarMenuSurfaceBlock).toContain("max-height: calc(100vh - 24px)");
+    expect(sidebarMenuSurfaceBlock).toContain("overflow: auto");
     expect(workspaceLabelBlock).toContain("text-transform: none");
     expect(workspaceInputBlock).toContain("border: 1px solid transparent");
     expect(workspaceInputBlock).toContain("background: transparent");

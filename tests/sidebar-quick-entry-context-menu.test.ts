@@ -425,11 +425,15 @@ describe("sidebar quick entry context menu", () => {
   });
 
   it("styles quick entry menus with the shared sidebar menu surface", () => {
+    const surfaceBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface");
     const itemBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-surface .sidebar-menu-item");
     const iconBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-icon");
     const labelBlock = getRuleBlock(sidebarMenuCss, ".sidebar-menu-item-label");
 
     expect(contextMenuCss).toContain(".quick-entry-context-menu");
+    expect(surfaceBlock).toContain("position: fixed");
+    expect(surfaceBlock).toContain("overflow: auto");
+    expect(surfaceBlock).toContain("box-shadow: 0 18px 48px");
     expect(sidebarMenuCss).toContain(".sidebar-menu-surface button.danger");
     expect(sidebarMenuCss).toContain(".sidebar-menu-separator");
     expect(itemBlock).toContain("grid-template-columns: 18px minmax(0, 1fr)");

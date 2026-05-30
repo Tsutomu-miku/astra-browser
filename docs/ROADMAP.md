@@ -129,6 +129,8 @@ Acceptance:
 
 Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, tab drag payloads, and tab accessibility labels while staying in the Favorites folder. Tab-backed Favorites no longer use or synthesize a separate Favorite drag payload; moving them across folders or Spaces follows the normal tab move path and preserves their Favorites folder membership when appropriate. URL-only legacy Favorites no longer borrow matching tabs for sidebar rendering, folder ownership, or sidebar search metadata, but click/open behavior can still select an existing same-URL tab instead of replacing the active page. Sidebar, Start page, omnibox, command palette, keyboard number shortcuts, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
 
+Latest P1-1 note: sidebar menu surface chrome now lives in the shared sidebar menu stylesheet, so tab, quick-entry, group, closed-tab, and Space menus use the same floating surface, viewport clipping, and overflow behavior while keeping only width differences in section CSS.
+
 Small requirements:
 
 - P0-2.1 Add `tabId` to tab-originated Favorites.
@@ -262,6 +264,7 @@ Small requirements:
 - P1-1.29 Cross-section sidebar menu chrome lives in `components/common` instead of depending on a specific sidebar section subtree.
 - P1-1.30 Sidebar menu item, separator, disabled, and danger styles live in shared sidebar menu CSS instead of being duplicated per section.
 - P1-1.31 Space and tab-group menu fields and color swatches use shared sidebar menu classes and CSS rather than section-specific implementations.
+- P1-1.32 Sidebar menu surface chrome, viewport clipping, scroll behavior, and quiet floating treatment are shared across tab, quick-entry, group, closed-tab, and Space menus.
 
 ### P1-2 Split View And Glance
 
