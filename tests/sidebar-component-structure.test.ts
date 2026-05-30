@@ -28,6 +28,7 @@ describe("sidebar component structure", () => {
     const commonSectionHeader = readFileSync(commonSectionHeaderPath, "utf8");
     const commonTabStatusBadges = readFileSync(commonTabStatusBadgesPath, "utf8");
     const menuDismissal = readFileSync(menuDismissalPath, "utf8");
+    const sidebarRowReorderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarRowReorderDrop.ts"), "utf8");
     const workspaceStrip = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip.tsx"), "utf8");
     const sidebarItems = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItems.tsx"), "utf8");
     const sidebarPinnedTabs = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs.tsx"), "utf8");
@@ -78,6 +79,9 @@ describe("sidebar component structure", () => {
     expect(commonSectionHeader).toContain("sidebar-section-header");
     expect(commonTabStatusBadges).toContain("data-sidebar-tab-status-badges");
     expect(commonTabStatusBadges).toContain("data-sidebar-tab-status-badge");
+    expect(sidebarRowReorderDrop).toContain("acceptSidebarRowReorderDrag");
+    expect(sidebarRowReorderDrop).toContain("resolveSidebarRowReorderDrop");
+    expect(sidebarRowReorderDrop).toContain("clearSidebarRowReorderDrop");
     expect(sidebarItemActivation).toContain("getSidebarItemPointerActivation");
     expect(sidebarItemActivation).toContain("runSidebarItemPointerActivation");
     expect(menuDismissal).toContain("useContextMenuDismissal");
@@ -90,6 +94,10 @@ describe("sidebar component structure", () => {
     expect(sidebarItems).toContain('from "../common/SidebarItemActionHints"');
     expect(sidebarItems).toContain('from "../common/SidebarItemIcon"');
     expect(sidebarItems).toContain("runSidebarItemPointerActivation");
+    expect(sidebarItems).toContain("acceptSidebarRowReorderDrag");
+    expect(sidebarItems).toContain("resolveSidebarRowReorderDrop");
+    expect(sidebarItems).not.toContain("updateDropPlacement");
+    expect(sidebarItems).not.toContain("clearDropPlacement");
     expect(sidebarItems).not.toContain("event.altKey");
     expect(sidebarItems).not.toContain("event.shiftKey");
     expect(sidebarItems).not.toContain("export function SidebarSectionHeader");
@@ -97,6 +105,10 @@ describe("sidebar component structure", () => {
     expect(sidebarPinnedTabs).toContain('from "../common/SidebarItemIcon"');
     expect(sidebarPinnedTabs).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarPinnedTabs).toContain("runSidebarItemPointerActivation");
+    expect(sidebarPinnedTabs).toContain("acceptSidebarRowReorderDrag");
+    expect(sidebarPinnedTabs).toContain("resolveSidebarRowReorderDrop");
+    expect(sidebarPinnedTabs).not.toContain("updateDropPlacement");
+    expect(sidebarPinnedTabs).not.toContain("clearDropPlacement");
     expect(sidebarPinnedTabs).not.toContain("event.altKey");
     expect(sidebarPinnedTabs).not.toContain("event.shiftKey");
     expect(sidebarClosedTabButton).toContain("runSidebarItemPointerActivation");

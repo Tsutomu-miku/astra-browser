@@ -1,7 +1,7 @@
 import { type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
 import { FiX } from "react-icons/fi";
 
-import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { type BrowserTab, type Favorite } from "../../../../domain/browser";
 import type { FaviconCache } from "../../../../domain/browser";
@@ -10,6 +10,7 @@ import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation, runSidebarItemPointerActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
+import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop, resolveSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
 import { SidebarItemIcon } from "../common/SidebarItemIcon";
@@ -78,18 +79,18 @@ export function TabRow({
         setDraggingTabId(null);
       }}
       onDragOver={(event) => {
-        const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
-        if (draggedTabId && draggedTabId !== tab.id) {
-          event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
-          updateDropPlacement(event.currentTarget, event, dropAxis);
-        }
+        acceptSidebarRowReorderDrag(event, {
+          axis: dropAxis,
+          readDragId: (currentEvent) => readSidebarTabDragEventId({ draggingTabId }, currentEvent.dataTransfer),
+          targetId: tab.id
+        });
       }}
-      onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
+      onDragLeave={clearSidebarRowReorderDrop}
       onDrop={(event) => {
-        clearDropPlacement(event.currentTarget);
-        const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
-        if (draggedTabId && draggedTabId !== tab.id) onDrop(event, tab.id);
+        if (resolveSidebarRowReorderDrop(event, {
+          readDragId: (currentEvent) => readSidebarTabDragEventId({ draggingTabId }, currentEvent.dataTransfer),
+          targetId: tab.id
+        })) onDrop(event, tab.id);
       }}
       onContextMenu={(event) => onContextMenu(event, tab)}
     >
@@ -244,18 +245,18 @@ export function FavoriteButton({
         }
       }}
       onDragOver={(event) => {
-        const draggedQuickEntryId = getDraggedQuickEntryId(event);
-        if (draggedQuickEntryId && draggedQuickEntryId !== favorite.id) {
-          event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
-          updateDropPlacement(event.currentTarget, event, dropAxis);
-        }
+        acceptSidebarRowReorderDrag(event, {
+          axis: dropAxis,
+          readDragId: getDraggedQuickEntryId,
+          targetId: favorite.id
+        });
       }}
-      onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
+      onDragLeave={clearSidebarRowReorderDrop}
       onDrop={(event) => {
-        clearDropPlacement(event.currentTarget);
-        const draggedQuickEntryId = getDraggedQuickEntryId(event);
-        if (draggedQuickEntryId && draggedQuickEntryId !== favorite.id) onDrop?.(event, favorite.id, dropAxis);
+        if (resolveSidebarRowReorderDrop(event, {
+          readDragId: getDraggedQuickEntryId,
+          targetId: favorite.id
+        })) onDrop?.(event, favorite.id, dropAxis);
       }}
       onContextMenu={onContextMenu ? (event) => onContextMenu(event, favorite) : undefined}
       onKeyDown={(event) => {

@@ -1,6 +1,6 @@
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 
-import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { type BrowserTab, type FaviconCache } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
@@ -9,6 +9,7 @@ import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { runSidebarItemKeyboardActivation, runSidebarItemPointerActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
+import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop, resolveSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { getSidebarSearchTargetElementId, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
@@ -126,18 +127,18 @@ export function SidebarPinnedTabs({
               }}
               onDragEnd={() => setDraggingTabId(null)}
               onDragOver={(event) => {
-                const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
-                if (draggedTabId && draggedTabId !== tab.id) {
-                  event.preventDefault();
-                  event.dataTransfer.dropEffect = "move";
-                  updateDropPlacement(event.currentTarget, event, "horizontal");
-                }
+                acceptSidebarRowReorderDrag(event, {
+                  axis: "horizontal",
+                  readDragId: (currentEvent) => readSidebarTabDragEventId({ draggingTabId }, currentEvent.dataTransfer),
+                  targetId: tab.id
+                });
               }}
-              onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
+              onDragLeave={clearSidebarRowReorderDrop}
               onDrop={(event) => {
-                clearDropPlacement(event.currentTarget);
-                const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
-                if (!draggedTabId || draggedTabId === tab.id) return;
+                if (!resolveSidebarRowReorderDrop(event, {
+                  readDragId: (currentEvent) => readSidebarTabDragEventId({ draggingTabId }, currentEvent.dataTransfer),
+                  targetId: tab.id
+                })) return;
 
                 event.stopPropagation();
                 onTabDrop(event, tab.id, "horizontal");
