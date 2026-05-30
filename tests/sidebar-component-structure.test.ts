@@ -47,6 +47,8 @@ describe("sidebar component structure", () => {
     expect(commonModifierHints).toContain("FiEye");
     expect(commonModifierHints).toContain("FiColumns");
     expect(commonModifierHints).toContain("getModifierActionHintsLabel");
+    expect(commonModifierHints).toContain("data-sidebar-modifier-hints");
+    expect(commonModifierHints).toContain("data-sidebar-modifier-hint");
     expect(menuDismissal).toContain("useContextMenuDismissal");
     expect(menuDismissal).toContain("useRef");
     expect(menuDismissal).toContain("restoreFocus: false");
@@ -89,6 +91,7 @@ describe("sidebar component structure", () => {
     expect(sidebarMenuCss).toContain(".sidebar-menu-surface");
     expect(sidebarMenuCss).toContain(".sidebar-menu-field");
     expect(sidebarMenuCss).toContain(".sidebar-menu-surface .sidebar-menu-swatch");
+    expect(readFileSync(join(root, "src/renderer/styles/sidebar-action-hints.css"), "utf8")).toContain('[data-sidebar-modifier-hint="true"]');
     expect(tabContextMenuCss).not.toContain("box-shadow: 0 18px 48px");
     expect(workspaceCss).not.toContain("box-shadow: 0 18px 48px");
     expect(tabContextMenuCss).not.toContain("background: #1f2630");

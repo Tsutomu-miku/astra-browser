@@ -10,6 +10,7 @@ import { SidebarSearchBox } from "../src/renderer/surfaces/sidebar/components/ch
 
 const sidebarSearchCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-search.css"), "utf8");
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
+const sidebarActionHintsCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-action-hints.css"), "utf8");
 
 describe("sidebar search box", () => {
   it("renders an explicitly labelled clear control while searching", () => {
@@ -130,7 +131,7 @@ describe("sidebar search box", () => {
     const addressSuggestionsBlock = getRuleBlock(sidebarCss, ".sidebar-omnibox-suggestions");
     const metaBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-meta {");
     const emptyBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-empty {");
-    const hintBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-action-hint {");
+    const hintBlock = getRuleBlock(sidebarActionHintsCss, "[data-sidebar-modifier-hint=\"true\"]");
 
     expect(searchInputBlock).toContain("border: 1px solid transparent");
     expect(searchInputBlock).toContain("background: transparent");

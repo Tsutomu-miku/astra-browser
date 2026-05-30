@@ -27,9 +27,15 @@ export function SidebarModifierActionHints({
   const label = ariaHidden ? undefined : ariaLabel ?? getModifierActionHintsLabel(hints);
 
   return (
-    <span className={className} aria-hidden={ariaHidden || undefined} aria-label={label}>
+    <span className={className} data-sidebar-modifier-hints="true" aria-hidden={ariaHidden || undefined} aria-label={label}>
       {hints.map((hint) => (
-        <span className={`${hintClassName} is-${hint.id}`} data-action-hint={hint.id} key={hint.id} aria-hidden="true">
+        <span
+          className={`${hintClassName} is-${hint.id}`}
+          data-action-hint={hint.id}
+          data-sidebar-modifier-hint="true"
+          key={hint.id}
+          aria-hidden="true"
+        >
           {hint.id === "preview" ? <FiEye /> : <FiColumns />}
         </span>
       ))}

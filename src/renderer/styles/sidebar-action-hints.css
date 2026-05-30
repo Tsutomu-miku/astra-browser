@@ -1,9 +1,33 @@
-.sidebar-item-action-hints {
-  width: 38px;
-  min-width: 38px;
+[data-sidebar-modifier-hints="true"] {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
+}
+
+[data-sidebar-modifier-hint="true"] {
+  width: 16px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+}
+
+[data-sidebar-modifier-hint="true"] svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2;
+}
+
+[data-sidebar-modifier-hint="true"].is-preview {
+  color: color-mix(in srgb, var(--muted) 86%, white);
+}
+
+[data-sidebar-modifier-hint="true"].is-split {
+  color: color-mix(in srgb, var(--muted) 76%, white);
+}
+
+.sidebar-item-action-hints {
+  width: 38px;
+  min-width: 38px;
   flex: 0 0 auto;
   gap: 4px;
   color: color-mix(in srgb, var(--muted) 78%, white);
@@ -39,18 +63,8 @@
 }
 
 .sidebar-item-action-hint {
-  width: 16px;
-  height: 16px;
-  display: grid;
-  place-items: center;
   border: 0;
   background: transparent;
-}
-
-.sidebar-item-action-hint svg {
-  width: 12px;
-  height: 12px;
-  stroke-width: 2;
 }
 
 .pinned-tab-button .sidebar-item-action-hint {
@@ -62,14 +76,6 @@
 .pinned-tab-button .sidebar-item-action-hint svg {
   width: 9px;
   height: 9px;
-}
-
-.sidebar-item-action-hint.is-preview {
-  color: color-mix(in srgb, var(--muted) 86%, white);
-}
-
-.sidebar-item-action-hint.is-split {
-  color: color-mix(in srgb, var(--muted) 76%, white);
 }
 
 .essentials .sidebar-item-action-hints {

@@ -38,12 +38,13 @@ describe("sidebar item action hint styles", () => {
   });
 
   it("keeps action hints as quiet inline glyphs instead of keycaps", () => {
-    const hintBlock = getRuleBlock(sidebarCss, "\n.sidebar-item-action-hint {");
+    const hintBlock = getRuleBlock(sidebarCss, "[data-sidebar-modifier-hint=\"true\"]");
+    const legacyHintBlock = getRuleBlock(sidebarCss, "\n.sidebar-item-action-hint {");
 
     expect(hintBlock).toContain("width: 16px");
     expect(hintBlock).toContain("height: 16px");
-    expect(hintBlock).toContain("border: 0");
-    expect(hintBlock).toContain("background: transparent");
+    expect(legacyHintBlock).toContain("border: 0");
+    expect(legacyHintBlock).toContain("background: transparent");
     expect(hintBlock).not.toContain("border-radius");
     expect(hintBlock).not.toContain("var(--accent)");
   });

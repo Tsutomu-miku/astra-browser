@@ -338,19 +338,6 @@
   color: color-mix(in srgb, var(--muted) 78%, white);
 }
 
-.sidebar-omnibox-suggestion .omnibox-action-hint {
-  width: 16px;
-  height: 16px;
-  display: inline-grid;
-  place-items: center;
-}
-
-.sidebar-omnibox-suggestion .omnibox-action-hint svg {
-  width: 12px;
-  height: 12px;
-  stroke-width: 2;
-}
-
 .sidebar-omnibox-suggestion span:not(.omnibox-action-hints, .omnibox-action-hint),
 .sidebar-omnibox-suggestion small {
   min-width: 0;
