@@ -1,10 +1,11 @@
 import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent } from "react";
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
-import { clearDropPlacement, updateDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, FaviconCache, TabGroup } from "../../../../domain/browser";
 import { SIDEBAR_DRAG_DATA, readSidebarGroupDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
+import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop, resolveSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
 import { getSidebarSearchTargetElementId } from "../../sidebarFiltering";
 import { TabRow } from "./SidebarItems";
 
@@ -85,24 +86,25 @@ export function TabGroupSection({
         onDragEnd={() => setDraggingGroupId(null)}
         onDragOver={(event) => {
           const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
-          const draggedGroupId = getDraggedGroupId(event);
-          if (draggedGroupId && draggedGroupId !== group.id) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "move";
-            updateDropPlacement(event.currentTarget, event, "vertical");
-          } else if (draggedTabId) {
+          const draggedGroupId = acceptSidebarRowReorderDrag(event, {
+            readDragId: getDraggedGroupId,
+            targetId: group.id
+          });
+          if (!draggedGroupId && draggedTabId) {
             event.preventDefault();
           }
         }}
-        onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
+        onDragLeave={clearSidebarRowReorderDrop}
         onDrop={(event) => {
-          clearDropPlacement(event.currentTarget);
-          const draggedGroupId = getDraggedGroupId(event);
-          if (draggedGroupId && draggedGroupId !== group.id) {
+          const draggedGroupId = resolveSidebarRowReorderDrop(event, {
+            readDragId: getDraggedGroupId,
+            targetId: group.id
+          });
+          if (draggedGroupId) {
             onGroupDrop(event, group.id);
             return;
           }
-          if (draggedGroupId) {
+          if (getDraggedGroupId(event)) {
             event.preventDefault();
             setDraggingGroupId(null);
             return;

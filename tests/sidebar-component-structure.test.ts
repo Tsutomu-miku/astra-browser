@@ -36,6 +36,7 @@ describe("sidebar component structure", () => {
     const sidebarItemActivation = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarItemActivation.ts"), "utf8");
     const sidebarSections = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarSections.tsx"), "utf8");
     const sidebarTabsSection = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarTabsSection.tsx"), "utf8");
+    const tabGroupSection = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabGroupSection.tsx"), "utf8");
     const sidebarSearchBox = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarSearchBox.tsx"), "utf8");
     const sidebarAddress = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarAddress.tsx"), "utf8");
     const sidebarContextMenusHook = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/useSidebarContextMenus.ts"), "utf8");
@@ -114,6 +115,10 @@ describe("sidebar component structure", () => {
     expect(sidebarClosedTabButton).toContain("runSidebarItemPointerActivation");
     expect(sidebarClosedTabButton).not.toContain("event.altKey");
     expect(sidebarClosedTabButton).not.toContain("event.shiftKey");
+    expect(tabGroupSection).toContain("acceptSidebarRowReorderDrag");
+    expect(tabGroupSection).toContain("resolveSidebarRowReorderDrop");
+    expect(tabGroupSection).not.toContain("updateDropPlacement");
+    expect(tabGroupSection).not.toContain("clearDropPlacement");
     expect(sidebarSections).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarTabsSection).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarSearchBox).toContain("SidebarModifierActionHints");
