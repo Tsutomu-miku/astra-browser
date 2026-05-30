@@ -250,6 +250,7 @@ Small requirements:
 - P1-1.18 Sidebar search and compact address inputs stay transparent by default, use quiet focus fills, and avoid reserving clear-control space when the clear action is absent.
 - P1-1.19 Loading and sleeping favicon states render as plain corner glyphs instead of badge containers.
 - P1-1.20 Sidebar search clear controls and compact address suggestion popovers use local quiet chrome instead of global raised button or heavy floating shadow treatment.
+- P1-1.21 Space rail tab counts fade from stable positions and Space buttons do not reserve unused transform motion.
 
 ### P1-2 Split View And Glance
 

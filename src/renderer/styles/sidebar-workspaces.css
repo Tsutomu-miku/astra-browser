@@ -27,8 +27,7 @@
   transition:
     background 140ms ease,
     border-color 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms ease;
+    box-shadow 140ms ease;
 }
 
 .workspace-button:hover {
@@ -103,10 +102,7 @@
   font-size: 10px;
   font-weight: 450;
   opacity: 0;
-  transform: translateY(2px);
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease;
+  transition: opacity 120ms ease;
 }
 
 .workspace-button:hover .workspace-tab-count,
@@ -114,7 +110,6 @@
 .workspace-button[aria-current="true"] .workspace-tab-count,
 .workspace-button[data-drop-target="true"] .workspace-tab-count {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .workspace-new-button {

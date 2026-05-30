@@ -658,13 +658,19 @@ describe("workspace strip compact controls", () => {
   });
 
   it("reveals Space tab counts only for active or engaged rail items", () => {
+    const buttonBlock = getRuleBlock(workspaceCss, ".workspace-button");
     const countBlock = getRuleBlock(workspaceCss, ".workspace-tab-count");
+    const revealBlock = getRuleBlock(workspaceCss, ".workspace-button:hover .workspace-tab-count,\n.workspace-button:focus-visible .workspace-tab-count,\n.workspace-button[aria-current=\"true\"] .workspace-tab-count,\n.workspace-button[data-drop-target=\"true\"] .workspace-tab-count");
 
+    expect(buttonBlock).not.toContain("transform");
     expect(countBlock).toContain("border: 0");
     expect(countBlock).toContain("background: transparent");
     expect(countBlock).not.toContain("border-radius");
     expect(countBlock).toContain("opacity: 0");
-    expect(countBlock).toContain("transform: translateY(2px)");
+    expect(countBlock).toContain("transition: opacity 120ms ease");
+    expect(countBlock).not.toContain("transform");
+    expect(revealBlock).toContain("opacity: 1");
+    expect(revealBlock).not.toContain("transform");
     expect(workspaceCss).toContain(".workspace-button:hover .workspace-tab-count");
     expect(workspaceCss).toContain(".workspace-button:focus-visible .workspace-tab-count");
     expect(workspaceCss).toContain(".workspace-button[aria-current=\"true\"] .workspace-tab-count");
