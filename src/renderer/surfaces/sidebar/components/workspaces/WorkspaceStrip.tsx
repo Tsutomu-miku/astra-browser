@@ -8,7 +8,7 @@ import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem
 import { SidebarMenuSurface } from "../common/SidebarMenuSurface";
 import { readSidebarWorkspaceDragId } from "../../model/sidebarDragSources";
 import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
-import { getSidebarNewWorkspaceDropIntent } from "../../model/sidebarWorkspaceDropIntent";
+import { acceptSidebarNewWorkspaceDropTarget } from "../../model/sidebarWorkspaceDropIntent";
 import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
@@ -166,16 +166,12 @@ export function WorkspaceStrip({
         aria-label={getNewWorkspaceAccessibilityLabel(isNewWorkspaceDropTarget)}
         data-drop-target={isNewWorkspaceDropTarget}
         onDragOver={(event) => {
-          const intent = getSidebarNewWorkspaceDropIntent({
+          acceptSidebarNewWorkspaceDropTarget(event, {
             draggingClosedTabIndex,
             draggingFavoriteId,
             draggingGroupId,
             draggingTabId
-          }, (type) => event.dataTransfer.getData(type));
-          if (!intent) return;
-
-          event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
+          });
         }}
         onDrop={onNewWorkspaceDrop}
         onClick={onNewWorkspace}

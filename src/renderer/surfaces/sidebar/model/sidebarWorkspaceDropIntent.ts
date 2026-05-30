@@ -14,6 +14,14 @@ export type SidebarWorkspaceDropIntent =
   | { type: "tab"; tabId: string }
   | { type: "workspace"; workspaceId: string };
 
+export interface SidebarWorkspaceDropEvent {
+  dataTransfer: {
+    dropEffect: string;
+    getData: (type: string) => string;
+  };
+  preventDefault: () => void;
+}
+
 export function getSidebarWorkspaceDropIntent(
   state: SidebarDragState & {
     activeWorkspaceId: string;
@@ -44,6 +52,18 @@ export function getSidebarWorkspaceDropIntent(
   if (tabId) return { type: "tab", tabId };
 
   return null;
+}
+
+export function acceptSidebarNewWorkspaceDropTarget(
+  event: SidebarWorkspaceDropEvent,
+  state: SidebarDragState
+): Exclude<SidebarWorkspaceDropIntent, { type: "workspace" }> | null {
+  const intent = getSidebarNewWorkspaceDropIntent(state, (type) => event.dataTransfer.getData(type));
+  if (!intent) return null;
+
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+  return intent;
 }
 
 export function getSidebarNewWorkspaceDropIntent(

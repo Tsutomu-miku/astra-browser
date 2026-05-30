@@ -182,6 +182,7 @@ describe("workspace strip compact controls", () => {
     newSpace.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: "tab" }));
 
     expect(dragOver.defaultPrevented).toBe(true);
+    expect(dragOver.dataTransfer.dropEffect).toBe("move");
     expect(onNewWorkspaceDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }));
 
     act(() => root.unmount());
@@ -794,7 +795,16 @@ function renderStrip({
   }));
 }
 
-function createDragEvent(type: string, dragData: Record<string, string> = {}) {
+interface TestDragEvent extends Event {
+  dataTransfer: {
+    dropEffect: string;
+    effectAllowed: string;
+    getData: (dataType: string) => string;
+    setData: (dataType: string, value: string) => void;
+  };
+}
+
+function createDragEvent(type: string, dragData: Record<string, string> = {}): TestDragEvent {
   const event = new Event(type, { bubbles: true, cancelable: true });
   Object.defineProperty(event, "dataTransfer", {
     value: {
@@ -806,7 +816,7 @@ function createDragEvent(type: string, dragData: Record<string, string> = {}) {
       })
     }
   });
-  return event;
+  return event as TestDragEvent;
 }
 
 function getRuleBlock(css: string, selector: string): string {

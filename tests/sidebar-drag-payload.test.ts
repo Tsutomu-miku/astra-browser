@@ -14,6 +14,7 @@ import {
   SIDEBAR_DRAG_DATA
 } from "../src/renderer/surfaces/sidebar/model/sidebarDragSources";
 import {
+  acceptSidebarNewWorkspaceDropTarget,
   getSidebarNewWorkspaceDropIntent,
   getSidebarWorkspaceDropIntent
 } from "../src/renderer/surfaces/sidebar/model/sidebarWorkspaceDropIntent";
@@ -105,5 +106,24 @@ describe("sidebar drag payload", () => {
       draggingGroupId: null,
       draggingTabId: null
     }, (type) => type === SIDEBAR_DRAG_DATA.groupId ? "group" : "")).toEqual({ groupId: "group", type: "group" });
+  });
+
+  it("accepts New Space drop targets through the shared workspace helper", () => {
+    const event = {
+      dataTransfer: {
+        dropEffect: "none",
+        getData: (type: string) => type === SIDEBAR_DRAG_DATA.groupId ? "group" : ""
+      },
+      preventDefault: vi.fn()
+    };
+
+    expect(acceptSidebarNewWorkspaceDropTarget(event, {
+      draggingClosedTabIndex: null,
+      draggingFavoriteId: null,
+      draggingGroupId: null,
+      draggingTabId: null
+    })).toEqual({ groupId: "group", type: "group" });
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(event.dataTransfer.dropEffect).toBe("move");
   });
 });

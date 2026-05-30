@@ -30,6 +30,7 @@ describe("sidebar component structure", () => {
     const menuDismissal = readFileSync(menuDismissalPath, "utf8");
     const sidebarRowReorderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarRowReorderDrop.ts"), "utf8");
     const workspaceStrip = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip.tsx"), "utf8");
+    const sidebarWorkspaceDropIntent = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarWorkspaceDropIntent.ts"), "utf8");
     const sidebarItems = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItems.tsx"), "utf8");
     const sidebarPinnedTabs = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs.tsx"), "utf8");
     const sidebarClosedTabButton = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/ClosedTabButton.tsx"), "utf8");
@@ -97,7 +98,10 @@ describe("sidebar component structure", () => {
     expect(workspaceStrip).toContain("useContextMenuDismissal");
     expect(workspaceStrip).toContain("acceptSidebarRowReorderDrag");
     expect(workspaceStrip).toContain("clearSidebarRowReorderDrop");
-    expect(workspaceStrip).toContain("getSidebarNewWorkspaceDropIntent");
+    expect(workspaceStrip).toContain("acceptSidebarNewWorkspaceDropTarget");
+    expect(workspaceStrip).not.toContain("getSidebarNewWorkspaceDropIntent");
+    expect(sidebarWorkspaceDropIntent).toContain("acceptSidebarNewWorkspaceDropTarget");
+    expect(sidebarWorkspaceDropIntent).toContain("getSidebarNewWorkspaceDropIntent");
     expect(workspaceStrip).not.toContain("readSidebarFavoriteDragId");
     expect(workspaceStrip).not.toContain("readSidebarTabDragEventId");
     expect(workspaceStrip).not.toContain("updateDropPlacement");
