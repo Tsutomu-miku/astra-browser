@@ -35,7 +35,12 @@ describe("omnibox accessibility", () => {
     expect(input.getAttribute("aria-expanded")).toBe("true");
     expect(listbox.getAttribute("role")).toBe("listbox");
     expect(container.querySelectorAll('[role="option"]').length).toBeGreaterThan(0);
-    expect(container.querySelector('[role="option"]')?.getAttribute("aria-selected")).toBe("true");
+    const option = container.querySelector('[role="option"]');
+    expect(option?.getAttribute("aria-selected")).toBe("true");
+    expect(option?.hasAttribute("title")).toBe(false);
+    expect(option?.querySelector(".omnibox-action-hints")?.getAttribute("aria-label")).toBe("Alt Split");
+    expect(option?.querySelector(".omnibox-action-hint")?.getAttribute("data-action-hint")).toBe("split");
+    expect(option?.querySelector("kbd")).toBeNull();
     expect(input.getAttribute("aria-activedescendant")).toBe("address-suggestion-0");
 
     act(() => root.unmount());

@@ -108,6 +108,9 @@
   color: var(--text);
   cursor: pointer;
   text-align: left;
+  transition:
+    background 130ms ease,
+    color 130ms ease;
 }
 
 .suggestion-main {
@@ -124,9 +127,8 @@
 }
 
 .omnibox-suggestion[aria-selected="true"] {
-  box-shadow:
-    inset 3px 0 0 var(--accent),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--panel-soft) 84%, white);
+  box-shadow: none;
 }
 
 .suggestion-title,
@@ -138,7 +140,7 @@
 }
 
 .suggestion-title {
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .suggestion-subtitle {
@@ -149,31 +151,21 @@
 .omnibox-action-hints {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   color: var(--muted);
-  font-size: 11px;
 }
 
 .omnibox-action-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.omnibox-action-hint kbd {
-  min-width: 22px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   display: inline-grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-bottom-color: rgba(0, 0, 0, 0.3);
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 700;
+  color: color-mix(in srgb, var(--muted) 88%, white);
+}
+
+.omnibox-action-hint svg {
+  width: 13px;
+  height: 13px;
 }
 
 .address-identity {

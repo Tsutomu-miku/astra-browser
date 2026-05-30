@@ -3,6 +3,7 @@ import {
   FiArrowLeft,
   FiArrowRight,
   FiBookmark,
+  FiColumns,
   FiInfo,
   FiLock,
   FiMinus,
@@ -95,32 +96,36 @@ export function Topbar({ controller }: { controller: BrowserController }) {
         </form>
         {omnibox.suggestionsOpen && omnibox.suggestions.length > 0 && (
           <div className="omnibox-suggestions" id="address-suggestions" role="listbox" aria-label="Address suggestions">
-            {omnibox.suggestions.map((suggestion, index) => (
-              <button
-                className="omnibox-suggestion"
-                id={`address-suggestion-${index}`}
-                key={suggestion.id}
-                type="button"
-                role="option"
-                aria-selected={index === omnibox.activeIndex}
-                title="Alt-click to open in split view"
-                onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
-                onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
-              >
-                <span className="suggestion-main">
-                  <span className="suggestion-title">{suggestion.title}</span>
-                  <span className="omnibox-action-hints" aria-label="Alt Split">
-                    {getOmniboxActionHints(suggestion).map((hint) => (
-                      <span className={`omnibox-action-hint is-${hint.id}`} key={hint.id}>
-                        <kbd>{hint.modifier}</kbd>
-                        <span>{hint.label}</span>
+            {omnibox.suggestions.map((suggestion, index) => {
+              const actionHints = getOmniboxActionHints(suggestion);
+
+              return (
+                <button
+                  className="omnibox-suggestion"
+                  id={`address-suggestion-${index}`}
+                  key={suggestion.id}
+                  type="button"
+                  role="option"
+                  aria-selected={index === omnibox.activeIndex}
+                  onMouseDown={(event) => omnibox.onSuggestionPointerDown(event, suggestion)}
+                  onMouseEnter={() => omnibox.setActiveSuggestionIndex(index)}
+                >
+                  <span className="suggestion-main">
+                    <span className="suggestion-title">{suggestion.title}</span>
+                    {actionHints.length > 0 && (
+                      <span className="omnibox-action-hints" aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}>
+                        {actionHints.map((hint) => (
+                          <span className={`omnibox-action-hint is-${hint.id}`} data-action-hint={hint.id} key={hint.id} aria-hidden="true">
+                            <FiColumns />
+                          </span>
+                        ))}
                       </span>
-                    ))}
+                    )}
                   </span>
-                </span>
-                <span className="suggestion-subtitle">{suggestion.subtitle}</span>
-              </button>
-            ))}
+                  <span className="suggestion-subtitle">{suggestion.subtitle}</span>
+                </button>
+              );
+            })}
           </div>
         )}
         {pageIdentityMenu.menu && (
