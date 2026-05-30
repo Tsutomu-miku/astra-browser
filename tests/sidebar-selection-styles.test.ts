@@ -20,6 +20,22 @@ describe("sidebar selection styles", () => {
     }
   });
 
+  it("uses quiet whole-row focus states for sidebar items", () => {
+    const tabFocusBlock = getRuleBlock(sidebarCss, ".tab-row:focus-within");
+    const favoriteFocusBlock = getRuleBlock(sidebarCss, ".favorite-button:focus-visible");
+    const pinnedFocusBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:focus-visible");
+    const closedFocusBlock = getRuleBlock(sidebarCss, ".closed-tab-button:focus-visible");
+
+    for (const block of [tabFocusBlock, favoriteFocusBlock, closedFocusBlock]) {
+      expect(block).toContain("border-color: transparent");
+      expect(block).toContain("background: var(--panel-soft)");
+      expect(block).not.toContain("var(--accent)");
+    }
+    expect(favoriteFocusBlock).toContain("outline: none");
+    expect(pinnedFocusBlock).toContain("outline: none");
+    expect(closedFocusBlock).toContain("outline: none");
+  });
+
   it("keeps workspace active state quiet and removes accent wash from the app background", () => {
     const activeWorkspaceBlock = getRuleBlock(workspaceCss, ".workspace-button[aria-current=\"true\"]");
 

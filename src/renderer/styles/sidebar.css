@@ -435,10 +435,15 @@ h1 {
 }
 
 .pinned-tab-button:hover,
+.pinned-tab-button:focus-visible,
 .pinned-tab-button[aria-current="true"],
 .pinned-tab-button[aria-selected="true"] {
   border-color: transparent;
   background: var(--sidebar-active-bg);
+}
+
+.pinned-tab-button:focus-visible {
+  outline: none;
 }
 
 .pinned-tab-button:hover {
@@ -579,6 +584,11 @@ h1 {
   border-color: var(--line);
 }
 
+.tab-row:focus-within {
+  border-color: transparent;
+  background: var(--panel-soft);
+}
+
 .tab-row[aria-current="true"] {
   border-color: transparent;
   background: var(--sidebar-active-bg);
@@ -656,6 +666,12 @@ h1 {
 .favorite-button:hover {
   background: var(--panel-soft);
   border-color: var(--line);
+}
+
+.favorite-button:focus-visible {
+  border-color: transparent;
+  background: var(--panel-soft);
+  outline: none;
 }
 
 .favorite-icon,
@@ -776,9 +792,13 @@ h1 {
     border-color 130ms ease;
 }
 
-.closed-tab-button:hover,
+.closed-tab-button:hover {
+  border-color: var(--line);
+  background: var(--panel-soft);
+}
+
 .closed-tab-button:focus-visible {
-  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+  border-color: transparent;
   background: var(--panel-soft);
   outline: none;
 }
@@ -951,6 +971,10 @@ h1 {
 .tab-close:hover {
   background: var(--control);
   color: var(--text);
+}
+
+.tab-close:focus-visible {
+  outline: none;
 }
 
 .sidebar-footer {
