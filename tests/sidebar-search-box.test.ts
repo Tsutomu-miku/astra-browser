@@ -129,6 +129,7 @@ describe("sidebar search box", () => {
     const addressFocusBlock = getRuleBlock(sidebarCss, ".sidebar-address-form:focus-within");
     const addressSuggestionsBlock = getRuleBlock(sidebarCss, ".sidebar-omnibox-suggestions");
     const metaBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-meta {");
+    const emptyBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-empty {");
     const hintBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-action-hint {");
 
     expect(searchInputBlock).toContain("border: 1px solid transparent");
@@ -152,6 +153,11 @@ describe("sidebar search box", () => {
     expect(addressSuggestionsBlock).not.toContain("var(--shadow-floating)");
     expect(metaBlock).toContain("justify-content: space-between");
     expect(metaBlock).not.toContain("var(--accent)");
+    expect(emptyBlock).toContain("min-height: 30px");
+    expect(emptyBlock).toContain("border: 0");
+    expect(emptyBlock).toContain("background: transparent");
+    expect(emptyBlock).not.toContain("font-weight");
+    expect(emptyBlock).not.toContain("var(--accent)");
     expect(hintBlock).toContain("width: 16px");
     expect(sidebarSearchCss).not.toContain("kbd");
   });
