@@ -257,6 +257,7 @@ For tab-related features, requirements must specify object identity. In particul
 - The internal new tab page must be rendered by the React shell instead of a Chromium webview.
 - The new tab page must support Space-aware search.
 - The new tab page must show global Essentials plus favorites and recent history for the active Space.
+- New tab tab-backed Favorite tiles must display, preview, and split with the backing tab's current title and URL.
 - The new tab search must use the shared omnibox suggestion model so Essentials, favorites, open tabs, and history can be opened directly from the start surface.
 - The new tab search must visually hint Alt split opening for suggestions.
 - New tab quick entries must visually hint Alt preview and Shift split actions on hover or keyboard focus.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultState, createFavorite } from "../src/renderer/domain/browser";
+import { createDefaultState, createFavorite, createTab } from "../src/renderer/domain/browser";
 import { getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { getStartPageContent } from "../src/renderer/surfaces/start/startPageContent";
 
@@ -32,5 +32,21 @@ describe("getStartPageContent", () => {
     expect(content.essentials.map((item) => item.title)).toContain("Mail");
     expect(content.favorites.map((item) => item.title)).toContain("Docs");
     expect(content.recentHistory.map((entry) => entry.title)).toEqual(["Active history"]);
+  });
+
+  it("uses backing tab data for Space favorite tiles", () => {
+    const state = createDefaultState();
+    const workspace = getActiveWorkspace(state);
+    const tab = createTab("Current Docs", "https://docs.example/current");
+    workspace.tabs = [tab];
+    workspace.favorites.push(createFavorite("Old Docs", "https://docs.example/old", tab.id));
+
+    const content = getStartPageContent(state, workspace);
+
+    expect(content.favorites[0]).toMatchObject({
+      tabId: tab.id,
+      title: tab.title,
+      url: tab.url
+    });
   });
 });
