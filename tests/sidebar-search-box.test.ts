@@ -103,7 +103,7 @@ describe("sidebar search box", () => {
   it("keeps sidebar search and compact address focus states quiet", () => {
     const searchFocusBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search input:focus");
     const addressFocusBlock = getRuleBlock(sidebarCss, ".sidebar-address-form:focus-within");
-    const hintBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search-action-hint");
+    const hintBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-action-hint {");
 
     expect(searchFocusBlock).toContain("border-color: transparent");
     expect(searchFocusBlock).toContain("box-shadow: none");
