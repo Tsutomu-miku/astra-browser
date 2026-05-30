@@ -192,6 +192,36 @@ describe("sidebar tab group section", () => {
 
     act(() => root.unmount());
   });
+
+  it("clears same-group drops through the shared header drop resolver", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onGroupDrop = vi.fn();
+    const setDraggingGroupId = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        draggingGroupId: group.id,
+        group,
+        onGroupDrop,
+        setDraggingGroupId,
+        tabs: [activeTab]
+      })));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    const drop = createDragEvent("drop", { "text/group-id": group.id });
+    header.dispatchEvent(drop);
+
+    expect(drop.defaultPrevented).toBe(true);
+    expect(onGroupDrop).not.toHaveBeenCalled();
+    expect(setDraggingGroupId).toHaveBeenCalledWith(null);
+
+    act(() => root.unmount());
+  });
 });
 
 function props(overrides: Partial<Parameters<typeof TabGroupSection>[0]> = {}): Parameters<typeof TabGroupSection>[0] {

@@ -527,6 +527,7 @@ describe("sidebar drag placement", () => {
     const dragOver = createDragEvent("dragover", {}, { "text/plain": "dragged-tab" });
     header.dispatchEvent(dragOver);
     expect(dragOver.defaultPrevented).toBe(true);
+    expect(dragOver.dataTransfer.dropEffect).toBe("move");
 
     header.dispatchEvent(createDragEvent("drop", {}, { "text/plain": "dragged-tab" }));
     expect(onMoveTabToGroupFolder).toHaveBeenCalledWith("dragged-tab", group.id);
@@ -572,7 +573,14 @@ function createDragEvent(
   type: string,
   pointer: Partial<Pick<DragEvent, "clientX" | "clientY">>,
   dragData: Record<string, string> = {}
-) {
+): Event & {
+  dataTransfer: {
+    dropEffect: string;
+    effectAllowed: string;
+    getData: (type: string) => string;
+    setData: (type: string, value: string) => void;
+  };
+} {
   const event = new Event(type, { bubbles: true, cancelable: true });
   Object.defineProperty(event, "clientX", { value: pointer.clientX ?? 0 });
   Object.defineProperty(event, "clientY", { value: pointer.clientY ?? 0 });
@@ -586,7 +594,14 @@ function createDragEvent(
       })
     }
   });
-  return event;
+  return event as Event & {
+    dataTransfer: {
+      dropEffect: string;
+      effectAllowed: string;
+      getData: (type: string) => string;
+      setData: (type: string, value: string) => void;
+    };
+  };
 }
 
 function stubRect(target: HTMLElement, rect: Partial<DOMRect>) {

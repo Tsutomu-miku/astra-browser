@@ -34,6 +34,7 @@ describe("sidebar component structure", () => {
     const sidebarPinnedTabs = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs.tsx"), "utf8");
     const sidebarClosedTabButton = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/ClosedTabButton.tsx"), "utf8");
     const sidebarItemActivation = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarItemActivation.ts"), "utf8");
+    const sidebarTabGroupHeaderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarTabGroupHeaderDrop.ts"), "utf8");
     const sidebarSections = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarSections.tsx"), "utf8");
     const sidebarTabsSection = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarTabsSection.tsx"), "utf8");
     const tabGroupSection = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabGroupSection.tsx"), "utf8");
@@ -124,8 +125,14 @@ describe("sidebar component structure", () => {
     expect(sidebarClosedTabButton).toContain("runSidebarItemPointerActivation");
     expect(sidebarClosedTabButton).not.toContain("event.altKey");
     expect(sidebarClosedTabButton).not.toContain("event.shiftKey");
-    expect(tabGroupSection).toContain("acceptSidebarRowReorderDrag");
-    expect(tabGroupSection).toContain("resolveSidebarRowReorderDrop");
+    expect(tabGroupSection).toContain("acceptSidebarTabGroupHeaderDrag");
+    expect(tabGroupSection).toContain("resolveSidebarTabGroupHeaderDrop");
+    expect(tabGroupSection).not.toContain("readSidebarTabDragEventId");
+    expect(tabGroupSection).not.toContain("readSidebarGroupDragId");
+    expect(sidebarTabGroupHeaderDrop).toContain("acceptSidebarRowReorderDrag");
+    expect(sidebarTabGroupHeaderDrop).toContain("resolveSidebarRowReorderDrop");
+    expect(sidebarTabGroupHeaderDrop).toContain("readSidebarTabDragId");
+    expect(sidebarTabGroupHeaderDrop).toContain("readSidebarGroupDragId");
     expect(tabGroupSection).not.toContain("updateDropPlacement");
     expect(tabGroupSection).not.toContain("clearDropPlacement");
     expect(sidebarSections).toContain('from "../common/SidebarSectionHeader"');

@@ -3,9 +3,10 @@ import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent } from "react"
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, FaviconCache, TabGroup } from "../../../../domain/browser";
-import { SIDEBAR_DRAG_DATA, readSidebarGroupDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
+import { SIDEBAR_DRAG_DATA } from "../../model/sidebarDragSources";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
-import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop, resolveSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
+import { clearSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
+import { acceptSidebarTabGroupHeaderDrag, resolveSidebarTabGroupHeaderDrop } from "../../model/sidebarTabGroupHeaderDrop";
 import { getSidebarSearchTargetElementId } from "../../sidebarFiltering";
 import { TabRow } from "./SidebarItems";
 
@@ -53,10 +54,7 @@ export function TabGroupSection({
   tabs: BrowserTab[];
 }) {
   const hasActiveTab = tabs.some((tab) => tab.id === activeTab.id);
-  const getDraggedGroupId = (event: DragEvent<HTMLElement>) => readSidebarGroupDragId(
-    { draggingGroupId },
-    (type) => event.dataTransfer.getData(type)
-  );
+  const tabGroupHeaderDropState = { draggingGroupId, draggingTabId };
   const handleToggleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (openSidebarKeyboardContextMenu(event)) return;
 
@@ -85,35 +83,23 @@ export function TabGroupSection({
         }}
         onDragEnd={() => setDraggingGroupId(null)}
         onDragOver={(event) => {
-          const draggedTabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
-          const draggedGroupId = acceptSidebarRowReorderDrag(event, {
-            readDragId: getDraggedGroupId,
-            targetId: group.id
-          });
-          if (!draggedGroupId && draggedTabId) {
-            event.preventDefault();
-          }
+          acceptSidebarTabGroupHeaderDrag(event, tabGroupHeaderDropState, group.id);
         }}
         onDragLeave={clearSidebarRowReorderDrop}
         onDrop={(event) => {
-          const draggedGroupId = resolveSidebarRowReorderDrop(event, {
-            readDragId: getDraggedGroupId,
-            targetId: group.id
-          });
-          if (draggedGroupId) {
+          const intent = resolveSidebarTabGroupHeaderDrop(event, tabGroupHeaderDropState, group.id);
+          if (!intent) return;
+
+          if (intent.type === "group") {
             onGroupDrop(event, group.id);
             return;
           }
-          if (getDraggedGroupId(event)) {
-            event.preventDefault();
+          if (intent.type === "currentGroup") {
             setDraggingGroupId(null);
             return;
           }
-          const tabId = readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
-          if (!tabId) return;
 
-          event.preventDefault();
-          onMoveTabToGroupFolder(tabId, group.id);
+          onMoveTabToGroupFolder(intent.tabId, group.id);
           setDraggingTabId(null);
         }}
       >
