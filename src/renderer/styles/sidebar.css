@@ -577,9 +577,8 @@ h1 {
   position: relative;
   min-height: 38px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px;
+  grid-template-columns: minmax(0, 1fr) 56px;
   align-items: center;
-  padding-right: 3px;
   cursor: grab;
   border: 1px solid transparent;
   transition:
@@ -897,7 +896,7 @@ h1 {
   position: relative;
   min-height: 38px;
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 38px;
+  grid-template-columns: 24px minmax(0, 1fr);
   align-items: center;
   gap: 9px;
   padding: 7px 5px 7px 9px;
@@ -958,9 +957,35 @@ h1 {
   color: var(--muted);
 }
 
+.tab-row-actions {
+  width: 56px;
+  min-width: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding-right: 4px;
+}
+
+.tab-row-actions .sidebar-item-action-hints {
+  width: 30px;
+  min-width: 30px;
+  gap: 2px;
+}
+
+.tab-row-actions .sidebar-item-action-hint {
+  width: 14px;
+  height: 14px;
+}
+
+.tab-row-actions .sidebar-item-action-hint svg {
+  width: 10px;
+  height: 10px;
+}
+
 .tab-close {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;

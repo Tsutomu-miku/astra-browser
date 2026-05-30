@@ -188,24 +188,26 @@ export function TabRow({
           <span className="tab-title">{tab.title || tab.url}</span>
           <SidebarTabStatusBadges badges={statusBadges} />
         </span>
+      </button>
+      <span className="tab-row-actions">
         <SidebarItemActionHints />
-      </button>
-      <button
-        className="tab-close"
-        type="button"
-        aria-label={`Close ${tab.title || tab.url}`}
-        draggable={false}
-        onDragStart={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-        }}
-        onClick={(event) => {
-          event.stopPropagation();
-          onClose(tab.id);
-        }}
-      >
-        <FiX />
-      </button>
+        <button
+          className="tab-close"
+          type="button"
+          aria-label={`Close ${tab.title || tab.url}`}
+          draggable={false}
+          onDragStart={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+            onClose(tab.id);
+          }}
+        >
+          <FiX />
+        </button>
+      </span>
     </div>
   );
 }

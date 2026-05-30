@@ -38,6 +38,20 @@ describe("sidebar item action hint styles", () => {
     expect(sidebarLayoutCss).toContain(".tab-row:focus-within .tab-close");
     expect(sidebarLayoutCss).toContain(".tab-close:focus-visible");
   });
+
+  it("keeps tab row hints and close controls in one stable action rail", () => {
+    const rowBlock = getRuleBlock(sidebarLayoutCss, ".tab-row");
+    const buttonBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-button {");
+    const railBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row-actions");
+    const railHintBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row-actions .sidebar-item-action-hints");
+
+    expect(rowBlock).toContain("grid-template-columns: minmax(0, 1fr) 56px");
+    expect(buttonBlock).toContain("grid-template-columns: 24px minmax(0, 1fr)");
+    expect(buttonBlock).not.toContain("38px");
+    expect(railBlock).toContain("width: 56px");
+    expect(railBlock).toContain("justify-content: flex-end");
+    expect(railHintBlock).toContain("width: 30px");
+  });
 });
 
 function getRuleBlock(css: string, selector: string): string {
