@@ -11,13 +11,6 @@
   transform: scale(0.985);
 }
 
-.favorite-button[data-drop-target="true"] {
-  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
-  box-shadow:
-    inset 3px 0 0 color-mix(in srgb, var(--accent) 82%, white),
-    inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
-}
-
 .tab-row[data-drop-placement]::before,
 .favorites .favorite-button[data-drop-placement]::before {
   content: "";
