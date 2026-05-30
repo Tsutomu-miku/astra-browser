@@ -114,6 +114,31 @@ describe("sidebar filtering", () => {
     });
   });
 
+  it("matches tab-backed Favorites by the current backing tab title", () => {
+    const favorite = createFavorite("Old Docs", "https://docs.example", "docs-tab");
+    const favoriteTab = {
+      ...createTab("Current Project Brief", "https://docs.example/current"),
+      id: "docs-tab"
+    };
+    const result = filterSidebarItems({
+      essentials: [],
+      favorites: [favorite],
+      groupedTabs: [],
+      pinnedTabs: [],
+      regularTabs: [],
+      workspaceTabs: [favoriteTab]
+    }, "brief");
+
+    expect(result.favorites).toEqual([favorite]);
+    expect(getSidebarSearchTargets(result)).toEqual([{
+      id: favorite.id,
+      tabId: favoriteTab.id,
+      title: "Old Docs",
+      type: "favorite",
+      url: favorite.url
+    }]);
+  });
+
   it("clamps and wraps keyboard search selection", () => {
     expect(clampSidebarSearchIndex(-1, 3)).toBe(0);
     expect(clampSidebarSearchIndex(5, 3)).toBe(2);

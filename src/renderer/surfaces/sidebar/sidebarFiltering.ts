@@ -49,7 +49,11 @@ export function filterSidebarItems(input: SidebarFilterInput, query: string): Si
 
   const pinnedTabs = input.pinnedTabs.filter((tab) => matchesTab(tab, normalizedQuery));
   const essentials = input.essentials.filter((essential) => matchesFavorite(essential, normalizedQuery));
-  const favorites = input.favorites.filter((favorite) => matchesFavorite(favorite, normalizedQuery));
+  const favorites = input.favorites.filter((favorite) => matchesFavorite(
+    favorite,
+    normalizedQuery,
+    input.workspaceTabs
+  ));
   const groupedTabs = input.groupedTabs
     .map(({ group, tabs }) => ({
       group,
@@ -133,8 +137,11 @@ function matchesTab(tab: BrowserTab, query: string): boolean {
   return tab.title.toLowerCase().includes(query) || tab.url.toLowerCase().includes(query);
 }
 
-function matchesFavorite(favorite: Favorite, query: string): boolean {
-  return favorite.title.toLowerCase().includes(query) || favorite.url.toLowerCase().includes(query);
+function matchesFavorite(favorite: Favorite, query: string, workspaceTabs?: BrowserTab[]): boolean {
+  const tab = resolveFavoriteTab(workspaceTabs ? { tabs: workspaceTabs } : undefined, favorite);
+  return favorite.title.toLowerCase().includes(query) ||
+    favorite.url.toLowerCase().includes(query) ||
+    Boolean(tab && matchesTab(tab, query));
 }
 
 function toTabTarget(tab: BrowserTab): SidebarSearchTarget {

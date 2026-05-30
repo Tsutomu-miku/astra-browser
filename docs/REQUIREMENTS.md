@@ -146,6 +146,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Sidebar quick entries must show active-page state when the current tab matches an Essential or favorite.
 - Users must be able to toggle the current page as a favorite with `Ctrl+D`, `Cmd+D`, `Ctrl+Shift+D`, or `Cmd+Shift+D`.
 - Sidebar search must filter global Essentials plus tabs, tab groups, pinned tabs, and favorites inside the active Space.
+- Sidebar search must match tab-backed Favorites by their backing tab title and URL, not only stale Favorite metadata.
 - Sidebar search must navigate Essential matches in the current tab unless preview or split modifiers are used.
 - Sidebar search must select matching Favorite tabs unless preview or split modifiers are used.
 - Sidebar search must support Arrow, Home, End, Enter, Alt+Enter preview, and Shift+Enter split-open flows.
