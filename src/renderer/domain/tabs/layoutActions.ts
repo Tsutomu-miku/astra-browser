@@ -18,6 +18,7 @@ import { getActiveTab, getActiveWorkspace } from "../browser/selectors";
 import { updateBrowserState } from "../browser/updateState";
 import { clearSplitView, getSplitTabIds, MAX_SPLIT_VIEW_TABS, setSplitTabIds } from "./splitView";
 import { pruneEmptyTabGroups } from "./groups";
+import { markTabAwake } from "./sleepPolicy";
 import type { TabDropPlacement } from "./utils";
 
 export type TabFolder =
@@ -189,7 +190,7 @@ export function openTabInSplit(state: BrowserState, tabId: string): BrowserState
     const tab = workspace.tabs.find((candidate) => candidate.id === tabId);
     if (!tab || tab.id === workspace.activeTabId) return;
 
-    tab.isSleeping = false;
+    markTabAwake(tab);
     const splitTabIds = getSplitTabIds(draft).filter((candidateId) => candidateId !== tab.id);
     setSplitTabIds(draft, [...splitTabIds, tab.id]);
   });
@@ -226,7 +227,7 @@ export function focusSplitPane(state: BrowserState, tabId: string): BrowserState
 
     if (!draft.splitMode || !activeTabId || !focusedTab || !splitTabIds.includes(tabId)) return;
 
-    focusedTab.isSleeping = false;
+    markTabAwake(focusedTab);
     workspace.activeTabId = focusedTab.id;
     setSplitTabIds(draft, splitTabIds.map((candidateId) => (
       candidateId === focusedTab.id ? activeTabId : candidateId
@@ -245,7 +246,7 @@ export function toggleSplitMode(state: BrowserState): BrowserState {
     }
 
     const splitTab = inactiveTabs[0] ?? createSplitTab(workspace);
-    splitTab.isSleeping = false;
+    markTabAwake(splitTab);
     setSplitTabIds(draft, [splitTab.id]);
   });
 }
@@ -261,7 +262,7 @@ export function fillSplitView(state: BrowserState): BrowserState {
     for (const tab of workspace.tabs) {
       if (nextIds.length >= MAX_SPLIT_VIEW_TABS - 1) break;
       if (selected.has(tab.id)) continue;
-      tab.isSleeping = false;
+      markTabAwake(tab);
       nextIds.push(tab.id);
       selected.add(tab.id);
     }

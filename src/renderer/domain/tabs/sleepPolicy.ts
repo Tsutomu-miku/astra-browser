@@ -27,3 +27,8 @@ export function markTabSleeping(tab: BrowserTab): void {
   tab.canGoBack = false;
   tab.canGoForward = false;
 }
+
+export function markTabAwake(tab: BrowserTab, now = Date.now()): void {
+  tab.isSleeping = false;
+  tab.lastActiveAt = now;
+}

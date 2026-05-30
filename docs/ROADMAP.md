@@ -203,7 +203,7 @@ Progress: mostly implemented. macOS and Windows now expose per-architecture loca
 - Sleeping tabs must unload webviews and wake on selection.
 - Store and webview lifecycle code must not call webview methods before readiness.
 
-Progress: partially implemented. Memory Saver sleep protection is now centralized in a shared tab sleep policy used by domain actions, settings/sidebar summaries, and tab-group context-menu availability. Manual inactive sleep, automatic idle sleep, and group sleep all use the same releasable-tab definition, and no-op sleep requests now preserve the existing state object when every candidate is protected or already sleeping.
+Progress: partially implemented. Memory Saver sleep protection is now centralized in a shared tab sleep policy used by domain actions, settings/sidebar summaries, and tab-group context-menu availability. Manual inactive sleep, automatic idle sleep, and group sleep all use the same releasable-tab definition, and no-op sleep requests now preserve the existing state object when every candidate is protected or already sleeping. Sleeping a tab now clears loading and back/forward affordances before its webview is released, and tab selection, adjacent selection, split opening, split focus, split fill, and split-mode creation all use one wake path that refreshes tab activity when a sleeping tab is brought back.
 
 Small requirements:
 

@@ -11,7 +11,7 @@ import { clearSplitView, getSplitTabIds, setSplitTabIds } from "./splitView";
 import { pruneEmptyTabGroups } from "./groups";
 import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "../browser/zoom";
 import { updateBrowserState } from "../browser/updateState";
-import { getGroupSleepableTabs, getMemoryReleasableTabs, markTabSleeping } from "./sleepPolicy";
+import { getGroupSleepableTabs, getMemoryReleasableTabs, markTabAwake, markTabSleeping } from "./sleepPolicy";
 import { normalizeFaviconUrl, setCachedFaviconUrl } from "../browser/favicon";
 import type { TabDropPlacement } from "./utils";
 
@@ -56,8 +56,7 @@ export function sleepTab(state: BrowserState, tabId: string): BrowserState {
       const fallback = getSleepTabFocusFallback(workspace.tabs, tab.id);
       if (!fallback) return;
 
-      fallback.isSleeping = false;
-      fallback.lastActiveAt = Date.now();
+      markTabAwake(fallback);
       workspace.activeTabId = fallback.id;
     }
 

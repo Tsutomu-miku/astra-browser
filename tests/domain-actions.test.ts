@@ -1061,6 +1061,38 @@ describe("domain actions", () => {
     expect(getActiveTab(getActiveWorkspace(selected)).isSleeping).toBe(false);
   });
 
+  it("clears loading and navigation affordances when sleeping a releasable tab", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const background = getActiveWorkspace(second).tabs.find((tab) => tab.title === "First")!;
+    background.isLoading = true;
+    background.canGoBack = true;
+    background.canGoForward = true;
+
+    const slept = sleepInactiveTabs(second);
+    const sleepingTab = getActiveWorkspace(slept).tabs.find((tab) => tab.id === background.id)!;
+
+    expect(sleepingTab.isSleeping).toBe(true);
+    expect(sleepingTab.isLoading).toBe(false);
+    expect(sleepingTab.canGoBack).toBe(false);
+    expect(sleepingTab.canGoForward).toBe(false);
+  });
+
+  it("refreshes sleeping tab activity when waking it into split view", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const slept = sleepInactiveTabs(second);
+    const sleepingTab = getActiveWorkspace(slept).tabs.find((tab) => tab.title === "First")!;
+    sleepingTab.lastActiveAt = 1;
+
+    const split = openTabInSplit(slept, sleepingTab.id);
+    const splitTab = getActiveWorkspace(split).tabs.find((tab) => tab.id === sleepingTab.id)!;
+
+    expect(splitTab.isSleeping).toBe(false);
+    expect(splitTab.lastActiveAt).toBeGreaterThan(1);
+    expect(split.splitTabIds).toContain(sleepingTab.id);
+  });
+
   it("keeps Memory Saver manual sleep as a no-op when no tabs can be released", () => {
     const state = createDefaultState();
     getActiveWorkspace(state).activeTabId = getActiveWorkspace(state).tabs[0].id;
