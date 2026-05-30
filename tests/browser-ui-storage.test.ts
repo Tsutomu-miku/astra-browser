@@ -25,4 +25,38 @@ describe("browser UI storage", () => {
     expect(loadBrowserUiState()).toEqual({ sidebarWidth: 240 });
     expect(localStorage.getItem("astra-browser-state")).toBeNull();
   });
+
+  it("persists sidebar section collapse state with other UI state", () => {
+    expect(saveBrowserUiState({
+      sidebarSectionCollapsed: {
+        essentials: false,
+        pinned: true,
+        favorites: true,
+        tabs: false,
+        recentlyClosed: true
+      },
+      sidebarWidth: 316
+    })).toEqual({
+      sidebarSectionCollapsed: {
+        essentials: false,
+        pinned: true,
+        favorites: true,
+        tabs: false,
+        recentlyClosed: true
+      },
+      sidebarWidth: 316
+    });
+
+    expect(saveBrowserUiState({ sidebarWidth: 320 })).toEqual({
+      sidebarSectionCollapsed: {
+        essentials: false,
+        pinned: true,
+        favorites: true,
+        tabs: false,
+        recentlyClosed: true
+      },
+      sidebarWidth: 320
+    });
+    expect(localStorage.getItem("astra-browser-state")).toBeNull();
+  });
 });

@@ -1,6 +1,12 @@
 import { useState, type DragEvent, type MouseEvent } from "react";
 
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import {
+  DEFAULT_SIDEBAR_SECTION_COLLAPSED,
+  toggleSidebarSectionCollapsed,
+  type SidebarSectionCollapsedState,
+  type SidebarSectionId
+} from "../../../../common/sidebar/sidebarSections";
 import { resolveFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type FaviconCache, type TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import {
@@ -17,8 +23,6 @@ import { SidebarTabsSection } from "./SidebarTabsSection";
 
 const SIDEBAR_RECENTLY_CLOSED_LIMIT = 4;
 
-type SidebarSectionId = "essentials" | "favorites" | "pinned" | "recentlyClosed" | "tabs";
-
 export function SidebarSections({
   actions,
   activeSearchTarget,
@@ -34,6 +38,7 @@ export function SidebarSections({
   onEssentialDragStart,
   onEssentialDrop,
   onEssentialReorderDrop,
+  collapsedSections,
   onFavoriteDragStart,
   onFavoriteDrop,
   onFavoriteReorderDrop,
@@ -43,6 +48,7 @@ export function SidebarSections({
   onTabContextMenu,
   onTabDrop,
   onTabsDrop = () => undefined,
+  onToggleSection,
   onQuickEntryContextMenu,
   setDraggingEssentialId,
   setDraggingFavoriteId,
@@ -66,6 +72,7 @@ export function SidebarSections({
   onEssentialDragStart: (event: DragEvent<HTMLElement>, essentialId: string) => void;
   onEssentialDrop: (event: DragEvent<HTMLElement>) => void;
   onEssentialReorderDrop: (event: DragEvent<HTMLElement>, targetEssentialId: string, axis: DropAxis) => void;
+  collapsedSections?: SidebarSectionCollapsedState;
   onFavoriteDragStart: (event: DragEvent<HTMLElement>, favoriteId: string) => void;
   onFavoriteDrop: (event: DragEvent<HTMLElement>) => void;
   onFavoriteReorderDrop: (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis) => void;
@@ -76,6 +83,7 @@ export function SidebarSections({
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
   onTabsDrop?: (event: DragEvent<HTMLElement>) => void;
+  onToggleSection?: (sectionId: SidebarSectionId) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
   setDraggingFavoriteId: (favoriteId: string | null) => void;
   setDraggingClosedTabIndex?: (closedIndex: number | null) => void;
@@ -84,24 +92,21 @@ export function SidebarSections({
   splitTabIds: string[];
   workspaceTabs?: BrowserTab[];
 }) {
-  const [collapsedSections, setCollapsedSections] = useState<Record<SidebarSectionId, boolean>>({
-    essentials: false,
-    favorites: false,
-    pinned: false,
-    recentlyClosed: false,
-    tabs: false
-  });
+  const [localCollapsedSections, setLocalCollapsedSections] = useState<SidebarSectionCollapsedState>(DEFAULT_SIDEBAR_SECTION_COLLAPSED);
+  const currentCollapsedSections = collapsedSections ?? localCollapsedSections;
   const tabCount = filteredItems.groupedTabs.reduce((total, entry) => total + entry.tabs.length, 0) + filteredItems.regularTabs.length;
   const recentlyClosedTabs = closedTabs.slice(0, SIDEBAR_RECENTLY_CLOSED_LIMIT);
   const isSectionCollapsed = (sectionId: SidebarSectionId) => (
     !filteredItems.isFiltering &&
-    collapsedSections[sectionId]
+    currentCollapsedSections[sectionId]
   );
   const toggleSection = (sectionId: SidebarSectionId) => {
-    setCollapsedSections((current) => ({
-      ...current,
-      [sectionId]: !current[sectionId]
-    }));
+    if (onToggleSection) {
+      onToggleSection(sectionId);
+      return;
+    }
+
+    setLocalCollapsedSections((current) => toggleSidebarSectionCollapsed(current, sectionId));
   };
   const openFavorite = (favorite: Favorite) => {
     const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);

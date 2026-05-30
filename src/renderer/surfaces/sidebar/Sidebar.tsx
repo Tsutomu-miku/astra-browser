@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -12,8 +13,14 @@ import { scrollElementNearEdge } from "../../common/drag-drop/edgeAutoScroll";
 import { getPointerDropPlacement, type DropAxis } from "../../common/drag-drop/dropPlacement";
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
+import {
+  DEFAULT_SIDEBAR_SECTION_COLLAPSED,
+  toggleSidebarSectionCollapsed,
+  type SidebarSectionId
+} from "../../common/sidebar/sidebarSections";
 import type { BrowserController } from "../../app/controller/types";
 import type { TabFolder } from "../../domain/tabs";
+import { loadBrowserUiState, saveBrowserUiState } from "../../platform/persistence/browserUiStorage";
 import { SidebarAddress } from "./components/chrome/SidebarAddress";
 import { SidebarFooter } from "./components/chrome/SidebarFooter";
 import { SidebarHeader } from "./components/chrome/SidebarHeader";
@@ -51,6 +58,9 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   const tabStackRef = useRef<HTMLElement | null>(null);
   const [tabQuery, setTabQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
+  const [sidebarSectionCollapsed, setSidebarSectionCollapsed] = useState(() => (
+    loadBrowserUiState().sidebarSectionCollapsed ?? DEFAULT_SIDEBAR_SECTION_COLLAPSED
+  ));
   const {
     closedTabMenu,
     closeMenus,
@@ -103,6 +113,14 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     setDraggingEssentialId,
     setDraggingFavoriteId
   } = useSidebarQuickEntryDrag({ actions, activeWorkspace, draggingTabId, setDraggingTabId, state });
+
+  const handleToggleSidebarSection = useCallback((sectionId: SidebarSectionId) => {
+    setSidebarSectionCollapsed((current) => {
+      const next = toggleSidebarSectionCollapsed(current, sectionId);
+      saveBrowserUiState({ sidebarSectionCollapsed: next });
+      return next;
+    });
+  }, []);
 
   const handleTabDrop = (event: DragEvent<HTMLElement>, targetTabId: string, axis: DropAxis = "vertical") => {
     event.preventDefault();
@@ -371,6 +389,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             activeSearchTarget={activeSearchTarget}
             activeTab={activeTab}
             closedTabs={activeWorkspace.closedTabs}
+            collapsedSections={sidebarSectionCollapsed}
             draggingEssentialId={draggingEssentialId}
             faviconCache={state.faviconCache}
             draggingFavoriteId={draggingFavoriteId}
@@ -392,6 +411,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             onTabContextMenu={openTabMenu}
             onTabDrop={handleTabDrop}
             onTabsDrop={handleTabsDrop}
+            onToggleSection={handleToggleSidebarSection}
             setDraggingEssentialId={setDraggingEssentialId}
             setDraggingFavoriteId={setDraggingFavoriteId}
             setDraggingClosedTabIndex={setDraggingClosedTabIndex}
