@@ -13,7 +13,7 @@ import {
   isSidebarFavoriteActive,
   isSidebarUrlActive
 } from "../../model/sidebarItemState";
-import { readSidebarTabDragEventId, SIDEBAR_DRAG_DATA } from "../../model/sidebarDragSources";
+import { SIDEBAR_DRAG_DATA } from "../../model/sidebarDragSources";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { ClosedTabButton } from "./ClosedTabButton";
@@ -130,15 +130,10 @@ export function SidebarSections({
             className="essentials"
             aria-label="Essentials"
             onDragEnter={(event) => {
-              if (readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer)) {
-                event.preventDefault();
-              }
+              acceptSidebarTabFolderDrag(event, draggingTabId, "copy");
             }}
             onDragOver={(event) => {
-              if (readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer)) {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "copy";
-              }
+              acceptSidebarTabFolderDrag(event, draggingTabId, "copy");
             }}
             onDrop={onEssentialDrop}
           >

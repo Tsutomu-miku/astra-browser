@@ -1,12 +1,22 @@
-import type { DragEvent } from "react";
+import { readSidebarTabDragId } from "./sidebarDragSources";
 
-import { readSidebarTabDragEventId } from "./sidebarDragSources";
-
-export function getSidebarTabFolderDragId(event: DragEvent<HTMLElement>, draggingTabId: string | null) {
-  return readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
+export interface SidebarTabFolderDropEvent {
+  dataTransfer: {
+    dropEffect: string;
+    getData: (type: string) => string;
+  };
+  preventDefault: () => void;
 }
 
-export function acceptSidebarTabFolderDrag(event: DragEvent<HTMLElement>, draggingTabId: string | null, dropEffect: DataTransfer["dropEffect"] = "move") {
+export function getSidebarTabFolderDragId(event: SidebarTabFolderDropEvent, draggingTabId: string | null) {
+  return readSidebarTabDragId({ draggingTabId }, (type) => event.dataTransfer.getData(type));
+}
+
+export function acceptSidebarTabFolderDrag(
+  event: SidebarTabFolderDropEvent,
+  draggingTabId: string | null,
+  dropEffect: DataTransfer["dropEffect"] = "move"
+) {
   if (!getSidebarTabFolderDragId(event, draggingTabId)) return false;
 
   event.preventDefault();

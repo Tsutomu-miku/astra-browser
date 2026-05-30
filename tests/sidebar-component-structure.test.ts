@@ -129,6 +129,8 @@ describe("sidebar component structure", () => {
     expect(tabGroupSection).not.toContain("updateDropPlacement");
     expect(tabGroupSection).not.toContain("clearDropPlacement");
     expect(sidebarSections).toContain('from "../common/SidebarSectionHeader"');
+    expect(sidebarSections).toContain('acceptSidebarTabFolderDrag(event, draggingTabId, "copy")');
+    expect(sidebarSections).not.toContain("readSidebarTabDragEventId");
     expect(sidebarTabsSection).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarSearchBox).toContain("SidebarModifierActionHints");
     expect(sidebarAddress).toContain("SidebarModifierActionHints");

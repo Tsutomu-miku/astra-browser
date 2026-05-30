@@ -180,6 +180,64 @@ describe("sidebar section drop zones", () => {
     act(() => root.unmount());
   });
 
+  it("accepts tab drops on Essentials through the shared folder helper", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const essential = createFavorite("Mail", "https://mail.example");
+    const onEssentialDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions: createActions(),
+        activeTab: tab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: tab.id,
+        filteredItems: {
+          essentials: [essential],
+          favorites: [],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [tab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop,
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: []
+      }));
+    });
+
+    const essentials = container.querySelector<HTMLElement>(".essentials")!;
+    const dragOverEvent = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id });
+    essentials.dispatchEvent(dragOverEvent);
+    expect(dragOverEvent.defaultPrevented).toBe(true);
+    expect(dragOverEvent.dataTransfer.dropEffect).toBe("copy");
+    expect(essentials.dataset.dropTarget).toBeUndefined();
+
+    essentials.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
+    expect(onEssentialDrop).toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
   it("accepts Favorite-backed tab drops on the empty Tabs folder", () => {
     const tab = createTab("Docs", "https://docs.example");
     const favorite = createFavorite("Docs", tab.url, tab.id);
@@ -870,7 +928,16 @@ function createActions() {
   } as unknown as BrowserController["actions"];
 }
 
-function createDragEvent(type: string, dragData: Record<string, string>) {
+interface TestDragEvent extends Event {
+  dataTransfer: {
+    dropEffect: string;
+    effectAllowed: string;
+    getData: (dataType: string) => string;
+    setData: (dataType: string, data: string) => void;
+  };
+}
+
+function createDragEvent(type: string, dragData: Record<string, string>): TestDragEvent {
   const event = new Event(type, { bubbles: true, cancelable: true });
   Object.defineProperty(event, "dataTransfer", {
     value: {
@@ -880,5 +947,5 @@ function createDragEvent(type: string, dragData: Record<string, string>) {
       setData: vi.fn()
     }
   });
-  return event;
+  return event as TestDragEvent;
 }
