@@ -14,7 +14,7 @@ import { getSidebarSearchTargetElementId, type SidebarSearchTarget } from "../..
 import { SidebarSectionHeader } from "./SidebarItems";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarItemIcon } from "./SidebarItemIcon";
-import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
+import { SidebarTabStatusBadges } from "../common/SidebarTabStatusBadges";
 
 export function SidebarPinnedTabs({
   actions,

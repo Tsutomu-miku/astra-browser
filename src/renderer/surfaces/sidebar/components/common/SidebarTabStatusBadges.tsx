@@ -15,9 +15,9 @@ export function SidebarTabStatusBadges({
   const containerClassName = variant === "pinned" ? "pinned-tab-status-badges" : "tab-status-badges";
 
   return (
-    <span className={containerClassName} aria-label={badges.map((badge) => badge.label).join(", ")}>
+    <span className={containerClassName} data-sidebar-tab-status-badges="true" aria-label={badges.map((badge) => badge.label).join(", ")}>
       {badges.map((badge) => (
-        <span className={`${badgeClassName} is-${badge.id}`} key={badge.id} aria-hidden="true">
+        <span className={`${badgeClassName} is-${badge.id}`} data-sidebar-tab-status-badge="true" key={badge.id} aria-hidden="true">
           <TabStatusIcon badge={badge} />
         </span>
       ))}

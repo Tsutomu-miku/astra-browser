@@ -14,7 +14,7 @@ import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardConte
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "./SidebarItemActionHints";
 import { SidebarItemIcon } from "./SidebarItemIcon";
-import { SidebarTabStatusBadges } from "./SidebarTabStatusBadges";
+import { SidebarTabStatusBadges } from "../common/SidebarTabStatusBadges";
 
 export function SidebarSectionHeader({
   count,

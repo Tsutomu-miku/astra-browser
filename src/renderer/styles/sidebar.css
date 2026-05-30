@@ -522,27 +522,40 @@
   position: absolute;
   right: -3px;
   top: -3px;
-  display: inline-flex;
   gap: 2px;
 }
 
-.pinned-tab-status-badge {
-  width: 13px;
-  height: 13px;
-  display: grid;
+[data-sidebar-tab-status-badges="true"] {
+  display: inline-flex;
+}
+
+[data-sidebar-tab-status-badge="true"] {
+  width: var(--sidebar-tab-status-badge-size, 14px);
+  height: var(--sidebar-tab-status-badge-size, 14px);
+  display: inline-grid;
   place-items: center;
   border: 0;
+  padding: 0;
   background: transparent;
+  color: color-mix(in srgb, var(--muted) 74%, white);
+}
+
+[data-sidebar-tab-status-badge="true"] svg {
+  width: var(--sidebar-tab-status-icon-size, 10px);
+  height: var(--sidebar-tab-status-icon-size, 10px);
+}
+
+[data-sidebar-tab-status-badge="true"].is-split {
+  color: var(--sidebar-status-strong);
+}
+
+[data-sidebar-tab-status-badge="true"].is-muted {
   color: var(--muted);
 }
 
-.pinned-tab-status-badge svg {
-  width: 9px;
-  height: 9px;
-}
-
-.pinned-tab-status-badge.is-split {
-  color: var(--sidebar-status-strong);
+.pinned-tab-status-badge {
+  --sidebar-tab-status-badge-size: 13px;
+  --sidebar-tab-status-icon-size: 9px;
 }
 
 .pinned-tab-status-badge.is-muted {
@@ -935,33 +948,8 @@
 
 .tab-status-badges {
   min-width: 0;
-  display: flex;
   gap: 3px;
   overflow: hidden;
-}
-
-.tab-status-badge {
-  width: 14px;
-  height: 14px;
-  display: inline-grid;
-  place-items: center;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: color-mix(in srgb, var(--muted) 74%, white);
-}
-
-.tab-status-badge svg {
-  width: 10px;
-  height: 10px;
-}
-
-.tab-status-badge.is-split {
-  color: var(--sidebar-status-strong);
-}
-
-.tab-status-badge.is-muted {
-  color: var(--muted);
 }
 
 .tab-row-actions {

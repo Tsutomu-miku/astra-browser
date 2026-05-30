@@ -346,14 +346,16 @@ describe("sidebar pinned tabs", () => {
   });
 
   it("styles compact pinned tab status glyphs", () => {
-    const statusBlock = getRuleBlock(sidebarCss, "\n.pinned-tab-status-badge {");
+    const statusBlock = getRuleBlock(sidebarCss, "[data-sidebar-tab-status-badge=\"true\"]");
+    const pinnedBlock = getRuleBlock(sidebarCss, "\n.pinned-tab-status-badge {");
 
     expect(sidebarCss).toContain(".pinned-tab-status-badges");
-    expect(sidebarCss).toContain(".pinned-tab-status-badge.is-split");
+    expect(sidebarCss).toContain('[data-sidebar-tab-status-badge="true"].is-split');
     expect(sidebarCss).toContain(".pinned-tab-status-badge.is-muted");
     expect(statusBlock).toContain("border: 0");
     expect(statusBlock).toContain("background: transparent");
     expect(statusBlock).not.toContain("border-radius");
+    expect(pinnedBlock).toContain("--sidebar-tab-status-badge-size: 13px");
   });
 
   it("styles collapsible section headers", () => {

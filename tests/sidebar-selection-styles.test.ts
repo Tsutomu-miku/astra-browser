@@ -90,10 +90,10 @@ describe("sidebar selection styles", () => {
   });
 
   it("keeps row status indicators as inline glyphs instead of badges", () => {
-    const statusBlock = getRuleBlock(sidebarCss, "\n.tab-status-badge {");
+    const statusBlock = getRuleBlock(sidebarCss, "[data-sidebar-tab-status-badge=\"true\"]");
 
-    expect(statusBlock).toContain("width: 14px");
-    expect(statusBlock).toContain("height: 14px");
+    expect(statusBlock).toContain("width: var(--sidebar-tab-status-badge-size, 14px)");
+    expect(statusBlock).toContain("height: var(--sidebar-tab-status-badge-size, 14px)");
     expect(statusBlock).toContain("border: 0");
     expect(statusBlock).toContain("background: transparent");
     expect(statusBlock).not.toContain("border-radius");
@@ -114,15 +114,14 @@ describe("sidebar selection styles", () => {
 
   it("keeps sidebar status and internal-page colors neutral", () => {
     const iconStatusBlock = getRuleBlock(sidebarCss, "\n.sidebar-item-icon-status {");
-    const rowSplitBlock = getRuleBlock(sidebarCss, "\n.tab-status-badge.is-split");
-    const pinnedSplitBlock = getRuleBlock(sidebarCss, "\n.pinned-tab-status-badge.is-split");
+    const splitBlock = getRuleBlock(sidebarCss, "[data-sidebar-tab-status-badge=\"true\"].is-split");
     const loadingBlock = getRuleBlock(sidebarCss, "\n.sidebar-item-icon-status.is-loading");
     const internalBlock = getRuleBlock(sidebarCss, "\n.sidebar-item-icon.is-internal");
 
     expect(iconStatusBlock).toContain("border: 0");
     expect(iconStatusBlock).toContain("background: transparent");
     expect(iconStatusBlock).not.toContain("border-radius");
-    for (const block of [rowSplitBlock, pinnedSplitBlock, loadingBlock, internalBlock]) {
+    for (const block of [splitBlock, loadingBlock, internalBlock]) {
       expect(block).toContain("var(--sidebar-status-strong)");
       expect(block).not.toContain("var(--accent)");
     }

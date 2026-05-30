@@ -9,13 +9,16 @@ describe("sidebar component structure", () => {
     const commonMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuItem.tsx");
     const commonMenuSurfacePath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuSurface.tsx");
     const commonModifierHintsPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarModifierActionHints.tsx");
+    const commonTabStatusBadgesPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarTabStatusBadges.tsx");
     const menuDismissalPath = join(root, "src/renderer/common/context-menu/menuDismissal.ts");
     const oldTabsMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarMenuItem.tsx");
+    const oldTabsStatusBadgesPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarTabStatusBadges.tsx");
     const sidebarMenuCssPath = join(root, "src/renderer/styles/sidebar-menu.css");
     const stylesEntry = readFileSync(join(root, "src/renderer/styles.css"), "utf8");
     const commonMenuItem = readFileSync(commonMenuItemPath, "utf8");
     const commonMenuSurface = readFileSync(commonMenuSurfacePath, "utf8");
     const commonModifierHints = readFileSync(commonModifierHintsPath, "utf8");
+    const commonTabStatusBadges = readFileSync(commonTabStatusBadgesPath, "utf8");
     const menuDismissal = readFileSync(menuDismissalPath, "utf8");
     const workspaceStrip = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip.tsx"), "utf8");
     const sidebarItemActionHints = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItemActionHints.tsx"), "utf8");
@@ -34,8 +37,10 @@ describe("sidebar component structure", () => {
     expect(existsSync(commonMenuItemPath)).toBe(true);
     expect(existsSync(commonMenuSurfacePath)).toBe(true);
     expect(existsSync(commonModifierHintsPath)).toBe(true);
+    expect(existsSync(commonTabStatusBadgesPath)).toBe(true);
     expect(existsSync(menuDismissalPath)).toBe(true);
     expect(existsSync(oldTabsMenuItemPath)).toBe(false);
+    expect(existsSync(oldTabsStatusBadgesPath)).toBe(false);
     expect(existsSync(sidebarMenuCssPath)).toBe(true);
     expect(stylesEntry).toContain('@import "./styles/sidebar-menu.css";');
     expect(commonMenuItem).toContain("SidebarMenuSeparator");
@@ -49,6 +54,8 @@ describe("sidebar component structure", () => {
     expect(commonModifierHints).toContain("getModifierActionHintsLabel");
     expect(commonModifierHints).toContain("data-sidebar-modifier-hints");
     expect(commonModifierHints).toContain("data-sidebar-modifier-hint");
+    expect(commonTabStatusBadges).toContain("data-sidebar-tab-status-badges");
+    expect(commonTabStatusBadges).toContain("data-sidebar-tab-status-badge");
     expect(menuDismissal).toContain("useContextMenuDismissal");
     expect(menuDismissal).toContain("useRef");
     expect(menuDismissal).toContain("restoreFocus: false");
@@ -92,6 +99,7 @@ describe("sidebar component structure", () => {
     expect(sidebarMenuCss).toContain(".sidebar-menu-field");
     expect(sidebarMenuCss).toContain(".sidebar-menu-surface .sidebar-menu-swatch");
     expect(readFileSync(join(root, "src/renderer/styles/sidebar-action-hints.css"), "utf8")).toContain('[data-sidebar-modifier-hint="true"]');
+    expect(readFileSync(join(root, "src/renderer/styles/sidebar.css"), "utf8")).toContain('[data-sidebar-tab-status-badge="true"]');
     expect(tabContextMenuCss).not.toContain("box-shadow: 0 18px 48px");
     expect(workspaceCss).not.toContain("box-shadow: 0 18px 48px");
     expect(tabContextMenuCss).not.toContain("background: #1f2630");
