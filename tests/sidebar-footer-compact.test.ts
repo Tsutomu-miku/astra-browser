@@ -208,7 +208,11 @@ describe("sidebar footer compact controls", () => {
   });
 
   it("styles the split drop target state", () => {
+    const dropTargetBlock = getRuleBlock(sidebarCss, '.sidebar-footer .icon-button[data-drop-target="true"]');
+
     expect(sidebarCss).toContain('.sidebar-footer .icon-button[data-drop-target="true"]');
+    expect(dropTargetBlock).toContain("box-shadow: none");
+    expect(dropTargetBlock).not.toContain("var(--accent)");
   });
 
   it("renders compact Memory Saver status and action", () => {

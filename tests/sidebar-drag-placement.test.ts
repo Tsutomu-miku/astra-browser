@@ -19,10 +19,19 @@ const sidebarDropZonesCss = readFileSync(join(__dirname, "../src/renderer/styles
 
 describe("sidebar drag placement", () => {
   it("keeps folder reordering feedback to local insertion lines", () => {
+    const tabIndicatorBlock = getRuleBlock(sidebarDropZonesCss, ".tab-row[data-drop-placement]::before");
+    const tileIndicatorBlock = getRuleBlock(sidebarDropZonesCss, ".essentials .favorite-button[data-drop-placement]::before");
+
     expect(sidebarDropZonesCss).not.toContain('.favorite-button[data-drop-target="true"]');
     expect(sidebarGroupsCss).not.toContain('.tab-group-header[data-drop-target="true"]');
     expect(sidebarDropZonesCss).toContain(".favorites .favorite-button[data-drop-placement]::before");
     expect(sidebarGroupsCss).toContain(".tab-group-header[data-drop-placement]::before");
+    expect(tabIndicatorBlock).toContain("var(--muted)");
+    expect(tabIndicatorBlock).toContain("box-shadow: none");
+    expect(tabIndicatorBlock).not.toContain("var(--accent)");
+    expect(tileIndicatorBlock).toContain("var(--muted)");
+    expect(tileIndicatorBlock).toContain("box-shadow: none");
+    expect(tileIndicatorBlock).not.toContain("var(--accent)");
   });
 
   it("marks tab row before and after insertion placement while dragging", () => {
