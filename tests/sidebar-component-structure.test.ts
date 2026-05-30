@@ -39,12 +39,14 @@ describe("sidebar component structure", () => {
     const tabGroupSection = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabGroupSection.tsx"), "utf8");
     const sidebarSearchBox = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarSearchBox.tsx"), "utf8");
     const sidebarAddress = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarAddress.tsx"), "utf8");
+    const sidebarFooter = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarFooter.tsx"), "utf8");
     const sidebarContextMenusHook = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/useSidebarContextMenus.ts"), "utf8");
     const anchoredContextMenuHook = readFileSync(join(root, "src/renderer/common/context-menu/useAnchoredContextMenu.ts"), "utf8");
     const tabGroupContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabGroupContextMenu.tsx"), "utf8");
     const tabContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabContextMenu.tsx"), "utf8");
     const quickEntryContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/QuickEntryContextMenu.tsx"), "utf8");
     const closedTabContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/ClosedTabContextMenu.tsx"), "utf8");
+    const sidebarSplitDropTarget = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarSplitDropTarget.ts"), "utf8");
     const sidebarMenuCss = readFileSync(sidebarMenuCssPath, "utf8");
     const workspaceCss = readFileSync(join(root, "src/renderer/styles/sidebar-workspaces.css"), "utf8");
     const tabContextMenuCss = readFileSync(join(root, "src/renderer/styles/sidebar-context-menu.css"), "utf8");
@@ -134,6 +136,12 @@ describe("sidebar component structure", () => {
     expect(sidebarSearchBox).not.toContain("FiColumns");
     expect(sidebarAddress).not.toContain("FiEye");
     expect(sidebarAddress).not.toContain("FiColumns");
+    expect(sidebarFooter).toContain("acceptSidebarSplitDropTarget");
+    expect(sidebarFooter).toContain("resolveSidebarSplitDrop");
+    expect(sidebarFooter).not.toContain("getSidebarSplitDropSource({");
+    expect(sidebarSplitDropTarget).toContain("acceptSidebarSplitDropTarget");
+    expect(sidebarSplitDropTarget).toContain("resolveSidebarSplitDrop");
+    expect(sidebarSplitDropTarget).toContain("getSidebarSplitDropSourceFromEvent");
     expect(sidebarContextMenusHook).toContain("useContextMenuDismissal");
     expect(anchoredContextMenuHook).toContain("useContextMenuDismissal");
     expect(workspaceStrip).not.toContain('from "../tabs/SidebarMenuItem"');

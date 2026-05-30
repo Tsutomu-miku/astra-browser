@@ -9,7 +9,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
-import { getSidebarSplitDropSource } from "../src/renderer/surfaces/sidebar/model/sidebarSplitDropTarget";
+import {
+  acceptSidebarSplitDropTarget,
+  getSidebarSplitDropSource,
+  resolveSidebarSplitDrop
+} from "../src/renderer/surfaces/sidebar/model/sidebarSplitDropTarget";
 import { SidebarFooter } from "../src/renderer/surfaces/sidebar/components/chrome/SidebarFooter";
 
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
@@ -176,6 +180,28 @@ describe("sidebar footer compact controls", () => {
       title: "Docs",
       type: "tab"
     });
+  });
+
+  it("accepts and resolves split drops through the shared drop target helper", () => {
+    const state = splitDropState();
+    const dragoverEvent = createSplitDropEvent((type) => type === SIDEBAR_TAB_DRAG_TYPE ? "other-tab" : "");
+
+    expect(acceptSidebarSplitDropTarget(dragoverEvent, state)).toEqual({
+      tabId: "other-tab",
+      title: "Docs",
+      type: "tab"
+    });
+    expect(dragoverEvent.preventDefault).toHaveBeenCalled();
+    expect(dragoverEvent.dataTransfer.dropEffect).toBe("move");
+
+    const dropEvent = createSplitDropEvent((type) => type === "text/favorite-id" ? "favorite" : "");
+    expect(resolveSidebarSplitDrop(dropEvent, state)).toEqual({
+      title: "Design",
+      type: "url",
+      url: "https://design.example"
+    });
+    expect(dropEvent.preventDefault).toHaveBeenCalled();
+    expect(dropEvent.dataTransfer.dropEffect).toBe("none");
   });
 
   it("labels icon-only footer controls", () => {
@@ -510,4 +536,14 @@ function createDragEvent(type: string) {
     }
   });
   return event;
+}
+
+function createSplitDropEvent(getData: (type: string) => string) {
+  return {
+    dataTransfer: {
+      dropEffect: "none",
+      getData
+    },
+    preventDefault: vi.fn()
+  };
 }

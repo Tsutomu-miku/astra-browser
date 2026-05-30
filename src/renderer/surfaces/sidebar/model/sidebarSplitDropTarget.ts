@@ -11,6 +11,14 @@ export type SidebarSplitDropSource =
   | { type: "tab"; tabId: string; title: string }
   | { type: "url"; title: string; url: string };
 
+export interface SidebarSplitDropEvent {
+  dataTransfer: {
+    dropEffect: string;
+    getData: (type: string) => string;
+  };
+  preventDefault: () => void;
+}
+
 export interface SidebarSplitDropState extends Required<Pick<
   SidebarDragState,
   "draggingClosedTabIndex" | "draggingEssentialId" | "draggingFavoriteId" | "draggingTabId"
@@ -45,6 +53,36 @@ export function getSidebarSplitDropSource(
   if (closedTab) return createUrlDropSource(closedTab);
 
   return null;
+}
+
+export function acceptSidebarSplitDropTarget(
+  event: SidebarSplitDropEvent,
+  state: SidebarSplitDropState
+): SidebarSplitDropSource | null {
+  const source = getSidebarSplitDropSourceFromEvent(event, state);
+  if (!source) return null;
+
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+  return source;
+}
+
+export function resolveSidebarSplitDrop(
+  event: SidebarSplitDropEvent,
+  state: SidebarSplitDropState
+): SidebarSplitDropSource | null {
+  const source = getSidebarSplitDropSourceFromEvent(event, state);
+  if (!source) return null;
+
+  event.preventDefault();
+  return source;
+}
+
+function getSidebarSplitDropSourceFromEvent(
+  event: SidebarSplitDropEvent,
+  state: SidebarSplitDropState
+): SidebarSplitDropSource | null {
+  return getSidebarSplitDropSource(state, (type) => event.dataTransfer.getData(type));
 }
 
 function createUrlDropSource(source: Pick<Favorite | ClosedTab, "title" | "url">): SidebarSplitDropSource {

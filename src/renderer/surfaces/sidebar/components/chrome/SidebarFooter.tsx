@@ -17,7 +17,11 @@ import type { BrowserController } from "../../../../app/controller/types";
 import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
 import type { ClosedTab, Favorite, BrowserTab } from "../../../../domain/browser";
 import { handleSidebarFooterFocusNavigation } from "../../model/sidebarFooterFocusNavigation";
-import { getSidebarSplitDropSource } from "../../model/sidebarSplitDropTarget";
+import {
+  acceptSidebarSplitDropTarget,
+  getSidebarSplitDropSource,
+  resolveSidebarSplitDrop
+} from "../../model/sidebarSplitDropTarget";
 
 export function SidebarFooter({
   actions,
@@ -65,7 +69,7 @@ export function SidebarFooter({
   const sidebarToggleLabel = compactMode
     ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
     : "Focus sidebar";
-  const splitDropSource = getSidebarSplitDropSource({
+  const splitDropState = {
     activeTabId,
     closedTabs,
     draggingClosedTabIndex,
@@ -75,7 +79,8 @@ export function SidebarFooter({
     essentials,
     favorites,
     tabs
-  });
+  };
+  const splitDropSource = getSidebarSplitDropSource(splitDropState);
   const showSplitDropTarget = Boolean(splitDropSource);
   const splitButtonLabel = splitDropSource
     ? `Split view, drop ${splitDropSource.title || "item"} here`
@@ -84,20 +89,9 @@ export function SidebarFooter({
   const memorySaverMode = memorySaver.sleepEnabled ? `Auto ${memorySaver.sleepAfterMinutes}m` : "Manual";
 
   function dropTabIntoSplit(event: DragEvent<HTMLButtonElement>) {
-    const source = getSidebarSplitDropSource({
-      activeTabId,
-      closedTabs,
-      draggingClosedTabIndex,
-      draggingEssentialId,
-      draggingFavoriteId,
-      draggingTabId,
-      essentials,
-      favorites,
-      tabs
-    }, (type) => event.dataTransfer.getData(type));
+    const source = resolveSidebarSplitDrop(event, splitDropState);
     if (!source) return;
 
-    event.preventDefault();
     if (source.type === "tab") {
       actions.openTabInSplit(source.tabId);
     } else {
@@ -175,22 +169,7 @@ export function SidebarFooter({
         aria-pressed={splitMode}
         data-drop-target={showSplitDropTarget}
         onClick={actions.toggleSplitMode}
-        onDragOver={(event) => {
-          const source = getSidebarSplitDropSource({
-            activeTabId,
-            closedTabs,
-            draggingClosedTabIndex,
-            draggingEssentialId,
-            draggingFavoriteId,
-            draggingTabId,
-            essentials,
-            favorites,
-            tabs
-          }, (type) => event.dataTransfer.getData(type));
-          if (!source) return;
-          event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
-        }}
+        onDragOver={(event) => acceptSidebarSplitDropTarget(event, splitDropState)}
         onDrop={dropTabIntoSplit}
       >
         <FiSquare />
