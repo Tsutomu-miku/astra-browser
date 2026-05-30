@@ -8,12 +8,16 @@ describe("sidebar component structure", () => {
   it("keeps cross-section sidebar menu chrome in the common component layer", () => {
     const commonMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuItem.tsx");
     const commonMenuSurfacePath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuSurface.tsx");
+    const menuDismissalPath = join(root, "src/renderer/common/context-menu/menuDismissal.ts");
     const oldTabsMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarMenuItem.tsx");
     const sidebarMenuCssPath = join(root, "src/renderer/styles/sidebar-menu.css");
     const stylesEntry = readFileSync(join(root, "src/renderer/styles.css"), "utf8");
     const commonMenuItem = readFileSync(commonMenuItemPath, "utf8");
     const commonMenuSurface = readFileSync(commonMenuSurfacePath, "utf8");
+    const menuDismissal = readFileSync(menuDismissalPath, "utf8");
     const workspaceStrip = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip.tsx"), "utf8");
+    const sidebarContextMenusHook = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/useSidebarContextMenus.ts"), "utf8");
+    const anchoredContextMenuHook = readFileSync(join(root, "src/renderer/common/context-menu/useAnchoredContextMenu.ts"), "utf8");
     const tabGroupContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabGroupContextMenu.tsx"), "utf8");
     const tabContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabContextMenu.tsx"), "utf8");
     const quickEntryContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/QuickEntryContextMenu.tsx"), "utf8");
@@ -24,6 +28,7 @@ describe("sidebar component structure", () => {
 
     expect(existsSync(commonMenuItemPath)).toBe(true);
     expect(existsSync(commonMenuSurfacePath)).toBe(true);
+    expect(existsSync(menuDismissalPath)).toBe(true);
     expect(existsSync(oldTabsMenuItemPath)).toBe(false);
     expect(existsSync(sidebarMenuCssPath)).toBe(true);
     expect(stylesEntry).toContain('@import "./styles/sidebar-menu.css";');
@@ -33,8 +38,15 @@ describe("sidebar component structure", () => {
     expect(commonMenuSurface).toContain("handleMenuKeyboardNavigation");
     expect(commonMenuSurface).toContain('role="menu"');
     expect(commonMenuSurface).toContain("event.stopPropagation()");
+    expect(menuDismissal).toContain("useContextMenuDismissal");
+    expect(menuDismissal).toContain("useRef");
+    expect(menuDismissal).toContain("restoreFocus: false");
+    expect(menuDismissal).toContain("window.addEventListener(\"scroll\"");
     expect(workspaceStrip).toContain('from "../common/SidebarMenuItem"');
     expect(workspaceStrip).toContain('from "../common/SidebarMenuSurface"');
+    expect(workspaceStrip).toContain("useContextMenuDismissal");
+    expect(sidebarContextMenusHook).toContain("useContextMenuDismissal");
+    expect(anchoredContextMenuHook).toContain("useContextMenuDismissal");
     expect(workspaceStrip).not.toContain('from "../tabs/SidebarMenuItem"');
     expect(workspaceStrip).not.toContain("tab-context-menu-separator");
     expect(workspaceStrip).toContain("sidebar-menu-field");
@@ -52,6 +64,10 @@ describe("sidebar component structure", () => {
       expect(source).not.toContain("useMenuInitialFocus");
       expect(source).not.toContain("handleMenuKeyboardNavigation");
     }
+    expect(workspaceStrip).not.toContain("window.addEventListener(\"click\"");
+    expect(workspaceStrip).not.toContain("window.addEventListener(\"blur\"");
+    expect(sidebarContextMenusHook).not.toContain("window.addEventListener(\"click\"");
+    expect(anchoredContextMenuHook).not.toContain("window.addEventListener(\"click\"");
     expect(tabGroupContextMenu).not.toContain("tab-group-menu-field");
     expect(tabGroupContextMenu).not.toContain("tab-group-menu-swatch");
     expect(sidebarMenuCss).toContain(".sidebar-menu-surface");

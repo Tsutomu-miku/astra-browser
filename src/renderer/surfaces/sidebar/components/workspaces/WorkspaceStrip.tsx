@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
+import { useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
 import { FiArrowRight, FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiSettings, FiTrash2, FiUnlock } from "react-icons/fi";
 
+import { useContextMenuDismissal, type ContextMenuCloseOptions } from "../../../../common/context-menu/menuDismissal";
 import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
 import { clearDropPlacement, updateDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { Workspace } from "../../../../domain/browser";
@@ -79,25 +80,7 @@ export function WorkspaceStrip({
     draggingTabId
   });
 
-  useEffect(() => {
-    if (!menu) return;
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeWorkspaceMenu();
-    };
-    const closeWithoutFocusRestore = () => closeWorkspaceMenu({ restoreFocus: false });
-
-    window.addEventListener("click", closeWithoutFocusRestore);
-    window.addEventListener("blur", closeWithoutFocusRestore);
-    window.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("scroll", closeWithoutFocusRestore, true);
-    return () => {
-      window.removeEventListener("click", closeWithoutFocusRestore);
-      window.removeEventListener("blur", closeWithoutFocusRestore);
-      window.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("scroll", closeWithoutFocusRestore, true);
-    };
-  }, [menu]);
+  useContextMenuDismissal({ isOpen: Boolean(menu), onClose: closeWorkspaceMenu });
 
   function onWorkspaceWheel(event: WheelEvent<HTMLElement>) {
     const direction = getWorkspaceWheelDirection(event.deltaX, event.deltaY);
@@ -122,7 +105,7 @@ export function WorkspaceStrip({
     });
   }
 
-  function closeWorkspaceMenu({ restoreFocus = true }: { restoreFocus?: boolean } = {}) {
+  function closeWorkspaceMenu({ restoreFocus = true }: ContextMenuCloseOptions = {}) {
     setMenu(null);
     if (restoreFocus && menuTriggerRef.current?.isConnected) {
       menuTriggerRef.current.focus();

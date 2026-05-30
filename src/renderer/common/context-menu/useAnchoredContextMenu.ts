@@ -1,5 +1,6 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 
+import { useContextMenuDismissal, type ContextMenuCloseOptions } from "./menuDismissal";
 import { getAnchoredContextMenuPosition } from "./menuPosition";
 
 export interface AnchoredContextMenuState<TItem> {
@@ -17,7 +18,7 @@ export function useAnchoredContextMenu<TItem>({
 } = {}) {
   const [menu, setMenu] = useState<AnchoredContextMenuState<TItem> | null>(null);
 
-  function closeMenu() {
+  function closeMenu(_options?: ContextMenuCloseOptions) {
     setMenu(null);
   }
 
@@ -32,24 +33,7 @@ export function useAnchoredContextMenu<TItem>({
     });
   }
 
-  useEffect(() => {
-    if (!menu) return;
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeMenu();
-    };
-
-    window.addEventListener("click", closeMenu);
-    window.addEventListener("blur", closeMenu);
-    window.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("scroll", closeMenu, true);
-    return () => {
-      window.removeEventListener("click", closeMenu);
-      window.removeEventListener("blur", closeMenu);
-      window.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("scroll", closeMenu, true);
-    };
-  }, [menu]);
+  useContextMenuDismissal({ isOpen: Boolean(menu), onClose: closeMenu });
 
   return { closeMenu, menu, openMenu };
 }

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useRef, useState, type MouseEvent } from "react";
 
+import { useContextMenuDismissal, type ContextMenuCloseOptions } from "../../../../common/context-menu/menuDismissal";
 import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
 import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
 
@@ -36,7 +37,7 @@ export function useSidebarContextMenus() {
   const [tabGroupMenu, setTabGroupMenu] = useState<TabGroupMenuState | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
-  function closeMenus({ restoreFocus = true }: { restoreFocus?: boolean } = {}) {
+  function closeMenus({ restoreFocus = true }: ContextMenuCloseOptions = {}) {
     setClosedTabMenu(null);
     setTabGroupMenu(null);
     setTabMenu(null);
@@ -97,25 +98,10 @@ export function useSidebarContextMenus() {
     });
   }
 
-  useEffect(() => {
-    if (!closedTabMenu && !tabGroupMenu && !tabMenu && !quickEntryMenu) return;
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeMenus();
-    };
-    const closeWithoutFocusRestore = () => closeMenus({ restoreFocus: false });
-
-    window.addEventListener("click", closeWithoutFocusRestore);
-    window.addEventListener("blur", closeWithoutFocusRestore);
-    window.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("scroll", closeWithoutFocusRestore, true);
-    return () => {
-      window.removeEventListener("click", closeWithoutFocusRestore);
-      window.removeEventListener("blur", closeWithoutFocusRestore);
-      window.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("scroll", closeWithoutFocusRestore, true);
-    };
-  }, [closedTabMenu, quickEntryMenu, tabGroupMenu, tabMenu]);
+  useContextMenuDismissal({
+    isOpen: Boolean(closedTabMenu || quickEntryMenu || tabGroupMenu || tabMenu),
+    onClose: closeMenus
+  });
 
   return {
     closedTabMenu,
