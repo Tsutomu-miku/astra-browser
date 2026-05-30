@@ -1,6 +1,7 @@
 import { useMemo, type CSSProperties, type MouseEvent } from "react";
 import { FiClock, FiStar, FiZap } from "react-icons/fi";
 
+import { getChromeAccent } from "../../common/theme/chromeTheme";
 import { getReadableUrlTitle, resolveFavoriteTab } from "../../domain/browser";
 import type { Favorite } from "../../domain/browser";
 import type { StartEntryContextMenuItem } from "./components/useStartEntryContextMenu";
@@ -22,7 +23,7 @@ export function StartPage({
 }) {
   const { actions, activeWorkspace, state } = controller;
   const content = useMemo(() => getStartPageContent(state, activeWorkspace), [activeWorkspace, state]);
-  const accentStyle = { "--start-accent": activeWorkspace.accent } as CSSProperties;
+  const accentStyle = { "--start-accent": getChromeAccent(state.settings, activeWorkspace) } as CSSProperties;
   const { closeMenu, menu, openMenu } = useStartEntryContextMenu();
 
   function runStartEntry(item: Favorite | StartEntryContextMenuItem, kind: "essential" | "favorite" | "history") {

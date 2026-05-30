@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
 import type { BrowserController } from "../src/renderer/app/controller/types";
+import { NEUTRAL_CHROME_ACCENT } from "../src/renderer/common/theme/chromeTheme";
 import { createDefaultState, createFavorite, createTab, type BrowserState, type Workspace } from "../src/renderer/domain/browser";
 import { StartPage } from "../src/renderer/surfaces/start/StartPage";
 
@@ -73,6 +74,36 @@ describe("StartPage actions", () => {
 
     expect(actions.removeWorkspaceFavorite).toHaveBeenCalledWith(favorite.id);
     expect(actions.removeWorkspaceFavorite).not.toHaveBeenCalledWith(favorite.url);
+
+    act(() => root.unmount());
+  });
+
+  it("uses the global chrome accent mode on the new tab surface", () => {
+    const state = createDefaultState();
+    const activeWorkspace = state.workspaces[0];
+    activeWorkspace.accent = "#f0abfc";
+    const actions = createActions();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(StartPage, {
+        controller: createController(state, activeWorkspace, actions),
+        isVisible: true
+      }));
+    });
+
+    expect(container.querySelector<HTMLElement>(".start-page-shell")?.style.getPropertyValue("--start-accent")).toBe(NEUTRAL_CHROME_ACCENT);
+
+    act(() => {
+      state.settings.chromeAccentMode = "space";
+      root.render(createElement(StartPage, {
+        controller: createController(state, activeWorkspace, actions),
+        isVisible: true
+      }));
+    });
+
+    expect(container.querySelector<HTMLElement>(".start-page-shell")?.style.getPropertyValue("--start-accent")).toBe(activeWorkspace.accent);
 
     act(() => root.unmount());
   });

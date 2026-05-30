@@ -1,6 +1,6 @@
 import type { BrowserSettings, Workspace } from "../../domain/browser";
 
-export const NEUTRAL_CHROME_ACCENT = "#86d39d";
+export const NEUTRAL_CHROME_ACCENT = "#a8b0bd";
 
 export function getChromeAccent(
   settings: Pick<BrowserSettings, "chromeAccentMode">,
