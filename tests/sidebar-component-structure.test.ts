@@ -94,6 +94,9 @@ describe("sidebar component structure", () => {
     expect(workspaceStrip).toContain("useContextMenuDismissal");
     expect(workspaceStrip).toContain("acceptSidebarRowReorderDrag");
     expect(workspaceStrip).toContain("clearSidebarRowReorderDrop");
+    expect(workspaceStrip).toContain("getSidebarNewWorkspaceDropIntent");
+    expect(workspaceStrip).not.toContain("readSidebarFavoriteDragId");
+    expect(workspaceStrip).not.toContain("readSidebarTabDragEventId");
     expect(workspaceStrip).not.toContain("updateDropPlacement");
     expect(workspaceStrip).not.toContain("clearDropPlacement");
     expect(sidebarItems).toContain('from "../common/SidebarItemActionHints"');

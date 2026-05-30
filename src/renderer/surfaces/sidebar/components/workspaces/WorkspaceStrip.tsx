@@ -6,8 +6,9 @@ import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/
 import type { Workspace } from "../../../../domain/browser";
 import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
 import { SidebarMenuSurface } from "../common/SidebarMenuSurface";
-import { readSidebarFavoriteDragId, readSidebarTabDragEventId, readSidebarWorkspaceDragId } from "../../model/sidebarDragSources";
+import { readSidebarWorkspaceDragId } from "../../model/sidebarDragSources";
 import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
+import { getSidebarNewWorkspaceDropIntent } from "../../model/sidebarWorkspaceDropIntent";
 import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
@@ -165,17 +166,16 @@ export function WorkspaceStrip({
         aria-label={getNewWorkspaceAccessibilityLabel(isNewWorkspaceDropTarget)}
         data-drop-target={isNewWorkspaceDropTarget}
         onDragOver={(event) => {
-          if (
-            draggingClosedTabIndex !== null ||
-            draggingFavoriteId ||
-            readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type)) ||
-            draggingGroupId ||
-            draggingTabId ||
-            readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer)
-          ) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "move";
-          }
+          const intent = getSidebarNewWorkspaceDropIntent({
+            draggingClosedTabIndex,
+            draggingFavoriteId,
+            draggingGroupId,
+            draggingTabId
+          }, (type) => event.dataTransfer.getData(type));
+          if (!intent) return;
+
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
         }}
         onDrop={onNewWorkspaceDrop}
         onClick={onNewWorkspace}

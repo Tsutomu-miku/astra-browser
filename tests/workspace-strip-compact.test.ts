@@ -230,6 +230,48 @@ describe("workspace strip compact controls", () => {
     act(() => root.unmount());
   });
 
+  it("accepts payload-backed tab group drags on New Space before React drag state syncs", () => {
+    const state = createDefaultState();
+    const activeWorkspace = getActiveWorkspace(state);
+    const onNewWorkspaceDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(WorkspaceStrip, {
+        activeWorkspaceId: activeWorkspace.id,
+        compactMode: false,
+        draggingGroupId: null,
+        draggingTabId: null,
+        draggingWorkspaceId: null,
+        floatingSidebarOpen: false,
+        onDragEnd: vi.fn(),
+        onDragOver: vi.fn(),
+        onDragStart: vi.fn(),
+        onDrop: vi.fn(),
+        onDeleteWorkspace: vi.fn(),
+        onNewWorkspace: vi.fn(),
+        onNewWorkspaceDrop,
+        onOpenSettings: vi.fn(),
+        onSelect: vi.fn(),
+        onToggleSidebar: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        workspaces: state.workspaces
+      }));
+    });
+
+    const newSpace = container.querySelector<HTMLButtonElement>(".workspace-new-button")!;
+    const dragOver = createDragEvent("dragover", { "text/group-id": "group" });
+    newSpace.dispatchEvent(dragOver);
+    newSpace.dispatchEvent(createDragEvent("drop", { "text/group-id": "group" }));
+
+    expect(dragOver.defaultPrevented).toBe(true);
+    expect(onNewWorkspaceDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }));
+
+    act(() => root.unmount());
+  });
+
   it("marks New Space as a drop target while dragging a recently closed tab", () => {
     const html = renderStrip({
       compactMode: false,
