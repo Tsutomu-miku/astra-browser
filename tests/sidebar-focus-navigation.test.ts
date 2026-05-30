@@ -279,7 +279,7 @@ describe("sidebar focus navigation", () => {
     container.remove();
   });
 
-  it("keeps tab group title editing keys inside the input", () => {
+  it("keeps tab group titles out of the focus order while the toggle owns folder navigation", () => {
     const groupedTab = { ...createTab("Docs", "https://docs.example"), groupId: "group" };
     const container = document.createElement("div");
     document.body.append(container);
@@ -329,14 +329,16 @@ describe("sidebar focus navigation", () => {
       })));
     });
 
-    const input = container.querySelector<HTMLInputElement>(".tab-group-title-input")!;
-    input.focus();
+    const toggle = container.querySelector<HTMLButtonElement>(".tab-group-toggle")!;
+    toggle.focus();
 
     act(() => {
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
+      toggle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
     });
 
-    expect(document.activeElement).toBe(input);
+    expect(container.querySelector(".tab-group-title")?.textContent).toBe("Research");
+    expect(container.querySelector(".tab-group-title-input")).toBeNull();
+    expect(document.activeElement?.classList.contains("tab-button")).toBe(true);
 
     act(() => root.unmount());
     container.remove();

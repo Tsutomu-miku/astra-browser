@@ -94,7 +94,7 @@ describe("sidebar tab group section", () => {
     act(() => root.unmount());
   });
 
-  it("keeps tab group title keyboard context menu keys inside the input", () => {
+  it("keeps tab group titles as display text and routes editing through the context menu", () => {
     const group = tabGroup();
     const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
     const onGroupContextMenu = vi.fn();
@@ -110,16 +110,9 @@ describe("sidebar tab group section", () => {
       })));
     });
 
-    container.querySelector(".tab-group-title-input")?.dispatchEvent(new KeyboardEvent("keydown", {
-      bubbles: true,
-      key: "F10",
-      shiftKey: true
-    }));
-    container.querySelector(".tab-group-title-input")?.dispatchEvent(new KeyboardEvent("keydown", {
-      bubbles: true,
-      key: "ContextMenu"
-    }));
-
+    expect(container.querySelector(".tab-group-title")?.textContent).toBe(group.name);
+    expect(container.querySelector(".tab-group-title-input")).toBeNull();
+    expect(container.querySelector(".tab-group-title")?.getAttribute("tabindex")).toBeNull();
     expect(onGroupContextMenu).not.toHaveBeenCalled();
 
     act(() => root.unmount());
@@ -152,16 +145,21 @@ describe("sidebar tab group section", () => {
 
   it("keeps expanded tab group counts quiet until the header is engaged", () => {
     const headerBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-header");
+    const titleBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-title");
     const countBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-count");
     const revealBlock = getRuleBlock(sidebarGroupsCss, ".tab-group-header:hover .tab-group-count,\n.tab-group-header:focus-within .tab-group-count,\n.tab-group-header[data-collapsed=\"true\"] .tab-group-count");
 
     expect(headerBlock).toContain("grid-template-columns: 22px minmax(0, 1fr) auto");
     expect(headerBlock).not.toContain("24px");
+    expect(titleBlock).toContain("text-overflow: ellipsis");
+    expect(titleBlock).not.toContain("outline");
+    expect(titleBlock).not.toContain("border");
     expect(countBlock).toContain("opacity: 0");
     expect(countBlock).toContain("transform: translateX(2px)");
     expect(revealBlock).toContain("opacity: 1");
     expect(revealBlock).toContain("transform: translateX(0)");
     expect(sidebarGroupsCss).not.toContain(".tab-group-color");
+    expect(sidebarGroupsCss).not.toContain(".tab-group-title-input");
   });
 
   it("moves dropped tabs into the group folder through the shared tab folder action", () => {
@@ -214,7 +212,6 @@ function props(overrides: Partial<Parameters<typeof TabGroupSection>[0]> = {}): 
     onSelect: vi.fn(),
     onSplit: vi.fn(),
     onToggle: vi.fn(),
-    onUpdate: vi.fn(),
     setDraggingGroupId: vi.fn(),
     setDraggingTabId: vi.fn(),
     splitTabIds: [],

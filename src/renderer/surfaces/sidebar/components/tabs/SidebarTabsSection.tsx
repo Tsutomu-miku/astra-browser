@@ -105,7 +105,6 @@ export function SidebarTabsSection({
             onSelect={actions.selectTab}
             onSplit={actions.openTabInSplit}
             onToggle={() => actions.toggleTabGroupCollapsed(group.id)}
-            onUpdate={actions.updateTabGroup}
             setDraggingTabId={setDraggingTabId}
             setDraggingGroupId={setDraggingGroupId}
           />

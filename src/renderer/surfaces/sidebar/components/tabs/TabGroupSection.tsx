@@ -24,7 +24,6 @@ export function TabGroupSection({
   onSelect,
   onSplit,
   onToggle,
-  onUpdate,
   searchSelectedTabId,
   setDraggingGroupId,
   setDraggingTabId,
@@ -46,7 +45,6 @@ export function TabGroupSection({
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
   onToggle: () => void;
-  onUpdate: (groupId: string, patch: Partial<Pick<TabGroup, "name" | "color">>) => void;
   searchSelectedTabId?: string;
   setDraggingGroupId: (groupId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
@@ -127,12 +125,7 @@ export function TabGroupSection({
         >
           <span className="tab-group-dot" />
         </button>
-        <input
-          className="tab-group-title-input"
-          aria-label="Tab group name"
-          value={group.name}
-          onChange={(event) => onUpdate(group.id, { name: event.target.value })}
-        />
+        <span className="tab-group-title">{group.name}</span>
         <span className="tab-group-count">{tabs.length}</span>
       </div>
       {(!group.isCollapsed || hasActiveTab) && tabs.map((tab) => (
