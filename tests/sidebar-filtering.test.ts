@@ -69,8 +69,8 @@ describe("sidebar filtering", () => {
     const group = createTabGroup("Research");
     const essential = createFavorite("Inbox", "https://mail.example");
     const pinned = createTab("Mail", "https://mail.example");
-    const favorite = createFavorite("Docs", "https://docs.example");
-    const favoriteTab = createTab("Docs Tab", favorite.url);
+    const favoriteTab = createTab("Docs Tab", "https://docs.example");
+    const favorite = createFavorite("Docs", favoriteTab.url, favoriteTab.id);
     const grouped = createTab("Chromium", "https://chromium.example");
     const regular = createTab("News", "https://news.example");
     const result = filterSidebarItems({
@@ -111,6 +111,26 @@ describe("sidebar filtering", () => {
     expect(getSidebarSearchTargets(result).find((target) => target.type === "favorite")).toMatchObject({
       tabId: favoriteTab.id,
       type: "favorite"
+    });
+  });
+
+  it("keeps URL-only legacy Favorites on their own search target metadata", () => {
+    const favorite = createFavorite("Docs", "https://docs.example");
+    const matchingTab = createTab("Docs Tab", favorite.url);
+    const result = filterSidebarItems({
+      essentials: [],
+      favorites: [favorite],
+      groupedTabs: [],
+      pinnedTabs: [],
+      regularTabs: [matchingTab],
+      workspaceTabs: [matchingTab]
+    }, "");
+
+    expect(getSidebarSearchTargets(result).find((target) => target.type === "favorite")).toEqual({
+      id: favorite.id,
+      title: favorite.title,
+      type: "favorite",
+      url: favorite.url
     });
   });
 

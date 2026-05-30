@@ -8,7 +8,7 @@ export {
   setCachedFaviconUrl
 } from "./favicon";
 export { formatBytes } from "./formatting";
-export { resolveFavoriteTab } from "./favorites";
+export { resolveFavoriteTab, resolveTabBackedFavoriteTab } from "./favorites";
 export { isInternalNewTabUrl, isInternalPageUrl } from "./internalPages";
 export {
   getHomepageUrl,

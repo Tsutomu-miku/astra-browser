@@ -127,7 +127,7 @@ Acceptance:
 - Adding a tab to Favorites records the tab relationship.
 - Removing a Favorite does not close the tab unless a separate close action is used.
 
-Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, tab drag payloads, and tab accessibility labels while staying in the Favorites folder. Tab-backed Favorites no longer use or synthesize a separate Favorite drag payload; moving them across folders or Spaces follows the normal tab move path and preserves their Favorites folder membership when appropriate. Sidebar, Start page, omnibox, command palette, keyboard number shortcuts, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
+Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, tab drag payloads, and tab accessibility labels while staying in the Favorites folder. Tab-backed Favorites no longer use or synthesize a separate Favorite drag payload; moving them across folders or Spaces follows the normal tab move path and preserves their Favorites folder membership when appropriate. URL-only legacy Favorites no longer borrow matching tabs for sidebar rendering, folder ownership, or sidebar search metadata, but click/open behavior can still select an existing same-URL tab instead of replacing the active page. Sidebar, Start page, omnibox, command palette, keyboard number shortcuts, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
 
 Small requirements:
 
@@ -143,6 +143,7 @@ Small requirements:
 - P0-2.10 Closing a tab-backed Favorite removes it from the Favorites folder; legacy URL Favorites survive matching tab closes.
 - P0-2.11 Tab-backed Favorites render through the shared sidebar tab row path instead of a separate quick-entry row implementation.
 - P0-2.12 Tab-backed Favorites reorder as normal tab rows inside the Favorites folder; URL-only legacy Favorites stay on the quick-entry fallback path.
+- P0-2.13 Sidebar folder ownership and search metadata use explicit tab-backed identity, while legacy URL fallback is reserved for open/select behavior.
 
 ### P0-3 Sidebar Drag And Drop
 

@@ -1,4 +1,4 @@
-import { resolveFavoriteTab, type BrowserTab, type Workspace } from "../../../domain/browser";
+import { resolveTabBackedFavoriteTab, type BrowserTab, type Workspace } from "../../../domain/browser";
 import { getGroupedTabs } from "../../../domain/tabs/groups";
 
 export interface SidebarTabFolders {
@@ -32,6 +32,6 @@ export function getSidebarTabFolders(workspace: Workspace): SidebarTabFolders {
 
 function getFavoriteFolderTabIds(workspace: Workspace): Set<string> {
   return new Set(workspace.favorites
-    .map((favorite) => resolveFavoriteTab(workspace, favorite)?.id)
+    .map((favorite) => resolveTabBackedFavoriteTab(workspace, favorite)?.id)
     .filter((tabId): tabId is string => Boolean(tabId)));
 }

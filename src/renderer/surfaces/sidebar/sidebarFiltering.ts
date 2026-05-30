@@ -3,7 +3,7 @@ import {
   getNextListIndex,
   type ListNavigationKey
 } from "../../common/navigation/listNavigation";
-import { resolveFavoriteTab, type BrowserTab, type Favorite, type TabGroup } from "../../domain/browser";
+import { resolveTabBackedFavoriteTab, type BrowserTab, type Favorite, type TabGroup } from "../../domain/browser";
 
 export interface SidebarGroupEntry {
   group: TabGroup;
@@ -132,14 +132,14 @@ function matchesTab(tab: BrowserTab, query: string): boolean {
 }
 
 function matchesFavorite(favorite: Favorite, query: string, workspaceTabs?: BrowserTab[]): boolean {
-  const tab = resolveFavoriteTab(workspaceTabs ? { tabs: workspaceTabs } : undefined, favorite);
+  const tab = resolveTabBackedFavoriteTab(workspaceTabs ? { tabs: workspaceTabs } : undefined, favorite);
   return favorite.title.toLowerCase().includes(query) ||
     favorite.url.toLowerCase().includes(query) ||
     Boolean(tab && matchesTab(tab, query));
 }
 
 function toFavoriteTarget(favorite: Favorite, workspaceTabs: BrowserTab[]): SidebarSearchTarget {
-  const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
+  const tab = resolveTabBackedFavoriteTab({ tabs: workspaceTabs }, favorite);
 
   return {
     type: "favorite",

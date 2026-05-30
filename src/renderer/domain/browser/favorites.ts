@@ -12,3 +12,13 @@ export function resolveFavoriteTab(
       : undefined
   ) ?? workspace.tabs.find((tab) => tab.url === favorite.url);
 }
+
+export function resolveTabBackedFavoriteTab(
+  workspace: Pick<Workspace, "tabs"> | undefined,
+  favorite: Pick<Favorite, "tabId" | "url">
+): BrowserTab | undefined {
+  if (!workspace || !favorite.tabId) return undefined;
+
+  return workspace.tabs.find((tab) => tab.id === favorite.tabId) ??
+    workspace.tabs.find((tab) => tab.url === favorite.url);
+}

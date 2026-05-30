@@ -7,7 +7,7 @@ import {
   type SidebarSectionCollapsedState,
   type SidebarSectionId
 } from "../../../../common/sidebar/sidebarSections";
-import { resolveFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type FaviconCache, type TabGroup } from "../../../../domain/browser";
+import { resolveFavoriteTab, resolveTabBackedFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type FaviconCache, type TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import {
   isSidebarFavoriteActive,
@@ -205,7 +205,7 @@ export function SidebarSections({
             aria-label="Favorites"
           >
             {filteredItems.favorites.map((favorite) => {
-              const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
+              const tab = resolveTabBackedFavoriteTab({ tabs: workspaceTabs }, favorite);
               if (tab) {
                 return (
                   <TabRow

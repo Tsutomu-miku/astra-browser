@@ -30,10 +30,20 @@ describe("sidebar tab folders", () => {
     expect(folders.regularTabs.map((tab) => tab.title)).toEqual(["News"]);
   });
 
-  it("uses URL fallback only for legacy Favorites when deriving the Favorites folder", () => {
+  it("keeps URL-only legacy Favorites out of tab folder ownership", () => {
     const tab = createTab("Docs", "https://docs.example");
     const workspace = createWorkspace({
       favorites: [createFavorite("Legacy Docs", tab.url)],
+      tabs: [tab]
+    });
+
+    expect(getSidebarTabFolders(workspace).regularTabs).toEqual([tab]);
+  });
+
+  it("uses URL fallback for stale tab-backed Favorites when deriving folder ownership", () => {
+    const tab = createTab("Docs", "https://docs.example");
+    const workspace = createWorkspace({
+      favorites: [createFavorite("Legacy Docs", tab.url, "missing-tab")],
       tabs: [tab]
     });
 

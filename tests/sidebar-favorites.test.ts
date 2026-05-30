@@ -542,6 +542,67 @@ describe("sidebar favorites", () => {
 
     act(() => root.unmount());
   });
+
+  it("keeps matching legacy URL Favorites visually quick while selecting the existing tab on open", () => {
+    const docsTab = createTab("Docs Tab", "https://docs.example");
+    const activeTab = createTab("Active", "https://active.example");
+    const favorite = createFavorite("Docs", docsTab.url);
+    const actions = createActions();
+    const onQuickEntryContextMenu = vi.fn();
+    const onTabContextMenu = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions,
+        activeTab,
+        closedTabs: [],
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [favorite],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [activeTab, docsTab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onClosedTabContextMenu: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onPinDrop: vi.fn(),
+        onQuickEntryContextMenu,
+        onTabContextMenu,
+        onTabDrop: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        workspaceTabs: [activeTab, docsTab]
+      }));
+    });
+
+    const favoriteButton = container.querySelector(".favorites .favorite-button")!;
+    expect(favoriteButton).not.toBeNull();
+    expect(container.querySelector(".favorites .tab-row")).toBeNull();
+    favoriteButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(actions.selectTab).toHaveBeenCalledWith(docsTab.id);
+    expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
+    expect(onTabContextMenu).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
 });
 
 function createActions() {
