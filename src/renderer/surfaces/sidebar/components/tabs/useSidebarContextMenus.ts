@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 
+import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
 import type { BrowserTab, ClosedTab, Favorite, TabGroup } from "../../../../domain/browser";
-
-const MENU_EDGE_GAP = 12;
 
 export interface TabMenuState {
   left: number;
@@ -132,8 +131,5 @@ export function useSidebarContextMenus() {
 }
 
 function getMenuPosition(event: MouseEvent, width: number, height: number) {
-  return {
-    left: window.scrollX + Math.max(MENU_EDGE_GAP, Math.min(event.clientX, window.innerWidth - width - MENU_EDGE_GAP)),
-    top: window.scrollY + Math.max(MENU_EDGE_GAP, Math.min(event.clientY, window.innerHeight - height - MENU_EDGE_GAP))
-  };
+  return getAnchoredContextMenuPosition(event, { height, width });
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type M
 import { FiArrowRight, FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiSettings, FiTrash2, FiUnlock } from "react-icons/fi";
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
+import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
 import { clearDropPlacement, updateDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { Workspace } from "../../../../domain/browser";
 import { SidebarMenuItem } from "../tabs/SidebarMenuItem";
@@ -113,8 +114,10 @@ export function WorkspaceStrip({
     event.preventDefault();
     menuTriggerRef.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     setMenu({
-      left: Math.min(event.clientX, window.innerWidth - 216),
-      top: Math.min(event.clientY, window.innerHeight - 320),
+      ...getAnchoredContextMenuPosition(event, {
+        height: 320,
+        width: 216
+      }),
       workspaceId
     });
   }

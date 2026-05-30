@@ -1,5 +1,7 @@
 import { useEffect, useState, type MouseEvent } from "react";
 
+import { getAnchoredContextMenuPosition } from "./menuPosition";
+
 export interface AnchoredContextMenuState<TItem> {
   item: TItem;
   left: number;
@@ -23,8 +25,10 @@ export function useAnchoredContextMenu<TItem>({
     event.preventDefault();
     setMenu({
       item,
-      left: Math.min(event.clientX, window.innerWidth - menuWidth),
-      top: Math.min(event.clientY, window.innerHeight - menuHeight)
+      ...getAnchoredContextMenuPosition(event, {
+        height: menuHeight,
+        width: menuWidth
+      })
     });
   }
 
