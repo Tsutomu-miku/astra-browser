@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 const workspaceCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-workspaces.css"), "utf8");
+const contextMenuCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-context-menu.css"), "utf8");
 const baseCss = readFileSync(join(__dirname, "../src/renderer/styles/base.css"), "utf8");
 
 describe("sidebar selection styles", () => {
@@ -110,6 +111,32 @@ describe("sidebar selection styles", () => {
     expect(essentialIconBlock).toContain("background: var(--control)");
     expect(newWorkspaceHoverBlock).toContain("border-color: transparent");
     expect(workspaceInputFocusBlock).toContain("box-shadow: none");
+  });
+
+  it("keeps sidebar menu color pickers quiet while preserving selected state", () => {
+    const groupInputFocusBlock = getRuleBlock(contextMenuCss, ".tab-group-menu-field input:focus-visible");
+    const groupSwatchBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .tab-group-menu-swatch");
+    const groupSwatchHoverBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .tab-group-menu-swatch:hover,\n.tab-context-menu .tab-group-menu-swatch:focus-visible");
+    const groupSwatchSelectedBlock = getRuleBlock(contextMenuCss, ".tab-context-menu .tab-group-menu-swatch[aria-pressed=\"true\"]");
+    const workspaceSwatchHoverBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .workspace-menu-swatch:hover,\n.workspace-context-menu .workspace-menu-swatch:focus-visible");
+    const workspaceSwatchSelectedBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .workspace-menu-swatch[aria-pressed=\"true\"]");
+
+    expect(groupInputFocusBlock).toContain("border-color: var(--line-strong)");
+    expect(groupInputFocusBlock).toContain("box-shadow: none");
+    expect(groupInputFocusBlock).not.toContain("var(--group-color)");
+    expect(groupSwatchBlock).toContain("border: 1px solid rgba(255, 255, 255, 0.14)");
+
+    for (const block of [
+      groupSwatchHoverBlock,
+      groupSwatchSelectedBlock,
+      workspaceSwatchHoverBlock,
+      workspaceSwatchSelectedBlock
+    ]) {
+      expect(block).toContain("box-shadow: inset");
+      expect(block).not.toContain("color-mix");
+      expect(block).not.toContain("var(--accent)");
+      expect(block).not.toContain("border-color: white");
+    }
   });
 });
 

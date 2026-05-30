@@ -72,9 +72,9 @@
 }
 
 .tab-group-menu-field input:focus-visible {
-  border-color: color-mix(in srgb, var(--group-color) 58%, white);
+  border-color: var(--line-strong);
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--group-color) 14%, transparent);
+  box-shadow: none;
 }
 
 .tab-group-menu-swatches {
@@ -86,7 +86,7 @@
 
 .tab-context-menu .tab-group-menu-swatch {
   min-height: 24px;
-  border: 1px solid color-mix(in srgb, var(--swatch) 34%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
   padding: 0;
   background: var(--swatch);
@@ -95,11 +95,12 @@
 .tab-context-menu .tab-group-menu-swatch:hover,
 .tab-context-menu .tab-group-menu-swatch:focus-visible {
   background: var(--swatch);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--swatch) 42%, transparent);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.34);
 }
 
 .tab-context-menu .tab-group-menu-swatch[aria-pressed="true"] {
-  border-color: white;
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 2px rgba(8, 9, 12, 0.46);
 }
 
 .tab-context-menu-separator {
