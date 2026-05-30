@@ -25,7 +25,7 @@ export function StartTileGrid({
           className="start-tile"
           key={item.id}
           type="button"
-          title={item.url}
+          aria-label={`${item.title}, ${kind}, ${item.url}`}
           onContextMenu={(event) => onContextMenu(event, item, kind)}
           onClick={(event) => onOpen(event, item, kind)}
         >

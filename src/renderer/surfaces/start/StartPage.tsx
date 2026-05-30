@@ -131,7 +131,7 @@ export function StartPage({
                 className="start-history-item"
                 key={entry.id}
                 type="button"
-                title={entry.url}
+                aria-label={`${entry.title}, recent history, ${entry.url}`}
                 onContextMenu={(event) => openMenu(event, entry, "history")}
                 onClick={(event) => openOrPreview(event, entry.url, entry.title)}
               >

@@ -265,6 +265,7 @@ For tab-related features, requirements must specify object identity. In particul
 - New tab Essentials, favorites, and recent history entries must support Alt-click Glance preview and Shift-click split opening.
 - New tab Essentials and favorites must support context menus for opening, Glance preview, split opening, and removing the entry.
 - New tab Favorites must select matching tabs by tab identity or legacy URL fallback; they must not replace the current active tab's URL.
+- New tab entries and suggestions must avoid native browser title tooltips that obscure scanning; accessible labels should carry URL details instead.
 - New tab recent history entries must support context menus for opening, Glance preview, split opening, and removing the entry.
 
 ### Site Identity, Permissions, And Data

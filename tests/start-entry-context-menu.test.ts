@@ -110,6 +110,8 @@ describe("start entry context menu", () => {
 
     expect(html).toContain('class="start-tile"');
     expect(html).toContain('class="start-entry-action-hints"');
+    expect(html).toContain('aria-label="Docs, favorite, https://docs.example"');
+    expect(html).not.toContain('title="https://docs.example"');
   });
 
   it("styles the start context menu surface", () => {
