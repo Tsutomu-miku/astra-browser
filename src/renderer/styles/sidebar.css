@@ -404,8 +404,7 @@ h1 {
   white-space: nowrap;
 }
 
-.sidebar-section-count,
-.sidebar-section-drop-label {
+.sidebar-section-count {
   min-width: 14px;
   height: 16px;
   display: inline-grid;
@@ -431,11 +430,17 @@ h1 {
 }
 
 .sidebar-section-drop-label {
-  padding: 0 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.055);
+  min-width: 14px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: color-mix(in srgb, var(--muted) 76%, white);
+  font-size: 10px;
   font-weight: 450;
+  line-height: 1;
   white-space: nowrap;
 }
 

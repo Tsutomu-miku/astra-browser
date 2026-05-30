@@ -49,10 +49,15 @@ describe("sidebar section header", () => {
 
   it("keeps section counts as quiet text instead of badges", () => {
     const countBlock = getRuleBlock(sidebarCss, ".sidebar-section-count");
+    const dropLabelBlock = getRuleBlock(sidebarCss, "\n.sidebar-section-drop-label {");
 
     expect(countBlock).not.toContain("background");
     expect(countBlock).not.toContain("border-radius");
     expect(countBlock).not.toContain("var(--accent)");
+    expect(dropLabelBlock).toContain("border: 0");
+    expect(dropLabelBlock).toContain("background: transparent");
+    expect(dropLabelBlock).not.toContain("border-radius");
+    expect(dropLabelBlock).not.toContain("var(--accent)");
   });
 
   it("keeps expanded section counts quiet until the header is engaged", () => {
