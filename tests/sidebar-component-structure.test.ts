@@ -8,14 +8,19 @@ describe("sidebar component structure", () => {
   it("keeps cross-section sidebar menu chrome in the common component layer", () => {
     const commonMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuItem.tsx");
     const commonMenuSurfacePath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuSurface.tsx");
+    const commonModifierHintsPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarModifierActionHints.tsx");
     const menuDismissalPath = join(root, "src/renderer/common/context-menu/menuDismissal.ts");
     const oldTabsMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarMenuItem.tsx");
     const sidebarMenuCssPath = join(root, "src/renderer/styles/sidebar-menu.css");
     const stylesEntry = readFileSync(join(root, "src/renderer/styles.css"), "utf8");
     const commonMenuItem = readFileSync(commonMenuItemPath, "utf8");
     const commonMenuSurface = readFileSync(commonMenuSurfacePath, "utf8");
+    const commonModifierHints = readFileSync(commonModifierHintsPath, "utf8");
     const menuDismissal = readFileSync(menuDismissalPath, "utf8");
     const workspaceStrip = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip.tsx"), "utf8");
+    const sidebarItemActionHints = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItemActionHints.tsx"), "utf8");
+    const sidebarSearchBox = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarSearchBox.tsx"), "utf8");
+    const sidebarAddress = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarAddress.tsx"), "utf8");
     const sidebarContextMenusHook = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/useSidebarContextMenus.ts"), "utf8");
     const anchoredContextMenuHook = readFileSync(join(root, "src/renderer/common/context-menu/useAnchoredContextMenu.ts"), "utf8");
     const tabGroupContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabGroupContextMenu.tsx"), "utf8");
@@ -28,6 +33,7 @@ describe("sidebar component structure", () => {
 
     expect(existsSync(commonMenuItemPath)).toBe(true);
     expect(existsSync(commonMenuSurfacePath)).toBe(true);
+    expect(existsSync(commonModifierHintsPath)).toBe(true);
     expect(existsSync(menuDismissalPath)).toBe(true);
     expect(existsSync(oldTabsMenuItemPath)).toBe(false);
     expect(existsSync(sidebarMenuCssPath)).toBe(true);
@@ -38,6 +44,9 @@ describe("sidebar component structure", () => {
     expect(commonMenuSurface).toContain("handleMenuKeyboardNavigation");
     expect(commonMenuSurface).toContain('role="menu"');
     expect(commonMenuSurface).toContain("event.stopPropagation()");
+    expect(commonModifierHints).toContain("FiEye");
+    expect(commonModifierHints).toContain("FiColumns");
+    expect(commonModifierHints).toContain("getModifierActionHintsLabel");
     expect(menuDismissal).toContain("useContextMenuDismissal");
     expect(menuDismissal).toContain("useRef");
     expect(menuDismissal).toContain("restoreFocus: false");
@@ -45,6 +54,13 @@ describe("sidebar component structure", () => {
     expect(workspaceStrip).toContain('from "../common/SidebarMenuItem"');
     expect(workspaceStrip).toContain('from "../common/SidebarMenuSurface"');
     expect(workspaceStrip).toContain("useContextMenuDismissal");
+    expect(sidebarItemActionHints).toContain("SidebarModifierActionHints");
+    expect(sidebarSearchBox).toContain("SidebarModifierActionHints");
+    expect(sidebarAddress).toContain("SidebarModifierActionHints");
+    expect(sidebarSearchBox).not.toContain("FiEye");
+    expect(sidebarSearchBox).not.toContain("FiColumns");
+    expect(sidebarAddress).not.toContain("FiEye");
+    expect(sidebarAddress).not.toContain("FiColumns");
     expect(sidebarContextMenusHook).toContain("useContextMenuDismissal");
     expect(anchoredContextMenuHook).toContain("useContextMenuDismissal");
     expect(workspaceStrip).not.toContain('from "../tabs/SidebarMenuItem"');

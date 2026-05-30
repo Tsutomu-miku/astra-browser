@@ -1,8 +1,9 @@
-import { FiColumns, FiEye, FiSearch } from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
 
 import type { BrowserController } from "../../../../app/controller/types";
 import { useOmniboxController } from "../../../../app/controller/useOmniboxController";
 import { getOmniboxActionHints } from "../../../../common/omnibox/omniboxActions";
+import { SidebarModifierActionHints } from "../common/SidebarModifierActionHints";
 
 export function SidebarAddress({ controller }: { controller: BrowserController }) {
   const { actions, addressValue, compactMode, setAddressValue, state } = controller;
@@ -58,13 +59,11 @@ export function SidebarAddress({ controller }: { controller: BrowserController }
                 <span className="sidebar-suggestion-main">
                   <span>{suggestion.title}</span>
                   {actionHints.length > 0 && (
-                    <span className="omnibox-action-hints" aria-label={actionHints.map((hint) => `${hint.modifier} ${hint.label}`).join(", ")}>
-                      {actionHints.map((hint) => (
-                        <span className={`omnibox-action-hint is-${hint.id}`} data-action-hint={hint.id} key={hint.id} aria-hidden="true">
-                          {hint.id === "preview" ? <FiEye /> : <FiColumns />}
-                        </span>
-                      ))}
-                    </span>
+                    <SidebarModifierActionHints
+                      className="omnibox-action-hints"
+                      hintClassName="omnibox-action-hint"
+                      hints={actionHints}
+                    />
                   )}
                 </span>
                 <small>{suggestion.subtitle}</small>
