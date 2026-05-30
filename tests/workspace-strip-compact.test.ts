@@ -588,9 +588,23 @@ describe("workspace strip compact controls", () => {
   });
 
   it("styles keyboard focus for Space buttons", () => {
-    expect(workspaceCss).toContain(".workspace-button:focus-visible");
-    expect(workspaceCss).toContain("outline: none");
-    expect(workspaceCss).toContain("0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent)");
+    const focusBlock = getRuleBlock(workspaceCss, ".workspace-button:focus-visible");
+
+    expect(focusBlock).toContain("border-color: transparent");
+    expect(focusBlock).toContain("background: rgba(255, 255, 255, 0.105)");
+    expect(focusBlock).toContain("outline: none");
+    expect(focusBlock).toContain("box-shadow: none");
+    expect(focusBlock).not.toContain("var(--accent)");
+  });
+
+  it("keeps Space drop target styling quiet", () => {
+    const dropTargetBlock = getRuleBlock(workspaceCss, '.workspace-button[data-drop-target="true"]');
+    const dropIndicatorBlock = getRuleBlock(workspaceCss, ".workspace-button[data-drop-placement]::before");
+
+    expect(dropTargetBlock).toContain("background: rgba(255, 255, 255, 0.095)");
+    expect(dropTargetBlock).toContain("box-shadow: none");
+    expect(dropTargetBlock).not.toContain("var(--accent)");
+    expect(dropIndicatorBlock).toContain("box-shadow: none");
   });
 
   it("styles Space drag insertion indicators", () => {
@@ -658,4 +672,12 @@ function createDragEvent(type: string, dragData: Record<string, string> = {}) {
     }
   });
   return event;
+}
+
+function getRuleBlock(css: string, selector: string): string {
+  const start = css.indexOf(selector);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const bodyStart = css.indexOf("{", start);
+  const bodyEnd = css.indexOf("}", bodyStart);
+  return css.slice(bodyStart + 1, bodyEnd);
 }

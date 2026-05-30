@@ -38,11 +38,10 @@
 }
 
 .workspace-button:focus-visible {
-  border-color: color-mix(in srgb, var(--accent) 58%, white);
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.105);
   outline: none;
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .workspace-button[aria-current="true"] {
@@ -52,7 +51,8 @@
 }
 
 .workspace-button[data-drop-target="true"] {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 50%, transparent);
+  background: rgba(255, 255, 255, 0.095);
+  box-shadow: none;
 }
 
 .workspace-button[data-dragging="true"] {
@@ -60,7 +60,7 @@
 }
 
 .workspace-button[data-drop-target="true"]:hover {
-  background: color-mix(in srgb, var(--accent) 34%, rgba(255, 255, 255, 0.12));
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .workspace-button[data-drop-placement]::before {
@@ -71,8 +71,8 @@
   z-index: 2;
   height: 2px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 88%, white);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--muted) 78%, white);
+  box-shadow: none;
   pointer-events: none;
 }
 
