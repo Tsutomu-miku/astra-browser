@@ -248,6 +248,7 @@ Small requirements:
 - P1-1.16 Favorites and Recently Closed rows use the same transparent default row treatment as Tabs, and drag feedback avoids scale or slide motion.
 - P1-1.17 Sidebar folder counts and tab group headers fade state changes from stable positions without slide or scale motion.
 - P1-1.18 Sidebar search and compact address inputs stay transparent by default, use quiet focus fills, and avoid reserving clear-control space when the clear action is absent.
+- P1-1.19 Loading and sleeping favicon states render as plain corner glyphs instead of badge containers.
 
 ### P1-2 Split View And Glance
 

@@ -26,7 +26,7 @@ describe("sidebar item icon", () => {
     });
   });
 
-  it("renders loading and sleeping status as icon badges", () => {
+  it("renders loading and sleeping status as icon glyphs", () => {
     const loadingHtml = renderToStaticMarkup(createElement(SidebarItemIcon, {
       className: "tab-favicon",
       status: "loading",

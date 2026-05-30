@@ -748,17 +748,17 @@ h1 {
 
 .sidebar-item-icon-status {
   position: absolute;
-  right: -4px;
-  bottom: -4px;
+  right: -3px;
+  bottom: -3px;
   z-index: 1;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(8, 9, 12, 0.92);
+  border: 0;
+  background: transparent;
   color: var(--muted);
+  filter: drop-shadow(0 1px 1px rgba(8, 9, 12, 0.72));
 }
 
 .sidebar-item-icon-status svg {
