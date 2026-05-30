@@ -16,7 +16,7 @@ describe("topbar omnibox styles", () => {
   });
 
   it("uses neutral selected suggestions without accent stripes or heavy titles", () => {
-    const selectedBlock = getRuleBlock(topbarCss, '.omnibox-suggestion[aria-selected="true"]');
+    const selectedBlock = getLastRuleBlock(topbarCss, '\n.omnibox-suggestion[aria-selected="true"]');
     const titleBlock = getRuleBlock(topbarCss, ".suggestion-title");
 
     expect(selectedBlock).toContain("box-shadow: none");
@@ -27,6 +27,14 @@ describe("topbar omnibox styles", () => {
 
 function getRuleBlock(css: string, selector: string): string {
   const start = css.indexOf(selector);
+  expect(start).toBeGreaterThanOrEqual(0);
+  const open = css.indexOf("{", start);
+  const close = css.indexOf("}", open);
+  return css.slice(open + 1, close);
+}
+
+function getLastRuleBlock(css: string, selector: string): string {
+  const start = css.lastIndexOf(selector);
   expect(start).toBeGreaterThanOrEqual(0);
   const open = css.indexOf("{", start);
   const close = css.indexOf("}", open);
