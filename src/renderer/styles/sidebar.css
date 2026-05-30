@@ -475,10 +475,6 @@ h1 {
   outline: none;
 }
 
-.pinned-tab-button:hover {
-  transform: translateY(-1px);
-}
-
 .pinned-tab-button:active,
 .favorite-button:active,
 .closed-tab-button:active {
@@ -502,15 +498,12 @@ h1 {
   background: var(--control);
   color: var(--text);
   font-weight: 450;
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease;
+  transition: opacity 120ms ease;
 }
 
 .pinned-tab-button:hover .pinned-tab-icon,
 .pinned-tab-button:focus-visible .pinned-tab-icon {
   opacity: 0.72;
-  transform: translateY(-5px);
 }
 
 .pinned-tab-status-badges {

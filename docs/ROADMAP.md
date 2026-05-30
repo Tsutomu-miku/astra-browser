@@ -239,6 +239,7 @@ Small requirements:
 - P1-1.7 Sidebar visual QA includes desktop and narrow widths for text fitting and icon clarity.
 - P1-1.8 Chrome accent defaults to neutral and can optionally follow the active Space accent.
 - P1-1.9 Sidebar section collapse state persists across reloads as UI state, while search filtering still reveals matching contents.
+- P1-1.10 Pinned tab and Space rail hover states stay visually stable with neutral fills rather than lifted tile motion.
 
 ### P1-2 Split View And Glance
 

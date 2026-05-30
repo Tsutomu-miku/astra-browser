@@ -34,7 +34,6 @@
 .workspace-button:hover {
   border-color: transparent;
   background: rgba(255, 255, 255, 0.105);
-  transform: translateY(-1px);
 }
 
 .workspace-button:focus-visible {

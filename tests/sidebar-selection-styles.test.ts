@@ -42,11 +42,18 @@ describe("sidebar selection styles", () => {
     const tabHoverBlock = getRuleBlock(sidebarCss, ".tab-row:hover");
     const favoriteHoverBlock = getRuleBlock(sidebarCss, ".favorite-button:hover");
     const closedHoverBlock = getRuleBlock(sidebarCss, ".closed-tab-button:hover");
+    const pinnedHoverBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:hover,\n.pinned-tab-button:focus-visible,\n.pinned-tab-button[aria-current=\"true\"],\n.pinned-tab-button[aria-selected=\"true\"]");
+    const pinnedIconHoverBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:hover .pinned-tab-icon,\n.pinned-tab-button:focus-visible .pinned-tab-icon");
+    const workspaceHoverBlock = getRuleBlock(workspaceCss, ".workspace-button:hover");
 
     for (const block of [tabHoverBlock, favoriteHoverBlock, closedHoverBlock]) {
       expect(block).toContain("background: var(--panel-soft)");
       expect(block).toContain("border-color: transparent");
       expect(block).not.toContain("var(--accent)");
+    }
+    for (const block of [pinnedHoverBlock, pinnedIconHoverBlock, workspaceHoverBlock]) {
+      expect(block).not.toContain("transform:");
+      expect(block).not.toContain("translateY");
     }
   });
 
