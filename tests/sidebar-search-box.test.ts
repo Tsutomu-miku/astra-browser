@@ -120,15 +120,25 @@ describe("sidebar search box", () => {
   });
 
   it("keeps sidebar search and compact address focus states quiet", () => {
+    const searchInputBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search input {");
+    const searchEmptyBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search:not(:has(button)) input");
     const searchFocusBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search input:focus");
+    const addressBlock = getRuleBlock(sidebarCss, ".sidebar-address-form");
     const addressFocusBlock = getRuleBlock(sidebarCss, ".sidebar-address-form:focus-within");
     const metaBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-meta {");
     const hintBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-action-hint {");
 
+    expect(searchInputBlock).toContain("border: 1px solid transparent");
+    expect(searchInputBlock).toContain("background: transparent");
+    expect(searchEmptyBlock).toContain("grid-column: 1 / -1");
     expect(searchFocusBlock).toContain("border-color: transparent");
+    expect(searchFocusBlock).toContain("background: rgba(255, 255, 255, 0.075)");
     expect(searchFocusBlock).toContain("box-shadow: none");
     expect(searchFocusBlock).not.toContain("var(--accent)");
+    expect(addressBlock).toContain("border: 1px solid transparent");
+    expect(addressBlock).toContain("background: transparent");
     expect(addressFocusBlock).toContain("border-color: transparent");
+    expect(addressFocusBlock).toContain("background: rgba(255, 255, 255, 0.075)");
     expect(addressFocusBlock).toContain("box-shadow: none");
     expect(addressFocusBlock).not.toContain("var(--accent)");
     expect(metaBlock).toContain("justify-content: space-between");

@@ -213,10 +213,10 @@ h1 {
   grid-template-columns: 18px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: 17px;
   padding: 0 11px;
-  background: rgba(255, 255, 255, 0.075);
+  background: transparent;
   color: var(--muted);
   transition:
     background 130ms ease,
@@ -226,7 +226,7 @@ h1 {
 
 .sidebar-address-form:focus-within {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.105);
+  background: rgba(255, 255, 255, 0.075);
   box-shadow: none;
 }
 
