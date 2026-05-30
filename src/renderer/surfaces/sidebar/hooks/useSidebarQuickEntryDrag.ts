@@ -1,14 +1,13 @@
 import { useState, type DragEvent } from "react";
 
-import { getPointerDropPlacement, type DropAxis } from "../../../common/drag-drop/dropPlacement";
+import { type DropAxis } from "../../../common/drag-drop/dropPlacement";
 import type { BrowserController } from "../../../app/controller/types";
 import { isEssential, type BrowserState, type Workspace } from "../../../domain/browser";
 import {
   SIDEBAR_DRAG_DATA,
-  readSidebarEssentialDragId,
-  readSidebarFavoriteDragId,
   readSidebarTabDragEventId
 } from "../model/sidebarDragSources";
+import { resolveSidebarQuickEntryReorderDrop } from "../model/sidebarQuickEntryReorderDrop";
 
 export function useSidebarQuickEntryDrag({
   actions,
@@ -54,13 +53,23 @@ export function useSidebarQuickEntryDrag({
   };
 
   const handleEssentialReorderDrop = (event: DragEvent<HTMLElement>, targetEssentialId: string, axis: DropAxis = "vertical") => {
-    const essentialId = readSidebarEssentialDragId({ draggingEssentialId }, (type) => event.dataTransfer.getData(type));
-    runQuickEntryReorder(event, essentialId, targetEssentialId, axis, actions.reorderEssential, setDraggingEssentialId);
+    const intent = resolveSidebarQuickEntryReorderDrop(event, { draggingEssentialId }, {
+      axis,
+      kind: "essential",
+      targetQuickEntryId: targetEssentialId
+    });
+    if (intent) actions.reorderEssential(intent.quickEntryId, intent.targetQuickEntryId, intent.placement);
+    setDraggingEssentialId(null);
   };
 
   const handleFavoriteReorderDrop = (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis = "vertical") => {
-    const favoriteId = readSidebarFavoriteDragId({ draggingFavoriteId }, (type) => event.dataTransfer.getData(type));
-    runQuickEntryReorder(event, favoriteId, targetFavoriteId, axis, actions.reorderWorkspaceFavorite, setDraggingFavoriteId);
+    const intent = resolveSidebarQuickEntryReorderDrop(event, { draggingFavoriteId }, {
+      axis,
+      kind: "favorite",
+      targetQuickEntryId: targetFavoriteId
+    });
+    if (intent) actions.reorderWorkspaceFavorite(intent.quickEntryId, intent.targetQuickEntryId, intent.placement);
+    setDraggingFavoriteId(null);
   };
 
   function getDroppedTab(event: DragEvent<HTMLElement>) {
@@ -79,24 +88,4 @@ export function useSidebarQuickEntryDrag({
     setDraggingEssentialId,
     setDraggingFavoriteId
   };
-}
-
-function runQuickEntryReorder(
-  event: DragEvent<HTMLElement>,
-  quickEntryId: string,
-  targetQuickEntryId: string,
-  axis: DropAxis,
-  reorder: (quickEntryId: string, targetQuickEntryId: string, placement: "before" | "after") => void,
-  clearDraggingId: (quickEntryId: string | null) => void
-) {
-  event.preventDefault();
-  event.stopPropagation();
-  if (!quickEntryId || quickEntryId === targetQuickEntryId) {
-    clearDraggingId(null);
-    return;
-  }
-
-  const placement = getPointerDropPlacement(event.currentTarget, event, axis);
-  reorder(quickEntryId, targetQuickEntryId, placement);
-  clearDraggingId(null);
 }

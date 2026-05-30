@@ -31,6 +31,8 @@ describe("sidebar component structure", () => {
     const sidebarRowReorderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarRowReorderDrop.ts"), "utf8");
     const workspaceStrip = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip.tsx"), "utf8");
     const sidebarWorkspaceDropIntent = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarWorkspaceDropIntent.ts"), "utf8");
+    const sidebarQuickEntryReorderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarQuickEntryReorderDrop.ts"), "utf8");
+    const sidebarQuickEntryDragHook = readFileSync(join(root, "src/renderer/surfaces/sidebar/hooks/useSidebarQuickEntryDrag.ts"), "utf8");
     const sidebarItems = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItems.tsx"), "utf8");
     const sidebarPinnedTabs = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs.tsx"), "utf8");
     const sidebarClosedTabButton = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/ClosedTabButton.tsx"), "utf8");
@@ -106,6 +108,14 @@ describe("sidebar component structure", () => {
     expect(workspaceStrip).not.toContain("readSidebarTabDragEventId");
     expect(workspaceStrip).not.toContain("updateDropPlacement");
     expect(workspaceStrip).not.toContain("clearDropPlacement");
+    expect(sidebarQuickEntryDragHook).toContain("resolveSidebarQuickEntryReorderDrop");
+    expect(sidebarQuickEntryDragHook).not.toContain("readSidebarEssentialDragId");
+    expect(sidebarQuickEntryDragHook).not.toContain("readSidebarFavoriteDragId");
+    expect(sidebarQuickEntryDragHook).not.toContain("getPointerDropPlacement");
+    expect(sidebarQuickEntryDragHook).not.toContain("runQuickEntryReorder");
+    expect(sidebarQuickEntryReorderDrop).toContain("readSidebarEssentialDragId");
+    expect(sidebarQuickEntryReorderDrop).toContain("readSidebarFavoriteDragId");
+    expect(sidebarQuickEntryReorderDrop).toContain("getPointerDropPlacement");
     expect(sidebarItems).toContain('from "../common/SidebarItemActionHints"');
     expect(sidebarItems).toContain('from "../common/SidebarItemIcon"');
     expect(sidebarItems).toContain("runSidebarItemPointerActivation");
