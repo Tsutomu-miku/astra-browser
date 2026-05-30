@@ -31,15 +31,28 @@ export function useOmniboxController({
 }: OmniboxControllerInput) {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const [acceptedCompletionSuggestionId, setAcceptedCompletionSuggestionId] = useState<string | null>(null);
   const suggestions = useMemo(() => buildOmniboxSuggestions(state, addressValue), [addressValue, state]);
   const inlineCompletion = useMemo(() => (
     getOmniboxInlineCompletion(suggestions, addressValue)
   ), [addressValue, suggestions]);
   const activeIndex = clampOmniboxIndex(activeSuggestionIndex, suggestions.length);
+  const acceptedCompletionSuggestion = acceptedCompletionSuggestionId
+    ? suggestions.find((suggestion) => suggestion.id === acceptedCompletionSuggestionId)
+    : undefined;
+  const activeSuggestion = suggestionsOpen
+    ? acceptedCompletionSuggestion ?? suggestions[activeIndex]
+    : undefined;
 
   useEffect(() => {
     setActiveSuggestionIndex((index) => clampOmniboxIndex(index, suggestions.length));
   }, [suggestions.length]);
+
+  useEffect(() => {
+    if (!acceptedCompletionSuggestionId) return;
+    if (suggestions.some((suggestion) => suggestion.id === acceptedCompletionSuggestionId)) return;
+    setAcceptedCompletionSuggestionId(null);
+  }, [acceptedCompletionSuggestionId, suggestions]);
 
   const runSuggestion = useCallback((suggestion: OmniboxSuggestion | undefined, openInSplit = false) => {
     const action = getOmniboxAction(suggestion, addressValue, openInSplit);
@@ -62,18 +75,20 @@ export function useOmniboxController({
         break;
     }
 
+    setAcceptedCompletionSuggestionId(null);
     setSuggestionsOpen(false);
   }, [actions, addressValue]);
 
   const submitAddress = useCallback((event: FormEvent) => {
     event.preventDefault();
-    runSuggestion(suggestionsOpen ? suggestions[activeIndex] : undefined);
-  }, [activeIndex, runSuggestion, suggestions, suggestionsOpen]);
+    runSuggestion(activeSuggestion);
+  }, [activeSuggestion, runSuggestion]);
 
   const acceptInlineCompletion = useCallback(() => {
     if (!inlineCompletion) return false;
     setAddressValue(inlineCompletion.value);
     setSuggestionsOpen(true);
+    setAcceptedCompletionSuggestionId(inlineCompletion.suggestionId);
     const nextIndex = suggestions.findIndex((suggestion) => suggestion.id === inlineCompletion.suggestionId);
     setActiveSuggestionIndex(nextIndex >= 0 ? nextIndex : 0);
     return true;
@@ -96,19 +111,22 @@ export function useOmniboxController({
 
     if (!suggestionsOpen && isListNavigationKey(event.key)) {
       setSuggestionsOpen(true);
+      setAcceptedCompletionSuggestionId(null);
     }
 
     if (isListNavigationKey(event.key)) {
       event.preventDefault();
       const key = event.key;
+      setAcceptedCompletionSuggestionId(null);
       setActiveSuggestionIndex((index) => getNextOmniboxIndex(index, suggestions.length, key));
     } else if (event.key === "Enter") {
       event.preventDefault();
-      runSuggestion(suggestionsOpen ? suggestions[activeIndex] : undefined, event.altKey);
+      runSuggestion(activeSuggestion, event.altKey);
     } else if (event.key === "Escape") {
+      setAcceptedCompletionSuggestionId(null);
       setSuggestionsOpen(false);
     }
-  }, [acceptInlineCompletion, activeIndex, runSuggestion, suggestions, suggestionsOpen]);
+  }, [acceptInlineCompletion, activeSuggestion, runSuggestion, suggestions.length, suggestionsOpen]);
 
   const onSuggestionPointerDown = useCallback((event: MouseEvent, suggestion: OmniboxSuggestion) => {
     event.preventDefault();
@@ -118,6 +136,7 @@ export function useOmniboxController({
   const updateAddressValue = useCallback((value: string) => {
     setAddressValue(value);
     setSuggestionsOpen(true);
+    setAcceptedCompletionSuggestionId(null);
     setActiveSuggestionIndex(0);
   }, [setAddressValue]);
 

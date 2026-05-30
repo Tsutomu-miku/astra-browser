@@ -1,10 +1,10 @@
-import { createElement } from "react";
+import { createElement, useState } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
 import type { BrowserController } from "../src/renderer/app/controller/types";
-import { createDefaultState } from "../src/renderer/domain/browser";
+import { createDefaultState, createFavorite, type BrowserState } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { SidebarAddress } from "../src/renderer/surfaces/sidebar/components/chrome/SidebarAddress";
 import { Topbar } from "../src/renderer/surfaces/topbar/Topbar";
@@ -76,6 +76,46 @@ describe("omnibox accessibility", () => {
     container.remove();
   });
 
+  it("runs the accepted title completion as its suggestion instead of searching the title", () => {
+    const actions = createActions();
+    const state = createDefaultState();
+    getActiveWorkspace(state).favorites.unshift(createFavorite("Linear Planning", "https://linear.example/"));
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(OmniboxHarness, {
+        actions,
+        initialAddressValue: "lin",
+        state
+      }));
+    });
+
+    const input = container.querySelector<HTMLInputElement>("#addressInput")!;
+    input.setSelectionRange(3, 3);
+    act(() => {
+      input.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "Tab"
+      }));
+    });
+    expect(container.querySelector<HTMLInputElement>("#addressInput")?.value).toBe("Linear Planning");
+
+    act(() => {
+      container.querySelector<HTMLInputElement>("#addressInput")?.dispatchEvent(new KeyboardEvent("keydown", {
+        bubbles: true,
+        key: "Enter"
+      }));
+    });
+
+    expect(actions.openUrlInActiveWorkspace).toHaveBeenCalledWith("https://linear.example/", "Linear Planning");
+    expect(actions.navigateActiveTab).not.toHaveBeenCalledWith("Linear Planning");
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   it("exposes compact sidebar address suggestions with matching combobox semantics", () => {
     const actions = createActions();
     const container = document.createElement("div");
@@ -122,18 +162,41 @@ describe("omnibox accessibility", () => {
   });
 });
 
+function OmniboxHarness({
+  actions,
+  initialAddressValue,
+  state
+}: {
+  actions: BrowserController["actions"];
+  initialAddressValue: string;
+  state: BrowserState;
+}) {
+  const [addressValue, setAddressValue] = useState(initialAddressValue);
+
+  return createElement(Topbar, {
+    controller: createController({
+      actions,
+      addressValue,
+      compactMode: false,
+      setAddressValue,
+      state
+    })
+  });
+}
+
 function createController({
   actions = createActions(),
   addressValue,
   compactMode,
-  setAddressValue = vi.fn()
+  setAddressValue = vi.fn(),
+  state = createDefaultState()
 }: {
   actions?: BrowserController["actions"];
   addressValue: string;
   compactMode: boolean;
   setAddressValue?: BrowserController["setAddressValue"];
+  state?: BrowserState;
 }): BrowserController {
-  const state = createDefaultState();
   const activeWorkspace = getActiveWorkspace(state);
   const activeTab = getActiveTab(activeWorkspace);
 
@@ -156,6 +219,7 @@ function createActions() {
     navigateActiveTab: vi.fn(),
     openGlance: vi.fn(),
     openTabInSplit: vi.fn(),
+    openUrlInActiveWorkspace: vi.fn(),
     openUrlInSplit: vi.fn(),
     resetActiveTabZoom: vi.fn(),
     runWebviewAction: vi.fn(),
