@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import {
   FiArrowRight,
   FiBookmark,
@@ -19,9 +18,9 @@ import {
   FiX
 } from "react-icons/fi";
 
-import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { BrowserTab } from "../../../../domain/browser";
 import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
+import { SidebarMenuSurface } from "../common/SidebarMenuSurface";
 import type { MoveWorkspaceTarget, TabCleanupState, TabGroupMenuState } from "../../model/tabContextMenuState";
 
 interface TabContextMenuProps {
@@ -83,22 +82,13 @@ export function TabContextMenu({
   tab,
   top
 }: TabContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  useMenuInitialFocus(menuRef);
   const run = (action: () => void) => {
     action();
     onClose();
   };
 
   return (
-    <div
-      ref={menuRef}
-      className="sidebar-menu-surface tab-context-menu"
-      role="menu"
-      style={{ left, top }}
-      onContextMenu={(event) => event.preventDefault()}
-      onKeyDown={handleMenuKeyboardNavigation}
-    >
+    <SidebarMenuSurface className="tab-context-menu" style={{ left, top }}>
       <SidebarMenuItem icon={FiArrowRight} role="menuitem" onClick={() => run(() => onSelect(tab.id))}>Open</SidebarMenuItem>
       <SidebarMenuItem icon={FiEye} role="menuitem" onClick={() => run(() => onOpenGlance(tab.url, tab.title))}>Preview in Glance</SidebarMenuItem>
       <SidebarMenuItem icon={FiColumns} role="menuitem" onClick={() => run(() => onOpenInSplit(tab.id))}>Open in split view</SidebarMenuItem>
@@ -187,6 +177,6 @@ export function TabContextMenu({
       </SidebarMenuItem>
       <SidebarMenuSeparator />
       <SidebarMenuItem icon={FiX} role="menuitem" className="danger" onClick={() => run(() => onCloseTab(tab.id))}>Close</SidebarMenuItem>
-    </div>
+    </SidebarMenuSurface>
   );
 }

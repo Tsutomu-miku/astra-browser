@@ -1,10 +1,10 @@
-import { useRef, type CSSProperties, type KeyboardEvent } from "react";
-import { FiArchive, FiArrowRight, FiChevronDown, FiChevronRight, FiCopy, FiGrid, FiMoon, FiPlus, FiTrash2, FiX } from "react-icons/fi";
+import { type CSSProperties, type KeyboardEvent } from "react";
+import { FiArchive, FiChevronDown, FiChevronRight, FiCopy, FiGrid, FiMoon, FiPlus, FiX } from "react-icons/fi";
 
-import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { TabGroup } from "../../../../domain/browser";
 import { TAB_GROUP_COLOR_SWATCHES } from "../../../../domain/tabs/groups";
 import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
+import { SidebarMenuSurface } from "../common/SidebarMenuSurface";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
 interface TabGroupContextMenuProps {
@@ -42,8 +42,6 @@ export function TabGroupContextMenu({
   tabCount,
   top
 }: TabGroupContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  useMenuInitialFocus(menuRef);
   const run = (action: () => void) => {
     action();
     onClose();
@@ -53,15 +51,7 @@ export function TabGroupContextMenu({
   };
 
   return (
-    <div
-      ref={menuRef}
-      className="sidebar-menu-surface tab-context-menu tab-group-context-menu"
-      role="menu"
-      style={{ left, top, "--group-color": group.color } as CSSProperties}
-      onClick={(event) => event.stopPropagation()}
-      onContextMenu={(event) => event.preventDefault()}
-      onKeyDown={handleMenuKeyboardNavigation}
-    >
+    <SidebarMenuSurface className="tab-context-menu tab-group-context-menu" style={{ left, top, "--group-color": group.color } as CSSProperties}>
       <SidebarMenuItem icon={group.isCollapsed ? FiChevronRight : FiChevronDown} role="menuitem" onClick={() => run(() => onToggleCollapsed(group.id))}>
         {group.isCollapsed ? "Expand group" : "Collapse group"}
       </SidebarMenuItem>
@@ -114,6 +104,6 @@ export function TabGroupContextMenu({
       <SidebarMenuItem icon={FiArchive} className="danger" role="menuitem" onClick={() => run(() => onUngroupGroup(group.id))}>
         Ungroup {tabCount} {tabCount === 1 ? "tab" : "tabs"}
       </SidebarMenuItem>
-    </div>
+    </SidebarMenuSurface>
   );
 }

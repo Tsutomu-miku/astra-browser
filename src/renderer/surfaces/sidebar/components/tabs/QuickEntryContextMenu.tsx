@@ -1,9 +1,8 @@
-import { useRef } from "react";
 import { FiArrowRight, FiColumns, FiEye, FiGrid, FiLink, FiPlus, FiTrash2, FiType } from "react-icons/fi";
 
-import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { Favorite } from "../../../../domain/browser";
 import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
+import { SidebarMenuSurface } from "../common/SidebarMenuSurface";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
 
 export function QuickEntryContextMenu({
@@ -35,8 +34,6 @@ export function QuickEntryContextMenu({
   onRemove: (url: string) => void;
   top: number;
 }) {
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  useMenuInitialFocus(menuRef);
   const label = kind === "essential" ? "Essential" : "Favorite";
   const canMoveFavorite = kind === "favorite" && (Boolean(onMoveToNewWorkspace) || Boolean(onMoveToWorkspace));
   const run = (action: () => void) => {
@@ -45,14 +42,7 @@ export function QuickEntryContextMenu({
   };
 
   return (
-    <div
-      ref={menuRef}
-      className="sidebar-menu-surface tab-context-menu quick-entry-context-menu"
-      role="menu"
-      style={{ left, top }}
-      onContextMenu={(event) => event.preventDefault()}
-      onKeyDown={handleMenuKeyboardNavigation}
-    >
+    <SidebarMenuSurface className="tab-context-menu quick-entry-context-menu" style={{ left, top }}>
       <SidebarMenuItem icon={FiArrowRight} role="menuitem" onClick={() => run(() => onOpen(item, kind))}>
         Open
       </SidebarMenuItem>
@@ -90,6 +80,6 @@ export function QuickEntryContextMenu({
       <SidebarMenuItem icon={FiTrash2} role="menuitem" className="danger" onClick={() => run(() => onRemove(kind === "favorite" ? item.id : item.url))}>
         Remove {label}
       </SidebarMenuItem>
-    </div>
+    </SidebarMenuSurface>
   );
 }

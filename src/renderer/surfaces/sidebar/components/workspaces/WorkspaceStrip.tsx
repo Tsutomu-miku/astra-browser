@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
 import { FiArrowRight, FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiSettings, FiTrash2, FiUnlock } from "react-icons/fi";
 
-import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
 import { clearDropPlacement, updateDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { Workspace } from "../../../../domain/browser";
 import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
+import { SidebarMenuSurface } from "../common/SidebarMenuSurface";
 import { readSidebarFavoriteDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import {
   WORKSPACE_ACCENT_SWATCHES,
@@ -248,23 +248,13 @@ function WorkspaceContextMenu({
   top: number;
   workspace: Workspace;
 }) {
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  useMenuInitialFocus(menuRef);
   const run = (action: () => void) => {
     action();
     onClose();
   };
 
   return (
-    <div
-      ref={menuRef}
-      className="sidebar-menu-surface workspace-context-menu"
-      role="menu"
-      style={{ left, top, "--accent": workspace.accent } as CSSProperties}
-      onClick={(event) => event.stopPropagation()}
-      onContextMenu={(event) => event.preventDefault()}
-      onKeyDown={handleMenuKeyboardNavigation}
-    >
+    <SidebarMenuSurface className="workspace-context-menu" style={{ left, top, "--accent": workspace.accent } as CSSProperties}>
       <SidebarMenuItem icon={FiSettings} role="menuitem" onClick={() => run(() => onOpenSettings(workspace.id))}>
         Space settings
       </SidebarMenuItem>
@@ -308,6 +298,6 @@ function WorkspaceContextMenu({
       >
         Delete Space
       </SidebarMenuItem>
-    </div>
+    </SidebarMenuSurface>
   );
 }
