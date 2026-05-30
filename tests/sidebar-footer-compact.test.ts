@@ -249,7 +249,8 @@ describe("sidebar footer compact controls", () => {
       }
     });
 
-    expect(html).toContain("4 asleep");
+    expect(html).toContain("0 ready");
+    expect(html).not.toContain("asleep");
     expect(html).toContain("Manual");
     expect(html).toContain("disabled");
   });

@@ -80,9 +80,7 @@ export function SidebarFooter({
   const splitButtonLabel = splitDropSource
     ? `Split view, drop ${splitDropSource.title || "item"} here`
     : "Split view";
-  const memorySaverLabel = memorySaver.sleepingTabs > 0
-    ? `${memorySaver.sleepingTabs} asleep`
-    : `${memorySaver.reclaimableTabs} ready`;
+  const memorySaverLabel = `${memorySaver.reclaimableTabs} ready`;
   const memorySaverMode = memorySaver.sleepEnabled ? `Auto ${memorySaver.sleepAfterMinutes}m` : "Manual";
 
   function dropTabIntoSplit(event: DragEvent<HTMLButtonElement>) {
