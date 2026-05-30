@@ -251,6 +251,7 @@ Small requirements:
 - P1-1.19 Loading and sleeping favicon states render as plain corner glyphs instead of badge containers.
 - P1-1.20 Sidebar search clear controls and compact address suggestion popovers use local quiet chrome instead of global raised button or heavy floating shadow treatment.
 - P1-1.21 Space rail tab counts fade from stable positions and Space buttons do not reserve unused transform motion.
+- P1-1.22 New Space and Space menu fields use transparent default chrome with natural-cased labels and quiet focus fills.
 
 ### P1-2 Split View And Glance
 
