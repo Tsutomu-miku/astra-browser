@@ -19,8 +19,22 @@ describe("sidebar section header", () => {
 
     expect(html).toContain("<button");
     expect(html).toContain('aria-expanded="true"');
+    expect(html).toContain('data-collapsed="false"');
     expect(html).toContain("Tabs");
     expect(html).toContain("4");
+  });
+
+  it("marks collapsed section headers so counts stay available when contents are hidden", () => {
+    const html = renderToStaticMarkup(createElement(SidebarSectionHeader, {
+      count: 7,
+      isCollapsed: true,
+      onToggle: vi.fn(),
+      title: "Favorites"
+    }));
+
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('data-collapsed="true"');
+    expect(html).toContain("7");
   });
 
   it("keeps static section headers button-free", () => {
@@ -39,6 +53,16 @@ describe("sidebar section header", () => {
     expect(countBlock).not.toContain("background");
     expect(countBlock).not.toContain("border-radius");
     expect(countBlock).not.toContain("var(--accent)");
+  });
+
+  it("keeps expanded section counts quiet until the header is engaged", () => {
+    const countBlock = getRuleBlock(sidebarCss, ".sidebar-section-count");
+    const revealBlock = getRuleBlock(sidebarCss, ".sidebar-section-header:hover .sidebar-section-count,\n.sidebar-section-header:focus-within .sidebar-section-count,\n.sidebar-section-header[data-collapsed=\"true\"] .sidebar-section-count");
+
+    expect(countBlock).toContain("opacity: 0");
+    expect(countBlock).toContain("transform: translateX(2px)");
+    expect(revealBlock).toContain("opacity: 1");
+    expect(revealBlock).toContain("transform: translateX(0)");
   });
 
   it("uses natural-cased quiet section labels", () => {

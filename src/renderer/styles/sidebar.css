@@ -417,6 +417,18 @@ h1 {
 
 .sidebar-section-count {
   color: color-mix(in srgb, var(--muted) 72%, white);
+  opacity: 0;
+  transform: translateX(2px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.sidebar-section-header:hover .sidebar-section-count,
+.sidebar-section-header:focus-within .sidebar-section-count,
+.sidebar-section-header[data-collapsed="true"] .sidebar-section-count {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .sidebar-section-drop-label {

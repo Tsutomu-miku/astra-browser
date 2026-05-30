@@ -53,11 +53,12 @@ export function SidebarSectionHeader({
   );
 
   return (
-    <header className="sidebar-section-header">
+    <header className="sidebar-section-header" data-collapsed={isCollapsed}>
       {onToggle ? (
         <button
           className="sidebar-section-header-button"
           type="button"
+          data-collapsed={isCollapsed}
           aria-expanded={!isCollapsed}
           aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${title}`}
           onClick={onToggle}
