@@ -5,7 +5,7 @@ import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../c
 import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
 import { clearDropPlacement, updateDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { Workspace } from "../../../../domain/browser";
-import { SidebarMenuItem } from "../tabs/SidebarMenuItem";
+import { SidebarMenuItem } from "../common/SidebarMenuItem";
 import { readSidebarFavoriteDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import {
   WORKSPACE_ACCENT_SWATCHES,

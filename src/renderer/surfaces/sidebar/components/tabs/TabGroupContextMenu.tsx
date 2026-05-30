@@ -4,8 +4,8 @@ import { FiArchive, FiArrowRight, FiChevronDown, FiChevronRight, FiCopy, FiGrid,
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { TabGroup } from "../../../../domain/browser";
 import { TAB_GROUP_COLOR_SWATCHES } from "../../../../domain/tabs/groups";
+import { SidebarMenuItem } from "../common/SidebarMenuItem";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
-import { SidebarMenuItem } from "./SidebarMenuItem";
 
 interface TabGroupContextMenuProps {
   group: TabGroup;

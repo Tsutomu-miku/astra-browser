@@ -21,8 +21,8 @@ import {
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { BrowserTab } from "../../../../domain/browser";
+import { SidebarMenuItem } from "../common/SidebarMenuItem";
 import type { MoveWorkspaceTarget, TabCleanupState, TabGroupMenuState } from "../../model/tabContextMenuState";
-import { SidebarMenuItem } from "./SidebarMenuItem";
 
 interface TabContextMenuProps {
   left: number;

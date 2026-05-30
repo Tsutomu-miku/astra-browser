@@ -3,8 +3,8 @@ import { FiArrowRight, FiColumns, FiEye, FiGrid, FiLink, FiPlus, FiType } from "
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import type { ClosedTab } from "../../../../domain/browser";
+import { SidebarMenuItem } from "../common/SidebarMenuItem";
 import type { MoveWorkspaceTarget } from "../../model/tabContextMenuState";
-import { SidebarMenuItem } from "./SidebarMenuItem";
 
 export function ClosedTabContextMenu({
   closedIndex,
