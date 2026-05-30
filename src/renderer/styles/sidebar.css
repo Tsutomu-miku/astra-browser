@@ -4,7 +4,6 @@
   --sidebar-active-bg: rgba(255, 255, 255, 0.105);
   --sidebar-selected-bg: rgba(255, 255, 255, 0.08);
   --sidebar-status-strong: color-mix(in srgb, var(--muted) 84%, white);
-  --sidebar-subtle-accent: color-mix(in srgb, var(--muted) 78%, white);
   width: var(--sidebar-width, 292px);
   min-height: 0;
   height: 100vh;
@@ -650,17 +649,6 @@ h1 {
 .favorite-button[aria-current="true"] .favorite-title {
   color: var(--text);
   font-weight: 450;
-}
-
-.tab-row.is-split-tab .tab-favicon::after {
-  content: "";
-  position: absolute;
-  right: -2px;
-  top: -2px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--sidebar-subtle-accent);
 }
 
 .tab-row.is-sleeping {

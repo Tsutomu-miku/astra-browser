@@ -56,6 +56,7 @@ describe("sidebar selection styles", () => {
     expect(statusBlock).toContain("height: 14px");
     expect(statusBlock).toContain("border: 0");
     expect(statusBlock).toContain("background: transparent");
+    expect(sidebarCss).not.toContain(".tab-row.is-split-tab .tab-favicon::after");
   });
 
   it("keeps recently closed restore affordance icon-only", () => {
@@ -80,7 +81,7 @@ describe("sidebar selection styles", () => {
       expect(block).toContain("var(--sidebar-status-strong)");
       expect(block).not.toContain("var(--accent)");
     }
-    expect(sidebarCss).toContain("--sidebar-subtle-accent: color-mix(in srgb, var(--muted)");
+    expect(sidebarCss).not.toContain("--sidebar-subtle-accent");
   });
 
   it("keeps workspace active state quiet and removes accent wash from the app background", () => {
