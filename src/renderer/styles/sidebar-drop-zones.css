@@ -1,7 +1,3 @@
-.favorite-button[draggable="true"] {
-  cursor: grab;
-}
-
 .favorite-button[data-dragging="true"] {
   cursor: grabbing;
   opacity: 0.45;

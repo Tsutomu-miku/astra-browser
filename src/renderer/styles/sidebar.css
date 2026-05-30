@@ -594,7 +594,7 @@ h1 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 56px;
   align-items: center;
-  cursor: grab;
+  cursor: pointer;
   border: 1px solid transparent;
   transition:
     background 130ms ease,
@@ -681,6 +681,7 @@ h1 {
   padding: 6px 8px;
   border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.052);
+  cursor: pointer;
   transition:
     background 130ms ease,
     border-color 130ms ease;

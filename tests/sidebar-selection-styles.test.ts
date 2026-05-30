@@ -52,6 +52,8 @@ describe("sidebar selection styles", () => {
 
   it("separates pressed feedback from dragging affordances", () => {
     const tabPressedBlock = getRuleBlock(sidebarCss, ".tab-row:active");
+    const tabRowBlock = getRuleBlock(sidebarCss, "\n.tab-row {");
+    const favoriteBlock = getRuleBlock(sidebarCss, "\n.favorite-button {");
     const quickEntryPressedBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:active,\n.favorite-button:active,\n.closed-tab-button:active");
     const tabDraggingBlock = getRuleBlock(sidebarCss, ".tab-row[data-dragging=\"true\"]");
     const pinnedDraggingBlock = getRuleBlock(sidebarCss, ".pinned-tab-button[data-dragging=\"true\"]");
@@ -64,9 +66,14 @@ describe("sidebar selection styles", () => {
       expect(block).not.toContain("cursor: grabbing");
       expect(block).not.toContain("var(--accent)");
     }
+    for (const block of [tabRowBlock, favoriteBlock]) {
+      expect(block).toContain("cursor: pointer");
+      expect(block).not.toContain("cursor: grab");
+    }
     for (const block of [tabDraggingBlock, pinnedDraggingBlock, closedDraggingBlock, quickEntryDraggingBlock]) {
       expect(block).toContain("cursor: grabbing");
     }
+    expect(sidebarDropZonesCss).not.toContain('cursor: grab;');
     expect(sidebarDropZonesCss).not.toContain('.favorite-button[draggable="true"]:active');
   });
 
