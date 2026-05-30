@@ -65,6 +65,30 @@ describe("command content entries", () => {
     expect(actions.selectTab).toHaveBeenCalledWith(docsTab.id);
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
   });
+
+  it("uses backing tab data for Favorite command display and preview", () => {
+    const state = createDefaultState();
+    const tab = createTab("Current Docs", "https://docs.example/current");
+    const favorite = createFavorite("Old Docs", "https://docs.example/old", tab.id);
+    const workspace = {
+      ...state.workspaces[0],
+      favorites: [favorite],
+      tabs: [tab]
+    };
+    const actions = createActions();
+
+    const command = buildContentCommands(state, workspace, actions)
+      .find((candidate) => candidate.subtitle.startsWith("Favorite tab"));
+
+    expect(command).toMatchObject({
+      subtitle: `Favorite tab · ${tab.url}`,
+      title: tab.title
+    });
+
+    command?.runPreview?.();
+
+    expect(actions.openGlance).toHaveBeenCalledWith(tab.url, tab.title);
+  });
 });
 
 function createActions() {
@@ -77,6 +101,7 @@ function createActions() {
     selectTab: vi.fn()
   } as unknown as CommandActions & {
     navigateActiveTab: ReturnType<typeof vi.fn>;
+    openGlance: ReturnType<typeof vi.fn>;
     openTabInSplit: ReturnType<typeof vi.fn>;
     openUrlInActiveWorkspace: ReturnType<typeof vi.fn>;
     openUrlInSplit: ReturnType<typeof vi.fn>;

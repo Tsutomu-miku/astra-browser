@@ -16,13 +16,15 @@ export function buildContentCommands(
     })),
     ...workspace.favorites.map((favorite) => {
       const tab = resolveFavoriteTab(workspace, favorite);
+      const url = tab?.url ?? favorite.url;
+      const title = tab?.title || favorite.title || url;
 
       return {
-        title: favorite.title,
-        subtitle: `Favorite · ${favorite.url}`,
-        run: () => tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(favorite.url, favorite.title),
-        runInSplit: () => tab ? actions.openTabInSplit(tab.id) : actions.openUrlInSplit(favorite.url, favorite.title),
-        runPreview: () => actions.openGlance(favorite.url, favorite.title)
+        title,
+        subtitle: `${tab ? "Favorite tab" : "Favorite"} · ${url}`,
+        run: () => tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(url, title),
+        runInSplit: () => tab ? actions.openTabInSplit(tab.id) : actions.openUrlInSplit(url, title),
+        runPreview: () => actions.openGlance(url, title)
       };
     }),
     ...workspace.tabs.map((tab) => ({

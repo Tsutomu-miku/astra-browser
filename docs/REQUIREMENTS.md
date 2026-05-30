@@ -239,6 +239,7 @@ For tab-related features, requirements must specify object identity. In particul
 - The command palette must expose split-pane focus commands while split view is active.
 - The command palette must include entries for open tabs, Essentials, favorites, history, and recently closed tabs.
 - Command palette Favorite entries must select matching tabs by tab identity or legacy URL fallback; they must not replace the current active tab's URL.
+- Command palette tab-backed Favorite entries must display, search, split, and preview with the backing tab's current title and URL.
 - Recently closed command palette entries must support direct restore, Glance preview, and split opening.
 - The command palette must identify active and sleeping open-tab entries so keyboard navigation has clear tab state.
 - The command palette must directly open URLs or search typed queries.
