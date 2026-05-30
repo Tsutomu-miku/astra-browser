@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
-import { FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiTrash2, FiUnlock } from "react-icons/fi";
+import { FiArrowRight, FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiSettings, FiTrash2, FiUnlock } from "react-icons/fi";
 
 import { handleMenuKeyboardNavigation, useMenuInitialFocus } from "../../../../common/context-menu/menuKeyboardNavigation";
 import { clearDropPlacement, updateDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { Workspace } from "../../../../domain/browser";
+import { SidebarMenuItem } from "../tabs/SidebarMenuItem";
 import { readSidebarFavoriteDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import {
   WORKSPACE_ACCENT_SWATCHES,
@@ -261,15 +262,15 @@ function WorkspaceContextMenu({
       onContextMenu={(event) => event.preventDefault()}
       onKeyDown={handleMenuKeyboardNavigation}
     >
-      <button type="button" role="menuitem" onClick={() => run(() => onOpenSettings(workspace.id))}>
+      <SidebarMenuItem icon={FiSettings} role="menuitem" onClick={() => run(() => onOpenSettings(workspace.id))}>
         Space settings
-      </button>
-      <button type="button" role="menuitem" onClick={() => run(() => onSelect(workspace.id))}>
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiArrowRight} role="menuitem" onClick={() => run(() => onSelect(workspace.id))}>
         Switch to Space
-      </button>
-      <button type="button" role="menuitem" onClick={() => run(onNewWorkspace)}>
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiPlus} role="menuitem" onClick={() => run(onNewWorkspace)}>
         New Space
-      </button>
+      </SidebarMenuItem>
       <span className="tab-context-menu-separator" />
       <label className="workspace-menu-field">
         <span>Name</span>
@@ -294,16 +295,15 @@ function WorkspaceContextMenu({
           />
         ))}
       </div>
-      <button
+      <SidebarMenuItem
         className="danger"
-        type="button"
+        icon={FiTrash2}
         role="menuitem"
         disabled={!canDelete}
         onClick={() => run(() => onDelete(workspace.id))}
       >
-        <FiTrash2 />
         Delete Space
-      </button>
+      </SidebarMenuItem>
     </div>
   );
 }

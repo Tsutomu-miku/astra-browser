@@ -283,6 +283,8 @@ describe("workspace strip compact controls", () => {
     expect(container.textContent).toContain("Space settings");
     expect(container.textContent).toContain("Switch to Space");
     expect(container.textContent).toContain("New Space");
+    expect(container.innerHTML).toContain('class="sidebar-menu-item-icon" aria-hidden="true"');
+    expect(container.innerHTML).not.toContain('title="Space settings"');
     expect(document.activeElement?.textContent).toBe("Space settings");
 
     act(() => {
@@ -681,6 +683,18 @@ describe("workspace strip compact controls", () => {
     expect(workspaceCss).toContain(".workspace-button[data-drop-placement]::before");
     expect(workspaceCss).toContain('.workspace-button[data-drop-placement="before"]::before');
     expect(workspaceCss).toContain('.workspace-button[data-drop-placement="after"]::before');
+  });
+
+  it("styles Space context menu actions as quiet icon menu rows", () => {
+    const itemBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .sidebar-menu-item");
+    const iconBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .sidebar-menu-item-icon");
+    const labelBlock = getRuleBlock(workspaceCss, ".workspace-context-menu .sidebar-menu-item-label");
+    const dangerBlock = getRuleBlock(workspaceCss, ".workspace-context-menu button.danger");
+
+    expect(itemBlock).toContain("grid-template-columns: 18px minmax(0, 1fr)");
+    expect(iconBlock).toContain("color: color-mix");
+    expect(labelBlock).toContain("text-overflow: ellipsis");
+    expect(dangerBlock).not.toContain("inline-flex");
   });
 });
 
