@@ -57,6 +57,19 @@ describe("sidebar selection styles", () => {
     expect(statusBlock).toContain("background: transparent");
   });
 
+  it("keeps sidebar status and internal-page colors neutral", () => {
+    const rowSplitBlock = getRuleBlock(sidebarCss, "\n.tab-status-badge.is-split");
+    const pinnedSplitBlock = getRuleBlock(sidebarCss, "\n.pinned-tab-status-badge.is-split");
+    const loadingBlock = getRuleBlock(sidebarCss, "\n.sidebar-item-icon-status.is-loading");
+    const internalBlock = getRuleBlock(sidebarCss, "\n.sidebar-item-icon.is-internal");
+
+    for (const block of [rowSplitBlock, pinnedSplitBlock, loadingBlock, internalBlock]) {
+      expect(block).toContain("var(--sidebar-status-strong)");
+      expect(block).not.toContain("var(--accent)");
+    }
+    expect(sidebarCss).toContain("--sidebar-subtle-accent: color-mix(in srgb, var(--muted)");
+  });
+
   it("keeps workspace active state quiet and removes accent wash from the app background", () => {
     const activeWorkspaceBlock = getRuleBlock(workspaceCss, ".workspace-button[aria-current=\"true\"]");
 

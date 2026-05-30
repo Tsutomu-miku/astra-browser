@@ -3,7 +3,8 @@
   z-index: 20;
   --sidebar-active-bg: rgba(255, 255, 255, 0.105);
   --sidebar-selected-bg: rgba(255, 255, 255, 0.08);
-  --sidebar-subtle-accent: color-mix(in srgb, var(--accent) 34%, var(--muted));
+  --sidebar-status-strong: color-mix(in srgb, var(--muted) 84%, white);
+  --sidebar-subtle-accent: color-mix(in srgb, var(--muted) 78%, white);
   width: var(--sidebar-width, 292px);
   min-height: 0;
   height: 100vh;
@@ -522,7 +523,7 @@ h1 {
 }
 
 .pinned-tab-status-badge.is-split {
-  color: color-mix(in srgb, var(--accent) 78%, white);
+  color: var(--sidebar-status-strong);
 }
 
 .pinned-tab-status-badge.is-muted {
@@ -734,8 +735,8 @@ h1 {
 }
 
 .sidebar-item-icon.is-internal {
-  background: color-mix(in srgb, var(--accent) 20%, rgba(255, 255, 255, 0.09));
-  color: color-mix(in srgb, var(--accent) 78%, white);
+  background: rgba(255, 255, 255, 0.075);
+  color: var(--sidebar-status-strong);
 }
 
 .sidebar-item-icon.is-file {
@@ -769,7 +770,7 @@ h1 {
 }
 
 .sidebar-item-icon-status.is-loading {
-  color: color-mix(in srgb, var(--accent) 76%, white);
+  color: var(--sidebar-status-strong);
   animation: sidebar-icon-spin 900ms linear infinite;
 }
 
@@ -950,7 +951,7 @@ h1 {
 }
 
 .tab-status-badge.is-split {
-  color: color-mix(in srgb, var(--accent) 76%, white);
+  color: var(--sidebar-status-strong);
 }
 
 .tab-status-badge.is-muted {
