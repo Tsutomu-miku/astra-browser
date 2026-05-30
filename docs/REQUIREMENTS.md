@@ -159,6 +159,7 @@ For tab-related features, requirements must specify object identity. In particul
 - Sidebar tab and favorite rows must reveal Alt preview and Shift split hints on hover or keyboard focus.
 - Sidebar row hover hints must not cover tab or favorite titles; they should reserve inline space or stay inside their tile.
 - Sidebar hover, pressed, focus-visible, active, selected, dragging, drop-target, sleeping, muted, split, and disabled states must be visually distinct without becoming noisy.
+- Sidebar hover states should use quiet row fills instead of border-heavy outlines.
 - Sidebar focus-visible states should highlight the whole row or tile quietly instead of relying on browser default outlines or accent-heavy borders.
 - Sidebar tab, pinned tab, Essential, and favorite rows must avoid native browser title tooltips that cover the side panel while scanning or dragging.
 - Sidebar Space and tab group menu swatches must avoid native browser title tooltips and use accessible labels instead.

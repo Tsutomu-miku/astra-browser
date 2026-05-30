@@ -36,6 +36,18 @@ describe("sidebar selection styles", () => {
     expect(closedFocusBlock).toContain("outline: none");
   });
 
+  it("keeps sidebar hover states quiet and fill-based", () => {
+    const tabHoverBlock = getRuleBlock(sidebarCss, ".tab-row:hover");
+    const favoriteHoverBlock = getRuleBlock(sidebarCss, ".favorite-button:hover");
+    const closedHoverBlock = getRuleBlock(sidebarCss, ".closed-tab-button:hover");
+
+    for (const block of [tabHoverBlock, favoriteHoverBlock, closedHoverBlock]) {
+      expect(block).toContain("background: var(--panel-soft)");
+      expect(block).toContain("border-color: transparent");
+      expect(block).not.toContain("var(--accent)");
+    }
+  });
+
   it("keeps workspace active state quiet and removes accent wash from the app background", () => {
     const activeWorkspaceBlock = getRuleBlock(workspaceCss, ".workspace-button[aria-current=\"true\"]");
 

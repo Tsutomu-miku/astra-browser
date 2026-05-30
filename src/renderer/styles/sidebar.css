@@ -581,7 +581,7 @@ h1 {
 
 .tab-row:hover {
   background: var(--panel-soft);
-  border-color: var(--line);
+  border-color: transparent;
 }
 
 .tab-row:focus-within {
@@ -665,7 +665,7 @@ h1 {
 
 .favorite-button:hover {
   background: var(--panel-soft);
-  border-color: var(--line);
+  border-color: transparent;
 }
 
 .favorite-button:focus-visible {
@@ -793,7 +793,7 @@ h1 {
 }
 
 .closed-tab-button:hover {
-  border-color: var(--line);
+  border-color: transparent;
   background: var(--panel-soft);
 }
 
