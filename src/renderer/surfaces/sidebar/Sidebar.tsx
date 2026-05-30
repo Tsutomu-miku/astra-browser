@@ -25,7 +25,7 @@ import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
-import { focusCurrentOrFirstSidebarItem, handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
+import { focusCurrentOrFirstSidebarItem, handleSidebarFocusNavigation, scrollCurrentSidebarItemIntoView } from "./model/sidebarFocusNavigation";
 import {
   readSidebarClosedTabDragIndex,
   readSidebarEssentialDragId,
@@ -271,6 +271,11 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     if (!activeSearchTarget) return;
     scrollSidebarSearchTargetIntoView(activeSearchTarget);
   }, [activeSearchTarget]);
+
+  useEffect(() => {
+    if (tabQuery) return;
+    scrollCurrentSidebarItemIntoView(tabStackRef.current);
+  }, [activeTab.id, activeWorkspace.id, tabQuery]);
 
   function onSearchKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
     if (isListNavigationKey(event.key)) {

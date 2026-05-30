@@ -6,7 +6,11 @@ import { describe, expect, it, vi } from "vitest";
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
-import { focusCurrentOrFirstSidebarItem, handleSidebarFocusNavigation } from "../src/renderer/surfaces/sidebar/model/sidebarFocusNavigation";
+import {
+  focusCurrentOrFirstSidebarItem,
+  handleSidebarFocusNavigation,
+  scrollCurrentSidebarItemIntoView
+} from "../src/renderer/surfaces/sidebar/model/sidebarFocusNavigation";
 
 describe("sidebar focus navigation", () => {
   it("collapses and expands sidebar sections with Left and Right arrows", () => {
@@ -369,6 +373,33 @@ describe("sidebar focus navigation", () => {
     expect(document.activeElement?.textContent).toBe("Essentials");
 
     container.remove();
+  });
+
+  it("scrolls the current sidebar item into view without moving focus", () => {
+    const scrollIntoView = vi.fn();
+    const container = document.createElement("section");
+    container.innerHTML = `
+      <button class="sidebar-section-header-button" type="button">Tabs</button>
+      <div class="tab-row" aria-current="true">
+        <button class="tab-button" type="button">Current</button>
+      </div>
+    `;
+    const currentButton = container.querySelector<HTMLButtonElement>(".tab-button")!;
+    currentButton.scrollIntoView = scrollIntoView;
+    document.body.append(container);
+
+    expect(scrollCurrentSidebarItemIntoView(container)).toBe(true);
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest", inline: "nearest" });
+    expect(document.activeElement).not.toBe(currentButton);
+
+    container.remove();
+  });
+
+  it("does not scroll when no current sidebar item is rendered", () => {
+    const container = document.createElement("section");
+    container.innerHTML = '<button class="sidebar-section-header-button" type="button">Tabs</button>';
+
+    expect(scrollCurrentSidebarItemIntoView(container)).toBe(false);
   });
 });
 
