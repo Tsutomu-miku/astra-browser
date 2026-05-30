@@ -103,6 +103,19 @@
   color: color-mix(in srgb, var(--text) 84%, var(--muted));
   font-size: 10px;
   font-weight: 450;
+  opacity: 0;
+  transform: translateY(2px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.workspace-button:hover .workspace-tab-count,
+.workspace-button:focus-visible .workspace-tab-count,
+.workspace-button[aria-current="true"] .workspace-tab-count,
+.workspace-button[data-drop-target="true"] .workspace-tab-count {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .workspace-new-button {

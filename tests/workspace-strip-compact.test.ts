@@ -607,6 +607,17 @@ describe("workspace strip compact controls", () => {
     expect(dropIndicatorBlock).toContain("box-shadow: none");
   });
 
+  it("reveals Space tab counts only for active or engaged rail items", () => {
+    const countBlock = getRuleBlock(workspaceCss, ".workspace-tab-count");
+
+    expect(countBlock).toContain("opacity: 0");
+    expect(countBlock).toContain("transform: translateY(2px)");
+    expect(workspaceCss).toContain(".workspace-button:hover .workspace-tab-count");
+    expect(workspaceCss).toContain(".workspace-button:focus-visible .workspace-tab-count");
+    expect(workspaceCss).toContain(".workspace-button[aria-current=\"true\"] .workspace-tab-count");
+    expect(workspaceCss).toContain(".workspace-button[data-drop-target=\"true\"] .workspace-tab-count");
+  });
+
   it("styles Space drag insertion indicators", () => {
     expect(workspaceCss).toContain(".workspace-button[data-drop-placement]::before");
     expect(workspaceCss).toContain('.workspace-button[data-drop-placement="before"]::before');
