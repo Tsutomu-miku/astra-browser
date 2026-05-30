@@ -132,4 +132,28 @@ describe("buildOmniboxSuggestions", () => {
     });
     expect(getOmniboxInlineCompletion(suggestions, "git hub")).toBeNull();
   });
+
+  it("returns inline completion for title prefixes when the URL does not start with the query", () => {
+    const state = createDefaultState();
+    getActiveWorkspace(state).favorites.unshift(createFavorite("Linear Planning", "https://docs.example/linear"));
+    const suggestions = buildOmniboxSuggestions(state, "lin");
+
+    const favorite = suggestions.find((suggestion) => suggestion.type === "favorite" && suggestion.title === "Linear Planning")!;
+    expect(getOmniboxInlineCompletion(suggestions, "lin")).toEqual({
+      suggestionId: favorite.id,
+      suffix: "ear Planning",
+      value: "Linear Planning"
+    });
+  });
+
+  it("matches title acronyms for compact browser-style lookups", () => {
+    const state = createDefaultState();
+    getActiveWorkspace(state).favorites.unshift(createFavorite("GitHub Issues", "https://issues.example"));
+    const suggestions = buildOmniboxSuggestions(state, "ghi");
+
+    expect(suggestions[1]).toMatchObject({
+      title: "GitHub Issues",
+      type: "favorite"
+    });
+  });
 });

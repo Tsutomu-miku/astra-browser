@@ -133,6 +133,8 @@ function rankSuggestion(suggestion: OmniboxSuggestion, query: string, index: num
       best = Math.max(best, 1200);
     } else if (normalizedField.includes(` ${query}`) || normalizedField.includes(`.${query}`) || normalizedField.includes(`/${query}`)) {
       best = Math.max(best, 950);
+    } else if (matchesAcronym(field, query)) {
+      best = Math.max(best, 850);
     } else if (normalizedField.includes(query)) {
       best = Math.max(best, 700);
     }
@@ -178,6 +180,8 @@ function getCompletionCandidates(suggestion: OmniboxSuggestion): string[] {
   return uniqueNonEmpty([
     suggestion.completion,
     displayUrl,
+    getHost(url),
+    getTitleCompletionCandidate(suggestion, url),
     trimTrailingSlash(url)
   ]);
 }
@@ -210,6 +214,13 @@ function uniqueNonEmpty(values: Array<string | undefined>): string[] {
   return Array.from(new Set(values.filter((value): value is string => Boolean(value))));
 }
 
+function getTitleCompletionCandidate(suggestion: OmniboxSuggestion, url: string): string | undefined {
+  const title = suggestion.title.trim();
+  if (!title || title === url || title === suggestion.completion) return undefined;
+  if (suggestion.type === "navigate") return undefined;
+  return title;
+}
+
 function startsWithIgnoreCase(value: string, prefix: string): boolean {
   return value.toLowerCase().startsWith(prefix.toLowerCase());
 }
@@ -220,4 +231,23 @@ function trimTrailingSlash(value: string): string {
 
 function isLikelyUrl(query: string): boolean {
   return query.includes("://") || /^[^\s]+\.[^\s]+$/.test(query);
+}
+
+function matchesAcronym(value: string, query: string): boolean {
+  if (query.length < 2) return false;
+  return getAcronym(value).startsWith(query.toLowerCase());
+}
+
+function getAcronym(value: string): string {
+  return splitSearchTokens(value)
+    .map((token) => token[0])
+    .join("")
+    .toLowerCase();
+}
+
+function splitSearchTokens(value: string): string[] {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean);
 }
