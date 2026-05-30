@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
-import { handleSidebarFocusNavigation } from "../src/renderer/surfaces/sidebar/model/sidebarFocusNavigation";
+import { focusCurrentOrFirstSidebarItem, handleSidebarFocusNavigation } from "../src/renderer/surfaces/sidebar/model/sidebarFocusNavigation";
 
 describe("sidebar focus navigation", () => {
   it("collapses and expands sidebar sections with Left and Right arrows", () => {
@@ -335,6 +335,39 @@ describe("sidebar focus navigation", () => {
     expect(document.activeElement).toBe(input);
 
     act(() => root.unmount());
+    container.remove();
+  });
+
+  it("restores focus to the current sidebar item after leaving empty search", () => {
+    const container = document.createElement("section");
+    container.innerHTML = `
+      <button class="sidebar-section-header-button" type="button">Tabs</button>
+      <div class="tab-row" aria-current="false">
+        <button class="tab-button" type="button">Background</button>
+      </div>
+      <div class="tab-row" aria-current="true">
+        <button class="tab-button" type="button">Current</button>
+      </div>
+    `;
+    document.body.append(container);
+
+    expect(focusCurrentOrFirstSidebarItem(container)).toBe(true);
+    expect(document.activeElement?.textContent).toBe("Current");
+
+    container.remove();
+  });
+
+  it("falls back to the first visible sidebar item when no current item is rendered", () => {
+    const container = document.createElement("section");
+    container.innerHTML = `
+      <button class="sidebar-section-header-button" type="button">Essentials</button>
+      <button class="favorite-button" type="button">Docs</button>
+    `;
+    document.body.append(container);
+
+    expect(focusCurrentOrFirstSidebarItem(container)).toBe(true);
+    expect(document.activeElement?.textContent).toBe("Essentials");
+
     container.remove();
   });
 });

@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type DragEvent,
@@ -24,7 +25,7 @@ import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
 import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
 import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
-import { handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
+import { focusCurrentOrFirstSidebarItem, handleSidebarFocusNavigation } from "./model/sidebarFocusNavigation";
 import {
   readSidebarClosedTabDragIndex,
   readSidebarEssentialDragId,
@@ -47,6 +48,7 @@ import { getSidebarSearchOpenIntent, type SidebarOpenIntent } from "./sidebarOpe
 
 export function Sidebar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWorkspace, actions, compactMode, compactSidebarPeeking, floatingSidebarOpen, setPanel, setSidebarWidth, sidebarCollapsed, sidebarWidth, state } = controller;
+  const tabStackRef = useRef<HTMLElement | null>(null);
   const [tabQuery, setTabQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const {
@@ -285,6 +287,9 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       event.preventDefault();
       setTabQuery("");
       setActiveSearchIndex(0);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      focusCurrentOrFirstSidebarItem(tabStackRef.current);
     }
   }
 
@@ -338,7 +343,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         onUpdateWorkspace={actions.updateWorkspaceById}
       />
 
-      <section className="tab-stack" onKeyDown={handleSidebarFocusNavigation}>
+      <section className="tab-stack" ref={tabStackRef} onKeyDown={handleSidebarFocusNavigation}>
         <SidebarHeader workspaceName={activeWorkspace.name} onNewTab={actions.newTab} />
         <SidebarAddress controller={controller} />
         <SidebarSearchBox
