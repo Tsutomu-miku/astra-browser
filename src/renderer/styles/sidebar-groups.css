@@ -18,12 +18,14 @@
   padding: 0 8px;
   background: rgba(255, 255, 255, 0.045);
   color: var(--text);
+  cursor: pointer;
   transition:
     background 130ms ease,
     border-color 130ms ease;
 }
 
 .tab-group-header[data-dragging="true"] {
+  cursor: grabbing;
   opacity: 0.45;
   transform: scale(0.985);
 }

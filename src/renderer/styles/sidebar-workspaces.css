@@ -56,6 +56,7 @@
 }
 
 .workspace-button[data-dragging="true"] {
+  cursor: grabbing;
   opacity: 0.48;
 }
 

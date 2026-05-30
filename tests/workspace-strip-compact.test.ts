@@ -647,11 +647,13 @@ describe("workspace strip compact controls", () => {
 
   it("keeps Space drop target styling quiet", () => {
     const dropTargetBlock = getRuleBlock(workspaceCss, '.workspace-button[data-drop-target="true"]');
+    const draggingBlock = getRuleBlock(workspaceCss, '.workspace-button[data-dragging="true"]');
     const dropIndicatorBlock = getRuleBlock(workspaceCss, ".workspace-button[data-drop-placement]::before");
 
     expect(dropTargetBlock).toContain("background: rgba(255, 255, 255, 0.095)");
     expect(dropTargetBlock).toContain("box-shadow: none");
     expect(dropTargetBlock).not.toContain("var(--accent)");
+    expect(draggingBlock).toContain("cursor: grabbing");
     expect(dropIndicatorBlock).toContain("box-shadow: none");
   });
 
