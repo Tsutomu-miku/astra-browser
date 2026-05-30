@@ -7,7 +7,7 @@ import type { BrowserController } from "../../../../app/controller/types";
 import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges } from "../../model/sidebarItemState";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
-import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
+import { runSidebarItemKeyboardActivation, runSidebarItemPointerActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { getSidebarSearchTargetElementId, type SidebarSearchTarget } from "../../sidebarFiltering";
@@ -99,13 +99,11 @@ export function SidebarPinnedTabs({
                 }
               }}
               onClick={(event) => {
-                if (event.altKey) {
-                  actions.openGlance(tab.url, tab.title);
-                } else if (event.shiftKey) {
-                  actions.openTabInSplit(tab.id);
-                } else {
-                  actions.selectTab(tab.id);
-                }
+                runSidebarItemPointerActivation(event, {
+                  primary: () => actions.selectTab(tab.id),
+                  preview: () => actions.openGlance(tab.url, tab.title),
+                  split: () => actions.openTabInSplit(tab.id)
+                });
               }}
               onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
                 if (openSidebarKeyboardContextMenu(event)) return;

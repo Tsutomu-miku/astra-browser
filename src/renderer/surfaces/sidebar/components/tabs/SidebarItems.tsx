@@ -8,7 +8,7 @@ import type { FaviconCache } from "../../../../domain/browser";
 import { getQuickEntryAccessibilityLabel, type QuickEntryKind } from "../../model/quickEntryItemState";
 import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
-import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
+import { runSidebarItemKeyboardActivation, runSidebarItemPointerActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
@@ -106,13 +106,11 @@ export function TabRow({
           }
         }}
         onClick={(event) => {
-          if (event.altKey) {
-            onPreview(tab.url, tab.title);
-          } else if (event.shiftKey) {
-            onSplit(tab.id);
-          } else {
-            onSelect(tab.id);
-          }
+          runSidebarItemPointerActivation(event, {
+            primary: () => onSelect(tab.id),
+            preview: () => onPreview(tab.url, tab.title),
+            split: () => onSplit(tab.id)
+          });
         }}
         onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
           if (openSidebarKeyboardContextMenu(event)) return;
@@ -274,13 +272,11 @@ export function FavoriteButton({
         }
       }}
       onClick={(event) => {
-        if (event.altKey) {
-          onPreview(favorite.url, favorite.title);
-        } else if (event.shiftKey) {
-          openSplit();
-        } else {
-          onOpen(favorite.url, favorite.title);
-        }
+        runSidebarItemPointerActivation(event, {
+          primary: () => onOpen(favorite.url, favorite.title),
+          preview: () => onPreview(favorite.url, favorite.title),
+          split: openSplit
+        });
       }}
     >
       <SidebarItemIcon className="favorite-icon" faviconCache={faviconCache} url={favorite.url} />

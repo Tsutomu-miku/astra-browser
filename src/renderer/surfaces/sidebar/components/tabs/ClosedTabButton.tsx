@@ -1,6 +1,6 @@
 import { type ClosedTab, type FaviconCache } from "../../../../domain/browser";
 import { getClosedTabAccessibilityLabel } from "../../model/closedTabItemState";
-import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivation";
+import { runSidebarItemKeyboardActivation, runSidebarItemPointerActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
 import { SidebarItemIcon } from "../common/SidebarItemIcon";
@@ -52,13 +52,11 @@ export function ClosedTabButton({
         });
       }}
       onClick={(event) => {
-        if (event.altKey) {
-          onPreview(tab.url, tab.title);
-        } else if (event.shiftKey) {
-          onOpenInSplit(tab.url, tab.title);
-        } else {
-          onRestore(closedIndex);
-        }
+        runSidebarItemPointerActivation(event, {
+          primary: () => onRestore(closedIndex),
+          preview: () => onPreview(tab.url, tab.title),
+          split: () => onOpenInSplit(tab.url, tab.title)
+        });
       }}
     >
       <SidebarItemIcon className="closed-tab-icon" faviconCache={faviconCache} faviconUrl={tab.faviconUrl} url={tab.url} />

@@ -31,6 +31,8 @@ describe("sidebar component structure", () => {
     const workspaceStrip = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip.tsx"), "utf8");
     const sidebarItems = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItems.tsx"), "utf8");
     const sidebarPinnedTabs = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs.tsx"), "utf8");
+    const sidebarClosedTabButton = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/ClosedTabButton.tsx"), "utf8");
+    const sidebarItemActivation = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarItemActivation.ts"), "utf8");
     const sidebarSections = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarSections.tsx"), "utf8");
     const sidebarTabsSection = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarTabsSection.tsx"), "utf8");
     const sidebarSearchBox = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarSearchBox.tsx"), "utf8");
@@ -76,6 +78,8 @@ describe("sidebar component structure", () => {
     expect(commonSectionHeader).toContain("sidebar-section-header");
     expect(commonTabStatusBadges).toContain("data-sidebar-tab-status-badges");
     expect(commonTabStatusBadges).toContain("data-sidebar-tab-status-badge");
+    expect(sidebarItemActivation).toContain("getSidebarItemPointerActivation");
+    expect(sidebarItemActivation).toContain("runSidebarItemPointerActivation");
     expect(menuDismissal).toContain("useContextMenuDismissal");
     expect(menuDismissal).toContain("useRef");
     expect(menuDismissal).toContain("restoreFocus: false");
@@ -85,10 +89,19 @@ describe("sidebar component structure", () => {
     expect(workspaceStrip).toContain("useContextMenuDismissal");
     expect(sidebarItems).toContain('from "../common/SidebarItemActionHints"');
     expect(sidebarItems).toContain('from "../common/SidebarItemIcon"');
+    expect(sidebarItems).toContain("runSidebarItemPointerActivation");
+    expect(sidebarItems).not.toContain("event.altKey");
+    expect(sidebarItems).not.toContain("event.shiftKey");
     expect(sidebarItems).not.toContain("export function SidebarSectionHeader");
     expect(sidebarPinnedTabs).toContain('from "../common/SidebarItemActionHints"');
     expect(sidebarPinnedTabs).toContain('from "../common/SidebarItemIcon"');
     expect(sidebarPinnedTabs).toContain('from "../common/SidebarSectionHeader"');
+    expect(sidebarPinnedTabs).toContain("runSidebarItemPointerActivation");
+    expect(sidebarPinnedTabs).not.toContain("event.altKey");
+    expect(sidebarPinnedTabs).not.toContain("event.shiftKey");
+    expect(sidebarClosedTabButton).toContain("runSidebarItemPointerActivation");
+    expect(sidebarClosedTabButton).not.toContain("event.altKey");
+    expect(sidebarClosedTabButton).not.toContain("event.shiftKey");
     expect(sidebarSections).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarTabsSection).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarSearchBox).toContain("SidebarModifierActionHints");
