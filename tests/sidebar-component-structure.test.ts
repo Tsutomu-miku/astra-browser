@@ -92,6 +92,10 @@ describe("sidebar component structure", () => {
     expect(workspaceStrip).toContain('from "../common/SidebarMenuItem"');
     expect(workspaceStrip).toContain('from "../common/SidebarMenuSurface"');
     expect(workspaceStrip).toContain("useContextMenuDismissal");
+    expect(workspaceStrip).toContain("acceptSidebarRowReorderDrag");
+    expect(workspaceStrip).toContain("clearSidebarRowReorderDrop");
+    expect(workspaceStrip).not.toContain("updateDropPlacement");
+    expect(workspaceStrip).not.toContain("clearDropPlacement");
     expect(sidebarItems).toContain('from "../common/SidebarItemActionHints"');
     expect(sidebarItems).toContain('from "../common/SidebarItemIcon"');
     expect(sidebarItems).toContain("runSidebarItemPointerActivation");

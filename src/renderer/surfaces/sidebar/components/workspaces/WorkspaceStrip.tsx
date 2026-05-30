@@ -3,11 +3,11 @@ import { FiArrowRight, FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiSettings
 
 import { useContextMenuDismissal, type ContextMenuCloseOptions } from "../../../../common/context-menu/menuDismissal";
 import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
-import { clearDropPlacement, updateDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import type { Workspace } from "../../../../domain/browser";
 import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
 import { SidebarMenuSurface } from "../common/SidebarMenuSurface";
-import { readSidebarFavoriteDragId, readSidebarTabDragEventId } from "../../model/sidebarDragSources";
+import { readSidebarFavoriteDragId, readSidebarTabDragEventId, readSidebarWorkspaceDragId } from "../../model/sidebarDragSources";
+import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
 import {
   WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
@@ -140,13 +140,14 @@ export function WorkspaceStrip({
             onDragEnd={onDragEnd}
             onDragOver={(event) => {
               onDragOver(event, workspace.id);
-              if (draggingWorkspaceId && workspace.id !== draggingWorkspaceId) {
-                updateDropPlacement(event.currentTarget, event, "vertical");
-              }
+              acceptSidebarRowReorderDrag(event, {
+                readDragId: (currentEvent) => readSidebarWorkspaceDragId({ draggingWorkspaceId }, (type) => currentEvent.dataTransfer.getData(type)),
+                targetId: workspace.id
+              });
             }}
-            onDragLeave={(event) => clearDropPlacement(event.currentTarget)}
+            onDragLeave={clearSidebarRowReorderDrop}
             onDrop={(event) => {
-              clearDropPlacement(event.currentTarget);
+              clearSidebarRowReorderDrop(event);
               onDrop(event, workspace.id);
             }}
             onContextMenu={(event) => openWorkspaceMenu(event, workspace.id)}
