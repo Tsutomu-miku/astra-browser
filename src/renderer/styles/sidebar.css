@@ -171,6 +171,7 @@
 }
 
 .sidebar-header {
+  min-width: 0;
   height: 58px;
   display: flex;
   justify-content: space-between;
@@ -178,22 +179,47 @@
   gap: 10px;
 }
 
-.eyebrow {
+.sidebar-heading {
+  min-width: 0;
+}
+
+.sidebar-eyebrow {
   margin: 0 0 2px;
   color: var(--muted);
   font-size: 11px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0;
 }
 
-h1 {
+.sidebar-title {
   margin: 0;
-  max-width: 170px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 18px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 450;
+}
+
+.sidebar-header .icon-button {
+  width: 28px;
+  height: 28px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.sidebar-header .icon-button:hover,
+.sidebar-header .icon-button:focus-visible {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  outline: none;
+}
+
+.sidebar-header .icon-button:active {
+  transform: none;
 }
 
 .sidebar-address {

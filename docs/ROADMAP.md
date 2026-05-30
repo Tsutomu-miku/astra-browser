@@ -254,6 +254,7 @@ Small requirements:
 - P1-1.22 New Space and Space menu fields use transparent default chrome with natural-cased labels and quiet focus fills.
 - P1-1.23 Sidebar no-match empty states render as quiet transparent rows instead of loose paragraph copy.
 - P1-1.24 Tab group context menu fields and color swatches use the same quiet transparent input and non-pill swatch treatment as Space menus.
+- P1-1.25 Sidebar header uses scoped quiet title styles, natural-cased Space labeling, and transparent New Tab chrome.
 
 ### P1-2 Split View And Glance
 
