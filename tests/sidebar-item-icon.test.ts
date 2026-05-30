@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { BrowserItemIcon } from "../src/renderer/common/icons/BrowserItemIcon";
 import { getBrowserItemIconState } from "../src/renderer/common/icons/browserItemIconState";
-import { SidebarItemIcon } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItemIcon";
+import { SidebarItemIcon } from "../src/renderer/surfaces/sidebar/components/common/SidebarItemIcon";
 
 describe("sidebar item icon", () => {
   it("uses web host initials for normal pages", () => {

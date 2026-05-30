@@ -9,11 +9,13 @@ describe("sidebar component structure", () => {
     const commonMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuItem.tsx");
     const commonMenuSurfacePath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuSurface.tsx");
     const commonItemActionHintsPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarItemActionHints.tsx");
+    const commonItemIconPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarItemIcon.tsx");
     const commonModifierHintsPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarModifierActionHints.tsx");
     const commonSectionHeaderPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarSectionHeader.tsx");
     const commonTabStatusBadgesPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarTabStatusBadges.tsx");
     const menuDismissalPath = join(root, "src/renderer/common/context-menu/menuDismissal.ts");
     const oldTabsActionHintsPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItemActionHints.tsx");
+    const oldTabsItemIconPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItemIcon.tsx");
     const oldTabsMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarMenuItem.tsx");
     const oldTabsStatusBadgesPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarTabStatusBadges.tsx");
     const sidebarMenuCssPath = join(root, "src/renderer/styles/sidebar-menu.css");
@@ -21,6 +23,7 @@ describe("sidebar component structure", () => {
     const commonMenuItem = readFileSync(commonMenuItemPath, "utf8");
     const commonMenuSurface = readFileSync(commonMenuSurfacePath, "utf8");
     const commonItemActionHints = readFileSync(commonItemActionHintsPath, "utf8");
+    const commonItemIcon = readFileSync(commonItemIconPath, "utf8");
     const commonModifierHints = readFileSync(commonModifierHintsPath, "utf8");
     const commonSectionHeader = readFileSync(commonSectionHeaderPath, "utf8");
     const commonTabStatusBadges = readFileSync(commonTabStatusBadgesPath, "utf8");
@@ -45,11 +48,13 @@ describe("sidebar component structure", () => {
     expect(existsSync(commonMenuItemPath)).toBe(true);
     expect(existsSync(commonMenuSurfacePath)).toBe(true);
     expect(existsSync(commonItemActionHintsPath)).toBe(true);
+    expect(existsSync(commonItemIconPath)).toBe(true);
     expect(existsSync(commonModifierHintsPath)).toBe(true);
     expect(existsSync(commonSectionHeaderPath)).toBe(true);
     expect(existsSync(commonTabStatusBadgesPath)).toBe(true);
     expect(existsSync(menuDismissalPath)).toBe(true);
     expect(existsSync(oldTabsActionHintsPath)).toBe(false);
+    expect(existsSync(oldTabsItemIconPath)).toBe(false);
     expect(existsSync(oldTabsMenuItemPath)).toBe(false);
     expect(existsSync(oldTabsStatusBadgesPath)).toBe(false);
     expect(existsSync(sidebarMenuCssPath)).toBe(true);
@@ -61,6 +66,7 @@ describe("sidebar component structure", () => {
     expect(commonMenuSurface).toContain('role="menu"');
     expect(commonMenuSurface).toContain("event.stopPropagation()");
     expect(commonItemActionHints).toContain("SidebarModifierActionHints");
+    expect(commonItemIcon).toContain("BrowserItemIcon");
     expect(commonModifierHints).toContain("FiEye");
     expect(commonModifierHints).toContain("FiColumns");
     expect(commonModifierHints).toContain("getModifierActionHintsLabel");
@@ -78,8 +84,10 @@ describe("sidebar component structure", () => {
     expect(workspaceStrip).toContain('from "../common/SidebarMenuSurface"');
     expect(workspaceStrip).toContain("useContextMenuDismissal");
     expect(sidebarItems).toContain('from "../common/SidebarItemActionHints"');
+    expect(sidebarItems).toContain('from "../common/SidebarItemIcon"');
     expect(sidebarItems).not.toContain("export function SidebarSectionHeader");
     expect(sidebarPinnedTabs).toContain('from "../common/SidebarItemActionHints"');
+    expect(sidebarPinnedTabs).toContain('from "../common/SidebarItemIcon"');
     expect(sidebarPinnedTabs).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarSections).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarTabsSection).toContain('from "../common/SidebarSectionHeader"');

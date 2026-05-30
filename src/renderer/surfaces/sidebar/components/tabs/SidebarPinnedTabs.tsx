@@ -12,8 +12,8 @@ import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardConte
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { getSidebarSearchTargetElementId, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
+import { SidebarItemIcon } from "../common/SidebarItemIcon";
 import { SidebarSectionHeader } from "../common/SidebarSectionHeader";
-import { SidebarItemIcon } from "./SidebarItemIcon";
 import { SidebarTabStatusBadges } from "../common/SidebarTabStatusBadges";
 
 export function SidebarPinnedTabs({

@@ -12,7 +12,7 @@ import { runSidebarItemKeyboardActivation } from "../../model/sidebarItemActivat
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
-import { SidebarItemIcon } from "./SidebarItemIcon";
+import { SidebarItemIcon } from "../common/SidebarItemIcon";
 import { SidebarTabStatusBadges } from "../common/SidebarTabStatusBadges";
 
 export function TabRow({
