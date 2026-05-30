@@ -87,13 +87,7 @@ export function getSidebarSearchTargets(input: SidebarFilterResult): SidebarSear
       url: essential.url
     })),
     ...input.pinnedTabs.map(toTabTarget),
-    ...input.favorites.map((favorite) => ({
-      type: "favorite" as const,
-      id: favorite.id,
-      tabId: resolveFavoriteTab({ tabs: workspaceTabs }, favorite)?.id,
-      title: favorite.title,
-      url: favorite.url
-    })),
+    ...input.favorites.map((favorite) => toFavoriteTarget(favorite, workspaceTabs)),
     ...input.groupedTabs.flatMap((entry) => entry.tabs.map(toTabTarget)),
     ...input.regularTabs.map(toTabTarget)
   ];
@@ -142,6 +136,18 @@ function matchesFavorite(favorite: Favorite, query: string, workspaceTabs?: Brow
   return favorite.title.toLowerCase().includes(query) ||
     favorite.url.toLowerCase().includes(query) ||
     Boolean(tab && matchesTab(tab, query));
+}
+
+function toFavoriteTarget(favorite: Favorite, workspaceTabs: BrowserTab[]): SidebarSearchTarget {
+  const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
+
+  return {
+    type: "favorite",
+    id: favorite.id,
+    tabId: tab?.id,
+    title: tab?.title || favorite.title || tab?.url || favorite.url,
+    url: tab?.url ?? favorite.url
+  };
 }
 
 function toTabTarget(tab: BrowserTab): SidebarSearchTarget {

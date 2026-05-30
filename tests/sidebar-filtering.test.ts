@@ -86,7 +86,7 @@ describe("sidebar filtering", () => {
     expect(targets.map((target) => `${target.type}:${target.title}`)).toEqual([
       "essential:Inbox",
       "tab:Mail",
-      "favorite:Docs",
+      "favorite:Docs Tab",
       "tab:Chromium",
       "tab:News"
     ]);
@@ -133,9 +133,9 @@ describe("sidebar filtering", () => {
     expect(getSidebarSearchTargets(result)).toEqual([{
       id: favorite.id,
       tabId: favoriteTab.id,
-      title: "Old Docs",
+      title: favoriteTab.title,
       type: "favorite",
-      url: favorite.url
+      url: favoriteTab.url
     }]);
   });
 
