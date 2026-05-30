@@ -49,6 +49,23 @@ describe("sidebar selection styles", () => {
     }
   });
 
+  it("separates pressed feedback from dragging affordances", () => {
+    const tabPressedBlock = getRuleBlock(sidebarCss, ".tab-row:active");
+    const quickEntryPressedBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:active,\n.favorite-button:active,\n.closed-tab-button:active");
+    const tabDraggingBlock = getRuleBlock(sidebarCss, ".tab-row[data-dragging=\"true\"]");
+    const pinnedDraggingBlock = getRuleBlock(sidebarCss, ".pinned-tab-button[data-dragging=\"true\"]");
+
+    for (const block of [tabPressedBlock, quickEntryPressedBlock]) {
+      expect(block).toContain("background: var(--sidebar-selected-bg)");
+      expect(block).toContain("border-color: transparent");
+      expect(block).not.toContain("cursor: grabbing");
+      expect(block).not.toContain("var(--accent)");
+    }
+    for (const block of [tabDraggingBlock, pinnedDraggingBlock]) {
+      expect(block).toContain("cursor: grabbing");
+    }
+  });
+
   it("keeps row status indicators as inline glyphs instead of badges", () => {
     const statusBlock = getRuleBlock(sidebarCss, "\n.tab-status-badge {");
 

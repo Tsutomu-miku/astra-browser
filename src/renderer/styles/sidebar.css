@@ -479,11 +479,15 @@ h1 {
   transform: translateY(-1px);
 }
 
-.pinned-tab-button:active {
-  cursor: grabbing;
+.pinned-tab-button:active,
+.favorite-button:active,
+.closed-tab-button:active {
+  background: var(--sidebar-selected-bg);
+  border-color: transparent;
 }
 
 .pinned-tab-button[data-dragging="true"] {
+  cursor: grabbing;
   opacity: 0.45;
   transform: scale(0.96);
 }
@@ -600,10 +604,12 @@ h1 {
 }
 
 .tab-row:active {
-  cursor: grabbing;
+  background: var(--sidebar-selected-bg);
+  border-color: transparent;
 }
 
 .tab-row[data-dragging="true"] {
+  cursor: grabbing;
   opacity: 0.45;
 }
 
