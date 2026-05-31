@@ -28,7 +28,7 @@ describe("start surface styles", () => {
   });
 
   it("uses compact glyph action hints in start search suggestions", () => {
-    const hintBlock = getRuleBlock(startCss, ".start-search-action-hint");
+    const hintBlock = getRuleBlock(startCss, "\n.start-search-action-hint {");
 
     expect(hintBlock).toContain("inline-grid");
     expect(startCss).not.toContain(".start-search-action-hint kbd");

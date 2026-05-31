@@ -61,7 +61,7 @@ describe("sidebar section header", () => {
   });
 
   it("keeps expanded section counts quiet until the header is engaged", () => {
-    const countBlock = getRuleBlock(sidebarCss, ".sidebar-section-count");
+    const countBlock = getRuleBlock(sidebarCss, "\n.sidebar-section-count {\n  color:");
     const revealBlock = getRuleBlock(sidebarCss, ".sidebar-section-header:hover .sidebar-section-count,\n.sidebar-section-header:focus-within .sidebar-section-count,\n.sidebar-section-header[data-collapsed=\"true\"] .sidebar-section-count");
 
     expect(countBlock).toContain("opacity: 0");

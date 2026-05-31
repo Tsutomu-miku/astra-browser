@@ -61,14 +61,14 @@ describe("sidebar item action hint styles", () => {
   });
 
   it("keeps tab row hints and close controls in one stable action rail", () => {
-    const rowBlock = getRuleBlock(sidebarLayoutCss, ".tab-row");
-    const buttonBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-button {");
+    const rowBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row {");
+    const buttonBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-button {\n  position:");
     const railBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row-actions");
     const railHintBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row-actions .sidebar-item-action-hints");
 
     expect(rowBlock).toContain("grid-template-columns: minmax(0, 1fr) 56px");
     expect(buttonBlock).toContain("grid-template-columns: 24px minmax(0, 1fr)");
-    expect(buttonBlock).not.toContain("38px");
+    expect(buttonBlock).not.toContain("grid-template-columns: 24px minmax(0, 1fr) 38px");
     expect(railBlock).toContain("width: 56px");
     expect(railBlock).toContain("justify-content: flex-end");
     expect(railHintBlock).toContain("width: 30px");

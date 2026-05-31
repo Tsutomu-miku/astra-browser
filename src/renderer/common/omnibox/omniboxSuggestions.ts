@@ -177,11 +177,15 @@ function getSearchFields(suggestion: OmniboxSuggestion): string[] {
 function getCompletionCandidates(suggestion: OmniboxSuggestion): string[] {
   const url = getSuggestionUrl(suggestion);
   const displayUrl = getDisplayUrl(url);
+  const titleCompletion = getTitleCompletionCandidate(suggestion, url);
+  const titleBeforeUrl = titleCompletion && /\s/.test(titleCompletion);
+
   return uniqueNonEmpty([
+    ...(titleBeforeUrl ? [titleCompletion] : []),
     suggestion.completion,
     displayUrl,
     getHost(url),
-    getTitleCompletionCandidate(suggestion, url),
+    ...(!titleBeforeUrl ? [titleCompletion] : []),
     trimTrailingSlash(url)
   ]);
 }
