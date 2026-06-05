@@ -13,16 +13,13 @@ import {
   isSidebarFavoriteActive,
   isSidebarUrlActive
 } from "../../model/sidebarItemState";
-import { SIDEBAR_DRAG_DATA } from "../../model/sidebarDragSources";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
-import { ClosedTabButton } from "./ClosedTabButton";
 import { SidebarSectionHeader } from "../common/SidebarSectionHeader";
 import { FavoriteButton, TabRow } from "./SidebarItems";
-import { SidebarPinnedTabs } from "./SidebarPinnedTabs";
 import { SidebarTabsSection } from "./SidebarTabsSection";
 
-const SIDEBAR_RECENTLY_CLOSED_LIMIT = 4;
+const SIDEBAR_ESSENTIALS_LIMIT = 8;
 
 export function SidebarSections({
   actions,
@@ -45,7 +42,6 @@ export function SidebarSections({
   onFavoriteReorderDrop,
   onClosedTabContextMenu,
   onTabGroupContextMenu,
-  onPinDrop,
   onRenameTab,
   onTabContextMenu,
   onTabDrop,
@@ -64,7 +60,7 @@ export function SidebarSections({
   actions: BrowserController["actions"];
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
-  closedTabs: ClosedTab[];
+  closedTabs?: ClosedTab[];
   draggingClosedTabIndex?: number | null;
   draggingEssentialId: string | null;
   faviconCache?: FaviconCache;
@@ -79,8 +75,7 @@ export function SidebarSections({
   onFavoriteDragStart: (event: DragEvent<HTMLElement>, favoriteId: string) => void;
   onFavoriteDrop: (event: DragEvent<HTMLElement>) => void;
   onFavoriteReorderDrop: (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis) => void;
-  onClosedTabContextMenu: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
-  onPinDrop: (event: DragEvent<HTMLElement>) => void;
+  onClosedTabContextMenu?: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
   onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
@@ -99,8 +94,6 @@ export function SidebarSections({
 }) {
   const [localCollapsedSections, setLocalCollapsedSections] = useState<SidebarSectionCollapsedState>(DEFAULT_SIDEBAR_SECTION_COLLAPSED);
   const currentCollapsedSections = collapsedSections ?? localCollapsedSections;
-  const tabCount = filteredItems.groupedTabs.reduce((total, entry) => total + entry.tabs.length, 0) + filteredItems.regularTabs.length;
-  const recentlyClosedTabs = closedTabs.slice(0, SIDEBAR_RECENTLY_CLOSED_LIMIT);
   const isSectionCollapsed = (sectionId: SidebarSectionId) => (
     !filteredItems.isFiltering &&
     currentCollapsedSections[sectionId]
@@ -115,22 +108,15 @@ export function SidebarSections({
   };
   const openFavorite = (favorite: Favorite) => {
     const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
-    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(favorite.url, favorite.title);
+    tab ? actions.selectTab(tab.id) : actions.navigateActiveTab(favorite.url);
   };
   const showFavoritesFolder = filteredItems.favorites.length > 0 || !filteredItems.isFiltering;
-  const showPinnedFolder = filteredItems.pinnedTabs.length > 0 || !filteredItems.isFiltering;
 
   return (
     <>
       {filteredItems.essentials.length > 0 && (
         <section className="sidebar-section">
-          <SidebarSectionHeader
-            count={filteredItems.essentials.length}
-            isCollapsed={isSectionCollapsed("essentials")}
-            title="Essentials"
-            onToggle={() => toggleSection("essentials")}
-          />
-          {!isSectionCollapsed("essentials") && <nav
+          <nav
             className="essentials"
             aria-label="Essentials"
             onDragEnter={(event) => {
@@ -141,7 +127,7 @@ export function SidebarSections({
             }}
             onDrop={onEssentialDrop}
           >
-            {filteredItems.essentials.map((essential) => (
+            {(filteredItems.isFiltering ? filteredItems.essentials : filteredItems.essentials.slice(0, SIDEBAR_ESSENTIALS_LIMIT)).map((essential) => (
               <FavoriteButton
                 key={essential.id}
                 draggable
@@ -162,26 +148,9 @@ export function SidebarSections({
                 onPreview={actions.openGlance}
               />
             ))}
-          </nav>}
+          </nav>
         </section>
       )}
-
-      <SidebarPinnedTabs
-        actions={actions}
-        activeSearchTarget={activeSearchTarget}
-        activeTab={activeTab}
-        draggingTabId={draggingTabId}
-        faviconCache={faviconCache}
-        isCollapsed={isSectionCollapsed("pinned")}
-        pinnedTabs={filteredItems.pinnedTabs}
-        splitTabIds={splitTabIds}
-        onTabContextMenu={onTabContextMenu}
-        onTabDrop={onTabDrop}
-        onPinDrop={onPinDrop}
-        onToggle={() => toggleSection("pinned")}
-        setDraggingTabId={setDraggingTabId}
-        showWhenEmpty={showPinnedFolder}
-      />
 
       {showFavoritesFolder && (
         <section
@@ -264,51 +233,16 @@ export function SidebarSections({
         draggingTabId={draggingTabId}
         filteredItems={filteredItems}
         faviconCache={faviconCache}
-        isCollapsed={isSectionCollapsed("tabs")}
         splitTabIds={splitTabIds}
-        tabCount={tabCount}
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}
         onTabGroupCreate={onTabGroupCreate}
         onTabGroupContextMenu={onTabGroupContextMenu}
         onTabsDrop={onTabsDrop}
         onRenameTab={onRenameTab}
-        onToggle={() => toggleSection("tabs")}
         setDraggingGroupId={setDraggingGroupId}
         setDraggingTabId={setDraggingTabId}
       />
-
-      {!filteredItems.isFiltering && recentlyClosedTabs.length > 0 && (
-        <section className="sidebar-section">
-          <SidebarSectionHeader
-            count={recentlyClosedTabs.length}
-            isCollapsed={isSectionCollapsed("recentlyClosed")}
-            title="Recently Closed"
-            onToggle={() => toggleSection("recentlyClosed")}
-          />
-          {!isSectionCollapsed("recentlyClosed") && <nav className="recently-closed-tabs" aria-label="Recently closed tabs">
-            {recentlyClosedTabs.map((tab, index) => (
-              <ClosedTabButton
-                key={`${tab.url}-${tab.closedAt}`}
-                closedIndex={index}
-                draggingClosedTabIndex={draggingClosedTabIndex}
-                faviconCache={faviconCache}
-                tab={tab}
-                onContextMenu={onClosedTabContextMenu}
-                onDragEnd={() => setDraggingClosedTabIndex(null)}
-                onDragStart={(event) => {
-                  setDraggingClosedTabIndex(index);
-                  event.dataTransfer.effectAllowed = "move";
-                  event.dataTransfer.setData(SIDEBAR_DRAG_DATA.closedTabIndex, String(index));
-                }}
-                onOpenInSplit={actions.openUrlInSplit}
-                onPreview={actions.openGlance}
-                onRestore={actions.restoreClosedTab}
-              />
-            ))}
-          </nav>}
-        </section>
-      )}
     </>
   );
 }

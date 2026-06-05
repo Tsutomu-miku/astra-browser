@@ -37,7 +37,6 @@ describe("sidebar section drop zones", () => {
       onFavoriteReorderDrop: vi.fn(),
       onClosedTabContextMenu: vi.fn(),
       onTabGroupContextMenu: vi.fn(),
-      onPinDrop: vi.fn(),
       onQuickEntryContextMenu: vi.fn(),
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
@@ -54,7 +53,6 @@ describe("sidebar section drop zones", () => {
     expect(html).not.toContain('aria-label="Pinned tabs"');
     expect(html).not.toContain('aria-label="Essentials"');
     expect(html).not.toContain('aria-label="Favorites"');
-    expect(html).toContain("Pinned");
     expect(html).toContain("Favorites");
   });
 
@@ -91,7 +89,6 @@ describe("sidebar section drop zones", () => {
         onFavoriteReorderDrop: vi.fn(),
         onClosedTabContextMenu: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -150,7 +147,6 @@ describe("sidebar section drop zones", () => {
         onFavoriteReorderDrop: vi.fn(),
         onClosedTabContextMenu: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -213,7 +209,6 @@ describe("sidebar section drop zones", () => {
         onFavoriteReorderDrop: vi.fn(),
         onClosedTabContextMenu: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -271,7 +266,6 @@ describe("sidebar section drop zones", () => {
         onFavoriteReorderDrop: vi.fn(),
         onClosedTabContextMenu: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -286,7 +280,7 @@ describe("sidebar section drop zones", () => {
     });
 
     const tabsSection = container.querySelector<HTMLElement>(".tabs-section")!;
-    expect(tabsSection.textContent).toContain("Tabs");
+    expect(tabsSection).not.toBeNull();
     expect(container.querySelector(".tabs .tab-row")).toBeNull();
 
     const dragOverEvent = createDragEvent("dragover", {
@@ -340,7 +334,6 @@ describe("sidebar section drop zones", () => {
         onFavoriteReorderDrop: vi.fn(),
         onClosedTabContextMenu: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -396,7 +389,6 @@ describe("sidebar section drop zones", () => {
         onFavoriteReorderDrop: vi.fn(),
         onClosedTabContextMenu: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -452,7 +444,6 @@ describe("sidebar section drop zones", () => {
         onFavoriteReorderDrop: vi.fn(),
         onClosedTabContextMenu: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -509,7 +500,6 @@ describe("sidebar section drop zones", () => {
         onFavoriteReorderDrop: vi.fn(),
         onClosedTabContextMenu: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -556,7 +546,6 @@ describe("sidebar section drop zones", () => {
       onFavoriteReorderDrop: vi.fn(),
       onClosedTabContextMenu: vi.fn(),
       onTabGroupContextMenu: vi.fn(),
-      onPinDrop: vi.fn(),
       onQuickEntryContextMenu: vi.fn(),
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
@@ -603,7 +592,6 @@ describe("sidebar section drop zones", () => {
       onFavoriteReorderDrop: vi.fn(),
       onClosedTabContextMenu: vi.fn(),
       onTabGroupContextMenu: vi.fn(),
-      onPinDrop: vi.fn(),
       onQuickEntryContextMenu: vi.fn(),
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
@@ -647,7 +635,6 @@ describe("sidebar section drop zones", () => {
       onFavoriteReorderDrop: vi.fn(),
       onClosedTabContextMenu: vi.fn(),
       onTabGroupContextMenu: vi.fn(),
-      onPinDrop: vi.fn(),
       onQuickEntryContextMenu: vi.fn(),
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
@@ -692,7 +679,6 @@ describe("sidebar section drop zones", () => {
       onFavoriteReorderDrop: vi.fn(),
       onClosedTabContextMenu: vi.fn(),
       onTabGroupContextMenu: vi.fn(),
-      onPinDrop: vi.fn(),
       onQuickEntryContextMenu: vi.fn(),
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
@@ -738,7 +724,6 @@ describe("sidebar section drop zones", () => {
       onFavoriteReorderDrop: vi.fn(),
       onClosedTabContextMenu: vi.fn(),
       onTabGroupContextMenu: vi.fn(),
-      onPinDrop: vi.fn(),
       onQuickEntryContextMenu: vi.fn(),
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
@@ -785,7 +770,6 @@ describe("sidebar section drop zones", () => {
       onFavoriteReorderDrop: vi.fn(),
       onClosedTabContextMenu: vi.fn(),
       onTabGroupContextMenu: vi.fn(),
-      onPinDrop: vi.fn(),
       onQuickEntryContextMenu: vi.fn(),
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
@@ -808,10 +792,9 @@ describe("sidebar section drop zones", () => {
       });
     });
 
-    expect(container.querySelector(".essentials")).toBeNull();
-    expect(container.querySelector(".pinned-tabs")).toBeNull();
+    expect(container.querySelector(".essentials")).not.toBeNull();
     expect(container.querySelector(".favorites")).toBeNull();
-    expect(container.querySelector(".tabs")).toBeNull();
+    expect(container.querySelector(".tabs")).not.toBeNull();
 
     act(() => {
       root.render(createElement(SidebarSections, {
@@ -820,10 +803,9 @@ describe("sidebar section drop zones", () => {
       }));
     });
 
-    expect(container.querySelector(".essentials")).toBeNull();
-    expect(container.querySelector(".pinned-tabs")).toBeNull();
+    expect(container.querySelector(".essentials")).not.toBeNull();
     expect(container.querySelector(".favorites")).toBeNull();
-    expect(container.querySelector(".tabs")).toBeNull();
+    expect(container.querySelector(".tabs")).not.toBeNull();
 
     act(() => root.unmount());
   });
@@ -859,7 +841,6 @@ describe("sidebar section drop zones", () => {
       onFavoriteReorderDrop: vi.fn(),
       onClosedTabContextMenu: vi.fn(),
       onTabGroupContextMenu: vi.fn(),
-      onPinDrop: vi.fn(),
       onQuickEntryContextMenu: vi.fn(),
       onTabContextMenu: vi.fn(),
       onTabDrop: vi.fn(),
@@ -883,7 +864,7 @@ describe("sidebar section drop zones", () => {
       });
     });
 
-    expect(container.querySelector(".essentials")).toBeNull();
+    expect(container.querySelector(".essentials")).not.toBeNull();
     expect(container.querySelector(".favorites")).toBeNull();
 
     act(() => {
@@ -894,7 +875,7 @@ describe("sidebar section drop zones", () => {
       }));
     });
 
-    expect(container.querySelector(".essentials")).toBeNull();
+    expect(container.querySelector(".essentials")).not.toBeNull();
     expect(container.querySelector(".favorites")).toBeNull();
 
     act(() => {
@@ -905,7 +886,7 @@ describe("sidebar section drop zones", () => {
       }));
     });
 
-    expect(container.querySelector(".essentials")).toBeNull();
+    expect(container.querySelector(".essentials")).not.toBeNull();
     expect(container.querySelector(".favorites")).toBeNull();
 
     act(() => root.unmount());

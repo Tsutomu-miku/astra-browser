@@ -1,5 +1,5 @@
 import { useRef, type KeyboardEvent } from "react";
-import { FiX } from "react-icons/fi";
+import { FiSearch, FiX } from "react-icons/fi";
 
 import { SidebarModifierActionHints } from "../common/SidebarModifierActionHints";
 import {
@@ -38,6 +38,9 @@ export function SidebarSearchBox({
 
   return (
     <div className="sidebar-search">
+      <span className="sidebar-search-icon" aria-hidden="true">
+        <FiSearch />
+      </span>
       <input
         ref={inputRef}
         autoComplete="off"

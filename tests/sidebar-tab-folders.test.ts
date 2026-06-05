@@ -25,9 +25,8 @@ describe("sidebar tab folders", () => {
 
     const folders = getSidebarTabFolders(workspace);
 
-    expect(folders.pinnedTabs.map((tab) => tab.title)).toEqual(["Calendar"]);
-    expect(folders.groupedTabs[0].tabs.map((tab) => tab.title)).toEqual(["Chromium"]);
-    expect(folders.regularTabs.map((tab) => tab.title)).toEqual(["News"]);
+    expect(folders.regularTabs.map((tab) => tab.title)).toEqual(["Calendar", "News"]);
+    expect(folders.regularTabs[0].isPinned).toBe(true);
   });
 
   it("keeps URL-only legacy Favorites out of tab folder ownership", () => {

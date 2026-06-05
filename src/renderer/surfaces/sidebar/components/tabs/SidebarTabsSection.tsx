@@ -10,7 +10,6 @@ import {
   getSidebarTabFolderDragId
 } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
-import { SidebarSectionHeader } from "../common/SidebarSectionHeader";
 import { TabRow } from "./SidebarItems";
 import { TabGroupSection } from "./TabGroupSection";
 
@@ -22,18 +21,15 @@ export function SidebarTabsSection({
   draggingTabId,
   faviconCache,
   filteredItems,
-  isCollapsed,
   onTabContextMenu,
   onTabDrop,
   onTabGroupCreate,
   onTabGroupContextMenu,
   onTabsDrop,
   onRenameTab,
-  onToggle,
   setDraggingGroupId,
   setDraggingTabId,
-  splitTabIds,
-  tabCount
+  splitTabIds
 }: {
   actions: BrowserController["actions"];
   activeSearchTarget?: SidebarSearchTarget;
@@ -42,18 +38,15 @@ export function SidebarTabsSection({
   draggingTabId: string | null;
   faviconCache?: FaviconCache;
   filteredItems: SidebarFilterResult;
-  isCollapsed: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
   onTabGroupCreate?: (sourceTabId: string, targetTabId: string) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabsDrop: (event: DragEvent<HTMLElement>) => void;
   onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
-  onToggle: () => void;
   setDraggingGroupId: (groupId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
   splitTabIds: string[];
-  tabCount: number;
 }) {
   const onGroupDrop = (event: DragEvent<HTMLElement>, targetGroupId: string) => {
     event.preventDefault();
@@ -82,12 +75,8 @@ export function SidebarTabsSection({
       }}
       onDrop={onTabsDrop}
     >
-      <SidebarSectionHeader
-        count={tabCount}
-        isCollapsed={isCollapsed}
-        title="Tabs"
-        onToggle={onToggle}
-        rightAction={!filteredItems.isFiltering ? (
+      {!filteredItems.isFiltering && (
+        <div className="tabs-section-toolbar">
           <button
             className="sidebar-new-tab-button"
             type="button"
@@ -100,9 +89,9 @@ export function SidebarTabsSection({
           >
             <FiPlus />
           </button>
-        ) : undefined}
-      />
-      {!isCollapsed && <nav
+        </div>
+      )}
+      <nav
         className="tabs"
         aria-label="Tabs"
       >
@@ -157,7 +146,7 @@ export function SidebarTabsSection({
         {filteredItems.isFiltering && !filteredItems.hasMatches && (
           <p className="sidebar-empty" role="status">No matches</p>
         )}
-      </nav>}
+      </nav>
     </section>
   );
 }

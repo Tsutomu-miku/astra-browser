@@ -1,9 +1,20 @@
 .sidebar-search {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 28px;
+  grid-template-columns: 22px minmax(0, 1fr) 28px;
   align-items: center;
   gap: 6px;
-  padding: 0 0 10px;
+  padding: 0 0 6px;
+}
+
+.sidebar-search-icon {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.sidebar-search-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 .sidebar-search input {
@@ -11,7 +22,7 @@
   height: 32px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  padding: 0 10px;
+  padding: 0;
   background: transparent;
   color: var(--text);
   outline: none;
@@ -22,7 +33,7 @@
 }
 
 .sidebar-search:not(:has(button)) input {
-  grid-column: 1 / -1;
+  grid-column: 2 / -1;
 }
 
 .sidebar-search input:focus {

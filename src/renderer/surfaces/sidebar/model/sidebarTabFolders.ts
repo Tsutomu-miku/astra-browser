@@ -3,7 +3,6 @@ import { getGroupedTabs } from "../../../domain/tabs/groups";
 
 export interface SidebarTabFolders {
   groupedTabs: Array<{ group: Workspace["tabGroups"][number]; tabs: BrowserTab[] }>;
-  pinnedTabs: BrowserTab[];
   regularTabs: BrowserTab[];
 }
 
@@ -17,7 +16,7 @@ export function getSidebarTabFolders(workspace: Workspace): SidebarTabFolders {
     }))
     .filter((entry) => entry.tabs.length > 0);
   const groupedTabIds = new Set(groupedTabs.flatMap((entry) => entry.tabs.map((tab) => tab.id)));
-  const regularTabs = workspace.tabs.filter((tab) => (
+  const unpinnedRegularTabs = workspace.tabs.filter((tab) => (
     !tab.isPinned &&
     !groupedTabIds.has(tab.id) &&
     !favoriteFolderTabIds.has(tab.id)
@@ -25,8 +24,7 @@ export function getSidebarTabFolders(workspace: Workspace): SidebarTabFolders {
 
   return {
     groupedTabs,
-    pinnedTabs,
-    regularTabs
+    regularTabs: [...pinnedTabs, ...unpinnedRegularTabs]
   };
 }
 

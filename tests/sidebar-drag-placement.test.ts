@@ -10,7 +10,6 @@ import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { getMemorySaverState } from "../src/renderer/common/memory/memorySaverState";
 import { FavoriteButton, TabRow } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
-import { SidebarPinnedTabs } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs";
 import { SidebarTabsSection } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarTabsSection";
 import { TabGroupSection } from "../src/renderer/surfaces/sidebar/components/tabs/TabGroupSection";
 import { WorkspaceStrip } from "../src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip";
@@ -213,99 +212,6 @@ describe("sidebar drag placement", () => {
     act(() => root.unmount());
   });
 
-  it("passes horizontal placement intent when pinned tabs are dropped", () => {
-    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
-    const onTabDrop = vi.fn();
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(createElement(SidebarPinnedTabs, {
-        actions: createActions(),
-        activeTab: pinned,
-        draggingTabId: "other-tab",
-        pinnedTabs: [pinned],
-        splitTabIds: [],
-        onPinDrop: vi.fn(),
-        onTabContextMenu: vi.fn(),
-        onTabDrop,
-        setDraggingTabId: vi.fn()
-      }));
-    });
-
-    const button = container.querySelector<HTMLElement>(".pinned-tab-button")!;
-    stubRect(button, { left: 0, width: 40 });
-
-    button.dispatchEvent(createDragEvent("dragover", { clientX: 32 }));
-    expect(button.dataset.dropPlacement).toBe("after");
-
-    button.dispatchEvent(createDragEvent("drop", { clientX: 32 }));
-    expect(onTabDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), pinned.id, "horizontal");
-    expect(button.dataset.dropPlacement).toBeUndefined();
-
-    act(() => root.unmount());
-  });
-
-  it("accepts payload-backed drags over pinned tabs", () => {
-    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(createElement(SidebarPinnedTabs, {
-        actions: createActions(),
-        activeTab: pinned,
-        draggingTabId: null,
-        pinnedTabs: [pinned],
-        splitTabIds: [],
-        onPinDrop: vi.fn(),
-        onTabContextMenu: vi.fn(),
-        onTabDrop: vi.fn(),
-        setDraggingTabId: vi.fn()
-      }));
-    });
-
-    const button = container.querySelector<HTMLElement>(".pinned-tab-button")!;
-    stubRect(button, { left: 0, width: 40 });
-    const dragOver = createDragEvent("dragover", { clientX: 8 }, { "text/plain": "other-tab" });
-
-    button.dispatchEvent(dragOver);
-    expect(dragOver.defaultPrevented).toBe(true);
-    expect(button.dataset.dropPlacement).toBe("before");
-
-    act(() => root.unmount());
-  });
-
-  it("ignores non-tab payload drops on pinned tab buttons", () => {
-    const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
-    const onTabDrop = vi.fn();
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(createElement(SidebarPinnedTabs, {
-        actions: createActions(),
-        activeTab: pinned,
-        draggingTabId: null,
-        pinnedTabs: [pinned],
-        splitTabIds: [],
-        onPinDrop: vi.fn(),
-        onTabContextMenu: vi.fn(),
-        onTabDrop,
-        setDraggingTabId: vi.fn()
-      }));
-    });
-
-    const button = container.querySelector<HTMLElement>(".pinned-tab-button")!;
-    const drop = createDragEvent("drop", {}, { "text/favorite-id": "favorite" });
-    button.dispatchEvent(drop);
-
-    expect(onTabDrop).not.toHaveBeenCalled();
-    expect(drop.defaultPrevented).toBe(false);
-
-    act(() => root.unmount());
-  });
-
   it("marks before and after insertion placement while reordering Spaces", () => {
     const state = createDefaultState();
     const container = document.createElement("div");
@@ -479,16 +385,13 @@ describe("sidebar drag placement", () => {
           pinnedTabs: [],
           regularTabs: []
         },
-        isCollapsed: false,
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
         onTabsDrop: vi.fn(),
-        onToggle: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
-        tabCount: 1
+        splitTabIds: []
       }));
     });
 

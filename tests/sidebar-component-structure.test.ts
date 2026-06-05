@@ -34,7 +34,6 @@ describe("sidebar component structure", () => {
     const sidebarQuickEntryReorderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarQuickEntryReorderDrop.ts"), "utf8");
     const sidebarQuickEntryDragHook = readFileSync(join(root, "src/renderer/surfaces/sidebar/hooks/useSidebarQuickEntryDrag.ts"), "utf8");
     const sidebarItems = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItems.tsx"), "utf8");
-    const sidebarPinnedTabs = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs.tsx"), "utf8");
     const sidebarClosedTabButton = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/ClosedTabButton.tsx"), "utf8");
     const sidebarItemActivation = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarItemActivation.ts"), "utf8");
     const sidebarTabGroupHeaderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarTabGroupHeaderDrop.ts"), "utf8");
@@ -124,16 +123,6 @@ describe("sidebar component structure", () => {
     expect(sidebarItems).not.toContain("event.altKey");
     expect(sidebarItems).not.toContain("event.shiftKey");
     expect(sidebarItems).not.toContain("export function SidebarSectionHeader");
-    expect(sidebarPinnedTabs).toContain('from "../common/SidebarItemActionHints"');
-    expect(sidebarPinnedTabs).toContain('from "../common/SidebarItemIcon"');
-    expect(sidebarPinnedTabs).toContain('from "../common/SidebarSectionHeader"');
-    expect(sidebarPinnedTabs).toContain("runSidebarItemPointerActivation");
-    expect(sidebarPinnedTabs).toContain("acceptSidebarRowReorderDrag");
-    expect(sidebarPinnedTabs).toContain("resolveSidebarRowReorderDrop");
-    expect(sidebarPinnedTabs).not.toContain("updateDropPlacement");
-    expect(sidebarPinnedTabs).not.toContain("clearDropPlacement");
-    expect(sidebarPinnedTabs).not.toContain("event.altKey");
-    expect(sidebarPinnedTabs).not.toContain("event.shiftKey");
     expect(sidebarClosedTabButton).toContain("runSidebarItemPointerActivation");
     expect(sidebarClosedTabButton).not.toContain("event.altKey");
     expect(sidebarClosedTabButton).not.toContain("event.shiftKey");
@@ -150,7 +139,6 @@ describe("sidebar component structure", () => {
     expect(sidebarSections).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarSections).toContain('acceptSidebarTabFolderDrag(event, draggingTabId, "copy")');
     expect(sidebarSections).not.toContain("readSidebarTabDragEventId");
-    expect(sidebarTabsSection).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarSearchBox).toContain("SidebarModifierActionHints");
     expect(sidebarSearchBox).not.toContain("FiEye");
     expect(sidebarSearchBox).not.toContain("FiColumns");

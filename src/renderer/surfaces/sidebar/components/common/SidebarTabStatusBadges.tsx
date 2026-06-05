@@ -3,21 +3,16 @@ import { FiCamera, FiColumns, FiMic, FiRadio, FiVolume2, FiVolumeX } from "react
 import type { TabStatusBadge } from "../../model/sidebarItemState";
 
 export function SidebarTabStatusBadges({
-  badges,
-  variant = "row"
+  badges
 }: {
   badges: TabStatusBadge[];
-  variant?: "pinned" | "row";
 }) {
   if (badges.length === 0) return null;
 
-  const badgeClassName = variant === "pinned" ? "pinned-tab-status-badge" : "tab-status-badge";
-  const containerClassName = variant === "pinned" ? "pinned-tab-status-badges" : "tab-status-badges";
-
   return (
-    <span className={containerClassName} data-sidebar-tab-status-badges="true" aria-label={badges.map((badge) => badge.label).join(", ")}>
+    <span className="tab-status-badges" data-sidebar-tab-status-badges="true" aria-label={badges.map((badge) => badge.label).join(", ")}>
       {badges.map((badge) => (
-        <span className={`${badgeClassName} is-${badge.id}`} data-sidebar-tab-status-badge="true" key={badge.id} aria-hidden="true">
+        <span className={`tab-status-badge is-${badge.id}`} data-sidebar-tab-status-badge="true" key={badge.id} aria-hidden="true">
           <TabStatusIcon badge={badge} />
         </span>
       ))}

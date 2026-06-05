@@ -25,7 +25,6 @@ describe("sidebar selection styles", () => {
   it("uses quiet whole-row focus states for sidebar items", () => {
     const tabFocusBlock = getRuleBlock(sidebarCss, ".tab-row:focus-within");
     const favoriteFocusBlock = getRuleBlock(sidebarCss, ".favorite-button:focus-visible");
-    const pinnedFocusBlock = getRuleBlock(sidebarCss, "\n.pinned-tab-button:focus-visible {");
     const closedFocusBlock = getRuleBlock(sidebarCss, ".closed-tab-button:focus-visible");
 
     for (const block of [tabFocusBlock, favoriteFocusBlock, closedFocusBlock]) {
@@ -34,7 +33,6 @@ describe("sidebar selection styles", () => {
       expect(block).not.toContain("var(--accent)");
     }
     expect(favoriteFocusBlock).toContain("outline: none");
-    expect(pinnedFocusBlock).toContain("outline: none");
     expect(closedFocusBlock).toContain("outline: none");
   });
 
@@ -42,8 +40,6 @@ describe("sidebar selection styles", () => {
     const tabHoverBlock = getRuleBlock(sidebarCss, ".tab-row:hover");
     const favoriteHoverBlock = getRuleBlock(sidebarCss, ".favorite-button:hover");
     const closedHoverBlock = getRuleBlock(sidebarCss, ".closed-tab-button:hover");
-    const pinnedHoverBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:hover,\n.pinned-tab-button:focus-visible,\n.pinned-tab-button[aria-current=\"true\"],\n.pinned-tab-button[aria-selected=\"true\"]");
-    const pinnedIconHoverBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:hover .pinned-tab-icon,\n.pinned-tab-button:focus-visible .pinned-tab-icon");
     const workspaceHoverBlock = getRuleBlock(workspaceCss, ".workspace-button:hover");
 
     for (const block of [tabHoverBlock, favoriteHoverBlock, closedHoverBlock]) {
@@ -51,7 +47,7 @@ describe("sidebar selection styles", () => {
       expect(block).toContain("border-color: transparent");
       expect(block).not.toContain("var(--accent)");
     }
-    for (const block of [pinnedHoverBlock, pinnedIconHoverBlock, workspaceHoverBlock]) {
+    for (const block of [workspaceHoverBlock]) {
       expect(block).not.toContain("transform:");
       expect(block).not.toContain("translateY");
     }
@@ -62,9 +58,8 @@ describe("sidebar selection styles", () => {
     const tabRowBlock = getRuleBlock(sidebarCss, "\n.tab-row {");
     const favoriteBlock = getRuleBlock(sidebarCss, "\n.favorite-button {");
     const closedBlock = getRuleBlock(sidebarCss, "\n.closed-tab-button {");
-    const quickEntryPressedBlock = getRuleBlock(sidebarCss, ".pinned-tab-button:active,\n.favorite-button:active,\n.closed-tab-button:active");
+    const quickEntryPressedBlock = getRuleBlock(sidebarCss, ".favorite-button:active,\n.closed-tab-button:active");
     const tabDraggingBlock = getRuleBlock(sidebarCss, ".tab-row[data-dragging=\"true\"]");
-    const pinnedDraggingBlock = getRuleBlock(sidebarCss, ".pinned-tab-button[data-dragging=\"true\"]");
     const closedDraggingBlock = getRuleBlock(sidebarCss, ".closed-tab-button[data-dragging=\"true\"]");
     const quickEntryDraggingBlock = getRuleBlock(sidebarDropZonesCss, ".favorite-button[data-dragging=\"true\"]");
 
@@ -81,7 +76,7 @@ describe("sidebar selection styles", () => {
     for (const block of [favoriteBlock, closedBlock]) {
       expect(block).toContain("background: transparent");
     }
-    for (const block of [tabDraggingBlock, pinnedDraggingBlock, closedDraggingBlock, quickEntryDraggingBlock]) {
+    for (const block of [tabDraggingBlock, closedDraggingBlock, quickEntryDraggingBlock]) {
       expect(block).toContain("cursor: grabbing");
       expect(block).not.toContain("transform");
     }

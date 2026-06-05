@@ -71,7 +71,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
   } = useSidebarContextMenus();
   const {
     groupedTabs,
-    pinnedTabs,
     regularTabs
   } = useMemo(() => getSidebarTabFolders(activeWorkspace), [activeWorkspace]);
   const memorySaver = useMemo(() => getMemorySaverState(activeWorkspace, state), [activeWorkspace, state]);
@@ -79,10 +78,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     essentials: state.essentials,
     favorites: activeWorkspace.favorites,
     groupedTabs,
-    pinnedTabs,
+    pinnedTabs: [],
     regularTabs,
     workspaceTabs: activeWorkspace.tabs
-  }, tabQuery), [activeWorkspace.favorites, activeWorkspace.tabs, groupedTabs, pinnedTabs, regularTabs, state.essentials, tabQuery]);
+  }, tabQuery), [activeWorkspace.favorites, activeWorkspace.tabs, groupedTabs, regularTabs, state.essentials, tabQuery]);
   const searchTargets = useMemo(() => getSidebarSearchTargets(filteredItems), [filteredItems]);
   const activeSearchTarget = filteredItems.isFiltering
     ? searchTargets[clampSidebarSearchIndex(activeSearchIndex, searchTargets.length)]
@@ -183,10 +182,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       readSidebarGroupDragId({ draggingGroupId }, readDragData) ||
       readSidebarClosedTabDragIndex({ draggingClosedTabIndex }, readDragData) !== null
     );
-  };
-
-  const handlePinDrop = (event: DragEvent<HTMLElement>) => {
-    handleTabFolderDrop(event, { type: "pinned" });
   };
 
   const handleWorkspaceDragOver = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
@@ -397,12 +392,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             actions={actions}
             activeSearchTarget={activeSearchTarget}
             activeTab={activeTab}
-            closedTabs={activeWorkspace.closedTabs}
             collapsedSections={sidebarSectionCollapsed}
             draggingEssentialId={draggingEssentialId}
             faviconCache={state.faviconCache}
             draggingFavoriteId={draggingFavoriteId}
-            draggingClosedTabIndex={draggingClosedTabIndex}
             draggingGroupId={draggingGroupId}
             draggingTabId={draggingTabId}
             filteredItems={filteredItems}
@@ -412,11 +405,9 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             onFavoriteDragStart={handleFavoriteDragStart}
             onFavoriteDrop={handleFavoritesDrop}
             onFavoriteReorderDrop={handleFavoriteReorderDrop}
-            onClosedTabContextMenu={openClosedTabMenu}
             onTabGroupContextMenu={openTabGroupMenu}
             splitTabIds={state.splitTabIds}
             onQuickEntryContextMenu={openQuickEntryMenu}
-            onPinDrop={handlePinDrop}
             onRenameTab={(tabId, customTitle) => actions.updateTab(tabId, { customTitle })}
             onTabContextMenu={openTabMenu}
             onTabDrop={handleTabDrop}
@@ -425,7 +416,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             onToggleSection={handleToggleSidebarSection}
             setDraggingEssentialId={setDraggingEssentialId}
             setDraggingFavoriteId={setDraggingFavoriteId}
-            setDraggingClosedTabIndex={setDraggingClosedTabIndex}
             setDraggingGroupId={setDraggingGroupId}
             setDraggingTabId={setDraggingTabId}
             workspaceTabs={activeWorkspace.tabs}

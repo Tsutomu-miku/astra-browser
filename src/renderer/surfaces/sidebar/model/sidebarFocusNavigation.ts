@@ -6,15 +6,13 @@ const SIDEBAR_FOCUSABLE_ITEM_SELECTOR = [
   ".sidebar-section-header-button",
   ".tab-group-toggle",
   ".favorite-button",
-  ".pinned-tab-button",
   ".closed-tab-button",
   ".tab-button"
 ].join(",");
 
 const SIDEBAR_CURRENT_ITEM_SELECTOR = [
   '.tab-row[aria-current="true"] .tab-button',
-  '.favorite-button[aria-current="true"]',
-  '.pinned-tab-button[aria-current="true"]'
+  '.favorite-button[aria-current="true"]'
 ].join(",");
 
 export function handleSidebarFocusNavigation(event: KeyboardEvent<HTMLElement>): boolean {

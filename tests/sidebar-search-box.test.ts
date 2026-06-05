@@ -131,7 +131,7 @@ describe("sidebar search box", () => {
 
     expect(searchInputBlock).toContain("border: 1px solid transparent");
     expect(searchInputBlock).toContain("background: transparent");
-    expect(searchEmptyBlock).toContain("grid-column: 1 / -1");
+    expect(searchEmptyBlock).toContain("grid-column: 2 / -1");
     expect(searchFocusBlock).toContain("border-color: transparent");
     expect(searchFocusBlock).toContain("background: var(--theme-control)");
     expect(searchFocusBlock).toContain("box-shadow: none");

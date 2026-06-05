@@ -15,6 +15,7 @@ import {
 describe("sidebar focus navigation", () => {
   it("collapses and expands sidebar sections with Left and Right arrows", () => {
     const activeTab = createTab("Docs", "https://docs.example");
+    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -31,8 +32,8 @@ describe("sidebar focus navigation", () => {
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
-          essentials: [createFavorite("Calendar", "https://calendar.example")],
-          favorites: [],
+          essentials: [],
+          favorites: [favorite],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
@@ -46,7 +47,6 @@ describe("sidebar focus navigation", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -60,27 +60,27 @@ describe("sidebar focus navigation", () => {
       })));
     });
 
-    const essentialsHeader = Array.from(container.querySelectorAll<HTMLButtonElement>(".sidebar-section-header-button"))
-      .find((header) => header.textContent?.includes("Essentials"))!;
+    const favoritesHeader = Array.from(container.querySelectorAll<HTMLButtonElement>(".sidebar-section-header-button"))
+      .find((header) => header.textContent?.includes("Favorites"))!;
 
-    expect(essentialsHeader.getAttribute("aria-expanded")).toBe("true");
-    expect(essentialsHeader.getAttribute("aria-label")).toBe("Collapse Essentials");
-    expect(container.querySelector(".essentials")).not.toBeNull();
-
-    act(() => {
-      essentialsHeader.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));
-    });
-
-    expect(essentialsHeader.getAttribute("aria-expanded")).toBe("false");
-    expect(essentialsHeader.getAttribute("aria-label")).toBe("Expand Essentials");
-    expect(container.querySelector(".essentials")).toBeNull();
+    expect(favoritesHeader.getAttribute("aria-expanded")).toBe("true");
+    expect(favoritesHeader.getAttribute("aria-label")).toBe("Collapse Favorites");
+    expect(container.querySelector(".favorites")).not.toBeNull();
 
     act(() => {
-      essentialsHeader.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
+      favoritesHeader.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));
     });
 
-    expect(essentialsHeader.getAttribute("aria-expanded")).toBe("true");
-    expect(container.querySelector(".essentials")).not.toBeNull();
+    expect(favoritesHeader.getAttribute("aria-expanded")).toBe("false");
+    expect(favoritesHeader.getAttribute("aria-label")).toBe("Expand Favorites");
+    expect(container.querySelector(".favorites")).toBeNull();
+
+    act(() => {
+      favoritesHeader.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
+    });
+
+    expect(favoritesHeader.getAttribute("aria-expanded")).toBe("true");
+    expect(container.querySelector(".favorites")).not.toBeNull();
 
     act(() => root.unmount());
     container.remove();
@@ -106,7 +106,7 @@ describe("sidebar focus navigation", () => {
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
-          essentials: [createFavorite("Calendar", "https://calendar.example")],
+          essentials: [],
           favorites: [favorite],
           groupedTabs: [],
           hasMatches: true,
@@ -121,7 +121,6 @@ describe("sidebar focus navigation", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -146,8 +145,8 @@ describe("sidebar focus navigation", () => {
     act(() => {
       document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "End" }));
     });
-    expect(document.activeElement?.classList.contains("closed-tab-button")).toBe(true);
-    expect(document.activeElement?.textContent).toContain("Closed");
+    expect(document.activeElement?.classList.contains("tab-button")).toBe(true);
+    expect(document.activeElement?.textContent).toContain("Docs");
 
     act(() => {
       document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home" }));
@@ -158,9 +157,8 @@ describe("sidebar focus navigation", () => {
     container.remove();
   });
 
-  it("orders current tab folders before recently closed recovery", () => {
+  it("renders only the Favorites section header among quick-entry folders", () => {
     const activeTab = createTab("Docs", "https://docs.example");
-    const pinnedTab = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const favorite = createFavorite("MDN", "https://developer.mozilla.org");
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -169,7 +167,6 @@ describe("sidebar focus navigation", () => {
       root.render(createElement(SidebarSections, {
         actions: createActions(),
         activeTab,
-        closedTabs: [{ title: "Closed", url: "https://closed.example", closedAt: 1 }],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
@@ -180,22 +177,19 @@ describe("sidebar focus navigation", () => {
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
-          pinnedTabs: [pinnedTab],
+          pinnedTabs: [],
           regularTabs: [activeTab]
         },
-        onClosedTabContextMenu: vi.fn(),
         onEssentialDragStart: vi.fn(),
         onEssentialDrop: vi.fn(),
         onEssentialReorderDrop: vi.fn(),
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        setDraggingClosedTabIndex: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -206,13 +200,14 @@ describe("sidebar focus navigation", () => {
 
     const headers = Array.from(container.querySelectorAll(".sidebar-section-header-button"))
       .map((header) => header.textContent?.replace(/\d+$/, ""));
-    expect(headers).toEqual(["Essentials", "Pinned", "Favorites", "Tabs", "Recently Closed"]);
+    expect(headers).toEqual(["Favorites"]);
 
     act(() => root.unmount());
   });
 
   it("includes tab group toggles in sidebar item focus navigation", () => {
     const groupedTab = { ...createTab("Docs", "https://docs.example"), groupId: "group" };
+    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -230,7 +225,7 @@ describe("sidebar focus navigation", () => {
         draggingTabId: null,
         filteredItems: {
           essentials: [],
-          favorites: [],
+          favorites: [favorite],
           groupedTabs: [{
             group: { color: "#7dd3fc", id: "group", isCollapsed: false, name: "Research" },
             tabs: [groupedTab]
@@ -247,7 +242,6 @@ describe("sidebar focus navigation", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
@@ -257,21 +251,16 @@ describe("sidebar focus navigation", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabIds: [],
+        workspaceTabs: [groupedTab]
       })));
     });
 
-    const tabsHeader = Array.from(container.querySelectorAll<HTMLButtonElement>(".sidebar-section-header-button"))
-      .find((button) => button.textContent?.includes("Tabs"))!;
-    tabsHeader.focus();
+    const toggle = container.querySelector<HTMLButtonElement>(".tab-group-toggle")!;
+    toggle.focus();
 
     act(() => {
-      tabsHeader.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
-    });
-    expect(document.activeElement?.classList.contains("tab-group-toggle")).toBe(true);
-
-    act(() => {
-      document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
+      toggle.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
     });
     expect(document.activeElement?.classList.contains("tab-button")).toBe(true);
 
@@ -315,7 +304,6 @@ describe("sidebar focus navigation", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onPinDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
