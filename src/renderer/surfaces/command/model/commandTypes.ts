@@ -1,5 +1,4 @@
-import type { SplitLayout } from "../../../stores/browserStoreTypes";
-import type { BrowserSettings } from "../../../domain/browser";
+import type { BrowserSettings, SplitLayout } from "../../../domain/browser";
 import type { WebviewAction } from "../../../types/browser-ui";
 
 export interface Command {

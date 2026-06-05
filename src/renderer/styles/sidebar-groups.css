@@ -1,7 +1,24 @@
 .tab-group {
   display: grid;
   gap: 4px;
-  padding: 5px 0;
+  padding: 5px 0 5px 0;
+  position: relative;
+}
+
+/* Visual hierarchy for tabs inside a group: indent + subtle left guide line */
+.tab-group > .tab-row {
+  margin-left: 22px;
+}
+
+.tab-group > .tab-row::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: color-mix(in srgb, var(--muted) 24%, transparent);
+  pointer-events: none;
 }
 
 .tab-group-header {
@@ -52,7 +69,7 @@
 
 .tab-group-header:hover {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.075);
+  background: var(--theme-control-hover);
 }
 
 .tab-group-toggle {
@@ -96,4 +113,35 @@
 .tab-group-header:focus-within .tab-group-count,
 .tab-group-header[data-collapsed="true"] .tab-group-count {
   opacity: 1;
+}
+
+.tab-group-collapsed-preview {
+  display: flex;
+  align-items: center;
+  padding: 2px 0 4px 30px;
+  min-height: 22px;
+  gap: 0;
+}
+
+.tab-group-collapsed-favicon {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 88%, black);
+  border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent);
+  margin-left: calc(var(--folder-index, 0) * -6px);
+  z-index: calc(10 - var(--folder-index, 0));
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--theme-bg) 78%, transparent);
+}
+
+.tab-group-collapsed-favicon:first-child {
+  margin-left: 0;
+}
+
+.tab-group-collapsed-favicon .tab-favicon {
+  width: 14px;
+  height: 14px;
 }

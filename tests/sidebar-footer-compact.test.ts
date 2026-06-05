@@ -301,7 +301,7 @@ describe("sidebar footer compact controls", () => {
     expect(memorySaverBlock).toContain("border: 0");
     expect(memorySaverBlock).toContain("background: transparent");
     expect(memorySaverBlock).not.toContain("var(--accent)");
-    expect(memorySaverHoverBlock).toContain("background: rgba(255, 255, 255, 0.075)");
+    expect(memorySaverHoverBlock).toContain("background: var(--theme-control-hover)");
     expect(memorySaverHoverBlock).not.toContain("border-color");
     expect(memorySaverHoverBlock).not.toContain("var(--accent)");
   });

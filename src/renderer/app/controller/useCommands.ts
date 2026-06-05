@@ -7,6 +7,7 @@ import type { Panel } from "../../stores/browserStoreTypes";
 import { buildContentCommands } from "../../surfaces/command/model/commandContentEntries";
 import { buildPageCommands } from "../../surfaces/command/model/commandPageEntries";
 import { buildSplitCommands } from "../../surfaces/command/model/commandSplitEntries";
+import { buildThemeCommands } from "../../surfaces/command/model/commandThemeEntries";
 import type { Command, CommandActions } from "../../surfaces/command/model/commandTypes";
 
 export interface CommandChromeState {
@@ -49,6 +50,7 @@ export function buildCommands(
   const contentCommands = buildContentCommands(state, workspace, actions);
   const pageCommands = buildPageCommands(state, workspace, activeTab, actions);
   const splitCommands = buildSplitCommands(state, workspace, activeTab, actions);
+  const themeCommands = buildThemeCommands(state, workspace, actions);
   const memorySaver = getMemorySaverState(workspace, state);
   const memorySaverDelayCommands = memorySaverIdleMinuteOptions
     .filter((minutes) => minutes !== memorySaver.sleepAfterMinutes)
@@ -219,6 +221,7 @@ export function buildCommands(
       run: () => setPanel("downloads")
     },
     { title: "Show settings", subtitle: "Homepage, search, and workspace", run: () => setPanel("settings") },
+    ...themeCommands,
     {
       title: "Toggle application DevTools",
       subtitle: "Inspect the Astra shell",

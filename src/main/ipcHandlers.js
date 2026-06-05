@@ -74,6 +74,21 @@ function installIpcHandlers({
     if (!filePath) return "";
     return shell.openPath(filePath);
   });
+  ipcMain.handle("get-process-memory", async (_event) => {
+    const appMetrics = app.getAppMetrics();
+    const webviewMemory = appMetrics.reduce((sum, metric) => sum + (metric.memory?.workingSetSize ?? 0), 0);
+    const totalMemoryBytes = process.memoryUsage
+      ? (process.memoryUsage().rss + webviewMemory * 1024 * 1024)
+      : webviewMemory * 1024 * 1024;
+    return {
+      appHeapBytes: process.memoryUsage ? process.memoryUsage().heapUsed : 0,
+      appRssBytes: process.memoryUsage ? process.memoryUsage().rss : 0,
+      sampledAt: Date.now(),
+      totalBytes: totalMemoryBytes,
+      webviewCount: appMetrics.length,
+      webviewWorkingSetBytes: webviewMemory * 1024 * 1024
+    };
+  });
 }
 
 function getSessionsForClearing(partitions) {

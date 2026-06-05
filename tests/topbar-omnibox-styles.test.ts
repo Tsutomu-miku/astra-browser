@@ -15,12 +15,13 @@ describe("topbar omnibox styles", () => {
     expect(topbarCss).not.toContain("kbd");
   });
 
-  it("uses neutral selected suggestions without accent stripes or heavy titles", () => {
+  it("uses theme accent highlight for active suggestions", () => {
     const selectedBlock = getLastRuleBlock(topbarCss, '\n.omnibox-suggestion[aria-selected="true"]');
     const titleBlock = getRuleBlock(topbarCss, "\n.suggestion-title {");
 
-    expect(selectedBlock).toContain("box-shadow: none");
-    expect(selectedBlock).not.toContain("var(--accent)");
+    expect(selectedBlock).toContain("background: var(--theme-accent-highlight-strong)");
+    expect(selectedBlock).toContain("var(--accent)");
+    expect(selectedBlock).toContain("box-shadow:");
     expect(titleBlock).toContain("font-weight: 500");
   });
 });

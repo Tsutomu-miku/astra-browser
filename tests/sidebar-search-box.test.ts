@@ -137,7 +137,7 @@ describe("sidebar search box", () => {
     expect(searchInputBlock).toContain("background: transparent");
     expect(searchEmptyBlock).toContain("grid-column: 1 / -1");
     expect(searchFocusBlock).toContain("border-color: transparent");
-    expect(searchFocusBlock).toContain("background: rgba(255, 255, 255, 0.075)");
+    expect(searchFocusBlock).toContain("background: var(--theme-control)");
     expect(searchFocusBlock).toContain("box-shadow: none");
     expect(searchFocusBlock).not.toContain("var(--accent)");
     expect(searchClearBlock).toContain("width: 28px");
@@ -147,10 +147,10 @@ describe("sidebar search box", () => {
     expect(addressBlock).toContain("border: 1px solid transparent");
     expect(addressBlock).toContain("background: transparent");
     expect(addressFocusBlock).toContain("border-color: transparent");
-    expect(addressFocusBlock).toContain("background: rgba(255, 255, 255, 0.075)");
+    expect(addressFocusBlock).toContain("background: var(--theme-control)");
     expect(addressFocusBlock).toContain("box-shadow: none");
     expect(addressFocusBlock).not.toContain("var(--accent)");
-    expect(addressSuggestionsBlock).toContain("box-shadow: 0 18px 46px rgba(0, 0, 0, 0.32)");
+    expect(addressSuggestionsBlock).toContain("box-shadow: 0 18px 46px color-mix(in srgb, var(--theme-bg) 72%, transparent)");
     expect(addressSuggestionsBlock).not.toContain("var(--shadow-floating)");
     expect(metaBlock).toContain("justify-content: space-between");
     expect(metaBlock).not.toContain("var(--accent)");

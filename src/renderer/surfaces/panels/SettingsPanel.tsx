@@ -3,6 +3,7 @@ import { FiX } from "react-icons/fi";
 
 import { createBrowserStateBackup, parseBrowserStateBackup } from "../../platform/persistence/browserBackup";
 import type { BrowserController } from "../../app/controller/types";
+import { useMemoryUsage } from "../../app/controller/useMemoryUsage";
 import { useProfileStorageUsage } from "../../app/controller/useProfileStorageUsage";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
 import { DataSettingsSection } from "./settings/components/DataSettingsSection";
@@ -15,6 +16,7 @@ import type { SettingsSectionId } from "./settings/model/settingsSections";
 export function SettingsPanel({ controller }: { controller: BrowserController }) {
   const { actions, activeWorkspace, setPanel, state } = controller;
   const profileStorage = useProfileStorageUsage(state.workspaces);
+  const memoryUsage = useMemoryUsage(state.workspaces, profileStorage.entries);
   const memorySaver = getMemorySaverState(activeWorkspace, state);
   const [activeSection, setActiveSection] = useState<SettingsSectionId>("global");
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -65,7 +67,11 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
             dataSummary={getDataSummary(state.history.length, state.downloads.length, state.sitePermissions.length)}
             importInputRef={importInputRef}
             importStatus={importStatus}
+            memoryBreakdown={memoryUsage.breakdown}
+            memoryError={memoryUsage.error}
+            memoryHistory={memoryUsage.history}
             memorySaver={memorySaver}
+            memoryStatus={memoryUsage.status}
             onClearBrowsingData={actions.clearBrowsingData}
             onClearProfile={(workspaceId) => {
               actions.clearWorkspaceBrowsingData(workspaceId);
@@ -73,6 +79,7 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
             }}
             onExportBackup={exportBackup}
             onImportBackup={importBackup}
+            onRefreshMemory={() => void memoryUsage.refresh()}
             onRefreshProfileStorage={profileStorage.refresh}
             onSleepInactiveTabs={actions.sleepInactiveTabs}
             onUpdateMemorySaver={actions.updateSettings}

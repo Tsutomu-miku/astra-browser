@@ -5,7 +5,7 @@
   align-items: center;
   padding: 8px 7px 12px;
   border-right: 1px solid var(--line);
-  background: rgba(6, 7, 9, 0.44);
+  background: color-mix(in srgb, var(--theme-bg) 56%, transparent);
 }
 
 .sidebar-toggle {
@@ -20,7 +20,7 @@
   place-items: center;
   border: 1px solid transparent;
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--theme-control);
   color: var(--text);
   cursor: pointer;
   font-weight: 450;
@@ -32,24 +32,24 @@
 
 .workspace-button:hover {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.105);
+  background: var(--theme-control-hover);
 }
 
 .workspace-button:focus-visible {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.105);
+  background: var(--theme-control-hover);
   outline: none;
   box-shadow: none;
 }
 
 .workspace-button[aria-current="true"] {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--theme-control-hover);
   box-shadow: none;
 }
 
 .workspace-button[data-drop-target="true"] {
-  background: rgba(255, 255, 255, 0.095);
+  background: var(--theme-panel-soft);
   box-shadow: none;
 }
 
@@ -59,7 +59,7 @@
 }
 
 .workspace-button[data-drop-target="true"]:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--theme-control-hover);
 }
 
 .workspace-button[data-drop-placement]::before {
@@ -121,7 +121,7 @@
 
 .workspace-new-button:hover {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.075);
+  background: var(--theme-control);
   color: var(--text);
 }
 

@@ -169,7 +169,7 @@ describe("sidebar selection styles", () => {
     expect(workspaceLabelBlock).toContain("text-transform: none");
     expect(workspaceInputBlock).toContain("border: 1px solid transparent");
     expect(workspaceInputBlock).toContain("background: transparent");
-    expect(workspaceInputFocusBlock).toContain("background: rgba(255, 255, 255, 0.06)");
+    expect(workspaceInputFocusBlock).toContain("background: var(--theme-panel-soft)");
     expect(workspaceInputFocusBlock).toContain("box-shadow: none");
   });
 
@@ -183,10 +183,10 @@ describe("sidebar selection styles", () => {
     expect(groupInputBlock).toContain("border: 1px solid transparent");
     expect(groupInputBlock).toContain("background: transparent");
     expect(groupInputFocusBlock).toContain("border-color: var(--line-strong)");
-    expect(groupInputFocusBlock).toContain("background: rgba(255, 255, 255, 0.06)");
+    expect(groupInputFocusBlock).toContain("background: var(--theme-panel-soft)");
     expect(groupInputFocusBlock).toContain("box-shadow: none");
     expect(groupInputFocusBlock).not.toContain("var(--group-color)");
-    expect(groupSwatchBlock).toContain("border: 1px solid rgba(255, 255, 255, 0.14)");
+    expect(groupSwatchBlock).toContain("border: 1px solid var(--theme-line-strong)");
     expect(groupSwatchBlock).toContain("border-radius: 6px");
     expect(groupSwatchBlock).not.toContain("border-radius: 999px");
 
@@ -195,7 +195,6 @@ describe("sidebar selection styles", () => {
       groupSwatchSelectedBlock
     ]) {
       expect(block).toContain("box-shadow: inset");
-      expect(block).not.toContain("color-mix");
       expect(block).not.toContain("var(--accent)");
       expect(block).not.toContain("border-color: white");
     }

@@ -27,7 +27,7 @@
 
 .sidebar-search input:focus {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.075);
+  background: var(--theme-control);
   box-shadow: none;
 }
 
@@ -43,7 +43,7 @@
 .sidebar-search .icon-button:hover,
 .sidebar-search .icon-button:focus-visible {
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--theme-control-hover);
   color: var(--text);
   outline: none;
 }

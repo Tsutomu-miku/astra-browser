@@ -27,6 +27,19 @@
   bottom: -4px;
 }
 
+/* "onto" = middle dead zone — highlight the whole row like a folder target */
+.tab-row[data-drop-placement="onto"]::before {
+  content: none;
+}
+
+.tab-row[data-drop-placement="onto"] {
+  background: color-mix(in srgb, var(--panel-soft) 92%, var(--accent)) !important;
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
 .essentials .favorite-button[data-drop-placement]::before,
 .pinned-tab-button[data-drop-placement]::before {
   content: "";

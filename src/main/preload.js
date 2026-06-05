@@ -19,5 +19,6 @@ contextBridge.exposeInMainWorld("astraShell", {
   setProfilePartitions: (partitions) => ipcRenderer.invoke("set-profile-partitions", partitions),
   setPermissionRules: (rules) => ipcRenderer.invoke("set-permission-rules", rules),
   openPath: (filePath) => ipcRenderer.invoke("open-path", filePath),
-  showItemInFolder: (filePath) => ipcRenderer.invoke("show-item-in-folder", filePath)
+  showItemInFolder: (filePath) => ipcRenderer.invoke("show-item-in-folder", filePath),
+  getProcessMemory: () => ipcRenderer.invoke("get-process-memory")
 });

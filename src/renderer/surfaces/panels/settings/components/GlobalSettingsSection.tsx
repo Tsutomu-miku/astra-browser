@@ -4,8 +4,10 @@ import {
   type BrowserSettings,
   type ChromeAccentMode,
   type SearchEngineKey,
-  type StartupBehavior
+  type StartupBehavior,
+  type ThemeKey
 } from "../../../../domain/browser";
+import { THEMES, getThemeDefinition } from "../../../../common/theme/themePalette";
 
 export function GlobalSettingsSection({
   onUpdateSettings,
@@ -37,6 +39,18 @@ export function GlobalSettingsSection({
         </select>
       </label>
       <label className="field">
+        <span>Theme</span>
+        <select
+          value={settings.theme}
+          onChange={(event) => onUpdateSettings({ theme: event.target.value as ThemeKey })}
+        >
+          {THEMES.map((candidate) => (
+            <option key={candidate.key} value={candidate.key}>{candidate.label}</option>
+          ))}
+        </select>
+        <ThemePreview theme={settings.theme} />
+      </label>
+      <label className="field">
         <span>Search engine</span>
         <select
           value={settings.searchEngine}
@@ -58,5 +72,20 @@ export function GlobalSettingsSection({
         </select>
       </label>
     </section>
+  );
+}
+
+function ThemePreview({ theme }: { theme: ThemeKey }) {
+  const def = getThemeDefinition(theme);
+  return (
+    <div className="theme-preview" aria-hidden="true">
+      <span
+        className="theme-preview-swatch"
+        style={{
+          background: `linear-gradient(135deg, ${def.swatch} 0%, ${def.accent2} 100%)`
+        }}
+      />
+      <span className="theme-preview-label">{def.description}</span>
+    </div>
   );
 }

@@ -685,7 +685,7 @@ describe("workspace strip compact controls", () => {
     const focusBlock = getRuleBlock(workspaceCss, ".workspace-button:focus-visible");
 
     expect(focusBlock).toContain("border-color: transparent");
-    expect(focusBlock).toContain("background: rgba(255, 255, 255, 0.105)");
+    expect(focusBlock).toContain("background: var(--theme-control-hover)");
     expect(focusBlock).toContain("outline: none");
     expect(focusBlock).toContain("box-shadow: none");
     expect(focusBlock).not.toContain("var(--accent)");
@@ -696,7 +696,7 @@ describe("workspace strip compact controls", () => {
     const draggingBlock = getRuleBlock(workspaceCss, '.workspace-button[data-dragging="true"]');
     const dropIndicatorBlock = getRuleBlock(workspaceCss, ".workspace-button[data-drop-placement]::before");
 
-    expect(dropTargetBlock).toContain("background: rgba(255, 255, 255, 0.095)");
+    expect(dropTargetBlock).toContain("background: var(--theme-panel-soft)");
     expect(dropTargetBlock).toContain("box-shadow: none");
     expect(dropTargetBlock).not.toContain("var(--accent)");
     expect(draggingBlock).toContain("cursor: grabbing");

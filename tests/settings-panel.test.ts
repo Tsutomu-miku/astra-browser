@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
+import { buildMemoryBreakdown } from "../src/renderer/common/memory/memoryUsage";
 import { createDefaultState } from "../src/renderer/domain/browser";
 import { getMemorySaverState } from "../src/renderer/common/memory/memorySaverState";
 import { getChromeAccent, NEUTRAL_CHROME_ACCENT } from "../src/renderer/common/theme/chromeTheme";
@@ -59,10 +60,15 @@ describe("settings panel sections", () => {
   });
 
   it("renders data and workspace management panes", () => {
+    const state = createDefaultState();
+    const memoryBreakdown = buildMemoryBreakdown(state.workspaces, new Map(), null);
     const dataHtml = renderToStaticMarkup(createElement(DataSettingsSection, {
       dataSummary: "2 history · 1 downloads · 0 permissions",
       importInputRef: createRef<HTMLInputElement>(),
       importStatus: null,
+      memoryBreakdown,
+      memoryError: null,
+      memoryHistory: [],
       memorySaver: {
         mountedWebviews: 3,
         protectedTabs: 1,
@@ -72,10 +78,12 @@ describe("settings panel sections", () => {
         sleepingTabs: 0,
         summary: "2 releasable · 0 sleeping · 1 protected"
       },
+      memoryStatus: "ready",
       onClearBrowsingData: vi.fn(),
       onClearProfile: vi.fn(),
       onExportBackup: vi.fn(),
       onImportBackup: vi.fn(),
+      onRefreshMemory: vi.fn(),
       onRefreshProfileStorage: vi.fn(),
       onSleepInactiveTabs: vi.fn(),
       onUpdateMemorySaver: vi.fn(),
@@ -94,6 +102,8 @@ describe("settings panel sections", () => {
     expect(dataHtml).toContain("Memory Saver");
     expect(dataHtml).toContain("Sleep inactive tabs");
     expect(dataHtml).toContain("Browser backup");
+    expect(dataHtml).toContain('aria-label="Memory usage"');
+    expect(dataHtml).toContain("Memory usage");
     expect(workspaceHtml).toContain('aria-label="Workspace management"');
     expect(workspaceHtml).toContain("2 spaces");
   });
@@ -172,5 +182,7 @@ describe("settings panel sections", () => {
     expect(panelsSettingsCss).toContain(".settings-pane");
     expect(panelsSettingsCss).toContain(".memory-saver-metrics");
     expect(panelsSettingsCss).toContain(".memory-saver-delay-options button[aria-pressed=\"true\"]");
+    expect(panelsSettingsCss).toContain(".memory-usage-section");
+    expect(panelsSettingsCss).toContain(".memory-workspace-list");
   });
 });

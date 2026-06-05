@@ -9,7 +9,7 @@
   z-index: 20;
   width: min(380px, calc(100vw - 320px));
   border-left: 1px solid var(--line);
-  background: rgba(21, 24, 33, 0.98);
+  background: var(--theme-surface-opaque);
   box-shadow: -24px 0 60px rgba(0, 0, 0, 0.24);
 }
 
@@ -28,11 +28,24 @@ h2 {
   font-size: 16px;
 }
 
+/* All side panels share the same layout: fixed header + scrollable body. */
+.history-panel,
+.downloads-panel,
+.settings-panel,
+.site-panel {
+  display: grid;
+  grid-template-rows: 58px minmax(0, 1fr);
+}
+
 .panel-scroll,
-.downloads-list {
-  height: calc(100% - 58px);
+.downloads-list,
+.settings-panel > .settings-form {
+  min-height: 0;
   overflow: auto;
-  padding: 10px;
+}
+
+.settings-form {
+  align-content: start;
 }
 
 .panel-section-title {
@@ -111,7 +124,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 5px;
-  background: rgba(20, 22, 29, 0.98);
+  background: var(--theme-surface-opaque);
   box-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
 }
 
@@ -158,7 +171,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0 10px;
-  background: #0f1117;
+  background: color-mix(in srgb, var(--theme-bg) 92%, var(--theme-text) 8%);
   color: var(--text);
   outline: none;
 }
@@ -347,6 +360,6 @@ h2 {
 }
 
 .permission-choice button[aria-pressed="true"] {
-  background: #315c49;
-  color: #ddfbe7;
+  background: color-mix(in srgb, var(--theme-secure) 38%, var(--control));
+  color: var(--theme-inverse);
 }

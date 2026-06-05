@@ -1,19 +1,27 @@
 import type { ChangeEvent, RefObject } from "react";
 
+import type { MemoryUsageBreakdown } from "../../../../common/memory/memoryUsage";
 import type { WorkspaceStorageUsage } from "../../../../app/controller/useProfileStorageUsage";
+import type { MemoryUsageStatus } from "../../../../app/controller/useMemoryUsage";
 import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
 import { MemorySaverSection } from "./MemorySaverSection";
+import { MemoryUsagePanel } from "./MemoryUsagePanel";
 import { ProfileStorageSection } from "./ProfileStorageSection";
 
 export function DataSettingsSection({
   dataSummary,
   importInputRef,
   importStatus,
+  memoryBreakdown,
+  memoryHistory,
   memorySaver,
+  memoryStatus,
+  memoryError,
   onClearBrowsingData,
   onClearProfile,
   onExportBackup,
   onImportBackup,
+  onRefreshMemory,
   onRefreshProfileStorage,
   onSleepInactiveTabs,
   onUpdateMemorySaver,
@@ -24,11 +32,16 @@ export function DataSettingsSection({
   dataSummary: string;
   importInputRef: RefObject<HTMLInputElement | null>;
   importStatus: string | null;
+  memoryBreakdown: MemoryUsageBreakdown;
+  memoryError: string | null;
+  memoryHistory: number[];
   memorySaver: MemorySaverState;
+  memoryStatus: MemoryUsageStatus;
   onClearBrowsingData: () => void;
   onClearProfile: (workspaceId: string) => void;
   onExportBackup: () => void;
   onImportBackup: (event: ChangeEvent<HTMLInputElement>) => void;
+  onRefreshMemory: () => void;
   onRefreshProfileStorage: () => void;
   onSleepInactiveTabs: () => void;
   onUpdateMemorySaver: (patch: { memorySaverEnabled?: boolean; memorySaverIdleMinutes?: number }) => void;
@@ -49,6 +62,14 @@ export function DataSettingsSection({
         memorySaver={memorySaver}
         onSleepInactiveTabs={onSleepInactiveTabs}
         onUpdateMemorySaver={onUpdateMemorySaver}
+      />
+      <MemoryUsagePanel
+        breakdown={memoryBreakdown}
+        error={memoryError}
+        history={memoryHistory}
+        memorySaver={memorySaver}
+        onRefresh={onRefreshMemory}
+        status={memoryStatus}
       />
       <section className="settings-section" aria-label="Browser backup">
         <div className="section-copy">

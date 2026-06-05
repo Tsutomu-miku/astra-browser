@@ -123,7 +123,7 @@
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--theme-control);
 }
 
 .memory-saver-delay-options button {
@@ -142,7 +142,7 @@
 .memory-saver-delay-options button:focus-visible,
 .memory-saver-delay-options button[aria-pressed="true"] {
   border-color: color-mix(in srgb, var(--accent) 36%, transparent);
-  background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.06));
+  background: color-mix(in srgb, var(--accent) 18%, var(--theme-control));
   color: var(--text);
 }
 
@@ -153,7 +153,7 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 9px;
-  background: #11151d;
+  background: color-mix(in srgb, var(--theme-bg) 92%, var(--theme-text) 8%);
   color: var(--muted);
   font-size: 12px;
 }
@@ -172,7 +172,7 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px;
-  background: #11151d;
+  background: color-mix(in srgb, var(--theme-bg) 92%, var(--theme-text) 8%);
 }
 
 .profile-storage-main,
@@ -202,4 +202,268 @@
 
 .hidden-file-input {
   display: none;
+}
+
+.theme-preview {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 2px 2px;
+}
+
+.theme-preview-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--line-strong);
+  box-shadow: inset 0 0 0 1px var(--theme-line);
+}
+
+.theme-preview-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Memory usage visualization */
+.memory-usage-section {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.memory-usage-section .memory-usage-total,
+.memory-usage-section .memory-usage-sparkline,
+.memory-usage-section .memory-workspace-list,
+.memory-usage-section .memory-usage-error,
+.memory-usage-section .memory-usage-hint {
+  grid-column: 1 / -1;
+}
+
+.memory-usage-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memory-usage-total {
+  display: grid;
+  gap: 10px;
+}
+
+.memory-usage-track {
+  height: 14px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--theme-control);
+}
+
+.memory-usage-segment {
+  min-width: 0;
+  transition: width 260ms ease;
+}
+
+.memory-usage-browser {
+  background: color-mix(in srgb, var(--accent) 62%, var(--theme-control));
+}
+
+.memory-usage-webviews {
+  background: color-mix(in srgb, var(--theme-text) 42%, var(--theme-control));
+}
+
+.memory-usage-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.memory-usage-legend strong {
+  color: var(--text);
+  font-size: 13px;
+  margin-left: 4px;
+}
+
+.memory-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.memory-swatch-browser {
+  background: color-mix(in srgb, var(--accent) 62%, var(--theme-control));
+}
+
+.memory-swatch-webviews {
+  background: color-mix(in srgb, var(--theme-text) 42%, var(--theme-control));
+}
+
+.memory-usage-sparkline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--theme-panel);
+  color: color-mix(in srgb, var(--accent) 72%, white);
+}
+
+.memory-usage-sparkline svg {
+  display: block;
+  width: 100%;
+  height: 48px;
+}
+
+.memory-usage-sparkline-label {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.memory-usage-sparkline-label strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.memory-workspace-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.memory-workspace-row {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--theme-bg) 92%, var(--theme-text) 8%);
+}
+
+.memory-workspace-head {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.memory-workspace-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.memory-workspace-name {
+  font-weight: 650;
+  color: var(--text);
+}
+
+.memory-workspace-size {
+  justify-self: end;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.memory-workspace-size strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.memory-workspace-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--theme-control);
+}
+
+.memory-workspace-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 260ms ease;
+}
+
+.memory-tab-list {
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.memory-tab-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.memory-tab-state {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.memory-tab-state-live {
+  background: var(--accent);
+}
+
+.memory-tab-state-sleeping {
+  background: var(--line-strong);
+}
+
+.memory-tab-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memory-tab-size {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+.memory-usage-error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--theme-danger) 32%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--theme-danger) 10%, transparent);
+  color: var(--theme-danger);
+  font-size: 12px;
+}
+
+.memory-usage-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.memory-usage-hint strong {
+  color: var(--text);
 }

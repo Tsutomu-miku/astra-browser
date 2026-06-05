@@ -13,6 +13,7 @@
   --control: rgba(255, 255, 255, 0.085);
   --control-hover: rgba(255, 255, 255, 0.15);
   --accent: #a8b0bd;
+  --accent-2: #7dd3fc;
   --danger: #ff8a8a;
   --secure: #8fd7a3;
   --radius-sm: 8px;
@@ -111,7 +112,7 @@ button {
 .toolbar-button[aria-pressed="true"] {
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
   background: color-mix(in srgb, var(--accent) 22%, var(--control));
-  color: #f6fff8;
+  color: var(--theme-inverse, #f6fff8);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 

@@ -1,0 +1,179 @@
+/*
+ * Theme palettes.
+ * Each theme is activated by adding `data-theme="<key>"` on <html>,
+ * combined with the runtime accent derived from workspace/mode.
+ *
+ * All colors are derived from these tokens so they stay coherent in
+ * both dark and light themes.  Components reference `--theme-*` tokens
+ * directly; legacy `--bg / --chrome / --text / ...` tokens are bridged
+ * at the bottom via `html[data-theme]`.
+ */
+
+:root,
+html[data-theme="arc-dark"] {
+  color-scheme: dark;
+  --theme-bg: #08090b;
+  --theme-text: #f5f3ee;
+  --theme-muted: #a5a8b0;
+  --theme-accent: #a8b0bd;
+  --theme-accent-2: #7dd3fc;
+  --theme-inverse: #f6fff8;
+  --theme-danger: #f87171;
+  --theme-secure: #86efac;
+
+  /* Surfaces derived from bg + text so every theme adapts automatically. */
+  --theme-chrome: color-mix(in srgb, var(--theme-bg) 86%, var(--theme-text) 14%);
+  --theme-chrome-strong: color-mix(in srgb, var(--theme-bg) 92%, var(--theme-text) 8%);
+  --theme-panel: color-mix(in srgb, var(--theme-bg) 90%, var(--theme-text) 10%);
+  --theme-panel-soft: color-mix(in srgb, var(--theme-text) 7.5%, transparent);
+  --theme-panel-raised: color-mix(in srgb, var(--theme-text) 12%, transparent);
+  --theme-line: color-mix(in srgb, var(--theme-text) 7.5%, transparent);
+  --theme-line-strong: color-mix(in srgb, var(--theme-text) 14%, transparent);
+  --theme-control: color-mix(in srgb, var(--theme-text) 8.5%, transparent);
+  --theme-control-hover: color-mix(in srgb, var(--theme-text) 15%, transparent);
+  --theme-accent-soft: color-mix(in srgb, var(--theme-accent) 22%, transparent);
+  --theme-accent-highlight: color-mix(in srgb, var(--theme-accent) 18%, var(--theme-bg));
+  --theme-accent-highlight-strong: color-mix(in srgb, var(--theme-accent) 28%, var(--theme-bg));
+
+  /* Opaque surfaces for panels / menus / dropdowns (fall back to solid bg). */
+  --theme-surface-opaque: color-mix(in srgb, var(--theme-bg) 94%, var(--theme-text) 6%);
+  --theme-surface-solid: color-mix(in srgb, var(--theme-bg) 96%, var(--theme-text) 4%);
+  --theme-surface-glass: color-mix(in srgb, var(--theme-bg) 86%, var(--theme-text) 14% / 0.92);
+  --theme-menu-surface: color-mix(in srgb, var(--theme-bg) 78%, var(--theme-text) 22% / 0.94);
+  --theme-dropdown-surface: color-mix(in srgb, var(--theme-bg) 94%, var(--theme-text) 6%);
+  --theme-sidebar-gradient: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--theme-bg) 88%, var(--theme-text) 12%),
+    color-mix(in srgb, var(--theme-bg) 96%, var(--theme-text) 4%)
+  );
+  --theme-overlay: color-mix(in srgb, var(--theme-bg) 72%, transparent);
+  --theme-deep-shadow: color-mix(in srgb, var(--theme-bg) 100%, transparent);
+  --theme-shadow: 0 22px 70px color-mix(in srgb, var(--theme-bg) 86%, var(--theme-text) 14% / 0.42);
+  --theme-bg-gradient: linear-gradient(
+    135deg,
+    var(--theme-bg) 0%,
+    color-mix(in srgb, var(--theme-bg) 92%, var(--theme-text) 8%) 48%,
+    var(--theme-bg) 100%
+  );
+}
+
+html[data-theme="arc-light"] {
+  color-scheme: light;
+  --theme-bg: #f5f3ee;
+  --theme-text: #1a1c20;
+  --theme-muted: #5b6069;
+  --theme-accent: #5b6773;
+  --theme-accent-2: #0284c7;
+  --theme-inverse: #1a1c20;
+  --theme-danger: #dc2626;
+  --theme-secure: #16a34a;
+}
+
+html[data-theme="monokai"] {
+  color-scheme: dark;
+  --theme-bg: #171218;
+  --theme-text: #f8f8f2;
+  --theme-muted: #a59f9e;
+  --theme-accent: #a6e22e;
+  --theme-accent-2: #f92672;
+  --theme-inverse: #271d2a;
+  --theme-danger: #f92672;
+  --theme-secure: #a6e22e;
+}
+
+html[data-theme="solarized-light"] {
+  color-scheme: light;
+  --theme-bg: #fdf6e3;
+  --theme-text: #073642;
+  --theme-muted: #657b83;
+  --theme-accent: #268bd2;
+  --theme-accent-2: #cb4b16;
+  --theme-inverse: #073642;
+  --theme-danger: #dc322f;
+  --theme-secure: #859900;
+}
+
+html[data-theme="nord"] {
+  color-scheme: dark;
+  --theme-bg: #2e3440;
+  --theme-text: #eceff4;
+  --theme-muted: #a7aeba;
+  --theme-accent: #88c0d0;
+  --theme-accent-2: #b48ead;
+  --theme-inverse: #2e3440;
+  --theme-danger: #bf616a;
+  --theme-secure: #a3be8c;
+}
+
+html[data-theme="github-light"] {
+  color-scheme: light;
+  --theme-bg: #ffffff;
+  --theme-text: #1f2328;
+  --theme-muted: #656d76;
+  --theme-accent: #0969da;
+  --theme-accent-2: #8250df;
+  --theme-inverse: #ffffff;
+  --theme-danger: #cf222e;
+  --theme-secure: #1a7f37;
+}
+
+html[data-theme="github-dark"] {
+  color-scheme: dark;
+  --theme-bg: #0d1117;
+  --theme-text: #e6edf3;
+  --theme-muted: #9198a1;
+  --theme-accent: #4493f8;
+  --theme-accent-2: #c297ff;
+  --theme-inverse: #0d1117;
+  --theme-danger: #ff7b72;
+  --theme-secure: #4ac26b;
+}
+
+html[data-theme="everforest"] {
+  color-scheme: dark;
+  --theme-bg: #1e2326;
+  --theme-text: #d3c6aa;
+  --theme-muted: #859289;
+  --theme-accent: #a7c080;
+  --theme-accent-2: #e67e80;
+  --theme-inverse: #272e32;
+  --theme-danger: #e67e80;
+  --theme-secure: #a7c080;
+}
+
+html[data-theme="dracula"] {
+  color-scheme: dark;
+  --theme-bg: #1b1a24;
+  --theme-text: #f8f8f2;
+  --theme-muted: #b6b7c0;
+  --theme-accent: #bd93f9;
+  --theme-accent-2: #ff79c6;
+  --theme-inverse: #282a36;
+  --theme-danger: #ff5555;
+  --theme-secure: #50fa7b;
+}
+
+/* Bridge: theme tokens → legacy custom properties used across the app.
+ * When a theme is active these override the defaults in base.css. */
+html[data-theme] {
+  --bg: var(--theme-bg);
+  --chrome: var(--theme-chrome);
+  --chrome-strong: var(--theme-chrome-strong);
+  --panel: var(--theme-panel);
+  --panel-soft: var(--theme-panel-soft);
+  --panel-raised: var(--theme-panel-raised);
+  --text: var(--theme-text);
+  --muted: var(--theme-muted);
+  --line: var(--theme-line);
+  --line-strong: var(--theme-line-strong);
+  --control: var(--theme-control);
+  --control-hover: var(--theme-control-hover);
+  --danger: var(--theme-danger);
+  --secure: var(--theme-secure);
+  --shadow-floating: var(--theme-shadow);
+}
+
+html[data-theme] body {
+  background: var(--theme-bg-gradient);
+  color: var(--theme-text);
+}

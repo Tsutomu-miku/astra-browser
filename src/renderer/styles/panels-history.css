@@ -25,7 +25,7 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0 10px;
-  background: #0f1117;
+  background: color-mix(in srgb, var(--theme-bg) 92%, var(--theme-text) 8%);
   color: var(--text);
   outline: none;
 }
@@ -83,7 +83,7 @@
 
 .history-remove:hover {
   background: var(--control);
-  color: #fda4af;
+  color: var(--theme-danger);
 }
 
 .history-title,
@@ -114,8 +114,8 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 5px;
-  background: rgba(20, 22, 29, 0.98);
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
+  background: var(--theme-surface-opaque);
+  box-shadow: 0 16px 42px color-mix(in srgb, var(--theme-bg) 72%, transparent);
 }
 
 .history-context-menu button {
@@ -135,7 +135,7 @@
 }
 
 .history-context-menu button.danger {
-  color: #fda4af;
+  color: var(--theme-danger);
 }
 
 .history-context-menu-separator {

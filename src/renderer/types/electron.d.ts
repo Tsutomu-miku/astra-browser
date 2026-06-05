@@ -34,9 +34,19 @@ export interface ProfileStorageUsage {
   storagePath: string | null;
 }
 
+export interface ProcessMemorySnapshot {
+  appHeapBytes: number;
+  appRssBytes: number;
+  sampledAt: number;
+  totalBytes: number;
+  webviewCount: number;
+  webviewWorkingSetBytes: number;
+}
+
 export interface AstraShellApi {
   clearBrowsingData: (partitions?: string[]) => Promise<void>;
   getProfileStorageUsage: (partitions: string[]) => Promise<ProfileStorageUsage[]>;
+  getProcessMemory: () => Promise<ProcessMemorySnapshot>;
   getVersion: () => Promise<string>;
   onDownloadEvent: (listener: (payload: DownloadEvent) => void) => () => void;
   onPermissionRequest: (listener: (payload: PermissionRequestEvent) => void) => () => void;
