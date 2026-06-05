@@ -21,6 +21,7 @@ import {
   focusSplitPane,
   groupActiveTab,
   groupTab,
+  groupTabsTogether,
   closeOtherTabs,
   closeTabsToLeft,
   closeTabsToRight,
@@ -33,6 +34,7 @@ import {
   moveTabToNewWorkspace,
   moveTabGroupToNewWorkspace,
   moveWorkspaceFavoriteToNewWorkspace,
+  newTabInGroup,
   restoreClosedTabToNewWorkspace,
   openTabInSplit,
   openUrlInSplit,
@@ -54,8 +56,9 @@ import {
   restoreLastClosedTab,
   selectAdjacentTab,
   selectTab,
-  sleepIdleTabs,
   setActiveTabZoom,
+  setWorkspaceSplitLayout,
+  sleepIdleTabs,
   sleepInactiveTabs,
   sleepTabGroup,
   sleepTab,
@@ -112,7 +115,6 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   permissionRequest: null,
   sidebarCollapsed: false,
   sidebarWidth: initialUiState.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH,
-  splitLayout: "horizontal",
   state: initialState,
   glance: null,
   addTabToFavorites: (tabId) => update(set, (state) => addTabToFavorites(state, tabId)),
@@ -150,10 +152,10 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   duplicateTabGroup: (groupId) => update(set, (state) => duplicateTabGroup(state, groupId)),
   fillSplitView: () => {
     update(set, fillSplitView);
-    set({ splitLayout: "grid" });
   },
   groupActiveTab: () => update(set, groupActiveTab),
   groupTab: (tabId) => update(set, (state) => groupTab(state, tabId)),
+  groupTabsTogether: (sourceTabId, targetTabId) => update(set, (state) => groupTabsTogether(state, sourceTabId, targetTabId)),
   ingestDownload: (download) => {
     update(set, (state) => upsertDownload(state, download));
     set({ panel: "downloads" });
@@ -200,6 +202,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     return next;
   }),
   newTab: () => update(set, addTab),
+  newTabInGroup: (groupId) => update(set, (state) => newTabInGroup(state, groupId)),
   openUrlInActiveWorkspace: (url, title) => update(set, (state) => openUrlInActiveWorkspace(state, url, title)),
   recordHistory: (tabId, url) => update(set, (state) => recordHistory(state, tabId, url)),
   removeEssential: (url) => update(set, (state) => removeEssential(state, url)),
@@ -260,7 +263,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     saveBrowserUiState({ sidebarWidth });
     set({ sidebarWidth });
   },
-  setSplitLayout: (splitLayout) => set({ splitLayout }),
+  setSplitLayout: (splitLayout) => update(set, (state) => setWorkspaceSplitLayout(state, splitLayout)),
   setSitePermission: (profileId, origin, permission, decision) =>
     update(set, (state) => setSitePermission(state, { profileId, origin, permission, decision })),
   switchWorkspace: (workspaceId) => update(set, (state) => switchWorkspace(state, workspaceId)),

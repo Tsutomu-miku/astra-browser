@@ -6,3 +6,4 @@ release/
 .git-local/
 .DS_Store
 *.log
+.claude/

@@ -9,9 +9,12 @@ import type {
   HistoryEntry,
   PartialBrowserState,
   SearchEngineKey,
+  SplitLayout,
   StartupBehavior,
-  TabGroup
+  TabGroup,
+  ThemeKey
 } from "./types";
+import { isThemeKey } from "../../common/theme/themePalette";
 import { getHomepageUrl, getReadableUrlTitle, getWorkspaceHomepageUrl, normalizeAddress } from "./navigation";
 import { normalizeSitePermissions } from "../permissions/sitePermissions";
 import { getSplitTabIds, pruneSplitTabIds } from "../tabs/splitView";
@@ -48,6 +51,10 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
     state.settings.chromeAccentMode = fallback.settings.chromeAccentMode;
   }
 
+  if (!isThemeKey(state.settings.theme)) {
+    state.settings.theme = fallback.settings.theme;
+  }
+
   state.settings.memorySaverEnabled = state.settings.memorySaverEnabled !== false;
   state.settings.memorySaverIdleMinutes = normalizeMemorySaverIdleMinutes(state.settings.memorySaverIdleMinutes);
   state.settings.homepage = normalizeAddress(state.settings.homepage || DEFAULT_URL, state.settings.searchEngine);
@@ -57,6 +64,7 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
     workspace.name = workspace.name || "Space";
     workspace.accent = isHexColor(workspace.accent) ? workspace.accent : getNextWorkspaceAccent(0);
     workspace.homepage = getWorkspaceHomepageUrl(state, workspace);
+    workspace.splitLayout = isSplitLayout(workspace.splitLayout) ? workspace.splitLayout : "horizontal";
     Object.assign(workspace, normalizeWorkspaceProfile(workspace));
     workspace.closedTabs = normalizeClosedTabs(workspace.closedTabs);
     workspace.favorites = normalizeFavorites(workspace.favorites, state.settings.searchEngine);
@@ -87,6 +95,13 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
       tab.isPinned = Boolean(tab.isPinned);
       tab.isLoading = Boolean(tab.isLoading);
       tab.isSleeping = Boolean(tab.isSleeping);
+      tab.isMediaPlaying = Boolean(tab.isMediaPlaying);
+      tab.isCameraOn = Boolean(tab.isCameraOn);
+      tab.isMicrophoneOn = Boolean(tab.isMicrophoneOn);
+      tab.hasUnread = Boolean(tab.hasUnread);
+      if (typeof tab.customTitle !== "string" || tab.customTitle.trim() === "") {
+        delete tab.customTitle;
+      }
       tab.lastActiveAt = normalizeTimestamp(tab.lastActiveAt);
       tab.zoomFactor = normalizeZoomFactor(tab.zoomFactor);
     }
@@ -203,4 +218,8 @@ function normalizeMemorySaverIdleMinutes(value: unknown): number {
 
 function isKnownTabGroup(groups: TabGroup[], groupId: unknown): groupId is string {
   return typeof groupId === "string" && groups.some((group) => group.id === groupId);
+}
+
+function isSplitLayout(value: unknown): value is SplitLayout {
+  return value === "horizontal" || value === "vertical" || value === "grid";
 }

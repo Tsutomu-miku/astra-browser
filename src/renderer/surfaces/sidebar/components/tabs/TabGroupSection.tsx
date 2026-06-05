@@ -8,6 +8,7 @@ import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardConte
 import { clearSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
 import { acceptSidebarTabGroupHeaderDrag, resolveSidebarTabGroupHeaderDrop } from "../../model/sidebarTabGroupHeaderDrop";
 import { getSidebarSearchTargetElementId } from "../../sidebarFiltering";
+import { SidebarItemIcon } from "../common/SidebarItemIcon";
 import { TabRow } from "./SidebarItems";
 
 export function TabGroupSection({
@@ -21,8 +22,10 @@ export function TabGroupSection({
   onGroupDrop,
   onGroupContextMenu,
   onDrop,
+  onGroupTab,
   onMoveTabToGroupFolder,
   onPreview,
+  onRenameTab,
   onSelect,
   onSplit,
   onToggle,
@@ -42,8 +45,10 @@ export function TabGroupSection({
   onGroupDrop: (event: DragEvent<HTMLElement>, targetGroupId: string) => void;
   onGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
+  onGroupTab?: (sourceTabId: string, targetTabId: string) => void;
   onMoveTabToGroupFolder: (tabId: string, groupId: string) => void;
   onPreview: (url: string, title?: string) => void;
+  onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
   onToggle: () => void;
@@ -76,6 +81,7 @@ export function TabGroupSection({
         data-dragging={draggingGroupId === group.id}
         data-drop-target={Boolean(draggingGroupId && draggingGroupId !== group.id)}
         onContextMenu={(event) => onGroupContextMenu(event, group)}
+        onDoubleClick={onToggle}
         onDragStart={(event) => {
           setDraggingGroupId(group.id);
           event.dataTransfer.effectAllowed = "move";
@@ -129,12 +135,33 @@ export function TabGroupSection({
           onClose={onClose}
           onContextMenu={onContextMenu}
           onDrop={onDrop}
+          onGroupTab={onGroupTab}
           onPreview={onPreview}
+          onRenameTab={onRenameTab}
           onSelect={onSelect}
           onSplit={onSplit}
           setDraggingTabId={setDraggingTabId}
         />
       ))}
+      {group.isCollapsed && !hasActiveTab && tabs.length > 0 && (
+        <div className="tab-group-collapsed-preview" aria-hidden="true">
+          {tabs.slice(0, 4).map((tab, index) => (
+            <span
+              className="tab-group-collapsed-favicon"
+              key={tab.id}
+              style={{ "--folder-index": index } as CSSProperties}
+              title={tab.title || tab.url}
+            >
+              <SidebarItemIcon
+                className="tab-favicon"
+                faviconCache={faviconCache}
+                faviconUrl={tab.faviconUrl}
+                url={tab.url}
+              />
+            </span>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

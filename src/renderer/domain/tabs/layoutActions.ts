@@ -5,6 +5,7 @@ import {
   getReadableUrlTitle,
   getWorkspaceHomepageUrl,
   normalizeAddress,
+  SplitLayout,
   Workspace
 } from "../browser";
 import {
@@ -254,6 +255,7 @@ export function toggleSplitMode(state: BrowserState): BrowserState {
 export function fillSplitView(state: BrowserState): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
+    workspace.splitLayout = "grid";
     const active = getActiveTab(workspace);
     const selectedIds = getSplitTabIds(draft);
     const selected = new Set([active.id, ...selectedIds]);
@@ -274,6 +276,20 @@ export function fillSplitView(state: BrowserState): BrowserState {
 
     setSplitTabIds(draft, nextIds);
   });
+}
+
+export function setWorkspaceSplitLayout(state: BrowserState, layout: SplitLayout): BrowserState {
+  if (!isSplitLayoutValue(layout)) return state;
+
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    if (workspace.splitLayout === layout) return;
+    workspace.splitLayout = layout;
+  });
+}
+
+function isSplitLayoutValue(value: unknown): value is SplitLayout {
+  return value === "horizontal" || value === "vertical" || value === "grid";
 }
 
 function createSplitTab(workspace: Workspace): BrowserTab {

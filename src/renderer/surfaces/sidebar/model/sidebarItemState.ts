@@ -1,7 +1,7 @@
 import type { BrowserTab, Favorite } from "../../../domain/browser";
 
 export interface TabStatusBadge {
-  id: "muted" | "split";
+  id: "camera" | "media-playing" | "microphone" | "muted" | "split" | "unread";
   label: string;
 }
 
@@ -17,13 +17,35 @@ export function isSidebarFavoriteActive(
 }
 
 export function getTabStatusBadges(
-  tab: Pick<BrowserTab, "id" | "isMuted" | "isSleeping">,
-  splitTabIds: string[]
+  tab: Pick<
+    BrowserTab,
+    | "id"
+    | "hasUnread"
+    | "isCameraOn"
+    | "isMediaPlaying"
+    | "isMicrophoneOn"
+    | "isMuted"
+    | "isSleeping"
+  >,
+  splitTabIds: string[],
+  isActive = false
 ): TabStatusBadge[] {
   const badges: TabStatusBadge[] = [];
 
+  if (tab.hasUnread && !isActive) {
+    badges.push({ id: "unread", label: "Unread" });
+  }
   if (splitTabIds.includes(tab.id)) {
     badges.push({ id: "split", label: "Split" });
+  }
+  if (tab.isCameraOn) {
+    badges.push({ id: "camera", label: "Camera in use" });
+  }
+  if (tab.isMicrophoneOn) {
+    badges.push({ id: "microphone", label: "Microphone in use" });
+  }
+  if (tab.isMediaPlaying && !tab.isMuted) {
+    badges.push({ id: "media-playing", label: "Audio playing" });
   }
   if (tab.isMuted) {
     badges.push({ id: "muted", label: "Muted" });

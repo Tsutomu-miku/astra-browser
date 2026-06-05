@@ -1,7 +1,7 @@
-import { type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
 import { FiX } from "react-icons/fi";
 
-import { type DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { type DropAxis, type DropZonePlacement } from "../../../../common/drag-drop/dropPlacement";
 import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { type BrowserTab, type Favorite } from "../../../../domain/browser";
 import type { FaviconCache } from "../../../../domain/browser";
@@ -10,11 +10,17 @@ import { readSidebarTabDragEventId } from "../../model/sidebarDragSources";
 import { getSidebarTabAccessibilityLabel, getTabStatusBadges, type TabStatusBadge } from "../../model/sidebarItemState";
 import { runSidebarItemKeyboardActivation, runSidebarItemPointerActivation } from "../../model/sidebarItemActivation";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
-import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop, resolveSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
+import { acceptSidebarRowReorderDrag, acceptSidebarTabRowDrag, clearSidebarRowReorderDrop, resolveSidebarRowReorderDrop, resolveSidebarTabRowDrop } from "../../model/sidebarRowReorderDrop";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
 import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
 import { SidebarItemIcon } from "../common/SidebarItemIcon";
 import { SidebarTabStatusBadges } from "../common/SidebarTabStatusBadges";
+
+export type TabDropInfo = {
+  draggedTabId: string;
+  placement: DropZonePlacement;
+  targetTabId: string;
+};
 
 export function TabRow({
   activeTabId,
@@ -25,7 +31,9 @@ export function TabRow({
   onClose,
   onContextMenu,
   onDrop,
+  onGroupTab,
   onPreview,
+  onRenameTab,
   onSelect,
   onSplit,
   dropAxis = "vertical",
@@ -41,8 +49,10 @@ export function TabRow({
   labelKind?: "favorite tab" | "pinned tab" | "tab";
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
-  onDrop: (event: DragEvent<HTMLElement>, targetTabId: string) => void;
+  onDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
+  onGroupTab?: (sourceTabId: string, targetTabId: string) => void;
   onPreview: (url: string, title?: string) => void;
+  onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
   dropAxis?: DropAxis;
@@ -51,19 +61,45 @@ export function TabRow({
   splitTabIds: string[];
   tab: BrowserTab;
 }) {
-  const statusBadges = getTabStatusBadges(tab, splitTabIds);
+  const statusBadges = getTabStatusBadges(tab, splitTabIds, tab.id === activeTabId);
+  const displayTitle = tab.customTitle ?? tab.title ?? tab.url;
   const tabLabel = getSidebarTabAccessibilityLabel({
     isActive: tab.id === activeTabId,
     kind: labelKind,
     statusBadges,
-    tab
+    tab: { ...tab, title: displayTitle }
   });
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(displayTitle);
+  const renameInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (isRenaming) {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    }
+  }, [isRenaming]);
+  const commitRename = () => {
+    if (!isRenaming) return;
+    const trimmed = renameDraft.trim();
+    onRenameTab?.(tab.id, trimmed ? trimmed : undefined);
+    setIsRenaming(false);
+  };
+  const cancelRename = () => {
+    if (!isRenaming) return;
+    setRenameDraft(displayTitle);
+    setIsRenaming(false);
+  };
   const startTabDrag = (event: DragEvent<HTMLElement>) => {
+    if (isRenaming) {
+      event.preventDefault();
+      return;
+    }
     setDraggingTabId(tab.id);
     writeSidebarTabDragPayload(event.dataTransfer, tab.id);
     event.dataTransfer.effectAllowed = "move";
   };
   const iconStatus = tab.isLoading ? "loading" : tab.isSleeping ? "sleeping" : undefined;
+  const readDragId = (event: DragEvent<HTMLElement>) => readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
 
   return (
     <div
@@ -74,23 +110,33 @@ export function TabRow({
       draggable
       data-dragging={draggingTabId === tab.id}
       data-tab-id={tab.id}
+      data-in-group={Boolean(tab.groupId)}
       onDragStart={startTabDrag}
       onDragEnd={() => {
         setDraggingTabId(null);
       }}
       onDragOver={(event) => {
-        acceptSidebarRowReorderDrag(event, {
+        acceptSidebarTabRowDrag(event, {
           axis: dropAxis,
-          readDragId: (currentEvent) => readSidebarTabDragEventId({ draggingTabId }, currentEvent.dataTransfer),
+          readDragId,
           targetId: tab.id
         });
       }}
       onDragLeave={clearSidebarRowReorderDrop}
       onDrop={(event) => {
-        if (resolveSidebarRowReorderDrop(event, {
-          readDragId: (currentEvent) => readSidebarTabDragEventId({ draggingTabId }, currentEvent.dataTransfer),
+        const drop = resolveSidebarTabRowDrop(event, {
+          axis: dropAxis,
+          readDragId,
           targetId: tab.id
-        })) onDrop(event, tab.id);
+        });
+        if (!drop) return;
+        if (drop.placement === "onto" && onGroupTab) {
+          event.preventDefault();
+          event.stopPropagation();
+          onGroupTab(drop.draggedId, tab.id);
+          return;
+        }
+        onDrop(event, tab.id);
       }}
       onContextMenu={(event) => onContextMenu(event, tab)}
     >
@@ -129,7 +175,47 @@ export function TabRow({
       >
         <SidebarItemIcon className="tab-favicon" faviconCache={faviconCache} faviconUrl={tab.faviconUrl} status={iconStatus} url={tab.url} />
         <span className="tab-title-stack">
-          <span className="tab-title">{tab.title || tab.url}</span>
+          {isRenaming ? (
+            <input
+              ref={renameInputRef}
+              className="tab-title-input"
+              type="text"
+              value={renameDraft}
+              onClick={(event) => event.stopPropagation()}
+              onDoubleClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+              onDragStart={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              onChange={(event) => setRenameDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  commitRename();
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  cancelRename();
+                }
+              }}
+              onBlur={commitRename}
+            />
+          ) : (
+            <span
+              className={`tab-title ${tab.customTitle ? "is-custom-title" : ""}`}
+              onDoubleClick={(event) => {
+                if (!onRenameTab) return;
+                event.preventDefault();
+                event.stopPropagation();
+                setRenameDraft(tab.customTitle ?? tab.title ?? tab.url);
+                setIsRenaming(true);
+              }}
+            >
+              {displayTitle}
+            </span>
+          )}
           <SidebarTabStatusBadges badges={statusBadges} />
         </span>
       </button>
@@ -138,7 +224,7 @@ export function TabRow({
         <button
           className="tab-close"
           type="button"
-          aria-label={`Close ${tab.title || tab.url}`}
+          aria-label={`Close ${displayTitle}`}
           tabIndex={-1}
           draggable={false}
           onDragStart={(event) => {

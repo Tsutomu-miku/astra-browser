@@ -17,6 +17,7 @@ interface TabGroupContextMenuProps {
   onDuplicateGroup: (groupId: string) => void;
   onMoveToNewWorkspace: (groupId: string) => void;
   onMoveToWorkspace: (groupId: string, workspaceId: string) => void;
+  onNewTabInGroup: (groupId: string) => void;
   onSleepGroup: (groupId: string) => void;
   onToggleCollapsed: (groupId: string) => void;
   onUngroupGroup: (groupId: string) => void;
@@ -35,6 +36,7 @@ export function TabGroupContextMenu({
   onDuplicateGroup,
   onMoveToNewWorkspace,
   onMoveToWorkspace,
+  onNewTabInGroup,
   onSleepGroup,
   onToggleCollapsed,
   onUngroupGroup,
@@ -54,6 +56,9 @@ export function TabGroupContextMenu({
     <SidebarMenuSurface className="tab-context-menu tab-group-context-menu" style={{ left, top, "--group-color": group.color } as CSSProperties}>
       <SidebarMenuItem icon={group.isCollapsed ? FiChevronRight : FiChevronDown} role="menuitem" onClick={() => run(() => onToggleCollapsed(group.id))}>
         {group.isCollapsed ? "Expand group" : "Collapse group"}
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiPlus} role="menuitem" onClick={() => run(() => onNewTabInGroup(group.id))}>
+        New Tab in Group
       </SidebarMenuItem>
       <SidebarMenuItem icon={FiMoon} role="menuitem" disabled={!canSleepGroup} onClick={() => run(() => onSleepGroup(group.id))}>
         Sleep group

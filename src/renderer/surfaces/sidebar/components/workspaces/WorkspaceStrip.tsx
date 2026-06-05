@@ -131,6 +131,7 @@ export function WorkspaceStrip({
             key={workspace.id}
             style={{ "--accent": workspace.accent } as CSSProperties}
             type="button"
+            title={workspace.name}
             draggable
             aria-label={getWorkspaceAccessibilityLabel(workspace, { isActive, isDropTarget })}
             aria-current={isActive}

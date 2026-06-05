@@ -137,6 +137,12 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     setDraggingFavoriteId(null);
   };
 
+  const handleTabGroupCreate = (sourceTabId: string, targetTabId: string) => {
+    actions.groupTabsTogether(sourceTabId, targetTabId);
+    setDraggingTabId(null);
+    setDraggingFavoriteId(null);
+  };
+
   const placeTab = (tabId: string, targetTabId: string, placement: "before" | "after") => {
     actions.moveTabToFolderPosition(tabId, targetTabId, placement);
   };
@@ -408,8 +414,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             splitTabIds={state.splitTabIds}
             onQuickEntryContextMenu={openQuickEntryMenu}
             onPinDrop={handlePinDrop}
+            onRenameTab={(tabId, customTitle) => actions.updateTab(tabId, { customTitle })}
             onTabContextMenu={openTabMenu}
             onTabDrop={handleTabDrop}
+            onTabGroupCreate={handleTabGroupCreate}
             onTabsDrop={handleTabsDrop}
             onToggleSection={handleToggleSidebarSection}
             setDraggingEssentialId={setDraggingEssentialId}

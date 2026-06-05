@@ -27,6 +27,37 @@ export function groupTab(state: BrowserState, tabId?: string): BrowserState {
   });
 }
 
+export function groupTabsTogether(
+  state: BrowserState,
+  sourceTabId: string,
+  targetTabId: string
+): BrowserState {
+  if (sourceTabId === targetTabId) return state;
+
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const sourceTab = workspace.tabs.find((tab) => tab.id === sourceTabId);
+    const targetTab = workspace.tabs.find((tab) => tab.id === targetTabId);
+    if (!sourceTab || !targetTab) return;
+    if (sourceTab.isPinned || targetTab.isPinned) return;
+    if (sourceTab.groupId && sourceTab.groupId === targetTab.groupId) return;
+
+    // If the target tab already has a group, simply move the source tab into it.
+    if (targetTab.groupId) {
+      sourceTab.groupId = targetTab.groupId;
+      pruneEmptyTabGroups(workspace);
+      return;
+    }
+
+    // Otherwise create a new group and place both tabs inside it.
+    const group = createTabGroup(getReadableUrlTitle(targetTab.url), workspace.tabGroups.length);
+    workspace.tabGroups.push(group);
+    targetTab.groupId = group.id;
+    sourceTab.groupId = group.id;
+    pruneEmptyTabGroups(workspace);
+  });
+}
+
 export function ungroupActiveTab(state: BrowserState): BrowserState {
   return ungroupTab(state);
 }

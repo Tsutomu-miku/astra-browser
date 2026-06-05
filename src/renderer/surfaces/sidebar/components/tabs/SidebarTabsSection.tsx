@@ -1,11 +1,14 @@
 import type { DragEvent, MouseEvent } from "react";
+import { FiPlus } from "react-icons/fi";
 
-import { getPointerDropPlacement } from "../../../../common/drag-drop/dropPlacement";
-import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { getPointerDropPlacement, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, FaviconCache, TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { readSidebarGroupDragId } from "../../model/sidebarDragSources";
-import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
+import {
+  acceptSidebarTabFolderDrag,
+  getSidebarTabFolderDragId
+} from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarSectionHeader } from "../common/SidebarSectionHeader";
 import { TabRow } from "./SidebarItems";
@@ -22,8 +25,10 @@ export function SidebarTabsSection({
   isCollapsed,
   onTabContextMenu,
   onTabDrop,
+  onTabGroupCreate,
   onTabGroupContextMenu,
   onTabsDrop,
+  onRenameTab,
   onToggle,
   setDraggingGroupId,
   setDraggingTabId,
@@ -40,8 +45,10 @@ export function SidebarTabsSection({
   isCollapsed: boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
+  onTabGroupCreate?: (sourceTabId: string, targetTabId: string) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabsDrop: (event: DragEvent<HTMLElement>) => void;
+  onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
   onToggle: () => void;
   setDraggingGroupId: (groupId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
@@ -80,6 +87,20 @@ export function SidebarTabsSection({
         isCollapsed={isCollapsed}
         title="Tabs"
         onToggle={onToggle}
+        rightAction={!filteredItems.isFiltering ? (
+          <button
+            className="sidebar-new-tab-button"
+            type="button"
+            title="New Tab"
+            aria-label="New Tab"
+            onClick={(event) => {
+              event.stopPropagation();
+              actions.newTab();
+            }}
+          >
+            <FiPlus />
+          </button>
+        ) : undefined}
       />
       {!isCollapsed && <nav
         className="tabs"
@@ -99,10 +120,12 @@ export function SidebarTabsSection({
             onClose={actions.closeTab}
             onContextMenu={onTabContextMenu}
             onDrop={onTabDrop}
+            onGroupTab={onTabGroupCreate}
             onMoveTabToGroupFolder={(tabId, groupId) => actions.moveTabToFolderEnd(tabId, { type: "group", groupId })}
             onGroupDrop={onGroupDrop}
             onGroupContextMenu={onTabGroupContextMenu}
             onPreview={actions.openGlance}
+            onRenameTab={onRenameTab}
             onSelect={actions.selectTab}
             onSplit={actions.openTabInSplit}
             onToggle={() => actions.toggleTabGroupCollapsed(group.id)}
@@ -123,7 +146,9 @@ export function SidebarTabsSection({
             onClose={actions.closeTab}
             onContextMenu={onTabContextMenu}
             onDrop={onTabDrop}
+            onGroupTab={onTabGroupCreate}
             onPreview={actions.openGlance}
+            onRenameTab={onRenameTab}
             onSelect={actions.selectTab}
             onSplit={actions.openTabInSplit}
             setDraggingTabId={setDraggingTabId}

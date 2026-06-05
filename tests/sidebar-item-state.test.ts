@@ -35,6 +35,10 @@ describe("sidebar item state", () => {
   it("describes visible tab status badges in sidebar order", () => {
     expect(getTabStatusBadges({
       id: "tab",
+      hasUnread: false,
+      isCameraOn: false,
+      isMediaPlaying: false,
+      isMicrophoneOn: false,
       isMuted: true,
       isSleeping: true
     }, ["tab"]).map((badge) => badge.id)).toEqual(["split", "muted"]);
@@ -43,6 +47,10 @@ describe("sidebar item state", () => {
   it("omits tab status badges when no state needs attention", () => {
     expect(getTabStatusBadges({
       id: "tab",
+      hasUnread: false,
+      isCameraOn: false,
+      isMediaPlaying: false,
+      isMicrophoneOn: false,
       isMuted: false,
       isSleeping: false
     }, [])).toEqual([]);
@@ -51,6 +59,10 @@ describe("sidebar item state", () => {
   it("builds accessible tab labels with active and status state", () => {
     const badges = getTabStatusBadges({
       id: "tab",
+      hasUnread: false,
+      isCameraOn: false,
+      isMediaPlaying: false,
+      isMicrophoneOn: false,
       isMuted: true,
       isSleeping: false
     }, ["tab"]);
@@ -66,6 +78,10 @@ describe("sidebar item state", () => {
   it("keeps sleeping state out of text labels because the icon already shows it", () => {
     const badges = getTabStatusBadges({
       id: "tab",
+      hasUnread: false,
+      isCameraOn: false,
+      isMediaPlaying: false,
+      isMicrophoneOn: false,
       isMuted: false,
       isSleeping: true
     }, ["tab"]);
@@ -76,5 +92,41 @@ describe("sidebar item state", () => {
       statusBadges: badges,
       tab: { title: "Docs", url: "https://docs.example" }
     })).toBe("Docs, favorite tab, Split");
+  });
+
+  it("surfaces media, camera, microphone, and unread badges in sidebar order", () => {
+    expect(getTabStatusBadges({
+      id: "tab",
+      hasUnread: true,
+      isCameraOn: true,
+      isMediaPlaying: true,
+      isMicrophoneOn: true,
+      isMuted: false,
+      isSleeping: false
+    }, ["tab"]).map((badge) => badge.id)).toEqual(["unread", "split", "camera", "microphone", "media-playing"]);
+  });
+
+  it("hides unread badge for the currently active tab", () => {
+    expect(getTabStatusBadges({
+      id: "tab",
+      hasUnread: true,
+      isCameraOn: false,
+      isMediaPlaying: false,
+      isMicrophoneOn: false,
+      isMuted: false,
+      isSleeping: false
+    }, [], true)).toEqual([]);
+  });
+
+  it("shows muted badge instead of media-playing when audio is muted", () => {
+    expect(getTabStatusBadges({
+      id: "tab",
+      hasUnread: false,
+      isCameraOn: false,
+      isMediaPlaying: true,
+      isMicrophoneOn: false,
+      isMuted: true,
+      isSleeping: false
+    }, [])).toEqual([{ id: "muted", label: "Muted" }]);
   });
 });

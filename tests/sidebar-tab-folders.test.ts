@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createFavorite, createTab, type Workspace } from "../src/renderer/domain/browser";
+import { createFavorite, createTab, type SplitLayout, type Workspace } from "../src/renderer/domain/browser";
 import { createTabGroup } from "../src/renderer/domain/tabs/groups";
 import { getSidebarTabFolders } from "../src/renderer/surfaces/sidebar/model/sidebarTabFolders";
 
@@ -62,6 +62,7 @@ function createWorkspace(patch: Partial<Workspace>): Workspace {
     name: "Workspace",
     profileId: "profile",
     profileName: "Profile",
+    splitLayout: "horizontal" as SplitLayout,
     tabGroups: [],
     tabs: [],
     ...patch

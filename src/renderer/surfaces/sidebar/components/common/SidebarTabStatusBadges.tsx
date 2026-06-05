@@ -1,4 +1,4 @@
-import { FiColumns, FiVolumeX } from "react-icons/fi";
+import { FiCamera, FiColumns, FiMic, FiRadio, FiVolume2, FiVolumeX } from "react-icons/fi";
 
 import type { TabStatusBadge } from "../../model/sidebarItemState";
 
@@ -26,6 +26,18 @@ export function SidebarTabStatusBadges({
 }
 
 function TabStatusIcon({ badge }: { badge: TabStatusBadge }) {
-  if (badge.id === "split") return <FiColumns />;
-  return <FiVolumeX />;
+  switch (badge.id) {
+    case "split":
+      return <FiColumns />;
+    case "camera":
+      return <FiCamera />;
+    case "microphone":
+      return <FiMic />;
+    case "media-playing":
+      return <FiVolume2 />;
+    case "muted":
+      return <FiVolumeX />;
+    case "unread":
+      return <FiRadio />;
+  }
 }

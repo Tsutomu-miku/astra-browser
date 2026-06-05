@@ -1,6 +1,17 @@
 export type SearchEngineKey = "google" | "duckduckgo" | "bing";
 export type StartupBehavior = "restore" | "homepage";
 export type ChromeAccentMode = "neutral" | "space";
+export type SplitLayout = "grid" | "horizontal" | "vertical";
+export type ThemeKey =
+  | "arc-dark"
+  | "arc-light"
+  | "dracula"
+  | "everforest"
+  | "github-dark"
+  | "github-light"
+  | "monokai"
+  | "nord"
+  | "solarized-light";
 
 export interface SearchEngine {
   name: string;
@@ -10,6 +21,7 @@ export interface SearchEngine {
 export interface BrowserTab {
   id: string;
   title: string;
+  customTitle?: string;
   url: string;
   faviconUrl?: string;
   groupId: string | null;
@@ -21,6 +33,10 @@ export interface BrowserTab {
   isSleeping: boolean;
   lastActiveAt: number;
   zoomFactor: number;
+  isMediaPlaying: boolean;
+  isCameraOn: boolean;
+  isMicrophoneOn: boolean;
+  hasUnread: boolean;
 }
 
 export interface ClosedTab {
@@ -82,6 +98,7 @@ export interface BrowserSettings {
   memorySaverIdleMinutes: number;
   searchEngine: SearchEngineKey;
   startupBehavior: StartupBehavior;
+  theme: ThemeKey;
 }
 
 export interface Workspace {
@@ -91,6 +108,7 @@ export interface Workspace {
   homepage: string;
   profileId: string;
   profileName: string;
+  splitLayout: SplitLayout;
   closedTabs: ClosedTab[];
   favorites: Favorite[];
   tabGroups: TabGroup[];

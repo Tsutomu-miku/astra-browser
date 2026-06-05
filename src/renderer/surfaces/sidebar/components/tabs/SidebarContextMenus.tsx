@@ -116,6 +116,7 @@ export function SidebarContextMenus({
           onDuplicateGroup={actions.duplicateTabGroup}
           onMoveToNewWorkspace={actions.moveTabGroupToNewWorkspace}
           onMoveToWorkspace={actions.moveTabGroupToWorkspace}
+          onNewTabInGroup={actions.newTabInGroup}
           onSleepGroup={actions.sleepTabGroup}
           onToggleCollapsed={actions.toggleTabGroupCollapsed}
           onUngroupGroup={actions.ungroupTabGroup}

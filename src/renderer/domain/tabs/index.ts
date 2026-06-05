@@ -10,6 +10,7 @@ export {
   closeTab,
   duplicateActiveTab,
   duplicateTab,
+  newTabInGroup,
   restoreClosedTab,
   restoreClosedTabToWorkspace,
   restoreLastClosedTab
@@ -19,6 +20,7 @@ export {
   duplicateTabGroup,
   groupActiveTab,
   groupTab,
+  groupTabsTogether,
   reorderTabGroup,
   toggleTabGroupCollapsed,
   ungroupActiveTab,
@@ -37,6 +39,7 @@ export {
   openUrlInSplit,
   removeTabFromSplit,
   reorderTab,
+  setWorkspaceSplitLayout,
   toggleSplitMode,
   type TabFolder
 } from "./layoutActions";

@@ -11,7 +11,14 @@ import { clearSplitView, getSplitTabIds, setSplitTabIds } from "./splitView";
 import { pruneEmptyTabGroups } from "./groups";
 import { DEFAULT_ZOOM_FACTOR, stepZoomFactor } from "../browser/zoom";
 import { updateBrowserState } from "../browser/updateState";
-import { getGroupSleepableTabs, getMemoryReleasableTabs, markTabAwake, markTabSleeping } from "./sleepPolicy";
+import {
+  getGroupSleepableTabs,
+  getMemoryReleasableTabs,
+  getMemorySaverProtectedTabIds,
+  isMemoryReleasableTab,
+  markTabAwake,
+  markTabSleeping
+} from "./sleepPolicy";
 import { normalizeFaviconUrl, setCachedFaviconUrl } from "../browser/favicon";
 import type { TabDropPlacement } from "./utils";
 
@@ -47,10 +54,25 @@ export function toggleTabMuted(state: BrowserState, tabId: string): BrowserState
 }
 
 export function sleepTab(state: BrowserState, tabId: string): BrowserState {
+  const workspace = state.workspaces.find((candidate) => candidate.tabs.some((tab) => tab.id === tabId));
+  const tab = workspace?.tabs.find((candidate) => candidate.id === tabId);
+  if (!workspace || !tab || workspace.tabs.length <= 1) return state;
+
+  // Pinned tabs are always protected.
+  if (tab.isPinned) return state;
+
+  // Split-view tabs other than the active tab are protected; the active tab
+  // can still be put to sleep explicitly when another tab can receive focus.
+  const splitTabIds = getSplitTabIds(state);
+  if (splitTabIds.includes(tab.id) && workspace.activeTabId !== tab.id) return state;
+
+  // Already sleeping tabs are a no-op.
+  if (tab.isSleeping) return state;
+
   return updateBrowserState(state, (draft) => {
     const workspace = draft.workspaces.find((candidate) => candidate.tabs.some((tab) => tab.id === tabId));
     const tab = workspace?.tabs.find((candidate) => candidate.id === tabId);
-    if (!workspace || !tab || workspace.tabs.length <= 1) return;
+    if (!workspace || !tab) return;
 
     if (workspace.activeTabId === tab.id) {
       const fallback = getSleepTabFocusFallback(workspace.tabs, tab.id);

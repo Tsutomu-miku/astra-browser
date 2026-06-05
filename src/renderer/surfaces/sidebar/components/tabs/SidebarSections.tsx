@@ -46,8 +46,10 @@ export function SidebarSections({
   onClosedTabContextMenu,
   onTabGroupContextMenu,
   onPinDrop,
+  onRenameTab,
   onTabContextMenu,
   onTabDrop,
+  onTabGroupCreate,
   onTabsDrop = () => undefined,
   onToggleSection,
   onQuickEntryContextMenu,
@@ -80,9 +82,11 @@ export function SidebarSections({
   onClosedTabContextMenu: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
   onPinDrop: (event: DragEvent<HTMLElement>) => void;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
+  onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
+  onTabGroupCreate?: (sourceTabId: string, targetTabId: string) => void;
   onTabsDrop?: (event: DragEvent<HTMLElement>) => void;
   onToggleSection?: (sectionId: SidebarSectionId) => void;
   setDraggingEssentialId: (essentialId: string | null) => void;
@@ -217,7 +221,9 @@ export function SidebarSections({
                     onClose={actions.closeTab}
                     onContextMenu={onTabContextMenu}
                     onDrop={onTabDrop}
+                    onGroupTab={onTabGroupCreate}
                     onPreview={actions.openGlance}
+                    onRenameTab={onRenameTab}
                     onSelect={actions.selectTab}
                     onSplit={actions.openTabInSplit}
                     setDraggingTabId={setDraggingTabId}
@@ -263,8 +269,10 @@ export function SidebarSections({
         tabCount={tabCount}
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}
+        onTabGroupCreate={onTabGroupCreate}
         onTabGroupContextMenu={onTabGroupContextMenu}
         onTabsDrop={onTabsDrop}
+        onRenameTab={onRenameTab}
         onToggle={() => toggleSection("tabs")}
         setDraggingGroupId={setDraggingGroupId}
         setDraggingTabId={setDraggingTabId}

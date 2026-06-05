@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
 import { getChromeAccent } from "../common/theme/chromeTheme";
+import { getThemeDefinition } from "../common/theme/themePalette";
 import { useBrowserController } from "./controller/useBrowserController";
 import { CommandPalette } from "../surfaces/command/CommandPalette";
 import { FindBar } from "../surfaces/find/FindBar";
@@ -15,13 +16,19 @@ import { WebviewGrid } from "../surfaces/webview/WebviewGrid";
 export function App() {
   const controller = useBrowserController();
   const chromeAccent = getChromeAccent(controller.state.settings, controller.activeWorkspace);
+  const theme = controller.state.settings.theme;
+  const themeDef = getThemeDefinition(theme);
 
   useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
     document.documentElement.style.setProperty("--accent", chromeAccent);
+    document.documentElement.style.setProperty("--accent-2", themeDef.accent2);
     return () => {
+      document.documentElement.removeAttribute("data-theme");
       document.documentElement.style.removeProperty("--accent");
+      document.documentElement.style.removeProperty("--accent-2");
     };
-  }, [chromeAccent]);
+  }, [theme, chromeAccent, themeDef.accent2]);
 
   return (
     <>

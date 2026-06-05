@@ -1,10 +1,9 @@
 import type { TabDropPlacement, TabFolder, WorkspaceDropPlacement } from "../domain/actions";
-import type { BrowserState, BrowserTab, DownloadEntry, Workspace } from "../domain/browser";
+import type { BrowserState, BrowserTab, DownloadEntry, SplitLayout, Workspace } from "../domain/browser";
 import type { WebviewAction, WebviewElement } from "../types/browser-ui";
 import type { PermissionRequestEvent } from "../types/electron";
 
 export type Panel = "history" | "downloads" | "settings" | "site" | null;
-export type SplitLayout = "grid" | "horizontal" | "vertical";
 
 export interface FindResultState {
   activeMatchOrdinal: number;
@@ -26,7 +25,6 @@ export interface BrowserStore {
   permissionRequest: PermissionRequestEvent | null;
   sidebarCollapsed: boolean;
   sidebarWidth: number;
-  splitLayout: SplitLayout;
   state: BrowserState;
   glance: { title: string; url: string } | null;
   addTabToFavorites: (tabId: string) => void;
@@ -51,6 +49,7 @@ export interface BrowserStore {
   focusSplitPane: (tabId: string) => void;
   groupActiveTab: () => void;
   groupTab: (tabId: string) => void;
+  groupTabsTogether: (sourceTabId: string, targetTabId: string) => void;
   ingestDownload: (download: DownloadEntry) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
@@ -69,6 +68,7 @@ export interface BrowserStore {
   moveTabToFolderPosition: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   navigateActiveTab: (url: string, webview?: WebviewElement) => void;
   newTab: () => void;
+  newTabInGroup: (groupId: string) => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
   recordHistory: (tabId: string, url: string) => void;
   removeHistoryEntry: (historyId: string) => void;

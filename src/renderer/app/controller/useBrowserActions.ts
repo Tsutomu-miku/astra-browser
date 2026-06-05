@@ -46,6 +46,7 @@ export function useBrowserActions({
     fillSplitView: store.fillSplitView,
     groupActiveTab: store.groupActiveTab,
     groupTab: store.groupTab,
+    groupTabsTogether: store.groupTabsTogether,
     closeOtherTabs: store.closeOtherTabs,
     closeTabGroup: (groupId: string) => {
       store.closeTabGroup(groupId);
@@ -132,6 +133,10 @@ export function useBrowserActions({
     navigateActiveTab: (url: string) => store.navigateActiveTab(url, activeWebview),
     newTab: () => {
       store.newTab();
+      peekCompactChrome();
+    },
+    newTabInGroup: (groupId: string) => {
+      store.newTabInGroup(groupId);
       peekCompactChrome();
     },
     openUrlInActiveWorkspace: (url: string, title?: string) => {

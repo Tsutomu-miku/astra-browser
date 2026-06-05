@@ -20,6 +20,37 @@ export function addTab(state: BrowserState): BrowserState {
   });
 }
 
+export function newTabInGroup(state: BrowserState, groupId: string): BrowserState {
+  const workspace = getActiveWorkspace(state);
+  if (!workspace.tabGroups.some((candidate) => candidate.id === groupId)) {
+    return state;
+  }
+
+  return updateBrowserState(state, (draft) => {
+    const workspace = getActiveWorkspace(draft);
+    const group = workspace.tabGroups.find((candidate) => candidate.id === groupId);
+    if (!group) return;
+
+    const tab = createTab("New Tab", getWorkspaceHomepageUrl(draft, workspace));
+    tab.groupId = group.id;
+
+    // Insert right after the last tab already in the target group so the new
+    // tab lands at the end of that group in the visual order.
+    const lastGroupTabIndex = workspace.tabs.reduceRight(
+      (acc, current, index) => acc !== -1 ? acc : (current.groupId === group.id ? index : -1),
+      -1
+    );
+    if (lastGroupTabIndex >= 0) {
+      workspace.tabs.splice(lastGroupTabIndex + 1, 0, tab);
+    } else {
+      workspace.tabs.push(tab);
+    }
+
+    workspace.activeTabId = tab.id;
+    clearSplitView(draft);
+  });
+}
+
 export function closeActiveTab(state: BrowserState): BrowserState {
   return closeTab(state, getActiveTab(getActiveWorkspace(state)).id);
 }

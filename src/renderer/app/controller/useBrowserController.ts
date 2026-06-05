@@ -121,7 +121,7 @@ export function useBrowserController() {
     setSidebarWidth: store.setSidebarWidth,
     sidebarCollapsed: store.sidebarCollapsed,
     sidebarWidth: store.sidebarWidth,
-    splitLayout: store.splitLayout,
+    splitLayout: activeWorkspace.splitLayout,
     state: store.state
   };
 }

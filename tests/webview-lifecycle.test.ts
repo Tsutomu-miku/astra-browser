@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   getNavigationState,
+  getReadyWebview,
+  isReadyWebview,
   registerReadyWebview,
   syncWebviewPreferences,
   unregisterWebview
@@ -23,6 +25,25 @@ describe("webview lifecycle", () => {
 
     unregisterWebview(refMap, "tab-1", replacement);
     expect(refMap.has("tab-1")).toBe(false);
+  });
+
+  it("reports readiness only for registered instances", () => {
+    const refMap = new Map<string, WebviewElement>();
+    const webview = document.createElement("webview") as WebviewElement;
+    const other = document.createElement("webview") as WebviewElement;
+
+    expect(isReadyWebview(refMap, "tab-1", webview)).toBe(false);
+    expect(isReadyWebview(refMap, "tab-1", undefined)).toBe(false);
+    expect(getReadyWebview(refMap, "tab-1")).toBeUndefined();
+
+    registerReadyWebview(refMap, "tab-1", webview);
+    expect(isReadyWebview(refMap, "tab-1", webview)).toBe(true);
+    expect(isReadyWebview(refMap, "tab-1", other)).toBe(false);
+    expect(getReadyWebview(refMap, "tab-1")).toBe(webview);
+
+    unregisterWebview(refMap, "tab-1", webview);
+    expect(isReadyWebview(refMap, "tab-1", webview)).toBe(false);
+    expect(getReadyWebview(refMap, "tab-1")).toBeUndefined();
   });
 
   it("syncs preferences directly on ready webviews", () => {

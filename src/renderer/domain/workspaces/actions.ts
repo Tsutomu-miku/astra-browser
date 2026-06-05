@@ -7,6 +7,7 @@ import {
   type BrowserState,
   type BrowserTab,
   type Favorite,
+  type SplitLayout,
   type TabGroup,
   type Workspace
 } from "../browser";
@@ -220,6 +221,7 @@ function createWorkspace(
     accent: getNextWorkspaceAccent(index),
     homepage: getHomepageUrl(state),
     ...normalizeWorkspaceProfile({ id, name }),
+    splitLayout: "horizontal" as SplitLayout,
     closedTabs: [],
     favorites: options.favorites ?? [],
     tabGroups: options.tabGroups ?? [],

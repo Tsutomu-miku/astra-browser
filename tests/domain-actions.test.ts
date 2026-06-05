@@ -26,6 +26,7 @@ import {
   moveTabToWorkspace,
   moveTabToFolderEnd,
   moveTabToFolderPosition,
+  newTabInGroup,
   openTabInSplit,
   openUrlInSplit,
   openUrlInActiveWorkspace,
@@ -42,6 +43,7 @@ import {
   selectAdjacentTab,
   selectTab,
   setActiveTabZoom,
+  setWorkspaceSplitLayout,
   sleepIdleTabs,
   sleepInactiveTabs,
   sleepTabGroup,
@@ -1213,5 +1215,90 @@ describe("domain actions", () => {
     pinned.lastActiveAt = now - 31 * 60_000;
 
     expect(sleepIdleTabs(first, now)).toBe(first);
+  });
+
+  it("keeps manual sleepTab as a no-op for pinned tabs", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const workspace = getActiveWorkspace(second);
+    const pinned = workspace.tabs.find((tab) => tab.title === "First")!;
+    pinned.isPinned = true;
+    const active = getActiveTab(workspace);
+
+    expect(active.id).not.toBe(pinned.id);
+    expect(sleepTab(second, pinned.id)).toBe(second);
+  });
+
+  it("keeps manual sleepTab as a no-op for non-active split-view tabs", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const split = openTabInSplit(second, getActiveWorkspace(second).tabs[0].id);
+    const workspace = getActiveWorkspace(split);
+    const splitTab = workspace.tabs.find((tab) => split.splitTabIds.includes(tab.id))!;
+    const active = getActiveTab(workspace);
+
+    expect(splitTab.id).not.toBe(active.id);
+    expect(sleepTab(split, splitTab.id)).toBe(split);
+  });
+
+  it("keeps manual sleepTab as a no-op for already sleeping tabs", () => {
+    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const second = openUrlInActiveWorkspace(first, "second.test", "Second");
+    const workspace = getActiveWorkspace(second);
+    const background = workspace.tabs.find((tab) => tab.title === "First")!;
+    background.isSleeping = true;
+
+    expect(sleepTab(second, background.id)).toBe(second);
+  });
+
+  it("creates a new tab at the end of a tab group and selects it", () => {
+    const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.test", "Docs"));
+    const group = getActiveWorkspace(grouped).tabGroups[0];
+    const withNews = openUrlInActiveWorkspace(grouped, "news.test", "News");
+    const assigned = assignTabToGroup(withNews, getActiveTab(getActiveWorkspace(withNews)).id, group.id);
+    const afterNew = newTabInGroup(assigned, group.id);
+    const workspace = getActiveWorkspace(afterNew);
+    const groupTabs = workspace.tabs.filter((tab) => tab.groupId === group.id);
+    const active = getActiveTab(workspace);
+
+    expect(groupTabs).toHaveLength(3);
+    expect(groupTabs[groupTabs.length - 1].title).toBe("New Tab");
+    expect(active.groupId).toBe(group.id);
+    expect(active.title).toBe("New Tab");
+    expect(afterNew.splitMode).toBe(false);
+  });
+
+  it("ignores newTabInGroup when the target group does not exist", () => {
+    const state = createDefaultState();
+    expect(newTabInGroup(state, "missing-group")).toBe(state);
+  });
+
+  it("persists split layout per workspace via setWorkspaceSplitLayout", () => {
+    const initial = createDefaultState();
+    expect(getActiveWorkspace(initial).splitLayout).toBe("horizontal");
+
+    const vertical = setWorkspaceSplitLayout(initial, "vertical");
+    expect(getActiveWorkspace(vertical).splitLayout).toBe("vertical");
+
+    const switched = switchWorkspace(vertical, "work");
+    expect(getActiveWorkspace(switched).splitLayout).toBe("horizontal");
+    expect(switched.workspaces.find((w) => w.id === "personal")?.splitLayout).toBe("vertical");
+
+    const grid = setWorkspaceSplitLayout(switched, "grid");
+    expect(getActiveWorkspace(grid).splitLayout).toBe("grid");
+    expect(grid.workspaces.find((w) => w.id === "personal")?.splitLayout).toBe("vertical");
+  });
+
+  it("returns identity for invalid setWorkspaceSplitLayout calls", () => {
+    const state = createDefaultState();
+    expect(setWorkspaceSplitLayout(state, "bogus" as never)).toBe(state);
+  });
+
+  it("fillSplitView sets the workspace split layout to grid", () => {
+    const initial = createDefaultState();
+    expect(getActiveWorkspace(initial).splitLayout).toBe("horizontal");
+
+    const filled = fillSplitView(initial);
+    expect(getActiveWorkspace(filled).splitLayout).toBe("grid");
   });
 });

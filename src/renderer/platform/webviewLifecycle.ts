@@ -16,6 +16,15 @@ export function unregisterWebview(refMap: Map<string, WebviewElement>, tabId: st
   }
 }
 
+export function isReadyWebview(refMap: Map<string, WebviewElement>, tabId: string, webview?: WebviewElement): boolean {
+  if (!webview) return false;
+  return refMap.get(tabId) === webview;
+}
+
+export function getReadyWebview(refMap: Map<string, WebviewElement>, tabId: string): WebviewElement | undefined {
+  return refMap.get(tabId);
+}
+
 export function getNavigationState(webview: WebviewElement): NavigationState {
   return {
     canGoBack: Boolean(webview.canGoBack?.()),

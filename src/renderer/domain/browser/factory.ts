@@ -1,6 +1,8 @@
 import { DEFAULT_URL, WORKSPACE_ACCENTS } from "./constants";
-import type { BrowserState, BrowserTab, Favorite } from "./types";
+import type { BrowserState, BrowserTab, Favorite, SplitLayout } from "./types";
 import { DEFAULT_ZOOM_FACTOR } from "./zoom";
+
+const DEFAULT_WORKSPACE_SPLIT_LAYOUT: SplitLayout = "horizontal";
 
 export function createId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -20,7 +22,11 @@ export function createTab(title: string, url: string): BrowserTab {
     isLoading: false,
     isSleeping: false,
     lastActiveAt: Date.now(),
-    zoomFactor: DEFAULT_ZOOM_FACTOR
+    zoomFactor: DEFAULT_ZOOM_FACTOR,
+    isMediaPlaying: false,
+    isCameraOn: false,
+    isMicrophoneOn: false,
+    hasUnread: false
   };
 }
 
@@ -53,7 +59,8 @@ export function createDefaultState(): BrowserState {
       memorySaverEnabled: true,
       memorySaverIdleMinutes: 30,
       searchEngine: "google",
-      startupBehavior: "restore"
+      startupBehavior: "restore",
+      theme: "arc-dark"
     },
     workspaces: [
       {
@@ -72,7 +79,8 @@ export function createDefaultState(): BrowserState {
         tabs: [
           createTab("New Tab", DEFAULT_URL)
         ],
-        activeTabId: null
+        activeTabId: null,
+        splitLayout: DEFAULT_WORKSPACE_SPLIT_LAYOUT
       },
       {
         id: "work",
@@ -89,7 +97,8 @@ export function createDefaultState(): BrowserState {
         tabs: [
           createTab("Docs", "https://www.chromium.org")
         ],
-        activeTabId: null
+        activeTabId: null,
+        splitLayout: DEFAULT_WORKSPACE_SPLIT_LAYOUT
       }
     ]
   };

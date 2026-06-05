@@ -11,6 +11,7 @@ export function selectTab(state: BrowserState, tabId: string): BrowserState {
     if (!tab) return;
 
     markTabAwake(tab);
+    tab.hasUnread = false;
     if (draft.splitMode && tabId !== workspace.activeTabId) {
       const currentIds = getSplitTabIds(draft).filter((candidateId) => candidateId !== tab.id);
       const nextIds = currentIds.length >= 3
@@ -33,6 +34,7 @@ export function selectAdjacentTab(state: BrowserState, direction: 1 | -1): Brows
     const nextIndex = (index + direction + workspace.tabs.length) % workspace.tabs.length;
     workspace.activeTabId = workspace.tabs[nextIndex].id;
     markTabAwake(workspace.tabs[nextIndex]);
+    workspace.tabs[nextIndex].hasUnread = false;
     clearSplitView(draft);
   });
 }

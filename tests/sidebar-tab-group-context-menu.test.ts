@@ -13,6 +13,7 @@ describe("sidebar tab group context menu", () => {
     const html = renderToStaticMarkup(createElement(TabGroupContextMenu, props()));
 
     expect(html).toContain("Collapse group");
+    expect(html).toContain("New Tab in Group");
     expect(html).toContain("Sleep group");
     expect(html).toContain("Duplicate group");
     expect(html).toContain("Name");
@@ -41,6 +42,7 @@ describe("sidebar tab group context menu", () => {
     const onDuplicateGroup = vi.fn();
     const onMoveToNewWorkspace = vi.fn();
     const onMoveToWorkspace = vi.fn();
+    const onNewTabInGroup = vi.fn();
     const onSleepGroup = vi.fn();
     const onToggleCollapsed = vi.fn();
     const onUngroupGroup = vi.fn();
@@ -51,6 +53,7 @@ describe("sidebar tab group context menu", () => {
       onDuplicateGroup,
       onMoveToNewWorkspace,
       onMoveToWorkspace,
+      onNewTabInGroup,
       onSleepGroup,
       onToggleCollapsed,
       onUngroupGroup,
@@ -61,6 +64,7 @@ describe("sidebar tab group context menu", () => {
     menu.props.onDuplicateGroup("group");
     menu.props.onMoveToNewWorkspace("group");
     menu.props.onMoveToWorkspace("group", "work");
+    menu.props.onNewTabInGroup("group");
     menu.props.onSleepGroup("group");
     menu.props.onToggleCollapsed("group");
     menu.props.onUpdate("group", { name: "Planning" });
@@ -71,6 +75,7 @@ describe("sidebar tab group context menu", () => {
     expect(onDuplicateGroup).toHaveBeenCalledWith("group");
     expect(onMoveToNewWorkspace).toHaveBeenCalledWith("group");
     expect(onMoveToWorkspace).toHaveBeenCalledWith("group", "work");
+    expect(onNewTabInGroup).toHaveBeenCalledWith("group");
     expect(onSleepGroup).toHaveBeenCalledWith("group");
     expect(onToggleCollapsed).toHaveBeenCalledWith("group");
     expect(onUpdate).toHaveBeenCalledWith("group", { name: "Planning" });
@@ -162,6 +167,7 @@ function props(overrides: Partial<TabGroupContextMenuProps> = {}): TabGroupConte
     onDuplicateGroup: vi.fn(),
     onMoveToNewWorkspace: vi.fn(),
     onMoveToWorkspace: vi.fn(),
+    onNewTabInGroup: vi.fn(),
     onSleepGroup: vi.fn(),
     onToggleCollapsed: vi.fn(),
     onUngroupGroup: vi.fn(),

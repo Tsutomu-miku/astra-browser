@@ -43,7 +43,9 @@ export type {
   PartialBrowserState,
   SearchEngineKey,
   SitePermissionRule,
+  SplitLayout,
   StartupBehavior,
   TabGroup,
+  ThemeKey,
   Workspace
 } from "./types";

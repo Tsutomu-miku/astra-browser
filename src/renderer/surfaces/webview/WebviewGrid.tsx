@@ -8,6 +8,7 @@ import {
   type PointerEvent
 } from "react";
 
+import { getPointerDropZone, type DropAxis } from "../../common/drag-drop/dropPlacement";
 import { getWorkspacePartition, isInternalNewTabUrl } from "../../domain/browser";
 import type { BrowserController } from "../../app/controller/types";
 import { StartPage } from "../start/StartPage";
@@ -21,9 +22,12 @@ import {
   normalizeSplitRatio
 } from "./webviewLayout";
 
+type SplitDropZone = "before" | "after" | "onto" | null;
+
 export function WebviewGrid({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWorkspace, actions, registerWebview, removeWebview, splitLayout, state } = controller;
   const [isSplitDropTarget, setSplitDropTarget] = useState(false);
+  const [splitDropZone, setSplitDropZone] = useState<SplitDropZone>(null);
   const [splitRatio, setSplitRatio] = useState(DEFAULT_SPLIT_RATIO);
   const splitGridRef = useRef<HTMLElement | null>(null);
   const layoutTabs = getKeepAliveWebviewTabs(activeWorkspace, activeTab, state);
@@ -33,6 +37,7 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
   const splitStyle = visibleCount === 2
     ? { "--split-primary-size": `${normalizeSplitRatio(splitRatio) * 100}%` } as CSSProperties
     : undefined;
+  const splitDropAxis: DropAxis = splitLayout === "vertical" ? "vertical" : "horizontal";
 
   function getDraggedTabId(event: DragEvent<HTMLElement>) {
     return event.dataTransfer.getData("text/plain");
@@ -49,21 +54,34 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
 
   function onSplitDragOver(event: DragEvent<HTMLElement>) {
     if (!hasTabDragPayload(event)) return;
+    if (!canSplitDrop(event)) return;
 
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     setSplitDropTarget(true);
+
+    if (splitGridRef.current) {
+      const zone = getPointerDropZone(splitGridRef.current, event, splitDropAxis, 0.5);
+      setSplitDropZone(zone);
+    }
+  }
+
+  function onSplitDragLeave() {
+    setSplitDropTarget(false);
+    setSplitDropZone(null);
   }
 
   function onSplitDrop(event: DragEvent<HTMLElement>) {
     if (!canSplitDrop(event)) {
       setSplitDropTarget(false);
+      setSplitDropZone(null);
       return;
     }
 
     event.preventDefault();
     actions.openTabInSplit(getDraggedTabId(event));
     setSplitDropTarget(false);
+    setSplitDropZone(null);
   }
 
   function resizeSplitFromPointer(event: PointerEvent<HTMLElement>) {
@@ -99,10 +117,11 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
     <section
       ref={splitGridRef}
       className={`view-grid ${visibleCount > 1 ? "is-split" : ""} split-count-${visibleCount} split-layout-${splitLayout} ${isSplitDropTarget ? "is-split-drop-target" : ""}`}
+      data-split-drop-zone={isSplitDropTarget && splitDropZone ? splitDropZone : undefined}
       style={splitStyle}
       aria-label="Browser content"
       onDragOver={onSplitDragOver}
-      onDragLeave={() => setSplitDropTarget(false)}
+      onDragLeave={onSplitDragLeave}
       onDrop={onSplitDrop}
     >
       {layoutTabs.map(({ isVisible, tab }, index) => {
@@ -110,6 +129,7 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
           ? <StartPage controller={controller} isVisible={isVisible} />
           : (
             <BrowserWebview
+              isActive={tab.id === activeTab.id}
               isVisible={isVisible}
               partition={partition}
               tab={tab}
@@ -117,9 +137,30 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
               onWebviewRemoved={removeWebview}
               onLoadingChange={(isLoading, navigationState) => actions.updateTab(tab.id, { isLoading, ...navigationState })}
               onFaviconChange={(faviconUrl) => actions.updateTab(tab.id, { faviconUrl })}
-              onTitleChange={(title) => actions.updateTab(tab.id, { title })}
+              onMediaStateChange={(isMediaPlaying) => actions.updateTab(tab.id, { isMediaPlaying })}
+              onTitleChange={(title, explicitSet) => {
+                const isActive = tab.id === activeTab.id;
+                actions.updateTab(tab.id, {
+                  title,
+                  hasUnread: isActive ? false : Boolean(explicitSet) || tab.hasUnread
+                });
+              }}
+              onPermissionRequest={(permission, active) => {
+                if (permission === "camera" || permission === "media") {
+                  actions.updateTab(tab.id, { isCameraOn: active });
+                }
+                if (permission === "microphone" || permission === "media") {
+                  actions.updateTab(tab.id, { isMicrophoneOn: active });
+                }
+              }}
               onNavigate={(url) => {
-                actions.updateTab(tab.id, { url, faviconUrl: undefined });
+                actions.updateTab(tab.id, {
+                  url,
+                  faviconUrl: undefined,
+                  isCameraOn: false,
+                  isMicrophoneOn: false,
+                  hasUnread: tab.id === activeTab.id ? false : tab.hasUnread
+                });
                 actions.recordHistory(tab.id, url);
               }}
             />
