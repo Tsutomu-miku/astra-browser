@@ -157,6 +157,7 @@ export function WorkspaceStrip({
 
   function openMoreMenu(event: MouseEvent) {
     event.preventDefault();
+    event.stopPropagation();
     closeWorkspaceMenu({ restoreFocus: false });
     moreMenuTriggerRef.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     setMoreMenu(getAnchoredContextMenuPosition(event, {

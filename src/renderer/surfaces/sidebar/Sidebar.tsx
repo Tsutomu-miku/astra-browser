@@ -21,7 +21,6 @@ import {
 import type { BrowserController } from "../../app/controller/types";
 import type { TabFolder } from "../../domain/tabs";
 import { loadBrowserUiState, saveBrowserUiState } from "../../platform/persistence/browserUiStorage";
-import { SidebarHeader } from "./components/chrome/SidebarHeader";
 import { SidebarResizeHandle } from "./components/chrome/SidebarResizeHandle";
 import { SidebarSearchBox } from "./components/chrome/SidebarSearchBox";
 import { SidebarContextMenus } from "./components/tabs/SidebarContextMenus";
@@ -379,7 +378,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       />
 
       <section className="tab-stack" ref={tabStackRef} onKeyDown={handleSidebarFocusNavigation}>
-        <SidebarHeader workspaceName={activeWorkspace.name} onNewTab={actions.newTab} />
         <SidebarSearchBox
           activeSearchTarget={activeSearchTarget}
           query={tabQuery}
