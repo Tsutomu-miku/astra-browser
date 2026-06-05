@@ -6,7 +6,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { createDefaultState, createFavorite, type BrowserState } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
-import { SidebarAddress } from "../src/renderer/surfaces/sidebar/components/chrome/SidebarAddress";
 import { Topbar } from "../src/renderer/surfaces/topbar/Topbar";
 
 describe("omnibox accessibility", () => {
@@ -117,59 +116,6 @@ describe("omnibox accessibility", () => {
     container.remove();
   });
 
-  it("exposes compact sidebar address suggestions with matching combobox semantics", () => {
-    const actions = createActions();
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(createElement(SidebarAddress, {
-        controller: createController({ actions, addressValue: "github", compactMode: true })
-      }));
-    });
-
-    const input = container.querySelector<HTMLInputElement>("#sidebarAddressInput")!;
-    expect(input.getAttribute("role")).toBe("combobox");
-    expect(input.getAttribute("aria-autocomplete")).toBe("both");
-    expect(input.getAttribute("aria-controls")).toBe("sidebar-address-suggestions");
-    expect(input.getAttribute("aria-expanded")).toBe("false");
-
-    act(() => {
-      input.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
-    });
-
-    expect(input.getAttribute("aria-expanded")).toBe("true");
-    expect(container.querySelector("#sidebar-address-suggestions")?.getAttribute("role")).toBe("listbox");
-    const option = container.querySelector('[role="option"]');
-    expect(option?.id).toBe("sidebar-address-suggestion-0");
-    expect(option?.hasAttribute("title")).toBe(false);
-    expect(option?.querySelector(".omnibox-action-hints")?.getAttribute("aria-label")).toBe("Alt Preview, Shift Split");
-    expect(option?.querySelector(".omnibox-action-hint")?.getAttribute("data-action-hint")).toBe("preview");
-    expect(option?.querySelectorAll(".omnibox-action-hint")).toHaveLength(2);
-    expect(option?.querySelector("kbd")).toBeNull();
-
-    act(() => {
-      input.dispatchEvent(new KeyboardEvent("keydown", {
-        altKey: true,
-        bubbles: true,
-        key: "Enter"
-      }));
-    });
-    act(() => {
-      input.dispatchEvent(new KeyboardEvent("keydown", {
-        bubbles: true,
-        key: "Enter",
-        shiftKey: true
-      }));
-    });
-
-    expect(actions.openGlance).toHaveBeenCalled();
-    expect(actions.openUrlInSplit).toHaveBeenCalled();
-
-    act(() => root.unmount());
-    container.remove();
-  });
 });
 
 function OmniboxHarness({

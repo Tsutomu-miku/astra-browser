@@ -53,6 +53,19 @@
   white-space: nowrap;
 }
 
+.sidebar-menu-item-main {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.sidebar-menu-item-hint {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 450;
+  text-transform: none;
+}
+
 .sidebar-menu-surface button:hover,
 .sidebar-menu-surface button:focus-visible {
   background: var(--panel-soft);
@@ -71,11 +84,11 @@
 }
 
 .sidebar-menu-surface button.danger {
-  color: #fda4af;
+  color: var(--theme-danger);
 }
 
 .sidebar-menu-surface button.danger .sidebar-menu-item-icon {
-  color: color-mix(in srgb, #fda4af 78%, var(--muted));
+  color: color-mix(in srgb, var(--theme-danger) 78%, var(--muted));
 }
 
 .sidebar-menu-separator {

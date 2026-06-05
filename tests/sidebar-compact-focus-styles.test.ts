@@ -9,13 +9,12 @@ describe("sidebar compact focus styles", () => {
   it("reveals collapsed sidebar content on keyboard focus", () => {
     expect(sidebarCss).toContain(".sidebar.is-collapsed:focus-within");
     expect(sidebarCss).toContain(".sidebar.is-collapsed:focus-within .tab-stack");
-    expect(sidebarCss).toContain(".sidebar.is-collapsed:focus-within .sidebar-footer");
   });
 
   it("keeps sidebar sections in one scrollable area above the footer", () => {
     expect(sidebarCss).toContain("height: 100vh");
     expect(sidebarCss).toContain("overflow: hidden");
-    expect(sidebarCss).toContain("grid-template-rows: 58px auto auto minmax(0, 1fr)");
+    expect(sidebarCss).toContain("grid-template-rows: 58px auto minmax(0, 1fr)");
     expect(sidebarCss).toContain(".sidebar-scroll-area");
     expect(sidebarCss).toContain("overflow-y: auto");
     expect(sidebarCss).toContain("overflow-x: hidden");

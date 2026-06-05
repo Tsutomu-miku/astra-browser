@@ -21,8 +21,6 @@ import {
 import type { BrowserController } from "../../app/controller/types";
 import type { TabFolder } from "../../domain/tabs";
 import { loadBrowserUiState, saveBrowserUiState } from "../../platform/persistence/browserUiStorage";
-import { SidebarAddress } from "./components/chrome/SidebarAddress";
-import { SidebarFooter } from "./components/chrome/SidebarFooter";
 import { SidebarHeader } from "./components/chrome/SidebarHeader";
 import { SidebarResizeHandle } from "./components/chrome/SidebarResizeHandle";
 import { SidebarSearchBox } from "./components/chrome/SidebarSearchBox";
@@ -357,7 +355,10 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         draggingTabId={draggingTabId}
         draggingWorkspaceId={draggingWorkspaceId}
         floatingSidebarOpen={floatingSidebarOpen}
+        memorySaver={memorySaver}
         sidebarCollapsed={sidebarCollapsed}
+        splitLayout={controller.splitLayout}
+        splitMode={state.splitMode}
         workspaces={state.workspaces}
         onDragEnd={clearWorkspaceDrag}
         onDragOver={handleWorkspaceDragOver}
@@ -368,13 +369,17 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         onNewWorkspaceDrop={handleNewWorkspaceDrop}
         onOpenSettings={openWorkspaceSettings}
         onSelect={actions.switchWorkspace}
+        onSetPanel={setPanel}
+        onSetSplitLayout={actions.setSplitLayout}
+        onSleepInactiveTabs={actions.sleepInactiveTabs}
+        onToggleCompactMode={actions.toggleCompactMode}
         onToggleSidebar={actions.toggleSidebar}
+        onToggleSplitMode={actions.toggleSplitMode}
         onUpdateWorkspace={actions.updateWorkspaceById}
       />
 
       <section className="tab-stack" ref={tabStackRef} onKeyDown={handleSidebarFocusNavigation}>
         <SidebarHeader workspaceName={activeWorkspace.name} onNewTab={actions.newTab} />
-        <SidebarAddress controller={controller} />
         <SidebarSearchBox
           activeSearchTarget={activeSearchTarget}
           query={tabQuery}
@@ -430,28 +435,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
         </div>
       </section>
 
-      <SidebarFooter
-        actions={actions}
-        activeTabId={activeTab.id}
-        closedTabs={activeWorkspace.closedTabs}
-        compactMode={compactMode}
-        draggingClosedTabIndex={draggingClosedTabIndex}
-        draggingEssentialId={draggingEssentialId}
-        draggingFavoriteId={draggingFavoriteId}
-        draggingTabId={draggingTabId}
-        essentials={state.essentials}
-        favorites={activeWorkspace.favorites}
-        floatingSidebarOpen={floatingSidebarOpen}
-        memorySaver={memorySaver}
-        setPanel={setPanel}
-        setDraggingClosedTabIndex={setDraggingClosedTabIndex}
-        setDraggingEssentialId={setDraggingEssentialId}
-        setDraggingFavoriteId={setDraggingFavoriteId}
-        setDraggingTabId={setDraggingTabId}
-        splitLayout={controller.splitLayout}
-        splitMode={state.splitMode}
-        tabs={activeWorkspace.tabs}
-      />
       <SidebarResizeHandle
         isCollapsed={sidebarCollapsed || compactMode}
         width={sidebarWidth}

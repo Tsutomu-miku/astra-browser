@@ -9,7 +9,6 @@ import { describe, expect, it, vi } from "vitest";
 import { SidebarSearchBox } from "../src/renderer/surfaces/sidebar/components/chrome/SidebarSearchBox";
 
 const sidebarSearchCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-search.css"), "utf8");
-const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.css"), "utf8");
 const sidebarActionHintsCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-action-hints.css"), "utf8");
 
 describe("sidebar search box", () => {
@@ -126,9 +125,6 @@ describe("sidebar search box", () => {
     const searchFocusBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search input:focus");
     const searchClearBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search .icon-button");
     const searchClearPressedBlock = getRuleBlock(sidebarSearchCss, ".sidebar-search .icon-button:active");
-    const addressBlock = getRuleBlock(sidebarCss, ".sidebar-address-form");
-    const addressFocusBlock = getRuleBlock(sidebarCss, ".sidebar-address-form:focus-within");
-    const addressSuggestionsBlock = getRuleBlock(sidebarCss, ".sidebar-omnibox-suggestions");
     const metaBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-search-meta {");
     const emptyBlock = getRuleBlock(sidebarSearchCss, "\n.sidebar-empty {");
     const hintBlock = getRuleBlock(sidebarActionHintsCss, "[data-sidebar-modifier-hint=\"true\"]");
@@ -144,14 +140,6 @@ describe("sidebar search box", () => {
     expect(searchClearBlock).toContain("background: transparent");
     expect(searchClearBlock).toContain("box-shadow: none");
     expect(searchClearPressedBlock).toContain("transform: none");
-    expect(addressBlock).toContain("border: 1px solid transparent");
-    expect(addressBlock).toContain("background: transparent");
-    expect(addressFocusBlock).toContain("border-color: transparent");
-    expect(addressFocusBlock).toContain("background: var(--theme-control)");
-    expect(addressFocusBlock).toContain("box-shadow: none");
-    expect(addressFocusBlock).not.toContain("var(--accent)");
-    expect(addressSuggestionsBlock).toContain("box-shadow: 0 18px 46px color-mix(in srgb, var(--theme-bg) 72%, transparent)");
-    expect(addressSuggestionsBlock).not.toContain("var(--shadow-floating)");
     expect(metaBlock).toContain("justify-content: space-between");
     expect(metaBlock).not.toContain("var(--accent)");
     expect(emptyBlock).toContain("min-height: 30px");

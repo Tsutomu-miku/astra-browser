@@ -1,8 +1,28 @@
-import { useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
-import { FiArrowRight, FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiSettings, FiTrash2, FiUnlock } from "react-icons/fi";
+import { Fragment, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
+import {
+  FiArrowRight,
+  FiChevronLeft,
+  FiChevronRight,
+  FiClock,
+  FiColumns,
+  FiDownload,
+  FiGrid,
+  FiLock,
+  FiMinimize2,
+  FiMoon,
+  FiMoreHorizontal,
+  FiPlus,
+  FiSettings,
+  FiSidebar,
+  FiSquare,
+  FiTrash2,
+  FiUnlock
+} from "react-icons/fi";
 
 import { useContextMenuDismissal, type ContextMenuCloseOptions } from "../../../../common/context-menu/menuDismissal";
 import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
+import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
+import type { BrowserController } from "../../../../app/controller/types";
 import type { Workspace } from "../../../../domain/browser";
 import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
 import { SidebarMenuSurface } from "../common/SidebarMenuSurface";
@@ -32,6 +52,7 @@ export function WorkspaceStrip({
   draggingTabId,
   draggingWorkspaceId,
   floatingSidebarOpen,
+  memorySaver,
   onDragEnd,
   onDragOver,
   onDragStart,
@@ -41,9 +62,16 @@ export function WorkspaceStrip({
   onNewWorkspaceDrop,
   onDeleteWorkspace,
   onSelect,
+  onSetSplitLayout,
+  onSetPanel,
+  onSleepInactiveTabs,
+  onToggleCompactMode,
   onToggleSidebar,
+  onToggleSplitMode,
   onUpdateWorkspace,
   sidebarCollapsed,
+  splitLayout,
+  splitMode,
   workspaces
 }: {
   activeWorkspaceId: string;
@@ -54,6 +82,7 @@ export function WorkspaceStrip({
   draggingTabId: string | null;
   draggingWorkspaceId: string | null;
   floatingSidebarOpen: boolean;
+  memorySaver: MemorySaverState;
   onDragEnd: () => void;
   onDragOver: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
   onDragStart: (event: DragEvent<HTMLButtonElement>, workspaceId: string) => void;
@@ -63,17 +92,27 @@ export function WorkspaceStrip({
   onNewWorkspaceDrop: (event: DragEvent<HTMLButtonElement>) => void;
   onOpenSettings: (workspaceId: string) => void;
   onSelect: (workspaceId: string) => void;
+  onSetSplitLayout: BrowserController["actions"]["setSplitLayout"];
+  onSetPanel: BrowserController["setPanel"];
+  onSleepInactiveTabs: BrowserController["actions"]["sleepInactiveTabs"];
+  onToggleCompactMode: BrowserController["actions"]["toggleCompactMode"];
   onToggleSidebar: () => void;
+  onToggleSplitMode: BrowserController["actions"]["toggleSplitMode"];
   onUpdateWorkspace: (workspaceId: string, patch: Partial<Pick<Workspace, "accent" | "name">>) => void;
   sidebarCollapsed: boolean;
+  splitLayout: BrowserController["splitLayout"];
+  splitMode: boolean;
   workspaces: Workspace[];
 }) {
-  const [menu, setMenu] = useState<{ left: number; top: number; workspaceId: string } | null>(null);
+  const [workspaceMenu, setWorkspaceMenu] = useState<{ left: number; top: number; workspaceId: string } | null>(null);
+  const [moreMenu, setMoreMenu] = useState<{ left: number; top: number } | null>(null);
   const menuTriggerRef = useRef<HTMLElement | null>(null);
-  const menuWorkspace = menu ? workspaces.find((workspace) => workspace.id === menu.workspaceId) : undefined;
+  const moreMenuTriggerRef = useRef<HTMLElement | null>(null);
+  const menuWorkspace = workspaceMenu ? workspaces.find((workspace) => workspace.id === workspaceMenu.workspaceId) : undefined;
   const sidebarToggleLabel = compactMode
     ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
     : sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar";
+  const moreButtonLabel = "More";
   const isNewWorkspaceDropTarget = getNewWorkspaceDropTargetState({
     draggingClosedTabIndex,
     draggingFavoriteId,
@@ -81,7 +120,8 @@ export function WorkspaceStrip({
     draggingTabId
   });
 
-  useContextMenuDismissal({ isOpen: Boolean(menu), onClose: closeWorkspaceMenu });
+  useContextMenuDismissal({ isOpen: Boolean(workspaceMenu), onClose: closeWorkspaceMenu });
+  useContextMenuDismissal({ isOpen: Boolean(moreMenu), onClose: closeMoreMenu });
 
   function onWorkspaceWheel(event: WheelEvent<HTMLElement>) {
     const direction = getWorkspaceWheelDirection(event.deltaX, event.deltaY);
@@ -96,8 +136,9 @@ export function WorkspaceStrip({
 
   function openWorkspaceMenu(event: MouseEvent, workspaceId: string) {
     event.preventDefault();
+    closeMoreMenu({ restoreFocus: false });
     menuTriggerRef.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
-    setMenu({
+    setWorkspaceMenu({
       ...getAnchoredContextMenuPosition(event, {
         height: 320,
         width: 216
@@ -107,11 +148,28 @@ export function WorkspaceStrip({
   }
 
   function closeWorkspaceMenu({ restoreFocus = true }: ContextMenuCloseOptions = {}) {
-    setMenu(null);
+    setWorkspaceMenu(null);
     if (restoreFocus && menuTriggerRef.current?.isConnected) {
       menuTriggerRef.current.focus();
     }
     menuTriggerRef.current = null;
+  }
+
+  function openMoreMenu(event: MouseEvent) {
+    event.preventDefault();
+    closeWorkspaceMenu({ restoreFocus: false });
+    moreMenuTriggerRef.current = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    setMoreMenu(getAnchoredContextMenuPosition(event, {
+      height: 360,
+      width: 216
+    }));
+  }
+
+  function closeMoreMenu({ restoreFocus = true }: ContextMenuCloseOptions = {}) {
+    setMoreMenu(null);
+    if (restoreFocus && moreMenuTriggerRef.current?.isConnected) {
+      moreMenuTriggerRef.current.focus();
+    }
   }
 
   return (
@@ -188,11 +246,21 @@ export function WorkspaceStrip({
       >
         {compactMode ? floatingSidebarOpen ? <FiLock /> : <FiUnlock /> : sidebarCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
       </button>
-      {menu && menuWorkspace && (
+      <button
+        className="workspace-button sidebar-more-button"
+        type="button"
+        aria-label={moreButtonLabel}
+        aria-haspopup="menu"
+        aria-expanded={Boolean(moreMenu)}
+        onClick={openMoreMenu}
+      >
+        <FiMoreHorizontal />
+      </button>
+      {workspaceMenu && menuWorkspace && (
         <WorkspaceContextMenu
           canDelete={workspaces.length > 1}
-          left={menu.left}
-          top={menu.top}
+          left={workspaceMenu.left}
+          top={workspaceMenu.top}
           workspace={menuWorkspace}
           onClose={closeWorkspaceMenu}
           onDelete={onDeleteWorkspace}
@@ -200,6 +268,25 @@ export function WorkspaceStrip({
           onOpenSettings={onOpenSettings}
           onSelect={onSelect}
           onUpdate={onUpdateWorkspace}
+        />
+      )}
+      {moreMenu && (
+        <SidebarMoreMenu
+          compactMode={compactMode}
+          floatingSidebarOpen={floatingSidebarOpen}
+          left={moreMenu.left}
+          memorySaver={memorySaver}
+          sidebarCollapsed={sidebarCollapsed}
+          splitLayout={splitLayout}
+          splitMode={splitMode}
+          top={moreMenu.top}
+          onClose={closeMoreMenu}
+          onSetSplitLayout={onSetSplitLayout}
+          onSetPanel={onSetPanel}
+          onSleepInactiveTabs={onSleepInactiveTabs}
+          onToggleCompactMode={onToggleCompactMode}
+          onToggleSidebar={onToggleSidebar}
+          onToggleSplitMode={onToggleSplitMode}
         />
       )}
     </section>
@@ -278,6 +365,134 @@ function WorkspaceContextMenu({
         onClick={() => run(() => onDelete(workspace.id))}
       >
         Delete Space
+      </SidebarMenuItem>
+    </SidebarMenuSurface>
+  );
+}
+
+interface SidebarMoreMenuProps {
+  compactMode: boolean;
+  floatingSidebarOpen: boolean;
+  left: number;
+  memorySaver: MemorySaverState;
+  sidebarCollapsed: boolean;
+  splitLayout: BrowserController["splitLayout"];
+  splitMode: boolean;
+  top: number;
+  onClose: () => void;
+  onSetSplitLayout: BrowserController["actions"]["setSplitLayout"];
+  onSetPanel: BrowserController["setPanel"];
+  onSleepInactiveTabs: BrowserController["actions"]["sleepInactiveTabs"];
+  onToggleCompactMode: BrowserController["actions"]["toggleCompactMode"];
+  onToggleSidebar: () => void;
+  onToggleSplitMode: BrowserController["actions"]["toggleSplitMode"];
+}
+
+function SidebarMoreMenu({
+  compactMode,
+  floatingSidebarOpen,
+  left,
+  memorySaver,
+  sidebarCollapsed,
+  splitLayout,
+  splitMode,
+  top,
+  onClose,
+  onSetSplitLayout,
+  onSetPanel,
+  onSleepInactiveTabs,
+  onToggleCompactMode,
+  onToggleSidebar,
+  onToggleSplitMode
+}: SidebarMoreMenuProps) {
+  const run = (action: () => void) => {
+    action();
+    onClose();
+  };
+  const sidebarToggleLabel = compactMode
+    ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
+    : sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar";
+  const memorySaverLabel = memorySaver.sleepEnabled
+    ? `Sleep inactive tabs (auto)`
+    : `Sleep inactive tabs (manual)`;
+  const memorySaverHint = `${memorySaver.reclaimableTabs} tabs ready`;
+
+  return (
+    <SidebarMenuSurface className="sidebar-more-menu" style={{ left, top } as CSSProperties}>
+      <SidebarMenuItem
+        icon={FiMoon}
+        role="menuitem"
+        disabled={memorySaver.reclaimableTabs === 0}
+        onClick={() => run(onSleepInactiveTabs)}
+      >
+        <span className="sidebar-menu-item-main">
+          <span>{memorySaverLabel}</span>
+          <small className="sidebar-menu-item-hint">{memorySaverHint}</small>
+        </span>
+      </SidebarMenuItem>
+      <SidebarMenuSeparator />
+      <SidebarMenuItem
+        aria-pressed={splitMode}
+        icon={FiSquare}
+        role="menuitem"
+        onClick={() => run(onToggleSplitMode)}
+      >
+        Split view
+      </SidebarMenuItem>
+      {splitMode && (
+        <>
+          <SidebarMenuItem
+            aria-pressed={splitLayout === "horizontal"}
+            icon={FiColumns}
+            role="menuitem"
+            onClick={() => run(() => onSetSplitLayout("horizontal"))}
+          >
+            Horizontal split
+          </SidebarMenuItem>
+          <SidebarMenuItem
+            aria-pressed={splitLayout === "vertical"}
+            icon={FiSidebar}
+            role="menuitem"
+            onClick={() => run(() => onSetSplitLayout("vertical"))}
+          >
+            Vertical split
+          </SidebarMenuItem>
+          <SidebarMenuItem
+            aria-pressed={splitLayout === "grid"}
+            icon={FiGrid}
+            role="menuitem"
+            onClick={() => run(() => onSetSplitLayout("grid"))}
+          >
+            Grid split
+          </SidebarMenuItem>
+          <SidebarMenuSeparator />
+        </>
+      )}
+      <SidebarMenuItem
+        aria-pressed={compactMode}
+        icon={FiMinimize2}
+        role="menuitem"
+        onClick={() => run(onToggleCompactMode)}
+      >
+        Compact mode
+      </SidebarMenuItem>
+      <SidebarMenuItem
+        aria-pressed={compactMode ? floatingSidebarOpen : undefined}
+        icon={compactMode ? (floatingSidebarOpen ? FiUnlock : FiLock) : FiChevronLeft}
+        role="menuitem"
+        onClick={() => run(onToggleSidebar)}
+      >
+        {sidebarToggleLabel}
+      </SidebarMenuItem>
+      <SidebarMenuSeparator />
+      <SidebarMenuItem icon={FiClock} role="menuitem" onClick={() => run(() => onSetPanel("history"))}>
+        History
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiDownload} role="menuitem" onClick={() => run(() => onSetPanel("downloads"))}>
+        Downloads
+      </SidebarMenuItem>
+      <SidebarMenuItem icon={FiSettings} role="menuitem" onClick={() => run(() => onSetPanel("settings"))}>
+        Settings
       </SidebarMenuItem>
     </SidebarMenuSurface>
   );

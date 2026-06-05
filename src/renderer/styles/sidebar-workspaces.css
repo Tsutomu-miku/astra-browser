@@ -125,6 +125,22 @@
   color: var(--text);
 }
 
-.workspace-context-menu {
+.sidebar-more-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 450;
+}
+
+.sidebar-more-button:hover,
+.sidebar-more-button:focus-visible,
+.sidebar-more-button[aria-expanded="true"] {
+  border-color: transparent;
+  background: var(--theme-control);
+  color: var(--text);
+}
+
+.workspace-context-menu,
+.sidebar-more-menu {
   width: 208px;
 }

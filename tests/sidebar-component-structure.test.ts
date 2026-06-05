@@ -42,8 +42,6 @@ describe("sidebar component structure", () => {
     const sidebarTabsSection = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarTabsSection.tsx"), "utf8");
     const tabGroupSection = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabGroupSection.tsx"), "utf8");
     const sidebarSearchBox = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarSearchBox.tsx"), "utf8");
-    const sidebarAddress = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarAddress.tsx"), "utf8");
-    const sidebarFooter = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/chrome/SidebarFooter.tsx"), "utf8");
     const sidebarContextMenusHook = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/useSidebarContextMenus.ts"), "utf8");
     const anchoredContextMenuHook = readFileSync(join(root, "src/renderer/common/context-menu/useAnchoredContextMenu.ts"), "utf8");
     const tabGroupContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/TabGroupContextMenu.tsx"), "utf8");
@@ -154,14 +152,9 @@ describe("sidebar component structure", () => {
     expect(sidebarSections).not.toContain("readSidebarTabDragEventId");
     expect(sidebarTabsSection).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarSearchBox).toContain("SidebarModifierActionHints");
-    expect(sidebarAddress).toContain("SidebarModifierActionHints");
     expect(sidebarSearchBox).not.toContain("FiEye");
     expect(sidebarSearchBox).not.toContain("FiColumns");
-    expect(sidebarAddress).not.toContain("FiEye");
-    expect(sidebarAddress).not.toContain("FiColumns");
-    expect(sidebarFooter).toContain("acceptSidebarSplitDropTarget");
-    expect(sidebarFooter).toContain("resolveSidebarSplitDrop");
-    expect(sidebarFooter).not.toContain("getSidebarSplitDropSource({");
+    expect(workspaceStrip).toContain("sidebar-more-menu");
     expect(sidebarSplitDropTarget).toContain("acceptSidebarSplitDropTarget");
     expect(sidebarSplitDropTarget).toContain("resolveSidebarSplitDrop");
     expect(sidebarSplitDropTarget).toContain("getSidebarSplitDropSourceFromEvent");

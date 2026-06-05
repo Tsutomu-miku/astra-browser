@@ -8,6 +8,7 @@ import { join } from "path";
 
 import { createDefaultState } from "../src/renderer/domain/browser";
 import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
+import { getMemorySaverState } from "../src/renderer/common/memory/memorySaverState";
 import { getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { WorkspaceStrip } from "../src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip";
 
@@ -66,8 +67,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings: vi.fn(),
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -170,8 +179,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings: vi.fn(),
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -214,8 +231,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings: vi.fn(),
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -256,8 +281,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings: vi.fn(),
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -310,8 +343,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings: vi.fn(),
         onSelect,
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -369,8 +410,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings: vi.fn(),
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -424,8 +473,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings,
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -480,8 +537,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings: vi.fn(),
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -504,7 +569,7 @@ describe("workspace strip compact controls", () => {
       }));
     });
     expect(document.activeElement).toBe(buttons[buttons.length - 1]);
-    expect(document.activeElement?.getAttribute("aria-label")).toBe("Collapse sidebar");
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("More");
 
     act(() => {
       document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", {
@@ -543,13 +608,21 @@ describe("workspace strip compact controls", () => {
         onOpenSettings: vi.fn(),
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
 
-    const workspaceButtons = Array.from(container.querySelectorAll<HTMLButtonElement>(".workspace-button:not(.workspace-new-button):not(.sidebar-toggle)"));
+    const workspaceButtons = Array.from(container.querySelectorAll<HTMLButtonElement>(".workspace-button:not(.workspace-new-button):not(.sidebar-toggle):not(.sidebar-more-button)"));
     expect(workspaceButtons.map((button) => button.tabIndex)).toEqual([0, -1]);
 
     workspaceButtons[0]?.focus();
@@ -591,8 +664,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings: vi.fn(),
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -647,8 +728,16 @@ describe("workspace strip compact controls", () => {
         onOpenSettings,
         onSelect: vi.fn(),
         onToggleSidebar: vi.fn(),
+        memorySaver: getMemorySaverState(activeWorkspace, state),
         onUpdateWorkspace: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
+        onToggleSplitMode: vi.fn(),
         sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
         workspaces: state.workspaces
       }));
     });
@@ -769,6 +858,7 @@ function renderStrip({
 }) {
   const state = createDefaultState();
   const activeWorkspace = getActiveWorkspace(state);
+  const memorySaver = getMemorySaverState(activeWorkspace, state);
 
   return renderToStaticMarkup(createElement(WorkspaceStrip, {
     activeWorkspaceId: activeWorkspace.id,
@@ -779,6 +869,7 @@ function renderStrip({
     draggingTabId,
     draggingWorkspaceId: null,
     floatingSidebarOpen,
+    memorySaver,
     onDragEnd: vi.fn(),
     onDragOver: vi.fn(),
     onDragStart: vi.fn(),
@@ -788,9 +879,16 @@ function renderStrip({
     onNewWorkspaceDrop: vi.fn(),
     onOpenSettings: vi.fn(),
     onSelect: vi.fn(),
+    onSetPanel: vi.fn(),
+    onSetSplitLayout: vi.fn(),
+    onSleepInactiveTabs: vi.fn(),
+    onToggleCompactMode: vi.fn(),
     onToggleSidebar: vi.fn(),
+    onToggleSplitMode: vi.fn(),
     onUpdateWorkspace: vi.fn(),
     sidebarCollapsed,
+    splitLayout: "horizontal",
+    splitMode: false,
     workspaces: state.workspaces
   }));
 }

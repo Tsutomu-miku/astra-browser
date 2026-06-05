@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { createDefaultState, createFavorite, createTab, type TabGroup } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
+import { getMemorySaverState } from "../src/renderer/common/memory/memorySaverState";
 import { FavoriteButton, TabRow } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
 import { SidebarPinnedTabs } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarPinnedTabs";
 import { SidebarTabsSection } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarTabsSection";
@@ -320,8 +321,7 @@ describe("sidebar drag placement", () => {
         draggingTabId: null,
         draggingWorkspaceId: state.workspaces[0].id,
         floatingSidebarOpen: false,
-        sidebarCollapsed: false,
-        workspaces: state.workspaces,
+        memorySaver: getMemorySaverState(state.workspaces[0], state),
         onDragEnd: vi.fn(),
         onDragOver: vi.fn((event) => event.preventDefault()),
         onDragStart: vi.fn(),
@@ -331,8 +331,17 @@ describe("sidebar drag placement", () => {
         onNewWorkspaceDrop: vi.fn(),
         onOpenSettings: vi.fn(),
         onSelect: vi.fn(),
+        onSetPanel: vi.fn(),
+        onSetSplitLayout: vi.fn(),
+        onSleepInactiveTabs: vi.fn(),
+        onToggleCompactMode: vi.fn(),
         onToggleSidebar: vi.fn(),
-        onUpdateWorkspace: vi.fn()
+        onToggleSplitMode: vi.fn(),
+        onUpdateWorkspace: vi.fn(),
+        sidebarCollapsed: false,
+        splitLayout: "horizontal",
+        splitMode: false,
+        workspaces: state.workspaces
       }));
     });
 
