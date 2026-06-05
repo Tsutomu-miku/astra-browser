@@ -144,8 +144,8 @@ export function Topbar({ controller }: { controller: BrowserController }) {
         )}
       </div>
       <button
-        className="toolbar-button"
-        title="Workspace settings"
+        className="toolbar-button identity-pill"
+        title={`${activeWorkspace.name} · ${activeWorkspace.profileName ?? "Default profile"}`}
         type="button"
         onClick={() => setPanel("settings")}
         onContextMenu={(event) => workspacePillMenu.openWorkspacePillMenu(event, {
@@ -153,8 +153,15 @@ export function Topbar({ controller }: { controller: BrowserController }) {
           name: activeWorkspace.name
         })}
       >
-        <span className="topbar-workspace-dot" style={{ background: activeWorkspace.accent }} />
-        <span className="topbar-workspace-name">{activeWorkspace.name}</span>
+        <span className="identity-pill-workspace">
+          <span className="topbar-workspace-dot" style={{ background: activeWorkspace.accent }} />
+          <span className="topbar-workspace-name">{activeWorkspace.name}</span>
+        </span>
+        {activeWorkspace.profileName && (
+          <span className="identity-pill-avatar" aria-hidden="true">
+            {getProfileInitials(activeWorkspace.profileName)}
+          </span>
+        )}
       </button>
       {workspacePillMenu.menu && (
         <WorkspacePillContextMenu
@@ -183,6 +190,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
         )}
         <button
           className="icon-button"
+          data-page-action="favorite"
           title={isTabFavorite(activeWorkspace, activeTab) ? "Remove favorite" : "Add favorite"}
           type="button"
           aria-pressed={isTabFavorite(activeWorkspace, activeTab)}
@@ -192,6 +200,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
         </button>
         <button
           className="icon-button"
+          data-page-action="essential"
           title={isEssential(state, activeTab.url) ? "Remove essential" : "Add essential"}
           type="button"
           aria-pressed={isEssential(state, activeTab.url)}
@@ -201,6 +210,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
         </button>
         <button
           className="icon-button"
+          data-page-action="pin"
           title={activeTab.isPinned ? "Unpin tab" : "Pin tab"}
           type="button"
           aria-pressed={activeTab.isPinned}
@@ -210,6 +220,7 @@ export function Topbar({ controller }: { controller: BrowserController }) {
         </button>
         <button
           className="icon-button"
+          data-page-action="mute"
           title={activeTab.isMuted ? "Unmute tab" : "Mute tab"}
           type="button"
           aria-pressed={activeTab.isMuted}
@@ -234,4 +245,16 @@ function SecurityIcon({ security }: { security: ReturnType<typeof getUrlIdentity
   if (security === "secure") return <FiLock />;
   if (security === "insecure") return <FiAlertTriangle />;
   return <FiInfo />;
+}
+
+function getProfileInitials(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return "?";
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return trimmed.slice(0, 2).toUpperCase();
+  }
+
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
