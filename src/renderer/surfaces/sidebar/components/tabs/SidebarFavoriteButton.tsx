@@ -1,6 +1,10 @@
 import { type DragEvent, type MouseEvent } from "react";
 
-import { type DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import {
+  clearDropTargetActive,
+  markDropTargetActive,
+  type DropAxis
+} from "../../../../common/drag-drop/dropPlacement";
 import { type BrowserTab, type Favorite } from "../../../../domain/browser";
 import type { FaviconCache } from "../../../../domain/browser";
 import { getQuickEntryAccessibilityLabel, type QuickEntryKind } from "../../model/quickEntryItemState";
@@ -115,14 +119,40 @@ export function FavoriteButton({
         }
       }}
       onDragOver={(event) => {
-        acceptSidebarRowReorderDrag(event, {
-          axis: dropAxis,
-          readDragId: readAnyDragId,
-          targetId: favorite.id
-        });
+        const quickEntryId = getDraggedQuickEntryId(event);
+        if (quickEntryId) {
+          // Dragging a quick-entry onto another: show before/after reorder line
+          acceptSidebarRowReorderDrag(event, {
+            axis: dropAxis,
+            readDragId: readAnyDragId,
+            targetId: favorite.id
+          });
+          clearDropTargetActive(event.currentTarget);
+          const ancestor = event.currentTarget.closest(".sidebar-section, .essentials") as HTMLElement | null;
+          if (ancestor) clearDropTargetActive(ancestor);
+          event.stopPropagation();
+          return;
+        }
+        // Dragging a tab onto a quick-entry: highlight whole tile (tab will be
+        // turned into a favorite/essential at this slot)
+        const droppedTabId = getDraggedTabId(event);
+        if (!droppedTabId || droppedTabId === tabId) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = kind === "essential" ? "copy" : "move";
+        markDropTargetActive(event.currentTarget);
+        const ancestor = event.currentTarget.closest(".sidebar-section, .essentials") as HTMLElement | null;
+        if (ancestor) clearDropTargetActive(ancestor);
+        event.stopPropagation();
       }}
-      onDragLeave={clearSidebarRowReorderDrop}
+      onDragLeave={(event) => {
+        const container = event.currentTarget;
+        const next = event.relatedTarget as Node | null;
+        if (next && container.contains(next)) return;
+        clearSidebarRowReorderDrop(event);
+        clearDropTargetActive(event.currentTarget);
+      }}
       onDrop={(event) => {
+        clearDropTargetActive(event.currentTarget);
         const quickEntryId = resolveSidebarRowReorderDrop(event, {
           readDragId: getDraggedQuickEntryId,
           targetId: favorite.id

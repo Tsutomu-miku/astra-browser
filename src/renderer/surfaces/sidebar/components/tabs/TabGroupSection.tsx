@@ -1,7 +1,7 @@
 import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent } from "react";
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
-import { type DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { clearDropTargetActive, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
 import type { BrowserTab, FaviconCache, TabGroup } from "../../../../domain/browser";
 import { SIDEBAR_DRAG_DATA } from "../../model/sidebarDragSources";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
@@ -91,9 +91,19 @@ export function TabGroupSection({
         }}
         onDragEnd={() => setDraggingGroupId(null)}
         onDragOver={(event) => {
-          acceptSidebarTabGroupHeaderDrag(event, tabGroupHeaderDropState, group.id);
+          const intent = acceptSidebarTabGroupHeaderDrag(event, tabGroupHeaderDropState, group.id);
+          if (intent) {
+            const ancestor = event.currentTarget.closest(".sidebar-section, .essentials") as HTMLElement | null;
+            if (ancestor) clearDropTargetActive(ancestor);
+            event.stopPropagation();
+          }
         }}
-        onDragLeave={clearSidebarRowReorderDrop}
+        onDragLeave={(event) => {
+          const container = event.currentTarget;
+          const next = event.relatedTarget as Node | null;
+          if (next && container.contains(next)) return;
+          clearSidebarRowReorderDrop(event);
+        }}
         onDrop={(event) => {
           const intent = resolveSidebarTabGroupHeaderDrop(event, tabGroupHeaderDropState, group.id);
           if (!intent) return;

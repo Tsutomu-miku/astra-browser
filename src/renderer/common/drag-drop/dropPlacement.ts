@@ -7,10 +7,10 @@ interface DropPointer {
   clientY: number;
 }
 
-interface DropPlacementTarget {
+export type DropPlacementTarget = {
   dataset: DOMStringMap;
   getBoundingClientRect: () => DOMRect;
-}
+};
 
 export function getPointerDropPlacement(
   target: Pick<DropPlacementTarget, "getBoundingClientRect">,
@@ -86,4 +86,12 @@ export function updateDropZone(
 export function clearDropPlacement(target: Pick<DropPlacementTarget, "dataset">) {
   delete target.dataset.dropPlacement;
   delete target.dataset.dropCrossFolder;
+}
+
+export function markDropTargetActive(target: Pick<DropPlacementTarget, "dataset">) {
+  target.dataset.dropActive = "true";
+}
+
+export function clearDropTargetActive(target: Pick<DropPlacementTarget, "dataset">) {
+  delete target.dataset.dropActive;
 }

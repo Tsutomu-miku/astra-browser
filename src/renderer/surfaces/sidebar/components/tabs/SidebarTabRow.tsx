@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
 import { FiX } from "react-icons/fi";
 
-import { type DropAxis, type DropZonePlacement } from "../../../../common/drag-drop/dropPlacement";
+import { clearDropTargetActive, type DropAxis, type DropZonePlacement } from "../../../../common/drag-drop/dropPlacement";
 import { writeSidebarTabDragPayload } from "../../../../common/drag-drop/sidebarDragPayload";
 import { type BrowserTab } from "../../../../domain/browser";
 import type { FaviconCache } from "../../../../domain/browser";
@@ -124,12 +124,18 @@ export function TabRow({
         setDraggingTabId(null);
       }}
       onDragOver={(event) => {
-        acceptSidebarTabRowDrag(event, {
+        const result = acceptSidebarTabRowDrag(event, {
           axis: dropAxis,
           crossFolder: crossFolderFor,
           readDragId,
           targetId: tab.id
         });
+        if (result) {
+          // 子元素接受 drag 时清除父 section 的高亮，避免多层指示器同时显示
+          const ancestor = event.currentTarget.closest(".sidebar-section, .essentials") as HTMLElement | null;
+          if (ancestor) clearDropTargetActive(ancestor);
+          event.stopPropagation();
+        }
       }}
       onDragLeave={(event) => {
         // 只有当指针真正离开 tab row（而不是进入其内部子元素）时才清空指示器，

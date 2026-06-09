@@ -1,6 +1,10 @@
 import type { DragEvent } from "react";
 
 import {
+  clearDropPlacement,
+  type DropPlacementTarget
+} from "../../../common/drag-drop/dropPlacement";
+import {
   readSidebarGroupDragId,
   readSidebarTabDragId,
   type SidebarDragState
@@ -31,6 +35,7 @@ export function acceptSidebarTabGroupHeaderDrag(
 
   event.preventDefault();
   event.dataTransfer.dropEffect = "move";
+  event.currentTarget.dataset.dropPlacement = "onto";
   return { type: "tab", tabId };
 }
 
@@ -54,6 +59,7 @@ export function resolveSidebarTabGroupHeaderDrop(
   const tabId = readTabDragId(event, state);
   if (!tabId) return null;
 
+  clearDropPlacement(event.currentTarget as DropPlacementTarget);
   event.preventDefault();
   return { type: "tab", tabId };
 }

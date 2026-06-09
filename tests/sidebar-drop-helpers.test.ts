@@ -209,35 +209,43 @@ describe("sidebar shared drag helpers", () => {
   });
 
   describe("sidebar tab folder drop helper", () => {
+    const makeFolderEvent = (transfer: DataTransfer) => {
+      const target = document.createElement("section");
+      return {
+        currentTarget: target,
+        dataTransfer: transfer,
+        preventDefault: vi.fn()
+      } as unknown as React.DragEvent<HTMLElement>;
+    };
+
     it("reads the dragged tab id from React state first, then the native payload", () => {
       const native = tabTransfer("native-tab");
       expect(getSidebarTabFolderDragId(
-        { dataTransfer: native, preventDefault: vi.fn() },
+        makeFolderEvent(native),
         null
       )).toBe("native-tab");
 
       expect(getSidebarTabFolderDragId(
-        { dataTransfer: native, preventDefault: vi.fn() },
+        makeFolderEvent(native),
         "react-tab"
       )).toBe("react-tab");
     });
 
     it("accepts a tab folder drop and sets the requested drop effect", () => {
-      const event = {
-        dataTransfer: tabTransfer("tab-a"),
-        preventDefault: vi.fn()
-      };
+      const event = makeFolderEvent(tabTransfer("tab-a"));
 
       expect(acceptSidebarTabFolderDrag(event, null, "copy")).toBe(true);
       expect(event.preventDefault).toHaveBeenCalled();
       expect(event.dataTransfer.dropEffect).toBe("copy");
+      expect(event.currentTarget.dataset.dropActive).toBe("true");
     });
 
     it("rejects a folder drop when no tab id is available", () => {
       const empty = buildTransfer(new Map());
-      const event = { dataTransfer: empty, preventDefault: vi.fn() };
+      const event = makeFolderEvent(empty);
       expect(acceptSidebarTabFolderDrag(event, null)).toBe(false);
       expect(event.preventDefault).not.toHaveBeenCalled();
+      expect(event.currentTarget.hasAttribute("data-drop-active")).toBe(false);
     });
   });
 

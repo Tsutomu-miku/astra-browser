@@ -7,6 +7,7 @@ import type { BrowserController } from "../../../../app/controller/types";
 import { readSidebarGroupDragId } from "../../model/sidebarDragSources";
 import {
   acceptSidebarTabFolderDrag,
+  clearSidebarTabFolderDrop,
   getSidebarTabFolderDragId
 } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
@@ -53,6 +54,8 @@ export function SidebarTabsSection({
   const onGroupDrop = (event: DragEvent<HTMLElement>, targetGroupId: string) => {
     event.preventDefault();
     event.stopPropagation();
+    const sectionEl = event.currentTarget.closest(".sidebar-section") as HTMLElement | null;
+    if (sectionEl) clearSidebarTabFolderDrop({ currentTarget: sectionEl });
     const groupId = readSidebarGroupDragId({ draggingGroupId }, (type) => event.dataTransfer.getData(type));
     if (!groupId || groupId === targetGroupId) {
       setDraggingGroupId(null);
@@ -65,17 +68,25 @@ export function SidebarTabsSection({
   const acceptTabsFolderDrag = (event: DragEvent<HTMLElement>) => {
     acceptSidebarTabFolderDrag(event, draggingTabId);
   };
+  const handleTabsSectionDragLeave = (event: DragEvent<HTMLElement>) => {
+    const container = event.currentTarget;
+    const next = event.relatedTarget as Node | null;
+    if (next && container.contains(next)) return;
+    clearSidebarTabFolderDrop(event);
+  };
+  const handleTabsSectionDrop = (event: DragEvent<HTMLElement>) => {
+    clearSidebarTabFolderDrop(event);
+    onTabsDrop(event);
+  };
 
   return (
     <section
       className="sidebar-section tabs-section"
-      onDragEnter={(event) => {
-        acceptTabsFolderDrag(event);
-      }}
       onDragOver={(event) => {
         acceptTabsFolderDrag(event);
       }}
-      onDrop={onTabsDrop}
+      onDragLeave={handleTabsSectionDragLeave}
+      onDrop={handleTabsSectionDrop}
     >
       {!filteredItems.isFiltering && (
         <div className="tabs-section-toolbar">

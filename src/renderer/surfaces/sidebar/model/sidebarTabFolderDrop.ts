@@ -1,6 +1,8 @@
+import { clearDropTargetActive, markDropTargetActive } from "../../../common/drag-drop/dropPlacement";
 import { readSidebarTabDragId } from "./sidebarDragSources";
 
 export interface SidebarTabFolderDropEvent {
+  currentTarget: HTMLElement;
   dataTransfer: {
     dropEffect: string;
     getData: (type: string) => string;
@@ -21,5 +23,10 @@ export function acceptSidebarTabFolderDrag(
 
   event.preventDefault();
   event.dataTransfer.dropEffect = dropEffect;
+  markDropTargetActive(event.currentTarget);
   return true;
+}
+
+export function clearSidebarTabFolderDrop(event: { currentTarget: HTMLElement }) {
+  clearDropTargetActive(event.currentTarget);
 }

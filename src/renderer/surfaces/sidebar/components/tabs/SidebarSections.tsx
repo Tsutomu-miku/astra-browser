@@ -13,7 +13,7 @@ import type { BrowserController } from "../../../../app/controller/types";
 import {
   isSidebarUrlActive
 } from "../../model/sidebarItemState";
-import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
+import { acceptSidebarTabFolderDrag, clearSidebarTabFolderDrop } from "../../model/sidebarTabFolderDrop";
 import { getSidebarSearchTargetElementId, type SidebarFilterResult, type SidebarSearchTarget } from "../../sidebarFiltering";
 import { SidebarSectionHeader } from "../common/SidebarSectionHeader";
 import { FavoriteButton, TabRow } from "./SidebarItems";
@@ -112,6 +112,20 @@ export function SidebarSections({
   };
   const showFavoritesFolder = filteredItems.favorites.length > 0 || !filteredItems.isFiltering;
   const favoriteSearchSelectedTabId = activeSearchTarget?.type === "favorite" ? activeSearchTarget.id : undefined;
+  const handleSectionDragLeave = (event: DragEvent<HTMLElement>) => {
+    const container = event.currentTarget;
+    const next = event.relatedTarget as Node | null;
+    if (next && container.contains(next)) return;
+    clearSidebarTabFolderDrop(event);
+  };
+  const handleEssentialDrop = (event: DragEvent<HTMLElement>) => {
+    clearSidebarTabFolderDrop(event);
+    onEssentialDrop(event);
+  };
+  const handleFavoriteDrop = (event: DragEvent<HTMLElement>) => {
+    clearSidebarTabFolderDrop(event);
+    onFavoriteDrop(event);
+  };
   const getTabById = useCallback((tabId: string) => workspaceTabs.find((t) => t.id === tabId), [workspaceTabs]);
   const buildCrossFolderCheckFor = useCallback((targetTab: BrowserTab) => (draggedId: string) => {
     const dragged = getTabById(draggedId);
@@ -121,6 +135,8 @@ export function SidebarSections({
   const onFavoriteGroupDrop = (event: DragEvent<HTMLElement>, targetGroupId: string) => {
     event.preventDefault();
     event.stopPropagation();
+    const sectionEl = event.currentTarget.closest(".sidebar-section") as HTMLElement | null;
+    if (sectionEl) clearSidebarTabFolderDrop({ currentTarget: sectionEl });
     const groupId = readSidebarGroupDragId({ draggingGroupId }, (type) => event.dataTransfer.getData(type));
     if (!groupId || groupId === targetGroupId) {
       setDraggingGroupId(null);
@@ -195,13 +211,11 @@ export function SidebarSections({
           <nav
             className="essentials"
             aria-label="Essentials"
-            onDragEnter={(event) => {
-              acceptSidebarTabFolderDrag(event, draggingTabId, "copy");
-            }}
             onDragOver={(event) => {
               acceptSidebarTabFolderDrag(event, draggingTabId, "copy");
             }}
-            onDrop={onEssentialDrop}
+            onDragLeave={handleSectionDragLeave}
+            onDrop={handleEssentialDrop}
           >
             {(filteredItems.isFiltering ? filteredItems.essentials : filteredItems.essentials.slice(0, SIDEBAR_ESSENTIALS_LIMIT)).map((essential) => (
               <FavoriteButton
@@ -231,13 +245,11 @@ export function SidebarSections({
       {showFavoritesFolder && (
         <section
           className="sidebar-section"
-          onDragEnter={(event) => {
-            acceptSidebarTabFolderDrag(event, draggingTabId);
-          }}
           onDragOver={(event) => {
             acceptSidebarTabFolderDrag(event, draggingTabId);
           }}
-          onDrop={onFavoriteDrop}
+          onDragLeave={handleSectionDragLeave}
+          onDrop={handleFavoriteDrop}
         >
           <SidebarSectionHeader
             count={filteredItems.favorites.length}

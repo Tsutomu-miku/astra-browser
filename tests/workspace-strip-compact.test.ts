@@ -785,9 +785,10 @@ describe("workspace strip compact controls", () => {
     const draggingBlock = getRuleBlock(workspaceCss, '.workspace-button[data-dragging="true"]');
     const dropIndicatorBlock = getRuleBlock(workspaceCss, ".workspace-button[data-drop-placement]::before");
 
-    expect(dropTargetBlock).toContain("background: var(--theme-panel-soft)");
-    expect(dropTargetBlock).toContain("box-shadow: none");
-    expect(dropTargetBlock).not.toContain("var(--accent)");
+    expect(dropTargetBlock).toContain("color-mix(in srgb, var(--panel-soft) 92%, var(--accent))");
+    expect(dropTargetBlock).toContain("inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent)");
+    expect(dropTargetBlock).toContain("0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent)");
+    expect(dropTargetBlock).toContain("border-color: color-mix(in srgb, var(--accent) 42%, transparent)");
     expect(draggingBlock).toContain("cursor: grabbing");
     expect(dropIndicatorBlock).toContain("box-shadow: none");
   });
