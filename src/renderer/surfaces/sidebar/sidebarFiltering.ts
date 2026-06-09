@@ -3,16 +3,20 @@ import {
   getNextListIndex,
   type ListNavigationKey
 } from "../../common/navigation/listNavigation";
-import { resolveTabBackedFavoriteTab, type BrowserTab, type Favorite, type TabGroup } from "../../domain/browser";
+import { type BrowserTab, type Favorite, type TabGroup } from "../../domain/browser";
 
 export interface SidebarGroupEntry {
   group: TabGroup;
   tabs: BrowserTab[];
 }
 
+export type SidebarFavoriteEntry =
+  | { kind: "tab"; tab: BrowserTab }
+  | { kind: "group"; group: TabGroup; tabs: BrowserTab[] };
+
 export interface SidebarFilterInput {
   essentials: Favorite[];
-  favorites: Favorite[];
+  favorites: SidebarFavoriteEntry[];
   groupedTabs: SidebarGroupEntry[];
   pinnedTabs: BrowserTab[];
   regularTabs: BrowserTab[];
@@ -26,7 +30,7 @@ export interface SidebarFilterResult extends SidebarFilterInput {
 
 export type SidebarSearchTarget =
   | { type: "essential"; id: string; title: string; url: string }
-  | { type: "favorite"; id: string; tabId?: string; title: string; url: string }
+  | { type: "favorite"; id: string; tabId: string; title: string; url: string }
   | { type: "tab"; id: string; title: string; url: string };
 
 export type SidebarSearchNavigationKey = ListNavigationKey;
@@ -48,12 +52,17 @@ export function filterSidebarItems(input: SidebarFilterInput, query: string): Si
   }
 
   const pinnedTabs = input.pinnedTabs.filter((tab) => matchesTab(tab, normalizedQuery));
-  const essentials = input.essentials.filter((essential) => matchesFavorite(essential, normalizedQuery));
-  const favorites = input.favorites.filter((favorite) => matchesFavorite(
-    favorite,
-    normalizedQuery,
-    input.workspaceTabs
-  ));
+  const essentials = input.essentials.filter((essential) => matchesEssential(essential, normalizedQuery));
+  const favorites = input.favorites
+    .map((entry) => {
+      if (entry.kind === "tab") {
+        return matchesTab(entry.tab, normalizedQuery) ? entry : null;
+      }
+      const groupMatches = entry.group.name.toLowerCase().includes(normalizedQuery);
+      const tabs = groupMatches ? entry.tabs : entry.tabs.filter((tab) => matchesTab(tab, normalizedQuery));
+      return tabs.length > 0 ? { kind: "group" as const, group: entry.group, tabs } : null;
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
   const groupedTabs = input.groupedTabs
     .map(({ group, tabs }) => ({
       group,
@@ -73,12 +82,6 @@ export function filterSidebarItems(input: SidebarFilterInput, query: string): Si
 }
 
 export function getSidebarSearchTargets(input: SidebarFilterResult): SidebarSearchTarget[] {
-  const workspaceTabs = input.workspaceTabs ?? [
-    ...input.pinnedTabs,
-    ...input.groupedTabs.flatMap((entry) => entry.tabs),
-    ...input.regularTabs
-  ];
-
   return [
     ...input.essentials.map((essential) => ({
       type: "essential" as const,
@@ -87,7 +90,9 @@ export function getSidebarSearchTargets(input: SidebarFilterResult): SidebarSear
       url: essential.url
     })),
     ...input.pinnedTabs.map(toTabTarget),
-    ...input.favorites.map((favorite) => toFavoriteTarget(favorite, workspaceTabs)),
+    ...input.favorites.flatMap((entry) => (
+      entry.kind === "tab" ? [toFavoriteTarget(entry.tab)] : entry.tabs.map(toFavoriteTarget)
+    )),
     ...input.groupedTabs.flatMap((entry) => entry.tabs.map(toTabTarget)),
     ...input.regularTabs.map(toTabTarget)
   ];
@@ -131,22 +136,17 @@ function matchesTab(tab: BrowserTab, query: string): boolean {
   return tab.title.toLowerCase().includes(query) || tab.url.toLowerCase().includes(query);
 }
 
-function matchesFavorite(favorite: Favorite, query: string, workspaceTabs?: BrowserTab[]): boolean {
-  const tab = resolveTabBackedFavoriteTab(workspaceTabs ? { tabs: workspaceTabs } : undefined, favorite);
-  return favorite.title.toLowerCase().includes(query) ||
-    favorite.url.toLowerCase().includes(query) ||
-    Boolean(tab && matchesTab(tab, query));
+function matchesEssential(favorite: Favorite, query: string): boolean {
+  return favorite.title.toLowerCase().includes(query) || favorite.url.toLowerCase().includes(query);
 }
 
-function toFavoriteTarget(favorite: Favorite, workspaceTabs: BrowserTab[]): SidebarSearchTarget {
-  const tab = resolveTabBackedFavoriteTab({ tabs: workspaceTabs }, favorite);
-
+function toFavoriteTarget(tab: BrowserTab): SidebarSearchTarget {
   return {
     type: "favorite",
-    id: favorite.id,
-    tabId: tab?.id,
-    title: tab?.title || favorite.title || tab?.url || favorite.url,
-    url: tab?.url ?? favorite.url
+    id: tab.id,
+    tabId: tab.id,
+    title: tab.title || tab.url,
+    url: tab.url
   };
 }
 

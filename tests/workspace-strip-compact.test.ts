@@ -35,10 +35,10 @@ describe("workspace strip compact controls", () => {
   it("avoids native title tooltips on the Space rail controls", () => {
     const html = renderStrip({ compactMode: false, floatingSidebarOpen: false, sidebarCollapsed: false });
 
-    expect(html).toContain('aria-label="Personal, 1 tab, active Space"');
+    expect(html).toContain('aria-label="Personal, 3 tabs, active Space"');
     expect(html).toContain('aria-label="New Space"');
     expect(html).toContain('aria-label="Collapse sidebar"');
-    expect(html).not.toContain('title="Personal, 1 tab"');
+    expect(html).not.toContain('title="Personal, 3 tabs"');
     expect(html).not.toContain('title="New Space"');
     expect(html).not.toContain('title="Collapse sidebar"');
   });
@@ -117,7 +117,7 @@ describe("workspace strip compact controls", () => {
     });
 
     expect(html.match(/data-drop-target="true"/g)).toHaveLength(3);
-    expect(html).toContain('aria-label="Personal, 1 tab, active Space, drop target"');
+    expect(html).toContain('aria-label="Personal, 3 tabs, active Space, drop target"');
     expect(html).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
   });
 
@@ -130,7 +130,7 @@ describe("workspace strip compact controls", () => {
     });
 
     expect(html.match(/data-drop-target="true"/g)).toHaveLength(2);
-    expect(html).toContain('aria-label="Work, 1 tab, Space, drop target"');
+    expect(html).toContain('aria-label="Work, 2 tabs, Space, drop target"');
     expect(html).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
   });
 
@@ -149,7 +149,7 @@ describe("workspace strip compact controls", () => {
     });
 
     expect(tabHtml).toContain('class="workspace-button workspace-new-button"');
-    expect(tabHtml).toContain('aria-label="Work, 1 tab, Space, drop target"');
+    expect(tabHtml).toContain('aria-label="Work, 2 tabs, Space, drop target"');
     expect(tabHtml).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
     expect(groupHtml).toContain('aria-label="Drop to create New Space" data-drop-target="true"');
   });
@@ -246,9 +246,9 @@ describe("workspace strip compact controls", () => {
     });
 
     const newSpace = container.querySelector<HTMLButtonElement>(".workspace-new-button")!;
-    const dragOver = createDragEvent("dragover", { "text/favorite-id": "favorite" });
+    const dragOver = createDragEvent("dragover", { [SIDEBAR_TAB_DRAG_TYPE]: "favorite" });
     newSpace.dispatchEvent(dragOver);
-    newSpace.dispatchEvent(createDragEvent("drop", { "text/favorite-id": "favorite" }));
+    newSpace.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: "favorite" }));
 
     expect(dragOver.defaultPrevented).toBe(true);
     expect(onNewWorkspaceDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }));

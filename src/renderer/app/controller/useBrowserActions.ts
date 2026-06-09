@@ -95,8 +95,8 @@ export function useBrowserActions({
       store.moveTabGroupToWorkspace(groupId, workspaceId);
       peekCompactChrome();
     },
-    moveWorkspaceFavoriteToWorkspace: (favoriteId: string, workspaceId: string) => {
-      store.moveWorkspaceFavoriteToWorkspace(favoriteId, workspaceId);
+    moveWorkspaceFavoriteToWorkspace: (tabId: string, workspaceId: string) => {
+      store.moveWorkspaceFavoriteToWorkspace(tabId, workspaceId);
       peekCompactChrome();
     },
     moveTabToNewWorkspace: (tabId: string) => {
@@ -107,8 +107,8 @@ export function useBrowserActions({
       store.moveTabGroupToNewWorkspace(groupId);
       peekCompactChrome();
     },
-    moveWorkspaceFavoriteToNewWorkspace: (favoriteId: string) => {
-      store.moveWorkspaceFavoriteToNewWorkspace(favoriteId);
+    moveWorkspaceFavoriteToNewWorkspace: (tabId: string) => {
+      store.moveWorkspaceFavoriteToNewWorkspace(tabId);
       peekCompactChrome();
     },
     restoreClosedTabToNewWorkspace: (closedIndex: number) => {
@@ -145,6 +145,7 @@ export function useBrowserActions({
     },
     moveTabToFolderEnd: store.moveTabToFolderEnd,
     moveTabToFolderPosition: store.moveTabToFolderPosition,
+    moveTabToFavoritePosition: store.moveTabToFavoritePosition,
     recordHistory: store.recordHistory,
     removeEssential: store.removeEssential,
     removeHistoryEntry: store.removeHistoryEntry,
@@ -157,6 +158,14 @@ export function useBrowserActions({
     reorderWorkspaceFavorite: store.reorderWorkspaceFavorite,
     reorderTab: store.reorderTab,
     resetActiveTabZoom: () => store.resetActiveTabZoom(activeWebview),
+    printActiveTab: () => {
+      const webContentsId = activeWebview?.getWebContentsId?.();
+      if (typeof webContentsId === "number") {
+        void window.astraShell?.printWebview(webContentsId);
+      } else {
+        activeWebview?.print?.();
+      }
+    },
     resolvePermissionRequest: store.resolvePermissionRequest,
     restoreClosedTab: (closedIndex: number) => {
       store.restoreClosedTab(closedIndex);

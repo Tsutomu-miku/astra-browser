@@ -17,6 +17,7 @@ type SidebarRowDragIdReader = (event: DragEvent<HTMLElement>) => string | null |
 
 interface SidebarRowReorderOptions {
   axis?: DropAxis;
+  crossFolder?: boolean | ((draggedId: string) => boolean);
   dropEffect?: DataTransfer["dropEffect"];
   ontoRatio?: number;
   readDragId: SidebarRowDragIdReader;
@@ -46,6 +47,7 @@ export function acceptSidebarTabRowDrag(
   event: DragEvent<HTMLElement>,
   {
     axis = "vertical",
+    crossFolder = false,
     dropEffect = "move",
     ontoRatio = 0.33,
     readDragId,
@@ -57,7 +59,8 @@ export function acceptSidebarTabRowDrag(
 
   event.preventDefault();
   event.dataTransfer.dropEffect = dropEffect;
-  const placement = updateDropZone(event.currentTarget, event, axis, ontoRatio);
+  const isCross = typeof crossFolder === "function" ? crossFolder(draggedId) : crossFolder;
+  const placement = updateDropZone(event.currentTarget, event, axis, ontoRatio, isCross);
   return { draggedId, placement };
 }
 
@@ -84,9 +87,13 @@ export function resolveSidebarTabRowDrop(
 ): SidebarRowDropResult | null {
   const target = event.currentTarget;
   const draggedId = readDragId(event);
+  const savedPlacement = target.dataset.dropPlacement as DropZonePlacement | undefined;
   clearDropPlacement(target);
   if (!draggedId || draggedId === targetId) return null;
-  const placement = (target.dataset.dropPlacement as DropZonePlacement | undefined) ?? "onto";
+  // 保守地把未知 placement 当作 after（纯位置移动），避免意外 group。
+  const placement: DropZonePlacement = savedPlacement === "before" || savedPlacement === "onto" || savedPlacement === "after"
+    ? savedPlacement
+    : "after";
   return { draggedId, placement };
 }
 

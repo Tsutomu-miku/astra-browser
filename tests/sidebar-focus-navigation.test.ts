@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
+import type { BrowserTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
 import {
@@ -12,10 +13,19 @@ import {
   scrollCurrentSidebarItemIntoView
 } from "../src/renderer/surfaces/sidebar/model/sidebarFocusNavigation";
 
+/**
+ * Helper to create a favorite tab (new model): a BrowserTab with isFavorite=true.
+ */
+function createFavoriteTab(title: string, url: string): BrowserTab {
+  const tab = createTab(title, url);
+  tab.isFavorite = true;
+  return tab;
+}
+
 describe("sidebar focus navigation", () => {
   it("collapses and expands sidebar sections with Left and Right arrows", () => {
     const activeTab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const favoriteTab = createFavoriteTab("MDN", "https://developer.mozilla.org");
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -26,32 +36,32 @@ describe("sidebar focus navigation", () => {
       }, createElement(SidebarSections, {
         actions: createActions(),
         activeTab,
-        closedTabs: [],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: favoriteTab }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
           pinnedTabs: [],
           regularTabs: [activeTab]
         },
-        onClosedTabContextMenu: vi.fn(),
         onEssentialDragStart: vi.fn(),
         onEssentialDrop: vi.fn(),
         onEssentialReorderDrop: vi.fn(),
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        setDraggingClosedTabIndex: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -89,7 +99,7 @@ describe("sidebar focus navigation", () => {
   it("moves focus through visible sidebar items with Arrow, Home, and End", () => {
     const activeTab = createTab("Docs", "https://docs.example");
     const pinnedTab = { ...createTab("Mail", "https://mail.example"), isPinned: true };
-    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const favoriteTab = createFavoriteTab("MDN", "https://developer.mozilla.org");
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -100,32 +110,33 @@ describe("sidebar focus navigation", () => {
       }, createElement(SidebarSections, {
         actions: createActions(),
         activeTab,
-        closedTabs: [{ title: "Closed", url: "https://closed.example", closedAt: 1 }],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: favoriteTab }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
           pinnedTabs: [pinnedTab],
           regularTabs: [activeTab]
         },
-        onClosedTabContextMenu: vi.fn(),
         onEssentialDragStart: vi.fn(),
         onEssentialDrop: vi.fn(),
         onEssentialReorderDrop: vi.fn(),
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        setDraggingClosedTabIndex: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -140,7 +151,9 @@ describe("sidebar focus navigation", () => {
     act(() => {
       firstHeader.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown" }));
     });
-    expect(document.activeElement?.classList.contains("favorite-button")).toBe(true);
+    // Favorite tabs now render as tab-button (inside TabRow), not favorite-button.
+    expect(document.activeElement?.classList.contains("tab-button")).toBe(true);
+    expect(document.activeElement?.getAttribute("aria-label")).toContain("MDN");
 
     act(() => {
       document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "End" }));
@@ -159,7 +172,7 @@ describe("sidebar focus navigation", () => {
 
   it("renders only the Favorites section header among quick-entry folders", () => {
     const activeTab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const favoriteTab = createFavoriteTab("MDN", "https://developer.mozilla.org");
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -173,7 +186,7 @@ describe("sidebar focus navigation", () => {
         draggingTabId: null,
         filteredItems: {
           essentials: [createFavorite("Calendar", "https://calendar.example")],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: favoriteTab }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
@@ -186,10 +199,14 @@ describe("sidebar focus navigation", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -207,7 +224,7 @@ describe("sidebar focus navigation", () => {
 
   it("includes tab group toggles in sidebar item focus navigation", () => {
     const groupedTab = { ...createTab("Docs", "https://docs.example"), groupId: "group" };
-    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const favoriteTab = createFavoriteTab("MDN", "https://developer.mozilla.org");
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -218,14 +235,13 @@ describe("sidebar focus navigation", () => {
       }, createElement(SidebarSections, {
         actions: createActions(),
         activeTab: groupedTab,
-        closedTabs: [],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: favoriteTab }],
           groupedTabs: [{
             group: { color: "#7dd3fc", id: "group", isCollapsed: false, name: "Research" },
             tabs: [groupedTab]
@@ -235,18 +251,20 @@ describe("sidebar focus navigation", () => {
           pinnedTabs: [],
           regularTabs: []
         },
-        onClosedTabContextMenu: vi.fn(),
         onEssentialDragStart: vi.fn(),
         onEssentialDrop: vi.fn(),
         onEssentialReorderDrop: vi.fn(),
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        setDraggingClosedTabIndex: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -280,7 +298,6 @@ describe("sidebar focus navigation", () => {
       }, createElement(SidebarSections, {
         actions: createActions(),
         activeTab: groupedTab,
-        closedTabs: [],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
@@ -297,18 +314,20 @@ describe("sidebar focus navigation", () => {
           pinnedTabs: [],
           regularTabs: []
         },
-        onClosedTabContextMenu: vi.fn(),
         onEssentialDragStart: vi.fn(),
         onEssentialDrop: vi.fn(),
         onEssentialReorderDrop: vi.fn(),
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
-        setDraggingClosedTabIndex: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),

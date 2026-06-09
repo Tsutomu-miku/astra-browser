@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { createClosedTab } from "../src/renderer/domain/browser";
 import { getClosedTabAccessibilityLabel } from "../src/renderer/surfaces/sidebar/model/closedTabItemState";
 
 describe("closed tab item state", () => {
@@ -7,7 +8,7 @@ describe("closed tab item state", () => {
     expect(getClosedTabAccessibilityLabel({
       closedIndex: 1,
       isDragging: false,
-      tab: { closedAt: 1, title: "Docs", url: "https://docs.example/" }
+      tab: createClosedTab("Docs", "https://docs.example/", { closedAt: 1 })
     })).toBe("Docs, recently closed tab, restore position 2");
   });
 
@@ -15,7 +16,7 @@ describe("closed tab item state", () => {
     expect(getClosedTabAccessibilityLabel({
       closedIndex: 0,
       isDragging: true,
-      tab: { closedAt: 1, title: "", url: "https://docs.example/" }
+      tab: createClosedTab("", "https://docs.example/", { closedAt: 1 })
     })).toBe("https://docs.example/, recently closed tab, restore position 1, dragging");
   });
 });

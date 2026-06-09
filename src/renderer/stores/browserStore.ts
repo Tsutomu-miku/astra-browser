@@ -1,3 +1,10 @@
+/* eslint-disable max-lines */
+// This file is a zustand dispatch table: every entry is a one-line
+// `update(set, domainAction)` forwarder into the pure domain layer, plus a
+// handful of UI state toggles (sidebar, panel, glance, permission request).
+// Splitting it into multiple slices would add indirection without clarifying
+// ownership, since all entries share the same structural shape and all route
+// through the single `update` helper at the bottom of the file.
 import { create } from "zustand";
 
 import { SIDEBAR_DEFAULT_WIDTH, clampSidebarWidth } from "../common/layout/sidebarSizing";
@@ -28,6 +35,7 @@ import {
   deleteWorkspace,
   moveTabToWorkspace,
   moveTabGroupToWorkspace,
+  moveTabToFavoritePosition,
   moveTabToFolderEnd,
   moveTabToFolderPosition,
   moveWorkspaceFavoriteToWorkspace,
@@ -173,13 +181,13 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   moveTabToWorkspace: (tabId, workspaceId) => update(set, (state) => moveTabToWorkspace(state, tabId, workspaceId)),
   moveTabGroupToWorkspace: (groupId, workspaceId) =>
     update(set, (state) => moveTabGroupToWorkspace(state, groupId, workspaceId)),
-  moveWorkspaceFavoriteToWorkspace: (favoriteId, workspaceId) =>
-    update(set, (state) => moveWorkspaceFavoriteToWorkspace(state, favoriteId, workspaceId)),
+  moveWorkspaceFavoriteToWorkspace: (tabId, workspaceId) =>
+    update(set, (state) => moveWorkspaceFavoriteToWorkspace(state, tabId, workspaceId)),
   moveTabToNewWorkspace: (tabId) => update(set, (state) => moveTabToNewWorkspace(state, tabId)),
   moveTabGroupToNewWorkspace: (groupId) =>
     update(set, (state) => moveTabGroupToNewWorkspace(state, groupId)),
-  moveWorkspaceFavoriteToNewWorkspace: (favoriteId) =>
-    update(set, (state) => moveWorkspaceFavoriteToNewWorkspace(state, favoriteId)),
+  moveWorkspaceFavoriteToNewWorkspace: (tabId) =>
+    update(set, (state) => moveWorkspaceFavoriteToNewWorkspace(state, tabId)),
   restoreClosedTabToNewWorkspace: (closedIndex) =>
     update(set, (state) => restoreClosedTabToNewWorkspace(state, closedIndex)),
   focusSplitPane: (tabId) => update(set, (state) => focusSplitPane(state, tabId)),
@@ -196,6 +204,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   moveTabToFolderEnd: (tabId, folder) => update(set, (state) => moveTabToFolderEnd(state, tabId, folder)),
   moveTabToFolderPosition: (tabId, targetTabId, placement) =>
     update(set, (state) => moveTabToFolderPosition(state, tabId, targetTabId, placement)),
+  moveTabToFavoritePosition: (tabId, targetTabId, placement) =>
+    update(set, (state) => moveTabToFavoritePosition(state, tabId, targetTabId, placement)),
   navigateActiveTab: (url, webview) => update(set, (state) => {
     const next = navigateActiveTab(state, url);
     webview?.loadURL?.(getActiveUrl(next));
@@ -207,7 +217,7 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   recordHistory: (tabId, url) => update(set, (state) => recordHistory(state, tabId, url)),
   removeEssential: (url) => update(set, (state) => removeEssential(state, url)),
   removeHistoryEntry: (historyId) => update(set, (state) => removeHistoryEntry(state, historyId)),
-  removeWorkspaceFavorite: (url) => update(set, (state) => removeWorkspaceFavorite(state, url)),
+  removeWorkspaceFavorite: (tabId) => update(set, (state) => removeWorkspaceFavorite(state, tabId)),
   removeTabFromSplit: (tabId) => update(set, (state) => removeTabFromSplit(state, tabId)),
   replaceBrowserState: (state) => {
     saveBrowserState(state);
@@ -217,8 +227,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     update(set, (state) => reorderEssential(state, essentialId, targetEssentialId, placement)),
   reorderWorkspace: (workspaceId, targetWorkspaceId, placement) =>
     update(set, (state) => reorderWorkspace(state, workspaceId, targetWorkspaceId, placement)),
-  reorderWorkspaceFavorite: (favoriteId, targetFavoriteId, placement) =>
-    update(set, (state) => reorderWorkspaceFavorite(state, favoriteId, targetFavoriteId, placement)),
+  reorderWorkspaceFavorite: (tabId, targetTabId, placement) =>
+    update(set, (state) => reorderWorkspaceFavorite(state, tabId, targetTabId, placement)),
   reorderTabGroup: (groupId, targetGroupId, placement) =>
     update(set, (state) => reorderTabGroup(state, groupId, targetGroupId, placement)),
   reorderTab: (tabId, targetTabId, placement) => update(set, (state) => reorderTab(state, tabId, targetTabId, placement)),

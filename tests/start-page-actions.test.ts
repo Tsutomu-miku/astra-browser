@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { NEUTRAL_CHROME_ACCENT } from "../src/renderer/common/theme/chromeTheme";
-import { createDefaultState, createFavorite, createTab, type BrowserState, type Workspace } from "../src/renderer/domain/browser";
+import { createDefaultState, createTab, type BrowserState, type Workspace } from "../src/renderer/domain/browser";
 import { StartPage } from "../src/renderer/surfaces/start/StartPage";
 
 describe("StartPage actions", () => {
@@ -111,8 +111,10 @@ describe("StartPage actions", () => {
   it("renders Start tiles with cached site favicons instead of standalone initials", () => {
     const state = createDefaultState();
     const activeWorkspace = state.workspaces[0];
-    const favorite = createFavorite("Docs", "https://docs.example/page");
-    activeWorkspace.favorites = [favorite];
+    const docsTab = createTab("Docs", "https://docs.example/page");
+    docsTab.isFavorite = true;
+    activeWorkspace.tabs = [docsTab];
+    activeWorkspace.favoriteOrder = [docsTab.id];
     state.essentials = [];
     state.history = [];
     state.faviconCache = {
@@ -142,11 +144,12 @@ function createStateWithDuplicateFavoriteUrl() {
   const activeWorkspace = state.workspaces[0];
   const firstTab = createTab("Docs original", "https://docs.example/");
   const secondTab = createTab("Docs selected", "https://docs.example/");
-  const favorite = createFavorite("Docs selected", secondTab.url, secondTab.id);
+  secondTab.isFavorite = true;
+  const favorite = { id: secondTab.id, tabId: secondTab.id, title: secondTab.title, url: secondTab.url };
 
   activeWorkspace.tabs = [firstTab, secondTab];
   activeWorkspace.activeTabId = firstTab.id;
-  activeWorkspace.favorites = [favorite];
+  activeWorkspace.favoriteOrder = [secondTab.id];
   state.essentials = [];
   state.history = [];
 

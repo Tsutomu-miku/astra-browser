@@ -21,8 +21,8 @@ describe("sidebar filtering", () => {
         createFavorite("Docs", "https://docs.example")
       ],
       favorites: [
-        createFavorite("MDN", "https://developer.mozilla.org"),
-        createFavorite("GitHub", "https://github.com")
+        { kind: "tab", tab: { ...createTab("MDN", "https://developer.mozilla.org"), isFavorite: true } },
+        { kind: "tab", tab: { ...createTab("GitHub", "https://github.com"), isFavorite: true } }
       ],
       groupedTabs: [{ group, tabs: [groupedTab, createTab("Calendar", "https://calendar.example")] }],
       pinnedTabs: [createTab("Mail", "https://mail.example")],
@@ -69,13 +69,12 @@ describe("sidebar filtering", () => {
     const group = createTabGroup("Research");
     const essential = createFavorite("Inbox", "https://mail.example");
     const pinned = createTab("Mail", "https://mail.example");
-    const favoriteTab = createTab("Docs Tab", "https://docs.example");
-    const favorite = createFavorite("Docs", favoriteTab.url, favoriteTab.id);
+    const favoriteTab = { ...createTab("Docs Tab", "https://docs.example"), isFavorite: true };
     const grouped = createTab("Chromium", "https://chromium.example");
     const regular = createTab("News", "https://news.example");
     const result = filterSidebarItems({
       essentials: [essential],
-      favorites: [favorite],
+      favorites: [{ kind: "tab", tab: favoriteTab }],
       groupedTabs: [{ group, tabs: [grouped] }],
       pinnedTabs: [pinned],
       regularTabs: [regular],
@@ -96,62 +95,46 @@ describe("sidebar filtering", () => {
     });
   });
 
-  it("falls back by URL for stale Favorite tab ids in search targets", () => {
-    const favorite = createFavorite("Docs", "https://docs.example", "missing-tab");
-    const favoriteTab = createTab("Docs Tab", favorite.url);
+  it("includes only isFavorite tabs in favorites search targets", () => {
+    const favoriteTab = { ...createTab("Docs Tab", "https://docs.example"), isFavorite: true };
+    const regularTab = createTab("Other", "https://other.example");
     const result = filterSidebarItems({
       essentials: [],
-      favorites: [favorite],
+      favorites: [{ kind: "tab", tab: favoriteTab }],
       groupedTabs: [],
       pinnedTabs: [],
-      regularTabs: [],
-      workspaceTabs: [favoriteTab]
+      regularTabs: [regularTab],
+      workspaceTabs: [favoriteTab, regularTab]
     }, "");
 
-    expect(getSidebarSearchTargets(result).find((target) => target.type === "favorite")).toMatchObject({
+    const favoriteTarget = getSidebarSearchTargets(result).find((target) => target.type === "favorite");
+    expect(favoriteTarget).toEqual({
+      id: favoriteTab.id,
       tabId: favoriteTab.id,
-      type: "favorite"
-    });
-  });
-
-  it("keeps URL-only legacy Favorites on their own search target metadata", () => {
-    const favorite = createFavorite("Docs", "https://docs.example");
-    const matchingTab = createTab("Docs Tab", favorite.url);
-    const result = filterSidebarItems({
-      essentials: [],
-      favorites: [favorite],
-      groupedTabs: [],
-      pinnedTabs: [],
-      regularTabs: [matchingTab],
-      workspaceTabs: [matchingTab]
-    }, "");
-
-    expect(getSidebarSearchTargets(result).find((target) => target.type === "favorite")).toEqual({
-      id: favorite.id,
-      title: favorite.title,
+      title: favoriteTab.title,
       type: "favorite",
-      url: favorite.url
+      url: favoriteTab.url
     });
   });
 
-  it("matches tab-backed Favorites by the current backing tab title", () => {
-    const favorite = createFavorite("Old Docs", "https://docs.example", "docs-tab");
+  it("uses the tab's own title and url for favorite search targets", () => {
     const favoriteTab = {
       ...createTab("Current Project Brief", "https://docs.example/current"),
-      id: "docs-tab"
+      id: "docs-tab",
+      isFavorite: true
     };
     const result = filterSidebarItems({
       essentials: [],
-      favorites: [favorite],
+      favorites: [{ kind: "tab", tab: favoriteTab }],
       groupedTabs: [],
       pinnedTabs: [],
       regularTabs: [],
       workspaceTabs: [favoriteTab]
     }, "brief");
 
-    expect(result.favorites).toEqual([favorite]);
+    expect(result.favorites).toEqual([{ kind: "tab", tab: favoriteTab }]);
     expect(getSidebarSearchTargets(result)).toEqual([{
-      id: favorite.id,
+      id: favoriteTab.id,
       tabId: favoriteTab.id,
       title: favoriteTab.title,
       type: "favorite",
@@ -174,6 +157,7 @@ describe("sidebar filtering", () => {
     expect(getSidebarSearchActionHints({
       type: "favorite",
       id: "docs",
+      tabId: "tab-docs",
       title: "Docs",
       url: "https://docs.example"
     })).toEqual([
@@ -193,6 +177,7 @@ describe("sidebar filtering", () => {
     expect(getSidebarSearchTargetElementId({
       type: "favorite",
       id: "docs",
+      tabId: "tab-docs",
       title: "Docs",
       url: "https://docs.example"
     })).toBe("sidebar-search-favorite-docs");

@@ -2,7 +2,6 @@ import type { BrowserTab, ClosedTab, Favorite } from "../../../domain/browser";
 import {
   readSidebarClosedTabDragIndex,
   readSidebarEssentialDragId,
-  readSidebarFavoriteDragId,
   readSidebarTabDragId,
   type SidebarDragState
 } from "./sidebarDragSources";
@@ -26,7 +25,7 @@ export interface SidebarSplitDropState extends Required<Pick<
   activeTabId: string;
   closedTabs: ClosedTab[];
   essentials: Favorite[];
-  favorites: Favorite[];
+  favoriteTabs: BrowserTab[];
   tabs: BrowserTab[];
 }
 
@@ -34,6 +33,8 @@ export function getSidebarSplitDropSource(
   state: SidebarSplitDropState,
   getData: (type: string) => string = () => ""
 ): SidebarSplitDropSource | null {
+  // Workspace favorites now drag with tab identity, so the tab path below
+  // covers both regular and favorite tabs.
   const tabId = readSidebarTabDragId(state, getData);
   const tab = tabId ? state.tabs.find((candidate) => candidate.id === tabId) : undefined;
   if (tab && tab.id !== state.activeTabId) {
@@ -43,10 +44,6 @@ export function getSidebarSplitDropSource(
   const essentialId = readSidebarEssentialDragId(state, getData);
   const essential = essentialId ? state.essentials.find((candidate) => candidate.id === essentialId) : undefined;
   if (essential) return createUrlDropSource(essential);
-
-  const favoriteId = readSidebarFavoriteDragId(state, getData);
-  const favorite = favoriteId ? state.favorites.find((candidate) => candidate.id === favoriteId) : undefined;
-  if (favorite) return createFavoriteDropSource(favorite, state.tabs, state.activeTabId);
 
   const closedTabIndex = readSidebarClosedTabDragIndex(state, getData);
   const closedTab = closedTabIndex === null ? undefined : state.closedTabs[closedTabIndex];
@@ -91,17 +88,4 @@ function createUrlDropSource(source: Pick<Favorite | ClosedTab, "title" | "url">
     type: "url",
     url: source.url
   };
-}
-
-function createFavoriteDropSource(
-  favorite: Favorite,
-  tabs: BrowserTab[],
-  activeTabId: string
-): SidebarSplitDropSource | null {
-  const tab = favorite.tabId ? tabs.find((candidate) => candidate.id === favorite.tabId) : undefined;
-  if (tab) {
-    return tab.id === activeTabId ? null : { type: "tab", tabId: tab.id, title: tab.title };
-  }
-
-  return createUrlDropSource(favorite);
 }

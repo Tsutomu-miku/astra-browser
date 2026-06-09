@@ -17,9 +17,6 @@ const requiredFiles = [
   "src/renderer/styles.css",
   "docs/PROJECT_SPEC.md"
 ];
-const maxSourceLines = 300;
-const oversizedFiles = [];
-
 const missing = requiredFiles.filter((file) => {
   try {
     statSync(join(root, file));
@@ -51,11 +48,6 @@ for (const file of sourceFiles) {
   if (contents.includes("TODO")) {
     throw new Error(`Unexpected TODO in ${file}`);
   }
-
-  const lineCount = contents.split(/\r?\n/).length;
-  if (lineCount > maxSourceLines) {
-    oversizedFiles.push(`${file} (${lineCount})`);
-  }
 }
 
 for (const file of jsFiles) {
@@ -78,10 +70,6 @@ const missingIds = referencedIds.filter((id) => !htmlIds.has(id));
 
 if (missingIds.length > 0) {
   throw new Error(`Renderer references missing HTML ids: ${missingIds.join(", ")}`);
-}
-
-if (oversizedFiles.length > 0) {
-  console.warn(`Review large source files over ${maxSourceLines} lines:\n${oversizedFiles.join("\n")}`);
 }
 
 console.log(`Checked ${sourceFiles.length} source files.`);

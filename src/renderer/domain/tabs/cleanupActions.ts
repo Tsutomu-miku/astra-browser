@@ -16,6 +16,7 @@ export function closeOtherTabs(state: BrowserState, targetTabId?: string): Brows
 
     prependClosedTabs(workspace, closed);
     workspace.tabs = [target];
+    workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => id === target.id);
     workspace.activeTabId = target.id;
     pruneEmptyTabGroups(workspace);
     clearSplitView(draft);
@@ -34,6 +35,7 @@ export function closeTabsToLeft(state: BrowserState, targetTabId?: string): Brow
 
     prependClosedTabs(workspace, closed);
     workspace.tabs = workspace.tabs.slice(index);
+    workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => workspace.tabs.some((t) => t.id === id));
     workspace.activeTabId = target.id;
     pruneEmptyTabGroups(workspace);
     pruneSplitTabIds(draft, workspace);
@@ -52,6 +54,7 @@ export function closeTabsToRight(state: BrowserState, targetTabId?: string): Bro
 
     prependClosedTabs(workspace, closed);
     workspace.tabs = workspace.tabs.slice(0, index + 1);
+    workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => workspace.tabs.some((t) => t.id === id));
     workspace.activeTabId = target.id;
     pruneEmptyTabGroups(workspace);
     pruneSplitTabIds(draft, workspace);
@@ -73,6 +76,7 @@ export function closeTabGroup(state: BrowserState, groupId: string): BrowserStat
     if (closed.length === workspace.tabs.length) {
       const replacement = createTab("New Tab", getWorkspaceHomepageUrl(draft, workspace));
       workspace.tabs = [replacement];
+      workspace.favoriteOrder = [];
       workspace.activeTabId = replacement.id;
       pruneEmptyTabGroups(workspace);
       clearSplitView(draft);
@@ -81,6 +85,7 @@ export function closeTabGroup(state: BrowserState, groupId: string): BrowserStat
 
     const closedIds = new Set(closed.map((tab) => tab.id));
     workspace.tabs = workspace.tabs.filter((tab) => !closedIds.has(tab.id));
+    workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => !closedIds.has(id));
     pruneEmptyTabGroups(workspace);
 
     if (!workspace.tabs.some((tab) => tab.id === workspace.activeTabId)) {

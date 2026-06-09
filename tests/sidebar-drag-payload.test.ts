@@ -65,19 +65,19 @@ describe("sidebar drag payload", () => {
       activeWorkspaceId: "personal",
       draggingClosedTabIndex: null,
       draggingEssentialId: null,
-      draggingFavoriteId: "favorite",
+      draggingFavoriteId: null,
       draggingGroupId: null,
-      draggingTabId: null,
+      draggingTabId: "favorite",
       draggingWorkspaceId: null,
       targetWorkspaceId: "work"
-    })).toEqual({ favoriteId: "favorite", type: "favorite" });
+    })).toEqual({ tabId: "favorite", type: "tab" });
     expect(getSidebarWorkspaceDropIntent({
       activeWorkspaceId: "personal",
       draggingClosedTabIndex: null,
       draggingEssentialId: null,
-      draggingFavoriteId: "favorite",
+      draggingFavoriteId: null,
       draggingGroupId: null,
-      draggingTabId: null,
+      draggingTabId: "favorite",
       draggingWorkspaceId: null,
       targetWorkspaceId: "personal"
     })).toBeNull();
@@ -96,10 +96,10 @@ describe("sidebar drag payload", () => {
   it("derives New Space drop intents without component-specific branches", () => {
     expect(getSidebarNewWorkspaceDropIntent({
       draggingClosedTabIndex: null,
-      draggingFavoriteId: "favorite",
+      draggingFavoriteId: null,
       draggingGroupId: null,
-      draggingTabId: null
-    })).toEqual({ favoriteId: "favorite", type: "favorite" });
+      draggingTabId: "favorite"
+    })).toEqual({ tabId: "favorite", type: "tab" });
     expect(getSidebarNewWorkspaceDropIntent({
       draggingClosedTabIndex: null,
       draggingFavoriteId: null,

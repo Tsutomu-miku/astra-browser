@@ -10,7 +10,6 @@ import {
 } from "react";
 
 import { scrollElementNearEdge } from "../../common/drag-drop/edgeAutoScroll";
-import { getPointerDropPlacement, type DropAxis } from "../../common/drag-drop/dropPlacement";
 import { isListNavigationKey } from "../../common/navigation/listNavigation";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
 import {
@@ -19,7 +18,6 @@ import {
   type SidebarSectionId
 } from "../../common/sidebar/sidebarSections";
 import type { BrowserController } from "../../app/controller/types";
-import type { TabFolder } from "../../domain/tabs";
 import { loadBrowserUiState, saveBrowserUiState } from "../../platform/persistence/browserUiStorage";
 import { SidebarResizeHandle } from "./components/chrome/SidebarResizeHandle";
 import { SidebarSearchBox } from "./components/chrome/SidebarSearchBox";
@@ -27,20 +25,10 @@ import { SidebarContextMenus } from "./components/tabs/SidebarContextMenus";
 import { SidebarSections } from "./components/tabs/SidebarSections";
 import { useSidebarContextMenus } from "./components/tabs/useSidebarContextMenus";
 import { WorkspaceStrip } from "./components/workspaces/WorkspaceStrip";
-import { useSidebarQuickEntryDrag } from "./hooks/useSidebarQuickEntryDrag";
-import { useSidebarWorkspaceDrag } from "./hooks/useSidebarWorkspaceDrag";
+import { useSidebarDropHandlers } from "./hooks/useSidebarDropHandlers";
 import { focusCurrentOrFirstSidebarItem, handleSidebarFocusNavigation, scrollCurrentSidebarItemIntoView } from "./model/sidebarFocusNavigation";
-import {
-  readSidebarClosedTabDragIndex,
-  readSidebarEssentialDragId,
-  readSidebarFavoriteDragId,
-  readSidebarGroupDragId,
-  readSidebarTabDragEventId,
-  type SidebarDragState
-} from "./model/sidebarDragSources";
 import { scrollSidebarSearchTargetIntoView } from "./model/sidebarSearchTargetDom";
 import { getSidebarTabFolders } from "./model/sidebarTabFolders";
-import { getSidebarNewWorkspaceDropIntent, getSidebarWorkspaceDropIntent, type SidebarWorkspaceDropIntent } from "./model/sidebarWorkspaceDropIntent";
 import {
   clampSidebarSearchIndex,
   filterSidebarItems,
@@ -51,7 +39,7 @@ import {
 import { getSidebarSearchOpenIntent, type SidebarOpenIntent } from "./sidebarOpenIntent";
 
 export function Sidebar({ controller }: { controller: BrowserController }) {
-  const { activeTab, activeWorkspace, actions, compactMode, compactSidebarPeeking, floatingSidebarOpen, setPanel, setSidebarWidth, sidebarCollapsed, sidebarWidth, state } = controller;
+  const { activeTab, activeWorkspace, actions, compactMode, compactSidebarPeeking, floatingSidebarOpen, setPanel, setSidebarWidth, sidebarCollapsed, sidebarWidth, splitLayout, state } = controller;
   const tabStackRef = useRef<HTMLElement | null>(null);
   const [tabQuery, setTabQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
@@ -59,56 +47,36 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     loadBrowserUiState().sidebarSectionCollapsed ?? DEFAULT_SIDEBAR_SECTION_COLLAPSED
   ));
   const {
-    closedTabMenu,
-    closeMenus,
     openClosedTabMenu,
+    closeMenus,
     openQuickEntryMenu,
     openTabGroupMenu,
     openTabMenu,
     quickEntryMenu,
     tabGroupMenu,
-    tabMenu
+    tabMenu,
+    closedTabMenu
   } = useSidebarContextMenus();
   const {
+    favoriteItems,
     groupedTabs,
     regularTabs
   } = useMemo(() => getSidebarTabFolders(activeWorkspace), [activeWorkspace]);
   const memorySaver = useMemo(() => getMemorySaverState(activeWorkspace, state), [activeWorkspace, state]);
   const filteredItems = useMemo(() => filterSidebarItems({
     essentials: state.essentials,
-    favorites: activeWorkspace.favorites,
+    favorites: favoriteItems,
     groupedTabs,
     pinnedTabs: [],
     regularTabs,
     workspaceTabs: activeWorkspace.tabs
-  }, tabQuery), [activeWorkspace.favorites, activeWorkspace.tabs, groupedTabs, regularTabs, state.essentials, tabQuery]);
+  }, tabQuery), [favoriteItems, groupedTabs, regularTabs, state.essentials, tabQuery]);
   const searchTargets = useMemo(() => getSidebarSearchTargets(filteredItems), [filteredItems]);
   const activeSearchTarget = filteredItems.isFiltering
     ? searchTargets[clampSidebarSearchIndex(activeSearchIndex, searchTargets.length)]
     : undefined;
-  const {
-    clearWorkspaceDrag,
-    draggingClosedTabIndex,
-    draggingGroupId,
-    draggingTabId,
-    draggingWorkspaceId,
-    handleWorkspaceDragStart,
-    setDraggingClosedTabIndex,
-    setDraggingGroupId,
-    setDraggingTabId,
-    setDraggingWorkspaceId
-  } = useSidebarWorkspaceDrag();
-  const {
-    draggingEssentialId,
-    draggingFavoriteId,
-    handleEssentialDragStart,
-    handleEssentialDrop,
-    handleEssentialReorderDrop,
-    handleFavoriteDragStart,
-    handleFavoriteReorderDrop,
-    setDraggingEssentialId,
-    setDraggingFavoriteId
-  } = useSidebarQuickEntryDrag({ actions, activeWorkspace, draggingTabId, setDraggingTabId, state });
+
+  const drop = useSidebarDropHandlers(controller);
 
   const handleToggleSidebarSection = useCallback((sectionId: SidebarSectionId) => {
     setSidebarSectionCollapsed((current) => {
@@ -118,159 +86,15 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     });
   }, []);
 
-  const handleTabDrop = (event: DragEvent<HTMLElement>, targetTabId: string, axis: DropAxis = "vertical") => {
-    event.preventDefault();
-    event.stopPropagation();
-    const tabId = getDroppedTabId(event);
-    if (!tabId || tabId === targetTabId) {
-      setDraggingTabId(null);
-      return;
-    }
-
-    const placement = getPointerDropPlacement(event.currentTarget, event, axis);
-    placeTab(tabId, targetTabId, placement);
-    setDraggingTabId(null);
-    setDraggingFavoriteId(null);
-  };
-
-  const handleTabGroupCreate = (sourceTabId: string, targetTabId: string) => {
-    actions.groupTabsTogether(sourceTabId, targetTabId);
-    setDraggingTabId(null);
-    setDraggingFavoriteId(null);
-  };
-
-  const placeTab = (tabId: string, targetTabId: string, placement: "before" | "after") => {
-    actions.moveTabToFolderPosition(tabId, targetTabId, placement);
-  };
-
-  const handleTabFolderDrop = (event: DragEvent<HTMLElement>, folder: TabFolder) => {
-    const tabId = getDroppedTabId(event);
-    if (!tabId) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    actions.moveTabToFolderEnd(tabId, folder);
-    setDraggingTabId(null);
-    setDraggingFavoriteId(null);
-  };
-
-  const handleFavoritesDrop = (event: DragEvent<HTMLElement>) => {
-    handleTabFolderDrop(event, { type: "favorites" });
-  };
-
-  const handleTabsDrop = (event: DragEvent<HTMLElement>) => {
-    handleTabFolderDrop(event, { type: "tabs" });
-  };
-
-  const getDroppedTabId = (event: DragEvent<HTMLElement>) => readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer);
-
-  const handleSidebarScrollAreaDragOver = (event: DragEvent<HTMLDivElement>) => {
-    if (!hasScrollableSidebarDrag(event)) return;
-
-    if (scrollElementNearEdge(event.currentTarget, event.clientY)) {
-      event.preventDefault();
-    }
-  };
-
-  const hasScrollableSidebarDrag = (event: DragEvent<HTMLElement>) => {
-    const readDragData = (type: string) => event.dataTransfer.getData(type);
-
-    return Boolean(
-      readSidebarTabDragEventId({ draggingTabId }, event.dataTransfer) ||
-      readSidebarFavoriteDragId({ draggingFavoriteId }, readDragData) ||
-      readSidebarEssentialDragId({ draggingEssentialId }, readDragData) ||
-      readSidebarGroupDragId({ draggingGroupId }, readDragData) ||
-      readSidebarClosedTabDragIndex({ draggingClosedTabIndex }, readDragData) !== null
-    );
-  };
-
-  const handleWorkspaceDragOver = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    const intent = getSidebarWorkspaceDropIntent({
-      ...getWorkspaceDragState(),
-      activeWorkspaceId: activeWorkspace.id,
-      targetWorkspaceId: workspaceId
-    }, (type) => event.dataTransfer.getData(type));
-    if (intent) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-    }
-  };
-
-  const handleWorkspaceDrop = (event: DragEvent<HTMLButtonElement>, workspaceId: string) => {
-    const intent = getSidebarWorkspaceDropIntent({
-      ...getWorkspaceDragState(),
-      activeWorkspaceId: activeWorkspace.id,
-      targetWorkspaceId: workspaceId
-    }, (type) => event.dataTransfer.getData(type));
-    if (!intent) return;
-
-    event.preventDefault();
-    runWorkspaceDropIntent(intent, event, workspaceId);
-    clearSidebarDropState();
-  };
-
   const openWorkspaceSettings = (workspaceId: string) => {
     actions.switchWorkspace(workspaceId);
     setPanel("settings");
   };
 
-  const handleNewWorkspaceDrop = (event: DragEvent<HTMLButtonElement>) => {
-    const intent = getSidebarNewWorkspaceDropIntent(
-      getWorkspaceDragState(),
-      (type) => event.dataTransfer.getData(type)
-    );
-    if (!intent) return;
-
-    event.preventDefault();
-    runNewWorkspaceDropIntent(intent);
-    clearSidebarDropState();
-  };
-
-  const getWorkspaceDragState = (): Required<SidebarDragState> => ({
-    draggingClosedTabIndex,
-    draggingEssentialId,
-    draggingFavoriteId,
-    draggingGroupId,
-    draggingTabId,
-    draggingWorkspaceId
-  });
-
-  const clearSidebarDropState = () => {
-    setDraggingClosedTabIndex(null);
-    setDraggingEssentialId(null);
-    setDraggingFavoriteId(null);
-    setDraggingGroupId(null);
-    setDraggingTabId(null);
-    setDraggingWorkspaceId(null);
-  };
-
-  const runWorkspaceDropIntent = (
-    intent: SidebarWorkspaceDropIntent,
-    event: DragEvent<HTMLButtonElement>,
-    workspaceId: string
-  ) => {
-    if (intent.type === "workspace") {
-      actions.reorderWorkspace(intent.workspaceId, workspaceId, getPointerDropPlacement(event.currentTarget, event, "vertical"));
-    } else if (intent.type === "closedTab") {
-      actions.restoreClosedTabToWorkspace(intent.closedTabIndex, workspaceId);
-    } else if (intent.type === "favorite") {
-      actions.moveWorkspaceFavoriteToWorkspace(intent.favoriteId, workspaceId);
-    } else if (intent.type === "group") {
-      actions.moveTabGroupToWorkspace(intent.groupId, workspaceId);
-    } else {
-      actions.moveTabToWorkspace(intent.tabId, workspaceId);
-    }
-  };
-
-  const runNewWorkspaceDropIntent = (intent: Exclude<SidebarWorkspaceDropIntent, { type: "workspace" }>) => {
-    if (intent.type === "closedTab") {
-      actions.restoreClosedTabToNewWorkspace(intent.closedTabIndex);
-    } else if (intent.type === "favorite") {
-      actions.moveWorkspaceFavoriteToNewWorkspace(intent.favoriteId);
-    } else if (intent.type === "group") {
-      actions.moveTabGroupToNewWorkspace(intent.groupId);
-    } else {
-      actions.moveTabToNewWorkspace(intent.tabId);
+  const handleSidebarScrollAreaDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!drop.hasScrollableSidebarDrag(event)) return;
+    if (scrollElementNearEdge(event.currentTarget, event.clientY)) {
+      event.preventDefault();
     }
   };
 
@@ -293,11 +117,31 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     scrollCurrentSidebarItemIntoView(tabStackRef.current);
   }, [activeTab.id, activeWorkspace.id, tabQuery]);
 
+  const runSidebarIntent = useCallback((intent: SidebarOpenIntent) => {
+    if (intent.type === "preview") {
+      actions.openGlance(intent.url, intent.title);
+    } else if (intent.type === "splitTab") {
+      actions.openTabInSplit(intent.tabId);
+    } else if (intent.type === "splitUrl") {
+      actions.openUrlInSplit(intent.url, intent.title);
+    } else if (intent.type === "selectTab") {
+      actions.selectTab(intent.tabId);
+    } else if (intent.type === "openUrl") {
+      actions.openUrlInActiveWorkspace(intent.url, intent.title);
+    } else {
+      actions.navigateActiveTab(intent.url);
+    }
+  }, [actions]);
+
+  const runSearchTarget = useCallback((target: SidebarSearchTarget, modifiers: { altKey: boolean; shiftKey: boolean }) => {
+    runSidebarIntent(getSidebarSearchOpenIntent(target, modifiers));
+  }, [runSidebarIntent]);
+
   function onSearchKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
     if (isListNavigationKey(event.key)) {
       event.preventDefault();
-      const key = event.key;
-      setActiveSearchIndex((index) => getNextSidebarSearchIndex(index, searchTargets.length, key));
+      const navKey = event.key;
+      setActiveSearchIndex((index) => getNextSidebarSearchIndex(index, searchTargets.length, navKey));
     } else if (event.key === "Enter") {
       event.preventDefault();
       if (activeSearchTarget) runSearchTarget(activeSearchTarget, {
@@ -314,26 +158,6 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
     }
   }
 
-  function runSearchTarget(target: SidebarSearchTarget, modifiers: { altKey: boolean; shiftKey: boolean }) {
-    runSidebarIntent(getSidebarSearchOpenIntent(target, modifiers));
-  }
-
-  function runSidebarIntent(intent: SidebarOpenIntent) {
-    if (intent.type === "preview") {
-      actions.openGlance(intent.url, intent.title);
-    } else if (intent.type === "splitTab") {
-      actions.openTabInSplit(intent.tabId);
-    } else if (intent.type === "splitUrl") {
-      actions.openUrlInSplit(intent.url, intent.title);
-    } else if (intent.type === "selectTab") {
-      actions.selectTab(intent.tabId);
-    } else if (intent.type === "openUrl") {
-      actions.openUrlInActiveWorkspace(intent.url, intent.title);
-    } else {
-      actions.navigateActiveTab(intent.url);
-    }
-  }
-
   return (
     <aside
       className={`sidebar ${sidebarCollapsed || compactMode ? "is-collapsed" : ""} ${compactMode ? "is-compact-mode" : ""} ${floatingSidebarOpen ? "is-floating-open" : ""} ${compactSidebarPeeking ? "is-peeking-chrome" : ""}`}
@@ -343,24 +167,24 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
       <WorkspaceStrip
         activeWorkspaceId={activeWorkspace.id}
         compactMode={compactMode}
-        draggingGroupId={draggingGroupId}
-        draggingClosedTabIndex={draggingClosedTabIndex}
-        draggingFavoriteId={draggingFavoriteId}
-        draggingTabId={draggingTabId}
-        draggingWorkspaceId={draggingWorkspaceId}
+        draggingGroupId={drop.draggingGroupId}
+        draggingClosedTabIndex={drop.draggingClosedTabIndex}
+        draggingFavoriteId={drop.draggingFavoriteId}
+        draggingTabId={drop.draggingTabId}
+        draggingWorkspaceId={drop.draggingWorkspaceId}
         floatingSidebarOpen={floatingSidebarOpen}
         memorySaver={memorySaver}
         sidebarCollapsed={sidebarCollapsed}
-        splitLayout={controller.splitLayout}
+        splitLayout={splitLayout}
         splitMode={state.splitMode}
         workspaces={state.workspaces}
-        onDragEnd={clearWorkspaceDrag}
-        onDragOver={handleWorkspaceDragOver}
-        onDragStart={handleWorkspaceDragStart}
-        onDrop={handleWorkspaceDrop}
+        onDragEnd={drop.clearWorkspaceDrag}
+        onDragOver={drop.handleWorkspaceDragOver}
+        onDragStart={drop.handleWorkspaceDragStart}
+        onDrop={drop.handleWorkspaceDrop}
         onDeleteWorkspace={actions.deleteWorkspace}
         onNewWorkspace={actions.addWorkspace}
-        onNewWorkspaceDrop={handleNewWorkspaceDrop}
+        onNewWorkspaceDrop={drop.handleNewWorkspaceDrop}
         onOpenSettings={openWorkspaceSettings}
         onSelect={actions.switchWorkspace}
         onSetPanel={setPanel}
@@ -393,31 +217,32 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             activeSearchTarget={activeSearchTarget}
             activeTab={activeTab}
             collapsedSections={sidebarSectionCollapsed}
-            draggingEssentialId={draggingEssentialId}
+            draggingEssentialId={drop.draggingEssentialId}
             faviconCache={state.faviconCache}
-            draggingFavoriteId={draggingFavoriteId}
-            draggingGroupId={draggingGroupId}
-            draggingTabId={draggingTabId}
+            draggingFavoriteId={drop.draggingFavoriteId}
+            draggingGroupId={drop.draggingGroupId}
+            draggingTabId={drop.draggingTabId}
             filteredItems={filteredItems}
-            onEssentialDragStart={handleEssentialDragStart}
-            onEssentialDrop={handleEssentialDrop}
-            onEssentialReorderDrop={handleEssentialReorderDrop}
-            onFavoriteDragStart={handleFavoriteDragStart}
-            onFavoriteDrop={handleFavoritesDrop}
-            onFavoriteReorderDrop={handleFavoriteReorderDrop}
+            onEssentialDragStart={drop.handleEssentialDragStart}
+            onEssentialDrop={drop.handleEssentialDrop}
+            onEssentialReorderDrop={drop.handleEssentialReorderDrop}
+            onFavoriteDragStart={drop.handleFavoriteDragStart}
+            onFavoriteDrop={drop.handleFavoritesDrop}
+            onFavoriteReorderDrop={drop.handleFavoriteReorderDrop}
+            onFavoriteTabDrop={drop.handleFavoriteTabDrop}
             onTabGroupContextMenu={openTabGroupMenu}
             splitTabIds={state.splitTabIds}
             onQuickEntryContextMenu={openQuickEntryMenu}
             onRenameTab={(tabId, customTitle) => actions.updateTab(tabId, { customTitle })}
             onTabContextMenu={openTabMenu}
-            onTabDrop={handleTabDrop}
-            onTabGroupCreate={handleTabGroupCreate}
-            onTabsDrop={handleTabsDrop}
+            onTabDrop={drop.handleTabDrop}
+            onTabGroupCreate={drop.handleTabGroupCreate}
+            onTabsDrop={drop.handleTabsDrop}
             onToggleSection={handleToggleSidebarSection}
-            setDraggingEssentialId={setDraggingEssentialId}
-            setDraggingFavoriteId={setDraggingFavoriteId}
-            setDraggingGroupId={setDraggingGroupId}
-            setDraggingTabId={setDraggingTabId}
+            setDraggingEssentialId={drop.setDraggingEssentialId}
+            setDraggingFavoriteId={drop.setDraggingFavoriteId}
+            setDraggingGroupId={drop.setDraggingGroupId}
+            setDraggingTabId={drop.setDraggingTabId}
             workspaceTabs={activeWorkspace.tabs}
           />
         </div>

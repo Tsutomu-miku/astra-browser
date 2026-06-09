@@ -17,6 +17,7 @@ export function TabGroupSection({
   draggingTabId,
   faviconCache,
   group,
+  isCrossFolderDrag,
   onClose,
   onContextMenu,
   onGroupDrop,
@@ -40,6 +41,7 @@ export function TabGroupSection({
   draggingTabId: string | null;
   faviconCache?: FaviconCache;
   group: TabGroup;
+  isCrossFolderDrag?: (targetTab: BrowserTab) => (draggedId: string) => boolean;
   onClose: (tabId: string) => void;
   onContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onGroupDrop: (event: DragEvent<HTMLElement>, targetGroupId: string) => void;
@@ -129,6 +131,7 @@ export function TabGroupSection({
           draggingTabId={draggingTabId}
           faviconCache={faviconCache}
           id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
+          isCrossFolderDrag={isCrossFolderDrag?.(tab)}
           isSearchSelected={searchSelectedTabId === tab.id}
           splitTabIds={splitTabIds}
           tab={tab}

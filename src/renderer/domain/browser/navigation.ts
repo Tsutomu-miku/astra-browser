@@ -58,17 +58,18 @@ export function getHostInitial(url: string): string {
   }
 }
 
-export function isFavorite(workspace: Pick<Workspace, "favorites"> | undefined, url: string): boolean {
-  return Boolean(workspace?.favorites?.some((favorite) => favorite.url === url));
+export function isFavorite(
+  workspace: Pick<Workspace, "tabs"> | undefined,
+  url: string
+): boolean {
+  return Boolean(workspace?.tabs?.some((tab) => tab.isFavorite && tab.url === url));
 }
 
 export function isTabFavorite(
-  workspace: Pick<Workspace, "favorites"> | undefined,
-  tab: Pick<Workspace["tabs"][number], "id" | "url">
+  _workspace: Pick<Workspace, "tabs"> | undefined,
+  tab: Pick<Workspace["tabs"][number], "isFavorite">
 ): boolean {
-  return Boolean(workspace?.favorites?.some((favorite) => (
-    favorite.tabId ? favorite.tabId === tab.id : favorite.url === tab.url
-  )));
+  return Boolean(tab?.isFavorite);
 }
 
 export function isEssential(state: Pick<BrowserState, "essentials"> | undefined, url: string): boolean {

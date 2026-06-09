@@ -1,7 +1,8 @@
-const { app, BrowserWindow, session, shell } = require("electron");
+const { app, BrowserWindow, session } = require("electron");
 const path = require("node:path");
 const { installWindowDiagnostics, toggleDevTools } = require("./diagnostics");
 const { installIpcHandlers } = require("./ipcHandlers");
+const { installApplicationMenu } = require("./appMenu");
 
 const APP_ORIGIN = "astra://app";
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
@@ -80,37 +81,50 @@ function installSessionBridge(targetSession, partition = "default") {
   targetSession.on("will-download", (_event, item) => {
     const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const startedAt = Date.now();
-    const basePayload = {
+    let hasEmitted = false;
+    const buildPayload = (stateOverride) => ({
       id,
       filename: item.getFilename(),
       totalBytes: item.getTotalBytes(),
-      receivedBytes: 0,
-      savePath: item.getSavePath(),
-      state: "progressing",
+      receivedBytes: item.getReceivedBytes(),
+      savePath: item.getSavePath() || "",
+      state: stateOverride ?? "progressing",
       startedAt
+    });
+    const tryEmit = (stateOverride) => {
+      const savePath = item.getSavePath();
+      // The renderer consumes savePath for the Open / Show-in-folder
+      // buttons, so we suppress the initial broadcast until Electron has
+      // resolved the user's save location. Progress events that arrive
+      // before the path is resolved are queued implicitly: the next
+      // broadcast after resolution will carry the latest byte counts.
+      if (!savePath && !stateOverride) return;
+      const payload = buildPayload(stateOverride);
+      if (stateOverride === "completed" || stateOverride === "cancelled" || stateOverride === "interrupted") {
+        broadcastDownload({ ...payload, finishedAt: Date.now() });
+      } else {
+        broadcastDownload(payload);
+      }
+      hasEmitted = true;
     };
 
-    broadcastDownload(basePayload);
+    // Kick off an emit as soon as the save path is available; if the user
+    // dismisses the dialog without picking a location, updated/done will
+    // still fire later.
+    const waitForPathInterval = setInterval(() => {
+      if (item.getSavePath()) {
+        clearInterval(waitForPathInterval);
+        if (!hasEmitted) tryEmit();
+      }
+    }, 50);
 
     item.on("updated", (_updatedEvent, state) => {
-      broadcastDownload({
-        ...basePayload,
-        receivedBytes: item.getReceivedBytes(),
-        totalBytes: item.getTotalBytes(),
-        savePath: item.getSavePath(),
-        state
-      });
+      tryEmit(state);
     });
 
     item.once("done", (_doneEvent, state) => {
-      broadcastDownload({
-        ...basePayload,
-        receivedBytes: item.getReceivedBytes(),
-        totalBytes: item.getTotalBytes(),
-        savePath: item.getSavePath(),
-        state,
-        finishedAt: Date.now()
-      });
+      clearInterval(waitForPathInterval);
+      tryEmit(state);
     });
   });
 }
@@ -164,6 +178,7 @@ installIpcHandlers({
 });
 
 app.whenReady().then(() => {
+  installApplicationMenu();
   createWindow();
 
   app.on("activate", () => {
@@ -171,6 +186,10 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+});
+
+app.on("new-window-requested", () => {
+  createWindow();
 });
 
 app.on("window-all-closed", () => {
@@ -183,8 +202,18 @@ app.on("web-contents-created", (_event, contents) => {
   installSessionBridge(contents.session);
 
   contents.setWindowOpenHandler(({ url }) => {
-    if (!url.startsWith(APP_ORIGIN)) {
-      shell.openExternal(url);
+    // Internal astra:// URLs are opened directly by Electron; everything
+    // else gets routed to the renderer as a "open URL in a new tab" request
+    // so that Ctrl+click / <a target="_blank"> inside any webview opens a
+    // new Astra tab instead of jumping to the system default browser.
+    if (url.startsWith(APP_ORIGIN)) {
+      return { action: "allow" };
+    }
+
+    for (const win of windows) {
+      if (!win.isDestroyed()) {
+        win.webContents.send("open-url-in-new-tab", url);
+      }
     }
 
     return { action: "deny" };

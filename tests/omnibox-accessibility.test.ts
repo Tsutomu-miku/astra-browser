@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
 import type { BrowserController } from "../src/renderer/app/controller/types";
-import { createDefaultState, createFavorite, type BrowserState } from "../src/renderer/domain/browser";
+import { createDefaultState, createTab, type BrowserState } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 import { Topbar } from "../src/renderer/surfaces/topbar/Topbar";
 
@@ -79,7 +79,11 @@ describe("omnibox accessibility", () => {
   it("runs the accepted title completion as its suggestion instead of searching the title", () => {
     const actions = createActions();
     const state = createDefaultState();
-    getActiveWorkspace(state).favorites.unshift(createFavorite("Linear Planning", "https://linear.example/"));
+    const linearTab = createTab("Linear Planning", "https://linear.example/");
+    linearTab.isFavorite = true;
+    const workspace = getActiveWorkspace(state);
+    workspace.tabs.unshift(linearTab);
+    workspace.favoriteOrder.unshift(linearTab.id);
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -109,7 +113,7 @@ describe("omnibox accessibility", () => {
       }));
     });
 
-    expect(actions.openUrlInActiveWorkspace).toHaveBeenCalledWith("https://linear.example/", "Linear Planning");
+    expect(actions.selectTab).toHaveBeenCalledWith(linearTab.id);
     expect(actions.navigateActiveTab).not.toHaveBeenCalledWith("Linear Planning");
 
     act(() => root.unmount());

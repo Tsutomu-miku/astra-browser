@@ -7,7 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ClosedTab } from "../src/renderer/domain/browser";
-import { createDefaultState } from "../src/renderer/domain/browser";
+import { createClosedTab, createDefaultState } from "../src/renderer/domain/browser";
 import { ClosedTabButton } from "../src/renderer/surfaces/sidebar/components/tabs/ClosedTabButton";
 import { SidebarContextMenus } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarContextMenus";
 import { ClosedTabContextMenu } from "../src/renderer/surfaces/sidebar/components/tabs/ClosedTabContextMenu";
@@ -251,11 +251,7 @@ describe("sidebar recently closed tabs", () => {
 });
 
 function closedTab(): ClosedTab {
-  return {
-    closedAt: 1,
-    title: "Docs",
-    url: "https://docs.example/"
-  };
+  return createClosedTab("Docs", "https://docs.example/", { closedAt: 1 });
 }
 
 function createActions() {

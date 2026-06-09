@@ -9,7 +9,10 @@ describe("getStartPageContent", () => {
     const state = createDefaultState();
     const workspace = getActiveWorkspace(state);
     state.essentials.push(createFavorite("Mail", "https://mail.example"));
-    workspace.favorites.push(createFavorite("Docs", "https://docs.example"));
+    const docsTab = createTab("Docs", "https://docs.example");
+    docsTab.isFavorite = true;
+    workspace.tabs.push(docsTab);
+    workspace.favoriteOrder.push(docsTab.id);
     state.history.push(
       {
         id: "active-history",
@@ -38,9 +41,9 @@ describe("getStartPageContent", () => {
     const state = createDefaultState();
     const workspace = getActiveWorkspace(state);
     const tab = createTab("Current Docs", "https://docs.example/current");
+    tab.isFavorite = true;
     workspace.tabs = [tab];
-    workspace.favorites = [];
-    workspace.favorites.push(createFavorite("Old Docs", "https://docs.example/old", tab.id));
+    workspace.favoriteOrder = [tab.id];
 
     const content = getStartPageContent(state, workspace);
 

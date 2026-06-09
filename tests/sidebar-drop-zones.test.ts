@@ -7,7 +7,12 @@ import { describe, expect, it, vi } from "vitest";
 import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
+import type { SidebarFilterResult } from "../src/renderer/surfaces/sidebar/sidebarFiltering";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
+
+function createFavoriteTab(title: string, url: string) {
+  return { ...createTab(title, url), isFavorite: true };
+}
 
 describe("sidebar section drop zones", () => {
   it("does not render explicit tab drag target regions while dragging a regular tab", () => {
@@ -58,7 +63,7 @@ describe("sidebar section drop zones", () => {
 
   it("accepts tab drops on existing Favorites without marking a visible target area", () => {
     const tab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const favorite = createFavoriteTab("MDN", "https://developer.mozilla.org");
     const onFavoriteDrop = vi.fn();
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -74,7 +79,7 @@ describe("sidebar section drop zones", () => {
         draggingTabId: tab.id,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: favorite }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
@@ -234,8 +239,7 @@ describe("sidebar section drop zones", () => {
   });
 
   it("accepts Favorite-backed tab drops on the empty Tabs folder", () => {
-    const tab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("Docs", tab.url, tab.id);
+    const tab = { ...createTab("Docs", "https://docs.example"), isFavorite: true };
     const onTabsDrop = vi.fn();
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -246,12 +250,12 @@ describe("sidebar section drop zones", () => {
         activeTab: tab,
         closedTabs: [],
         draggingEssentialId: null,
-        draggingFavoriteId: favorite.id,
+        draggingFavoriteId: null,
         draggingGroupId: null,
-        draggingTabId: null,
+        draggingTabId: tab.id,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: tab }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
@@ -284,15 +288,13 @@ describe("sidebar section drop zones", () => {
     expect(container.querySelector(".tabs .tab-row")).toBeNull();
 
     const dragOverEvent = createDragEvent("dragover", {
-      [SIDEBAR_TAB_DRAG_TYPE]: tab.id,
-      "text/favorite-id": favorite.id
+      [SIDEBAR_TAB_DRAG_TYPE]: tab.id
     });
     tabsSection.dispatchEvent(dragOverEvent);
     expect(dragOverEvent.defaultPrevented).toBe(true);
 
     tabsSection.dispatchEvent(createDragEvent("drop", {
-      [SIDEBAR_TAB_DRAG_TYPE]: tab.id,
-      "text/favorite-id": favorite.id
+      [SIDEBAR_TAB_DRAG_TYPE]: tab.id
     }));
     expect(onTabsDrop).toHaveBeenCalled();
 
@@ -469,8 +471,8 @@ describe("sidebar section drop zones", () => {
 
   it("accepts tab drops on an existing Favorite item", () => {
     const tab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
-    const onFavoriteDrop = vi.fn();
+    const favorite = createFavoriteTab("MDN", "https://developer.mozilla.org");
+    const onFavoriteTabDrop = vi.fn();
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -485,7 +487,7 @@ describe("sidebar section drop zones", () => {
         draggingTabId: tab.id,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: favorite }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
@@ -496,8 +498,9 @@ describe("sidebar section drop zones", () => {
         onEssentialDrop: vi.fn(),
         onEssentialReorderDrop: vi.fn(),
         onFavoriteDragStart: vi.fn(),
-        onFavoriteDrop,
+        onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
+        onFavoriteTabDrop,
         onClosedTabContextMenu: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
@@ -511,10 +514,14 @@ describe("sidebar section drop zones", () => {
       }));
     });
 
-    const favoriteButton = container.querySelector<HTMLElement>(".favorites .favorite-button")!;
+    const favoriteButton = container.querySelector<HTMLElement>(".favorites .tab-button")!;
     favoriteButton.dispatchEvent(createDragEvent("drop", { [SIDEBAR_TAB_DRAG_TYPE]: tab.id }));
 
-    expect(onFavoriteDrop).toHaveBeenCalled();
+    expect(onFavoriteTabDrop).toHaveBeenCalledWith(
+      expect.anything(),
+      favorite.id,
+      "vertical"
+    );
 
     act(() => root.unmount());
   });
@@ -652,19 +659,19 @@ describe("sidebar section drop zones", () => {
 
   it("marks Space favorites as reorderable drop targets while dragging a favorite", () => {
     const tab = createTab("Docs", "https://docs.example");
-    const first = createFavorite("First", "https://first.example");
-    const second = createFavorite("Second", "https://second.example");
+    const first = createFavoriteTab("First", "https://first.example");
+    const second = createFavoriteTab("Second", "https://second.example");
     const html = renderToStaticMarkup(createElement(SidebarSections, {
       actions: createActions(),
       activeTab: tab,
       closedTabs: [],
       draggingEssentialId: null,
-      draggingFavoriteId: first.id,
+      draggingFavoriteId: null,
       draggingGroupId: null,
-      draggingTabId: null,
+      draggingTabId: first.id,
       filteredItems: {
         essentials: [],
-        favorites: [first, second],
+        favorites: [{ kind: "tab", tab: first }, { kind: "tab", tab: second }],
         groupedTabs: [],
         hasMatches: true,
         isFiltering: false,
@@ -743,7 +750,7 @@ describe("sidebar section drop zones", () => {
     const activeTab = createTab("Docs", "https://docs.example");
     const pinned = { ...createTab("Mail", "https://mail.example"), isPinned: true };
     const essential = createFavorite("Calendar", "https://calendar.example");
-    const favorite = createFavorite("MDN", "https://developer.mozilla.org");
+    const favorite = createFavoriteTab("MDN", "https://developer.mozilla.org");
     const container = document.createElement("div");
     const root = createRoot(container);
     const baseProps = {
@@ -755,13 +762,13 @@ describe("sidebar section drop zones", () => {
       draggingGroupId: null,
       filteredItems: {
         essentials: [essential],
-        favorites: [favorite],
+        favorites: [{ kind: "tab" as const, tab: favorite }],
         groupedTabs: [],
         hasMatches: true,
         isFiltering: false,
         pinnedTabs: [pinned],
         regularTabs: [activeTab]
-      },
+      } as SidebarFilterResult,
       onEssentialDragStart: vi.fn(),
       onEssentialDrop: vi.fn(),
       onEssentialReorderDrop: vi.fn(),
@@ -814,8 +821,8 @@ describe("sidebar section drop zones", () => {
     const activeTab = createTab("Docs", "https://docs.example");
     const firstEssential = createFavorite("Calendar", "https://calendar.example");
     const secondEssential = createFavorite("Mail", "https://mail.example");
-    const firstFavorite = createFavorite("MDN", "https://developer.mozilla.org");
-    const secondFavorite = createFavorite("Chromium", "https://www.chromium.org");
+    const firstFavorite = createFavoriteTab("MDN", "https://developer.mozilla.org");
+    const secondFavorite = createFavoriteTab("Chromium", "https://www.chromium.org");
     const container = document.createElement("div");
     const root = createRoot(container);
     const baseProps = {
@@ -826,13 +833,13 @@ describe("sidebar section drop zones", () => {
       draggingTabId: null,
       filteredItems: {
         essentials: [firstEssential, secondEssential],
-        favorites: [firstFavorite, secondFavorite],
+        favorites: [{ kind: "tab" as const, tab: firstFavorite }, { kind: "tab" as const, tab: secondFavorite }],
         groupedTabs: [],
         hasMatches: true,
         isFiltering: false,
         pinnedTabs: [],
         regularTabs: [activeTab]
-      },
+      } as SidebarFilterResult,
       onEssentialDragStart: vi.fn(),
       onEssentialDrop: vi.fn(),
       onEssentialReorderDrop: vi.fn(),
@@ -882,7 +889,8 @@ describe("sidebar section drop zones", () => {
       root.render(createElement(SidebarSections, {
         ...baseProps,
         draggingEssentialId: null,
-        draggingFavoriteId: firstFavorite.id
+        draggingFavoriteId: null,
+        draggingTabId: firstFavorite.id
       }));
     });
 

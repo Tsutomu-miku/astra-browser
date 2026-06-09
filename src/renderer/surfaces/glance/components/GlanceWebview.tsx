@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, type ForwardedRef } from "react";
+import { forwardRef, useRef, type ForwardedRef } from "react";
 
 import type { WebviewElement } from "../../../types/browser-ui";
 
@@ -8,10 +8,6 @@ export const GlanceWebview = forwardRef<WebviewElement, {
 }>(({ partition, url }, ref) => {
   const localRef = useRef<WebviewElement | null>(null);
 
-  useEffect(() => {
-    localRef.current?.setAttribute("allowpopups", "true");
-  }, []);
-
   return (
     <webview
       key={url}
@@ -19,6 +15,7 @@ export const GlanceWebview = forwardRef<WebviewElement, {
         localRef.current = webview;
         setForwardedRef(ref, webview);
       }}
+      allowpopups
       className="glance-webview"
       src={url}
       partition={partition}

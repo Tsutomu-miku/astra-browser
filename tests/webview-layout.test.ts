@@ -32,7 +32,11 @@ describe("webview layout", () => {
   });
 
   it("keeps inactive workspace tabs mounted after the active webview", () => {
-    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const base = createDefaultState();
+    const personalWs = base.workspaces.find((ws) => ws.id === "personal")!;
+    personalWs.tabs = personalWs.tabs.filter((tab) => !tab.isFavorite);
+    personalWs.favoriteOrder = [];
+    const first = openUrlInActiveWorkspace(base, "first.test", "First");
     const second = openUrlInActiveWorkspace(first, "second.test", "Second");
     const workspace = getActiveWorkspace(second);
     const layout = getKeepAliveWebviewTabs(workspace, getActiveTab(workspace), second);
@@ -43,7 +47,11 @@ describe("webview layout", () => {
   });
 
   it("renders active and split webviews first while keeping the rest alive", () => {
-    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const base = createDefaultState();
+    const personalWs = base.workspaces.find((ws) => ws.id === "personal")!;
+    personalWs.tabs = personalWs.tabs.filter((tab) => !tab.isFavorite);
+    personalWs.favoriteOrder = [];
+    const first = openUrlInActiveWorkspace(base, "first.test", "First");
     const second = openUrlInActiveWorkspace(first, "second.test", "Second");
     const split = toggleSplitMode(second);
     const workspace = getActiveWorkspace(split);
@@ -55,7 +63,11 @@ describe("webview layout", () => {
   });
 
   it("renders up to four split webviews before background tabs", () => {
-    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const base = createDefaultState();
+    const personalWs = base.workspaces.find((ws) => ws.id === "personal")!;
+    personalWs.tabs = personalWs.tabs.filter((tab) => !tab.isFavorite);
+    personalWs.favoriteOrder = [];
+    const first = openUrlInActiveWorkspace(base, "first.test", "First");
     const second = openUrlInActiveWorkspace(first, "second.test", "Second");
     const third = openUrlInActiveWorkspace(second, "third.test", "Third");
     const workspace = getActiveWorkspace(third);

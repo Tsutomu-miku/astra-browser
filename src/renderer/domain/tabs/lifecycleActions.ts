@@ -62,7 +62,7 @@ export function closeTab(state: BrowserState, tabId: string): BrowserState {
     if (!tab) return;
 
     prependClosedTabs(workspace, [tab]);
-    removeClosedTabFavorites(workspace, tabId);
+    workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => id !== tabId);
 
     if (workspace.tabs.length === 1) {
       workspace.tabs[0] = createTab("New Tab", getWorkspaceHomepageUrl(draft, workspace));
@@ -82,10 +82,6 @@ export function closeTab(state: BrowserState, tabId: string): BrowserState {
   });
 }
 
-function removeClosedTabFavorites(workspace: ReturnType<typeof getActiveWorkspace>, tabId: string) {
-  workspace.favorites = workspace.favorites.filter((favorite) => favorite.tabId !== tabId);
-}
-
 export function restoreLastClosedTab(state: BrowserState): BrowserState {
   return restoreClosedTab(state, 0);
 }
@@ -100,7 +96,14 @@ export function restoreClosedTab(state: BrowserState, closedIndex: number): Brow
 
     const tab = {
       ...createTab(closed.title, closed.url),
-      ...(closed.faviconUrl ? { faviconUrl: closed.faviconUrl } : {})
+      ...(closed.faviconUrl ? { faviconUrl: closed.faviconUrl } : {}),
+      ...(closed.customTitle ? { customTitle: closed.customTitle } : {}),
+      groupId: closed.groupId ?? null,
+      canGoBack: Boolean(closed.canGoBack),
+      canGoForward: Boolean(closed.canGoForward),
+      isMuted: Boolean(closed.isMuted),
+      isPinned: Boolean(closed.isPinned),
+      zoomFactor: typeof closed.zoomFactor === "number" ? closed.zoomFactor : 1
     };
     workspace.tabs.push(tab);
     workspace.activeTabId = tab.id;
@@ -129,7 +132,14 @@ export function restoreClosedTabToWorkspace(
 
     const tab = {
       ...createTab(closed.title, closed.url),
-      ...(closed.faviconUrl ? { faviconUrl: closed.faviconUrl } : {})
+      ...(closed.faviconUrl ? { faviconUrl: closed.faviconUrl } : {}),
+      ...(closed.customTitle ? { customTitle: closed.customTitle } : {}),
+      groupId: closed.groupId ?? null,
+      canGoBack: Boolean(closed.canGoBack),
+      canGoForward: Boolean(closed.canGoForward),
+      isMuted: Boolean(closed.isMuted),
+      isPinned: Boolean(closed.isPinned),
+      zoomFactor: typeof closed.zoomFactor === "number" ? closed.zoomFactor : 1
     };
     target.tabs.push(tab);
     target.activeTabId = tab.id;
@@ -157,6 +167,11 @@ export function duplicateTab(state: BrowserState, tabId: string): BrowserState {
       canGoBack: false,
       canGoForward: false,
       isLoading: false,
+      isSleeping: false,
+      isMediaPlaying: false,
+      isCameraOn: false,
+      isMicrophoneOn: false,
+      hasUnread: false,
       lastActiveAt: Date.now()
     };
     workspace.tabs.splice(index + 1, 0, tab);

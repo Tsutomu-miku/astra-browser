@@ -1,8 +1,15 @@
 import type { MouseEvent } from "react";
 
 import { BrowserItemIcon } from "../../../common/icons/BrowserItemIcon";
-import type { Favorite, FaviconCache } from "../../../domain/browser";
+import type { FaviconCache } from "../../../domain/browser";
 import { StartEntryActionHints } from "./StartEntryActionHints";
+
+export interface StartTileItem {
+  id: string;
+  title: string;
+  url: string;
+  tabId?: string;
+}
 
 export function StartTileGrid({
   emptyText,
@@ -14,10 +21,10 @@ export function StartTileGrid({
 }: {
   emptyText: string;
   faviconCache?: FaviconCache;
-  items: Favorite[];
+  items: StartTileItem[];
   kind: "essential" | "favorite";
-  onContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
-  onOpen: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
+  onContextMenu: (event: MouseEvent, item: StartTileItem, kind: "essential" | "favorite") => void;
+  onOpen: (event: MouseEvent, item: StartTileItem, kind: "essential" | "favorite") => void;
 }) {
   return (
     <div className="start-tile-grid">

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
-import { createFavorite, createTab } from "../src/renderer/domain/browser";
+import { createClosedTab, createFavorite, createTab } from "../src/renderer/domain/browser";
 import {
   acceptSidebarSplitDropTarget,
   getSidebarSplitDropSource,
@@ -23,26 +23,18 @@ describe("sidebar split drop helpers", () => {
       title: "Docs",
       type: "tab"
     });
-    expect(getSidebarSplitDropSource({ ...state }, (type) => type === "text/favorite-id" ? "favorite" : "")).toEqual({
+    // Workspace favorites drag with tab identity and resolve through the tab path.
+    expect(getSidebarSplitDropSource({ ...state }, (type) => type === SIDEBAR_TAB_DRAG_TYPE ? "favorite-tab" : "")).toEqual({
+      tabId: "favorite-tab",
       title: "Design",
-      type: "url",
-      url: "https://design.example"
-    });
-    expect(getSidebarSplitDropSource({
-      ...state,
-      favorites: [{ ...createFavorite("Docs Favorite", "https://docs.example", "other-tab"), id: "favorite" }]
-    }, (type) => type === "text/favorite-id" ? "favorite" : "")).toEqual({
-      tabId: "other-tab",
-      title: "Docs",
       type: "tab"
     });
-    expect(getSidebarSplitDropSource({
-      ...state,
-      favorites: [{ ...createFavorite("Active Favorite", "https://active.example", "active-tab"), id: "favorite" }]
-    }, (type) => type === "text/favorite-id" ? "favorite" : "")).toBeNull();
+    // A favorite tab matching the active tab is excluded.
+    expect(getSidebarSplitDropSource({ ...state, activeTabId: "favorite-tab" }, (type) => type === SIDEBAR_TAB_DRAG_TYPE ? "favorite-tab" : "")).toBeNull();
+    // Tab identity takes priority when both tab and essential data are present.
     expect(getSidebarSplitDropSource({ ...state }, (type) => {
       if (type === SIDEBAR_TAB_DRAG_TYPE) return "other-tab";
-      if (type === "text/favorite-id") return "favorite";
+      if (type === "text/essential-id") return "essential";
       return "";
     })).toEqual({
       tabId: "other-tab",
@@ -63,30 +55,32 @@ describe("sidebar split drop helpers", () => {
     expect(dragoverEvent.preventDefault).toHaveBeenCalled();
     expect(dragoverEvent.dataTransfer.dropEffect).toBe("move");
 
-    const dropEvent = createSplitDropEvent((type) => type === "text/favorite-id" ? "favorite" : "");
+    // Workspace favorite tabs resolve through tab identity.
+    const dropEvent = createSplitDropEvent((type) => type === SIDEBAR_TAB_DRAG_TYPE ? "favorite-tab" : "");
     expect(resolveSidebarSplitDrop(dropEvent, state)).toEqual({
+      tabId: "favorite-tab",
       title: "Design",
-      type: "url",
-      url: "https://design.example"
+      type: "tab"
     });
     expect(dropEvent.preventDefault).toHaveBeenCalled();
-    expect(dropEvent.dataTransfer.dropEffect).toBe("none");
   });
 });
 
 function splitDropState() {
+  const favoriteTab = { ...createTab("Design", "https://design.example"), id: "favorite-tab", isFavorite: true };
   return {
     activeTabId: "active-tab",
-    closedTabs: [{ closedAt: 1, title: "Closed Docs", url: "https://closed.example" }],
+    closedTabs: [createClosedTab("Closed Docs", "https://closed.example", { closedAt: 1 })],
     draggingClosedTabIndex: null,
     draggingEssentialId: null,
     draggingFavoriteId: null,
     draggingTabId: null,
     essentials: [{ ...createFavorite("Inbox", "https://inbox.example"), id: "essential" }],
-    favorites: [{ ...createFavorite("Design", "https://design.example"), id: "favorite" }],
+    favoriteTabs: [favoriteTab],
     tabs: [
-      { ...createTab("Active", "https://active.example"), id: "active-tab" },
-      { ...createTab("Docs", "https://docs.example"), id: "other-tab" }
+      { ...createTab("Active", "https://active.example"), id: "active-tab", isFavorite: false },
+      { ...createTab("Docs", "https://docs.example"), id: "other-tab", isFavorite: false },
+      favoriteTab
     ]
   };
 }

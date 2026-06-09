@@ -8,6 +8,7 @@ import {
   normalizeTabGroupName,
   pruneEmptyTabGroups
 } from "./groups";
+import { moveTabToFolder } from "./folderActions";
 import { clearSplitView } from "./splitView";
 import type { TabDropPlacement } from "./utils";
 
@@ -23,7 +24,7 @@ export function groupTab(state: BrowserState, tabId?: string): BrowserState {
 
     const group = createTabGroup(getReadableUrlTitle(tab.url), workspace.tabGroups.length);
     workspace.tabGroups.push(group);
-    tab.groupId = group.id;
+    moveTabToFolder(workspace, tab, { type: "group", groupId: group.id });
   });
 }
 
@@ -44,7 +45,7 @@ export function groupTabsTogether(
 
     // If the target tab already has a group, simply move the source tab into it.
     if (targetTab.groupId) {
-      sourceTab.groupId = targetTab.groupId;
+      moveTabToFolder(workspace, sourceTab, { type: "group", groupId: targetTab.groupId });
       pruneEmptyTabGroups(workspace);
       return;
     }
@@ -52,8 +53,8 @@ export function groupTabsTogether(
     // Otherwise create a new group and place both tabs inside it.
     const group = createTabGroup(getReadableUrlTitle(targetTab.url), workspace.tabGroups.length);
     workspace.tabGroups.push(group);
-    targetTab.groupId = group.id;
-    sourceTab.groupId = group.id;
+    moveTabToFolder(workspace, targetTab, { type: "group", groupId: group.id });
+    moveTabToFolder(workspace, sourceTab, { type: "group", groupId: group.id });
     pruneEmptyTabGroups(workspace);
   });
 }
@@ -68,7 +69,7 @@ export function ungroupTab(state: BrowserState, tabId?: string): BrowserState {
     const tab = getTargetTab(workspace, tabId);
     if (!tab) return;
 
-    tab.groupId = null;
+    moveTabToFolder(workspace, tab, { type: "tabs" });
     pruneEmptyTabGroups(workspace);
   });
 }
@@ -81,7 +82,7 @@ export function ungroupTabGroup(state: BrowserState, groupId: string): BrowserSt
 
     workspace.tabs.forEach((tab) => {
       if (tab.groupId === group.id) {
-        tab.groupId = null;
+        moveTabToFolder(workspace, tab, { type: "tabs" });
       }
     });
     pruneEmptyTabGroups(workspace);
@@ -91,12 +92,10 @@ export function ungroupTabGroup(state: BrowserState, groupId: string): BrowserSt
 export function assignTabToGroup(state: BrowserState, tabId: string, groupId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     const workspace = getActiveWorkspace(draft);
-    const group = workspace.tabGroups.find((candidate) => candidate.id === groupId);
     const tab = workspace.tabs.find((candidate) => candidate.id === tabId);
-    if (!group || !tab) return;
+    if (!workspace.tabGroups.some((candidate) => candidate.id === groupId) || !tab) return;
 
-    tab.isPinned = false;
-    tab.groupId = group.id;
+    moveTabToFolder(workspace, tab, { type: "group", groupId });
     pruneEmptyTabGroups(workspace);
   });
 }

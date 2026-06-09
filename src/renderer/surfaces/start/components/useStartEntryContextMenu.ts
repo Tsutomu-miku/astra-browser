@@ -8,6 +8,12 @@ export type StartEntryContextMenuItem = Pick<Favorite | HistoryEntry, "id" | "ti
   tabId?: string;
 };
 
+// StartTileItem covers both essentials (Favorite, no tabId) and workspace
+// favorites (BrowserTab-adjacent, always carry a tabId). It is intentionally
+// a structural supertype of StartEntryContextMenuItem so the two are
+// interchangeable at call sites.
+export type StartTileItem = StartEntryContextMenuItem;
+
 export interface StartEntryContextMenuState {
   item: StartEntryContextMenuItem;
   kind: StartEntryContextMenuKind;

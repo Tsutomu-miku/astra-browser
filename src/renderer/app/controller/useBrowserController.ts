@@ -80,9 +80,31 @@ export function useBrowserController() {
   }, [activeWebview, store]);
 
   useBrowserEffects({
+    actions: {
+      closeActiveTab: actions.closeActiveTab,
+      findInPage: actions.findInPage,
+      focusAddressBar: actions.focusAddressBar,
+      newTab: actions.newTab,
+      openUrlInActiveWorkspace: actions.openUrlInActiveWorkspace,
+      printActiveTab: actions.printActiveTab,
+      resetActiveTabZoom: actions.resetActiveTabZoom,
+      restoreLastClosedTab: actions.restoreLastClosedTab,
+      runWebviewAction: actions.runWebviewAction,
+      selectAdjacentTab: actions.selectAdjacentTab,
+      setCommandOpen: (open) => store.setCommandOpen(open),
+      setFindOpen: (open) => store.setFindOpen(open),
+      setPanel: store.setPanel,
+      toggleActiveTabFavorite: actions.toggleActiveTabFavorite,
+      toggleActiveTabMuted: actions.toggleActiveTabMuted,
+      toggleSidebar: store.toggleSidebar,
+      zoomIn: () => store.zoomIn(activeWebview),
+      zoomOut: () => store.zoomOut(activeWebview)
+    },
+    findQuery: store.findQuery,
     ingestDownload: store.ingestDownload,
     ingestPermissionRequest: store.ingestPermissionRequest,
     onShortcut: handleShortcut,
+    openUrlInNewTab: (url) => store.openUrlInActiveWorkspace(url),
     sitePermissions: store.state.sitePermissions,
     sleepIdleTabs: store.sleepIdleTabs,
     workspaces: store.state.workspaces

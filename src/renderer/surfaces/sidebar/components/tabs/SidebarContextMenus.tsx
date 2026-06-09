@@ -1,4 +1,4 @@
-import { isEssential, isTabFavorite, resolveFavoriteTab, type BrowserState, type Favorite, type Workspace } from "../../../../domain/browser";
+import { isEssential, isTabFavorite, type BrowserState, type Favorite, type Workspace } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import { getGroupSleepableTabs } from "../../../../domain/tabs/sleepPolicy";
 import { getMoveWorkspaceTargets, getTabCleanupState, getTabGroupMenuState } from "../../model/tabContextMenuState";
@@ -45,12 +45,16 @@ export function SidebarContextMenus({
       return;
     }
 
-    const tab = resolveFavoriteTab(activeWorkspace, item);
-    tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(item.url, item.title);
+    // Favorite quick-entries are no longer produced by the sidebar (favorites
+    // are tabs and use the tab context menu), but keep a safe fallback.
+    actions.openUrlInActiveWorkspace(item.url, item.title);
   };
   const openQuickEntryInSplit = (item: Favorite, kind: "essential" | "favorite") => {
-    const tab = kind === "favorite" ? resolveFavoriteTab(activeWorkspace, item) : undefined;
-    tab ? actions.openTabInSplit(tab.id) : actions.openUrlInSplit(item.url, item.title);
+    if (kind === "essential") {
+      actions.openUrlInSplit(item.url, item.title);
+      return;
+    }
+    actions.openUrlInSplit(item.url, item.title);
   };
 
   return (

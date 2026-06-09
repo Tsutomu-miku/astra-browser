@@ -20,11 +20,13 @@ describe("browser webview", () => {
         onFaviconChange,
         onLoadingChange: vi.fn(),
         onMediaStateChange: vi.fn(),
+        onMuteChange: vi.fn(),
         onNavigate: vi.fn(),
         onPermissionRequest: vi.fn(),
         onTitleChange: vi.fn(),
         onWebviewReady: vi.fn(),
         onWebviewRemoved: vi.fn(),
+        onZoomChange: vi.fn(),
         partition: "persist:personal",
         tab
       }));

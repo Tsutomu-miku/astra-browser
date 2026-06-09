@@ -138,6 +138,9 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
               onLoadingChange={(isLoading, navigationState) => actions.updateTab(tab.id, { isLoading, ...navigationState })}
               onFaviconChange={(faviconUrl) => actions.updateTab(tab.id, { faviconUrl })}
               onMediaStateChange={(isMediaPlaying) => actions.updateTab(tab.id, { isMediaPlaying })}
+              onMuteChange={(isMuted) => {
+                if (tab.isMuted !== isMuted) actions.updateTab(tab.id, { isMuted });
+              }}
               onTitleChange={(title, explicitSet) => {
                 const isActive = tab.id === activeTab.id;
                 actions.updateTab(tab.id, {
@@ -162,6 +165,11 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
                   hasUnread: tab.id === activeTab.id ? false : tab.hasUnread
                 });
                 actions.recordHistory(tab.id, url);
+              }}
+              onZoomChange={(zoomFactor) => {
+                if (Math.abs(tab.zoomFactor - zoomFactor) > 0.01) {
+                  actions.updateTab(tab.id, { zoomFactor });
+                }
               }}
             />
           );

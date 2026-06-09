@@ -1,16 +1,16 @@
-import { useState, type DragEvent, type MouseEvent } from "react";
+import { useCallback, useState, type DragEvent, type MouseEvent } from "react";
 
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";
+import { getPointerDropPlacement } from "../../../../common/drag-drop/dropPlacement";
 import {
   DEFAULT_SIDEBAR_SECTION_COLLAPSED,
   toggleSidebarSectionCollapsed,
   type SidebarSectionCollapsedState,
   type SidebarSectionId
 } from "../../../../common/sidebar/sidebarSections";
-import { resolveFavoriteTab, resolveTabBackedFavoriteTab, type BrowserTab, type ClosedTab, type Favorite, type FaviconCache, type TabGroup } from "../../../../domain/browser";
+import { type BrowserTab, type ClosedTab, type Favorite, type FaviconCache, type TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import {
-  isSidebarFavoriteActive,
   isSidebarUrlActive
 } from "../../model/sidebarItemState";
 import { acceptSidebarTabFolderDrag } from "../../model/sidebarTabFolderDrop";
@@ -18,6 +18,8 @@ import { getSidebarSearchTargetElementId, type SidebarFilterResult, type Sidebar
 import { SidebarSectionHeader } from "../common/SidebarSectionHeader";
 import { FavoriteButton, TabRow } from "./SidebarItems";
 import { SidebarTabsSection } from "./SidebarTabsSection";
+import { TabGroupSection } from "./TabGroupSection";
+import { readSidebarGroupDragId } from "../../model/sidebarDragSources";
 
 const SIDEBAR_ESSENTIALS_LIMIT = 8;
 
@@ -40,6 +42,7 @@ export function SidebarSections({
   onFavoriteDragStart,
   onFavoriteDrop,
   onFavoriteReorderDrop,
+  onFavoriteTabDrop,
   onClosedTabContextMenu,
   onTabGroupContextMenu,
   onRenameTab,
@@ -75,6 +78,7 @@ export function SidebarSections({
   onFavoriteDragStart: (event: DragEvent<HTMLElement>, favoriteId: string) => void;
   onFavoriteDrop: (event: DragEvent<HTMLElement>) => void;
   onFavoriteReorderDrop: (event: DragEvent<HTMLElement>, targetFavoriteId: string, axis: DropAxis) => void;
+  onFavoriteTabDrop?: (event: DragEvent<HTMLElement>, targetTabId: string, axis: DropAxis) => void;
   onClosedTabContextMenu?: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
   onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
@@ -106,11 +110,83 @@ export function SidebarSections({
 
     setLocalCollapsedSections((current) => toggleSidebarSectionCollapsed(current, sectionId));
   };
-  const openFavorite = (favorite: Favorite) => {
-    const tab = resolveFavoriteTab({ tabs: workspaceTabs }, favorite);
-    tab ? actions.selectTab(tab.id) : actions.navigateActiveTab(favorite.url);
-  };
   const showFavoritesFolder = filteredItems.favorites.length > 0 || !filteredItems.isFiltering;
+  const favoriteSearchSelectedTabId = activeSearchTarget?.type === "favorite" ? activeSearchTarget.id : undefined;
+  const getTabById = useCallback((tabId: string) => workspaceTabs.find((t) => t.id === tabId), [workspaceTabs]);
+  const buildCrossFolderCheckFor = useCallback((targetTab: BrowserTab) => (draggedId: string) => {
+    const dragged = getTabById(draggedId);
+    if (!dragged) return false;
+    return dragged.isFavorite !== targetTab.isFavorite || dragged.isPinned !== targetTab.isPinned;
+  }, [getTabById]);
+  const onFavoriteGroupDrop = (event: DragEvent<HTMLElement>, targetGroupId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const groupId = readSidebarGroupDragId({ draggingGroupId }, (type) => event.dataTransfer.getData(type));
+    if (!groupId || groupId === targetGroupId) {
+      setDraggingGroupId(null);
+      return;
+    }
+    actions.reorderTabGroup(groupId, targetGroupId, getPointerDropPlacement(event.currentTarget, event, "vertical"));
+    setDraggingGroupId(null);
+  };
+  const renderFavoriteItem = (
+    entry: { kind: "tab"; tab: BrowserTab } | { kind: "group"; group: TabGroup; tabs: BrowserTab[] }
+  ) => {
+    if (entry.kind === "tab") {
+      const tab = entry.tab;
+      return (
+        <TabRow
+          key={tab.id}
+          activeTabId={activeTab.id}
+          draggingTabId={draggingTabId}
+          faviconCache={faviconCache}
+          id={getSidebarSearchTargetElementId({ type: "favorite", id: tab.id, tabId: tab.id, title: tab.title, url: tab.url })}
+          isCrossFolderDrag={buildCrossFolderCheckFor(tab)}
+          isSearchSelected={favoriteSearchSelectedTabId === tab.id}
+          labelKind="favorite tab"
+          splitTabIds={splitTabIds}
+          tab={tab}
+          onClose={actions.closeTab}
+          onContextMenu={onTabContextMenu}
+          onDrop={(event) => onFavoriteTabDrop?.(event, tab.id, "vertical")}
+          onGroupTab={onTabGroupCreate}
+          onPreview={actions.openGlance}
+          onRenameTab={onRenameTab}
+          onSelect={actions.selectTab}
+          onSplit={actions.openTabInSplit}
+          setDraggingTabId={setDraggingTabId}
+        />
+      );
+    }
+    return (
+      <TabGroupSection
+        key={entry.group.id}
+        activeTab={activeTab}
+        draggingGroupId={draggingGroupId}
+        draggingTabId={draggingTabId}
+        faviconCache={faviconCache}
+        group={entry.group}
+        isCrossFolderDrag={buildCrossFolderCheckFor}
+        onClose={actions.closeTab}
+        onContextMenu={onTabContextMenu}
+        onDrop={(event, tabId, axis = "vertical") => onFavoriteTabDrop?.(event, tabId, axis)}
+        onGroupDrop={onFavoriteGroupDrop}
+        onGroupContextMenu={onTabGroupContextMenu}
+        onGroupTab={onTabGroupCreate}
+        onMoveTabToGroupFolder={(tabId, groupId) => actions.moveTabToFolderEnd(tabId, { type: "group", groupId })}
+        onPreview={actions.openGlance}
+        onRenameTab={onRenameTab}
+        onSelect={actions.selectTab}
+        onSplit={actions.openTabInSplit}
+        onToggle={() => actions.toggleTabGroupCollapsed(entry.group.id)}
+        searchSelectedTabId={favoriteSearchSelectedTabId}
+        setDraggingGroupId={setDraggingGroupId}
+        setDraggingTabId={setDraggingTabId}
+        splitTabIds={splitTabIds}
+        tabs={entry.tabs}
+      />
+    );
+  };
 
   return (
     <>
@@ -173,54 +249,7 @@ export function SidebarSections({
             className="favorites"
             aria-label="Favorites"
           >
-            {filteredItems.favorites.map((favorite) => {
-              const tab = resolveTabBackedFavoriteTab({ tabs: workspaceTabs }, favorite);
-              if (tab) {
-                return (
-                  <TabRow
-                    key={favorite.id}
-                    activeTabId={activeTab.id}
-                    draggingTabId={draggingTabId}
-                    faviconCache={faviconCache}
-                    id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
-                    isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
-                    labelKind="favorite tab"
-                    splitTabIds={splitTabIds}
-                    tab={tab}
-                    onClose={actions.closeTab}
-                    onContextMenu={onTabContextMenu}
-                    onDrop={onTabDrop}
-                    onGroupTab={onTabGroupCreate}
-                    onPreview={actions.openGlance}
-                    onRenameTab={onRenameTab}
-                    onSelect={actions.selectTab}
-                    onSplit={actions.openTabInSplit}
-                    setDraggingTabId={setDraggingTabId}
-                  />
-                );
-              }
-
-              return (
-                <FavoriteButton
-                  key={favorite.id}
-                  draggable
-                  faviconCache={faviconCache}
-                  draggingQuickEntryId={draggingFavoriteId}
-                  favorite={favorite}
-                  id={getSidebarSearchTargetElementId({ type: "favorite", id: favorite.id, title: favorite.title, url: favorite.url })}
-                  isActive={isSidebarFavoriteActive(activeTab, favorite)}
-                  isSearchSelected={activeSearchTarget?.type === "favorite" && activeSearchTarget.id === favorite.id}
-                  kind="favorite"
-                  onContextMenu={(event, item) => onQuickEntryContextMenu(event, item, "favorite")}
-                  onDragStart={onFavoriteDragStart}
-                  onDragEnd={() => setDraggingFavoriteId(null)}
-                  onDrop={onFavoriteReorderDrop}
-                  onOpen={() => openFavorite(favorite)}
-                  onOpenInSplit={actions.openUrlInSplit}
-                  onPreview={actions.openGlance}
-                />
-              );
-            })}
+            {filteredItems.favorites.map((entry) => renderFavoriteItem(entry))}
           </nav>}
         </section>
       )}
@@ -233,6 +262,7 @@ export function SidebarSections({
         draggingTabId={draggingTabId}
         filteredItems={filteredItems}
         faviconCache={faviconCache}
+        isCrossFolderDrag={buildCrossFolderCheckFor}
         splitTabIds={splitTabIds}
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}

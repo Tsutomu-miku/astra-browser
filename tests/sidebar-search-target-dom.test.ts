@@ -30,6 +30,7 @@ describe("sidebar search target DOM helpers", () => {
     expect(scrollSidebarSearchTargetIntoView({
       type: "favorite",
       id: "missing",
+      tabId: "tab-missing",
       title: "Missing",
       url: "https://missing.example"
     }, root)).toBe(false);

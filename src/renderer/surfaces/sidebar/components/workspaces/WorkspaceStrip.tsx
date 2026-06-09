@@ -1,36 +1,15 @@
-import { Fragment, useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
-import {
-  FiArrowRight,
-  FiChevronLeft,
-  FiChevronRight,
-  FiClock,
-  FiColumns,
-  FiDownload,
-  FiGrid,
-  FiLock,
-  FiMinimize2,
-  FiMoon,
-  FiMoreHorizontal,
-  FiPlus,
-  FiSettings,
-  FiSidebar,
-  FiSquare,
-  FiTrash2,
-  FiUnlock
-} from "react-icons/fi";
+import { useRef, useState, type CSSProperties, type DragEvent, type MouseEvent, type WheelEvent } from "react";
+import { FiChevronLeft, FiChevronRight, FiLock, FiMoreHorizontal, FiPlus, FiUnlock } from "react-icons/fi";
 
 import { useContextMenuDismissal, type ContextMenuCloseOptions } from "../../../../common/context-menu/menuDismissal";
 import { getAnchoredContextMenuPosition } from "../../../../common/context-menu/menuPosition";
 import type { MemorySaverState } from "../../../../common/memory/memorySaverState";
 import type { BrowserController } from "../../../../app/controller/types";
 import type { Workspace } from "../../../../domain/browser";
-import { SidebarMenuItem, SidebarMenuSeparator } from "../common/SidebarMenuItem";
-import { SidebarMenuSurface } from "../common/SidebarMenuSurface";
 import { readSidebarWorkspaceDragId } from "../../model/sidebarDragSources";
 import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
 import { acceptSidebarNewWorkspaceDropTarget } from "../../model/sidebarWorkspaceDropIntent";
 import {
-  WORKSPACE_ACCENT_SWATCHES,
   getAdjacentWorkspaceId,
   getNewWorkspaceAccessibilityLabel,
   getNewWorkspaceDropTargetState,
@@ -42,6 +21,8 @@ import {
 } from "../../model/workspaceStripState";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { handleWorkspaceFocusNavigation } from "../../model/workspaceFocusNavigation";
+import { WorkspaceContextMenu } from "./WorkspaceContextMenu";
+import { SidebarMoreMenu } from "./SidebarMoreMenu";
 
 export function WorkspaceStrip({
   activeWorkspaceId,
@@ -291,210 +272,5 @@ export function WorkspaceStrip({
         />
       )}
     </section>
-  );
-}
-
-function WorkspaceContextMenu({
-  canDelete,
-  left,
-  onClose,
-  onDelete,
-  onNewWorkspace,
-  onOpenSettings,
-  onSelect,
-  onUpdate,
-  top,
-  workspace
-}: {
-  canDelete: boolean;
-  left: number;
-  onClose: () => void;
-  onDelete: (workspaceId: string) => void;
-  onNewWorkspace: () => void;
-  onOpenSettings: (workspaceId: string) => void;
-  onSelect: (workspaceId: string) => void;
-  onUpdate: (workspaceId: string, patch: Partial<Pick<Workspace, "accent" | "name">>) => void;
-  top: number;
-  workspace: Workspace;
-}) {
-  const run = (action: () => void) => {
-    action();
-    onClose();
-  };
-
-  return (
-    <SidebarMenuSurface className="workspace-context-menu" style={{ left, top, "--accent": workspace.accent } as CSSProperties}>
-      <SidebarMenuItem icon={FiSettings} role="menuitem" onClick={() => run(() => onOpenSettings(workspace.id))}>
-        Space settings
-      </SidebarMenuItem>
-      <SidebarMenuItem icon={FiArrowRight} role="menuitem" onClick={() => run(() => onSelect(workspace.id))}>
-        Switch to Space
-      </SidebarMenuItem>
-      <SidebarMenuItem icon={FiPlus} role="menuitem" onClick={() => run(onNewWorkspace)}>
-        New Space
-      </SidebarMenuItem>
-      <SidebarMenuSeparator />
-      <label className="sidebar-menu-field">
-        <span>Name</span>
-        <input
-          aria-label="Space name"
-          value={workspace.name}
-          onChange={(event) => onUpdate(workspace.id, { name: event.target.value })}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") onClose();
-          }}
-        />
-      </label>
-      <div className="sidebar-menu-swatches" role="group" aria-label="Space accent">
-        {WORKSPACE_ACCENT_SWATCHES.map((accent) => (
-          <button
-            key={accent}
-            className="sidebar-menu-swatch"
-            type="button"
-            aria-label={`Use ${accent}`}
-            aria-pressed={workspace.accent.toLowerCase() === accent}
-            style={{ "--swatch": accent } as CSSProperties}
-            onClick={() => onUpdate(workspace.id, { accent })}
-          />
-        ))}
-      </div>
-      <SidebarMenuItem
-        className="danger"
-        icon={FiTrash2}
-        role="menuitem"
-        disabled={!canDelete}
-        onClick={() => run(() => onDelete(workspace.id))}
-      >
-        Delete Space
-      </SidebarMenuItem>
-    </SidebarMenuSurface>
-  );
-}
-
-interface SidebarMoreMenuProps {
-  compactMode: boolean;
-  floatingSidebarOpen: boolean;
-  left: number;
-  memorySaver: MemorySaverState;
-  sidebarCollapsed: boolean;
-  splitLayout: BrowserController["splitLayout"];
-  splitMode: boolean;
-  top: number;
-  onClose: () => void;
-  onSetSplitLayout: BrowserController["actions"]["setSplitLayout"];
-  onSetPanel: BrowserController["setPanel"];
-  onSleepInactiveTabs: BrowserController["actions"]["sleepInactiveTabs"];
-  onToggleCompactMode: BrowserController["actions"]["toggleCompactMode"];
-  onToggleSidebar: () => void;
-  onToggleSplitMode: BrowserController["actions"]["toggleSplitMode"];
-}
-
-function SidebarMoreMenu({
-  compactMode,
-  floatingSidebarOpen,
-  left,
-  memorySaver,
-  sidebarCollapsed,
-  splitLayout,
-  splitMode,
-  top,
-  onClose,
-  onSetSplitLayout,
-  onSetPanel,
-  onSleepInactiveTabs,
-  onToggleCompactMode,
-  onToggleSidebar,
-  onToggleSplitMode
-}: SidebarMoreMenuProps) {
-  const run = (action: () => void) => {
-    action();
-    onClose();
-  };
-  const sidebarToggleLabel = compactMode
-    ? floatingSidebarOpen ? "Unpin floating sidebar" : "Pin floating sidebar"
-    : sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar";
-  const memorySaverLabel = memorySaver.sleepEnabled
-    ? `Sleep inactive tabs (auto)`
-    : `Sleep inactive tabs (manual)`;
-  const memorySaverHint = `${memorySaver.reclaimableTabs} tabs ready`;
-
-  return (
-    <SidebarMenuSurface className="sidebar-more-menu" style={{ left, top } as CSSProperties}>
-      <SidebarMenuItem
-        icon={FiMoon}
-        role="menuitem"
-        disabled={memorySaver.reclaimableTabs === 0}
-        onClick={() => run(onSleepInactiveTabs)}
-      >
-        <span className="sidebar-menu-item-main">
-          <span>{memorySaverLabel}</span>
-          <small className="sidebar-menu-item-hint">{memorySaverHint}</small>
-        </span>
-      </SidebarMenuItem>
-      <SidebarMenuSeparator />
-      <SidebarMenuItem
-        aria-pressed={splitMode}
-        icon={FiSquare}
-        role="menuitem"
-        onClick={() => run(onToggleSplitMode)}
-      >
-        Split view
-      </SidebarMenuItem>
-      {splitMode && (
-        <>
-          <SidebarMenuItem
-            aria-pressed={splitLayout === "horizontal"}
-            icon={FiColumns}
-            role="menuitem"
-            onClick={() => run(() => onSetSplitLayout("horizontal"))}
-          >
-            Horizontal split
-          </SidebarMenuItem>
-          <SidebarMenuItem
-            aria-pressed={splitLayout === "vertical"}
-            icon={FiSidebar}
-            role="menuitem"
-            onClick={() => run(() => onSetSplitLayout("vertical"))}
-          >
-            Vertical split
-          </SidebarMenuItem>
-          <SidebarMenuItem
-            aria-pressed={splitLayout === "grid"}
-            icon={FiGrid}
-            role="menuitem"
-            onClick={() => run(() => onSetSplitLayout("grid"))}
-          >
-            Grid split
-          </SidebarMenuItem>
-          <SidebarMenuSeparator />
-        </>
-      )}
-      <SidebarMenuItem
-        aria-pressed={compactMode}
-        icon={FiMinimize2}
-        role="menuitem"
-        onClick={() => run(onToggleCompactMode)}
-      >
-        Compact mode
-      </SidebarMenuItem>
-      <SidebarMenuItem
-        aria-pressed={compactMode ? floatingSidebarOpen : undefined}
-        icon={compactMode ? (floatingSidebarOpen ? FiUnlock : FiLock) : FiChevronLeft}
-        role="menuitem"
-        onClick={() => run(onToggleSidebar)}
-      >
-        {sidebarToggleLabel}
-      </SidebarMenuItem>
-      <SidebarMenuSeparator />
-      <SidebarMenuItem icon={FiClock} role="menuitem" onClick={() => run(() => onSetPanel("history"))}>
-        History
-      </SidebarMenuItem>
-      <SidebarMenuItem icon={FiDownload} role="menuitem" onClick={() => run(() => onSetPanel("downloads"))}>
-        Downloads
-      </SidebarMenuItem>
-      <SidebarMenuItem icon={FiSettings} role="menuitem" onClick={() => run(() => onSetPanel("settings"))}>
-        Settings
-      </SidebarMenuItem>
-    </SidebarMenuSurface>
   );
 }

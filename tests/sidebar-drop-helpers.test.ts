@@ -362,12 +362,11 @@ describe("sidebar shared drag helpers", () => {
   });
 
   describe("sidebar workspace drop intent helper", () => {
-    it("resolves tab/group/favorite/closed-tab intents for cross-workspace drops", () => {
+    it("resolves tab/group/closed-tab intents for cross-workspace drops", () => {
       const stateBase = {
         activeWorkspaceId: "ws-a",
         draggingTabId: null,
         draggingGroupId: null,
-        draggingFavoriteId: null,
         draggingClosedTabIndex: null,
         draggingWorkspaceId: null
       };
@@ -382,10 +381,11 @@ describe("sidebar shared drag helpers", () => {
         (type) => (type === SIDEBAR_DRAG_DATA.groupId ? "group-1" : "")
       )).toEqual({ type: "group", groupId: "group-1" });
 
+      // Workspace favorites drag with tab identity.
       expect(getSidebarWorkspaceDropIntent(
         { ...stateBase, targetWorkspaceId: "ws-b" },
-        (type) => (type === SIDEBAR_DRAG_DATA.favoriteId ? "fav-1" : "")
-      )).toEqual({ type: "favorite", favoriteId: "fav-1" });
+        (type) => tabTransfer("fav-tab").getData(type)
+      )).toEqual({ type: "tab", tabId: "fav-tab" });
 
       expect(getSidebarWorkspaceDropIntent(
         { ...stateBase, targetWorkspaceId: "ws-b" },
@@ -393,13 +393,12 @@ describe("sidebar shared drag helpers", () => {
       )).toEqual({ type: "closedTab", closedTabIndex: 2 });
     });
 
-    it("returns null for same-workspace tab/group/favorite drops", () => {
+    it("returns null for same-workspace tab/group drops", () => {
       expect(getSidebarWorkspaceDropIntent({
         activeWorkspaceId: "ws-a",
         targetWorkspaceId: "ws-a",
         draggingTabId: "tab-a",
         draggingGroupId: null,
-        draggingFavoriteId: null,
         draggingClosedTabIndex: null,
         draggingWorkspaceId: null
       })).toBeNull();
@@ -411,7 +410,6 @@ describe("sidebar shared drag helpers", () => {
         targetWorkspaceId: "ws-b",
         draggingTabId: null,
         draggingGroupId: null,
-        draggingFavoriteId: null,
         draggingClosedTabIndex: null,
         draggingWorkspaceId: "ws-c"
       })).toEqual({ type: "workspace", workspaceId: "ws-c" });
@@ -421,28 +419,25 @@ describe("sidebar shared drag helpers", () => {
       expect(getSidebarNewWorkspaceDropIntent({
         draggingTabId: null,
         draggingGroupId: null,
-        draggingFavoriteId: null,
         draggingClosedTabIndex: null
       }, (type) => tabTransfer("tab-a").getData(type))).toEqual({ type: "tab", tabId: "tab-a" });
 
       expect(getSidebarNewWorkspaceDropIntent({
         draggingTabId: null,
         draggingGroupId: "group-1",
-        draggingFavoriteId: null,
         draggingClosedTabIndex: null
       })).toEqual({ type: "group", groupId: "group-1" });
 
+      // Workspace favorites drag with tab identity.
       expect(getSidebarNewWorkspaceDropIntent({
-        draggingTabId: null,
+        draggingTabId: "fav-tab",
         draggingGroupId: null,
-        draggingFavoriteId: "fav-1",
         draggingClosedTabIndex: null
-      })).toEqual({ type: "favorite", favoriteId: "fav-1" });
+      })).toEqual({ type: "tab", tabId: "fav-tab" });
 
       expect(getSidebarNewWorkspaceDropIntent({
         draggingTabId: null,
         draggingGroupId: null,
-        draggingFavoriteId: null,
         draggingClosedTabIndex: 0
       })).toEqual({ type: "closedTab", closedTabIndex: 0 });
 
@@ -453,7 +448,6 @@ describe("sidebar shared drag helpers", () => {
       expect(acceptSidebarNewWorkspaceDropTarget(acceptEvent, {
         draggingTabId: null,
         draggingGroupId: null,
-        draggingFavoriteId: null,
         draggingClosedTabIndex: null
       })).not.toBeNull();
       expect(acceptEvent.preventDefault).toHaveBeenCalled();
@@ -466,7 +460,6 @@ describe("sidebar shared drag helpers", () => {
       expect(acceptSidebarNewWorkspaceDropTarget(emptyEvent, {
         draggingTabId: null,
         draggingGroupId: null,
-        draggingFavoriteId: null,
         draggingClosedTabIndex: null
       })).toBeNull();
       expect(emptyEvent.preventDefault).not.toHaveBeenCalled();
@@ -478,7 +471,7 @@ describe("sidebar shared drag helpers", () => {
       activeTabId: string;
       closedTabs: ClosedTab[];
       essentials: Favorite[];
-      favorites: Favorite[];
+      favoriteTabs: BrowserTab[];
       tabs: BrowserTab[];
     }> = {}) {
       return {
@@ -489,10 +482,12 @@ describe("sidebar shared drag helpers", () => {
         draggingFavoriteId: null,
         draggingTabId: null,
         essentials: overrides.essentials ?? [],
-        favorites: overrides.favorites ?? [],
+        favoriteTabs: overrides.favoriteTabs ?? [
+          { id: "fav-tab", url: "https://fav.test", title: "Favorite Tab", isFavorite: true } as BrowserTab
+        ],
         tabs: overrides.tabs ?? [
-          { id: "tab-a", url: "https://a.test", title: "Tab A" },
-          { id: "active-tab", url: "https://active.test", title: "Active" }
+          { id: "tab-a", url: "https://a.test", title: "Tab A", isFavorite: false } as BrowserTab,
+          { id: "active-tab", url: "https://active.test", title: "Active", isFavorite: false } as BrowserTab
         ] as BrowserTab[]
       };
     }
@@ -508,7 +503,7 @@ describe("sidebar shared drag helpers", () => {
       expect(source).toBeNull();
     });
 
-    it("resolves essentials, favorites, and closed tabs through URL sources", () => {
+    it("resolves essentials and closed tabs through URL sources, workspace favorites through tab identity", () => {
       const essentialState = buildSplitState({
         essentials: [{ id: "ess-1", url: "https://ess.test", title: "Essential" } as Favorite]
       });
@@ -518,13 +513,18 @@ describe("sidebar shared drag helpers", () => {
         url: "https://ess.test"
       });
 
-      const favoriteState = buildSplitState({
-        favorites: [{ id: "fav-1", url: "https://fav.test", title: "Favorite" } as Favorite]
+      // Workspace favorites now drag with tab identity.
+      const favoriteTabState = buildSplitState({
+        tabs: [
+          { id: "tab-a", url: "https://a.test", title: "Tab A", isFavorite: false } as BrowserTab,
+          { id: "fav-1", url: "https://fav.test", title: "Favorite", isFavorite: true } as BrowserTab,
+          { id: "active-tab", url: "https://active.test", title: "Active", isFavorite: false } as BrowserTab
+        ]
       });
-      expect(getSidebarSplitDropSource(favoriteState, (type) => type === SIDEBAR_DRAG_DATA.favoriteId ? "fav-1" : "")).toEqual({
-        type: "url",
-        title: "Favorite",
-        url: "https://fav.test"
+      expect(getSidebarSplitDropSource(favoriteTabState, (type) => tabTransfer("fav-1").getData(type))).toEqual({
+        type: "tab",
+        tabId: "fav-1",
+        title: "Favorite"
       });
 
       const closedState = buildSplitState({

@@ -1,4 +1,4 @@
-import { resolveFavoriteTab, type BrowserState, type Workspace } from "../../../domain/browser";
+import { type BrowserState, type Workspace } from "../../../domain/browser";
 import type { Command, CommandActions } from "./commandTypes";
 
 export function buildContentCommands(
@@ -14,19 +14,16 @@ export function buildContentCommands(
       runInSplit: () => actions.openUrlInSplit(essential.url, essential.title),
       runPreview: () => actions.openGlance(essential.url, essential.title)
     })),
-    ...workspace.favorites.map((favorite) => {
-      const tab = resolveFavoriteTab(workspace, favorite);
-      const url = tab?.url ?? favorite.url;
-      const title = tab?.title || favorite.title || url;
-
-      return {
-        title,
-        subtitle: `${tab ? "Favorite tab" : "Favorite"} · ${url}`,
-        run: () => tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(url, title),
-        runInSplit: () => tab ? actions.openTabInSplit(tab.id) : actions.openUrlInSplit(url, title),
-        runPreview: () => actions.openGlance(url, title)
-      };
-    }),
+    ...workspace.favoriteOrder
+      .map((tabId) => workspace.tabs.find((t) => t.id === tabId && t.isFavorite))
+      .filter((t): t is Workspace["tabs"][number] => Boolean(t))
+      .map((tab) => ({
+        title: tab.title || tab.url,
+        subtitle: `Favorite tab · ${tab.url}`,
+        run: () => actions.selectTab(tab.id),
+        runInSplit: () => actions.openTabInSplit(tab.id),
+        runPreview: () => actions.openGlance(tab.url, tab.title)
+      })),
     ...workspace.tabs.map((tab) => ({
       title: tab.title || tab.url,
       subtitle: `${getOpenTabCommandLabel(tab.id, workspace.activeTabId, tab.isSleeping)} · ${tab.url}`,

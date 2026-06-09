@@ -260,9 +260,9 @@ describe("sidebar quick entry context menu", () => {
 
     container.querySelector(".quick-entry-context-menu button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(actions.selectTab).toHaveBeenCalledWith(tab.id);
+    expect(actions.openUrlInActiveWorkspace).toHaveBeenCalledWith("https://docs.example/", "Docs");
     expect(actions.navigateActiveTab).not.toHaveBeenCalled();
-    expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
+    expect(actions.selectTab).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });
@@ -342,7 +342,7 @@ describe("sidebar quick entry context menu", () => {
 
     container.querySelector(".quick-entry-context-menu button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(actions.selectTab).toHaveBeenCalledWith(secondTab.id);
+    expect(actions.openUrlInActiveWorkspace).toHaveBeenCalledWith(secondTab.url, "Docs");
     expect(actions.selectTab).not.toHaveBeenCalledWith(firstTab.id);
 
     act(() => root.unmount());
@@ -381,8 +381,8 @@ describe("sidebar quick entry context menu", () => {
       .find((button) => button.textContent === "Open in split view")
       ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    expect(actions.openTabInSplit).toHaveBeenCalledWith(tab.id);
-    expect(actions.openUrlInSplit).not.toHaveBeenCalled();
+    expect(actions.openUrlInSplit).toHaveBeenCalledWith("https://docs.example/", "Docs");
+    expect(actions.openTabInSplit).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });

@@ -17,19 +17,19 @@ describe("sidebar item state", () => {
     expect(isSidebarUrlActive("https://example.com/docs", "https://example.com/blog")).toBe(false);
   });
 
-  it("uses tab identity before URL fallback for Favorite active state", () => {
+  it("uses tab identity only for Favorite active state", () => {
     expect(isSidebarFavoriteActive(
-      { id: "active-tab", url: "https://docs.example/" },
-      { tabId: "favorite-tab", url: "https://docs.example/" }
+      { id: "active-tab" },
+      { id: "favorite-tab" }
     )).toBe(false);
     expect(isSidebarFavoriteActive(
-      { id: "favorite-tab", url: "https://other.example/" },
-      { tabId: "favorite-tab", url: "https://docs.example/" }
+      { id: "favorite-tab" },
+      { id: "favorite-tab" }
     )).toBe(true);
     expect(isSidebarFavoriteActive(
-      { id: "active-tab", url: "https://docs.example/" },
-      { url: "https://docs.example" }
-    )).toBe(true);
+      { id: "active-tab" },
+      { id: "other-tab" }
+    )).toBe(false);
   });
 
   it("describes visible tab status badges in sidebar order", () => {

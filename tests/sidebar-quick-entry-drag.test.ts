@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
-import { createDefaultState, createFavorite, createTab, type BrowserState, type Workspace } from "../src/renderer/domain/browser";
+import { createDefaultState, createFavorite, createTab, type BrowserState, type Favorite, type Workspace } from "../src/renderer/domain/browser";
 import { useSidebarQuickEntryDrag } from "../src/renderer/surfaces/sidebar/hooks/useSidebarQuickEntryDrag";
 import { FavoriteButton } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarItems";
 
@@ -91,7 +91,7 @@ function FavoriteDragHarness({
   state
 }: {
   activeWorkspace: Workspace;
-  favorite: Workspace["favorites"][number];
+  favorite: Favorite;
   state: BrowserState;
 }) {
   const drag = useSidebarQuickEntryDrag({
@@ -122,7 +122,7 @@ function FavoriteReorderHarness({
 }: {
   actions: BrowserController["actions"];
   activeWorkspace: Workspace;
-  favorite: Workspace["favorites"][number];
+  favorite: Favorite;
   state: BrowserState;
 }) {
   const drag = useSidebarQuickEntryDrag({
@@ -147,11 +147,11 @@ function FavoriteReorderHarness({
   });
 }
 
-function createWorkspace(tab: Workspace["tabs"][number], favorite: Workspace["favorites"][number]): Workspace {
+function createWorkspace(tab: Workspace["tabs"][number], favorite: Favorite): Workspace {
   return {
     ...createDefaultState().workspaces[0],
     activeTabId: tab.id,
-    favorites: [favorite],
+    favoriteOrder: tab.isFavorite ? [tab.id] : [],
     tabs: [tab]
   };
 }

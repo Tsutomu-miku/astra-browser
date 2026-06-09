@@ -74,20 +74,77 @@ function installIpcHandlers({
     if (!filePath) return "";
     return shell.openPath(filePath);
   });
+  ipcMain.handle("print-webview", (_event, webContentsId) => {
+    if (typeof webContentsId !== "number") return;
+    const target = require("electron").webContents.fromId(webContentsId);
+    if (target && !target.isDestroyed() && target.getType() === "webview") {
+      target.print({ silent: false, printBackground: true });
+    }
+  });
   ipcMain.handle("get-process-memory", async (_event) => {
     const appMetrics = app.getAppMetrics();
-    const webviewMemory = appMetrics.reduce((sum, metric) => sum + (metric.memory?.workingSetSize ?? 0), 0);
-    const totalMemoryBytes = process.memoryUsage
-      ? (process.memoryUsage().rss + webviewMemory * 1024 * 1024)
-      : webviewMemory * 1024 * 1024;
+    // ProcessMetric.memory.workingSetSize is reported in bytes by Electron on
+    // all platforms (one entry per child process: GPU, utility, each <webview>,
+    // etc.). The total RSS is the main process' RSS plus the working-set size
+    // of every child process — no extra multiplication needed.
+    const webviewWorkingSetBytes = appMetrics.reduce(
+      (sum, metric) => sum + (Number.isFinite(metric.memory?.workingSetSize) ? metric.memory.workingSetSize : 0),
+      0
+    );
+    const mainRss = Number(process.memoryUsage?.().rss) || 0;
+    const mainHeap = Number(process.memoryUsage?.().heapUsed) || 0;
     return {
-      appHeapBytes: process.memoryUsage ? process.memoryUsage().heapUsed : 0,
-      appRssBytes: process.memoryUsage ? process.memoryUsage().rss : 0,
+      appHeapBytes: mainHeap,
+      appRssBytes: mainRss,
       sampledAt: Date.now(),
-      totalBytes: totalMemoryBytes,
+      totalBytes: mainRss + webviewWorkingSetBytes,
       webviewCount: appMetrics.length,
-      webviewWorkingSetBytes: webviewMemory * 1024 * 1024
+      webviewWorkingSetBytes: webviewWorkingSetBytes
     };
+  });
+  // Proxy favicon fetches through the user's profile sessions. The renderer's
+  // <img> tags load via the default session and can't access cookies from a
+  // profile's <webview>, so favicons on login-gated sites 403. This handler
+  // retries the fetch through every session we know about (default + every
+  // live webContents' session) and returns a data URL on the first hit.
+  ipcMain.handle("get-favicon-data", async (_event, faviconUrl) => {
+    if (typeof faviconUrl !== "string" || !faviconUrl) return null;
+    try {
+      const parsed = new URL(faviconUrl);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    } catch {
+      return null;
+    }
+
+    const sessions = new Set([session.defaultSession]);
+    for (const win of BrowserWindow.getAllWindows()) {
+      try {
+        if (win.webContents && !win.isDestroyed()) sessions.add(win.webContents.session);
+        for (const child of win.webContents?.getAllWebContents?.() ?? []) {
+          if (child && !child.isDestroyed()) sessions.add(child.session);
+        }
+      } catch {
+        // ignore destroyed windows
+      }
+    }
+
+    for (const targetSession of sessions) {
+      try {
+        const response = await targetSession.fetch(faviconUrl, {
+          credentials: "include",
+          redirect: "follow",
+          signal: AbortSignal.timeout(2000)
+        });
+        if (!response || !response.ok) continue;
+        const buffer = Buffer.from(await response.arrayBuffer());
+        if (buffer.length === 0) continue;
+        const contentType = response.headers.get("content-type") || "image/x-icon";
+        return `data:${contentType};base64,${buffer.toString("base64")}`;
+      } catch {
+        // try next session
+      }
+    }
+    return null;
   });
 }
 

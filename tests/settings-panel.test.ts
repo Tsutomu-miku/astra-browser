@@ -111,6 +111,8 @@ describe("settings panel sections", () => {
   it("summarizes active Space memory saver state", () => {
     const state = createDefaultState();
     const workspace = state.workspaces[0];
+    workspace.tabs = workspace.tabs.filter((tab) => !tab.isFavorite);
+    workspace.favoriteOrder = [];
     workspace.activeTabId = workspace.tabs[0].id;
     workspace.tabs.push({
       ...workspace.tabs[0],

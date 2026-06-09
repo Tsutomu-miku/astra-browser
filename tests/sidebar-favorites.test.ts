@@ -5,8 +5,18 @@ import { describe, expect, it, vi } from "vitest";
 
 import { SIDEBAR_TAB_DRAG_TYPE } from "../src/renderer/common/drag-drop/sidebarDragPayload";
 import { createFavorite, createTab } from "../src/renderer/domain/browser";
+import type { BrowserTab } from "../src/renderer/domain/browser";
 import type { BrowserController } from "../src/renderer/app/controller/types";
 import { SidebarSections } from "../src/renderer/surfaces/sidebar/components/tabs/SidebarSections";
+
+/**
+ * Helper to create a favorite tab (new model): a BrowserTab with isFavorite=true.
+ */
+function createFavoriteTab(title: string, url: string): BrowserTab {
+  const tab = createTab(title, url);
+  tab.isFavorite = true;
+  return tab;
+}
 
 describe("sidebar favorites", () => {
   it("navigates the active tab when an Essential is clicked", () => {
@@ -20,7 +30,6 @@ describe("sidebar favorites", () => {
       root.render(createElement(SidebarSections, {
         actions,
         activeTab,
-        closedTabs: [],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
@@ -40,11 +49,14 @@ describe("sidebar favorites", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onClosedTabContextMenu: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -62,10 +74,9 @@ describe("sidebar favorites", () => {
     act(() => root.unmount());
   });
 
-  it("selects the matching tab when a Space favorite is clicked", () => {
+  it("selects the exact favorite tab when a Space favorite is clicked", () => {
     const activeTab = createTab("Active", "https://active.example");
-    const docsTab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
+    const docsTab = createFavoriteTab("Docs", "https://docs.example");
     const actions = createActions();
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -74,19 +85,18 @@ describe("sidebar favorites", () => {
       root.render(createElement(SidebarSections, {
         actions,
         activeTab,
-        closedTabs: [],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: docsTab }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
           pinnedTabs: [],
-          regularTabs: [activeTab, docsTab]
+          regularTabs: [activeTab]
         },
         onEssentialDragStart: vi.fn(),
         onEssentialDrop: vi.fn(),
@@ -94,11 +104,14 @@ describe("sidebar favorites", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onClosedTabContextMenu: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -114,15 +127,15 @@ describe("sidebar favorites", () => {
     expect(actions.selectTab).toHaveBeenCalledWith(docsTab.id);
     expect(actions.navigateActiveTab).not.toHaveBeenCalled();
     expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
+    // Favorites render as TabRow, never as FavoriteButton.
     expect(container.querySelector(".favorites .favorite-button")).toBeNull();
 
     act(() => root.unmount());
   });
 
-  it("marks tab-backed Favorites active only when their tab id matches", () => {
-    const activeTab = createTab("Docs clone", "https://docs.example");
-    const docsTab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
+  it("marks favorite tabs active only when their tab id matches the active tab", () => {
+    const activeTab = { ...createTab("Docs clone", "https://docs.example"), id: "active-clone" };
+    const docsTab = { ...createFavoriteTab("Docs", "https://docs.example"), id: "docs-fav" };
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -130,68 +143,13 @@ describe("sidebar favorites", () => {
       root.render(createElement(SidebarSections, {
         actions: createActions(),
         activeTab,
-        closedTabs: [],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
-          groupedTabs: [],
-          hasMatches: true,
-          isFiltering: false,
-          pinnedTabs: [],
-          regularTabs: [activeTab, docsTab]
-        },
-        onEssentialDragStart: vi.fn(),
-        onEssentialDrop: vi.fn(),
-        onEssentialReorderDrop: vi.fn(),
-        onFavoriteDragStart: vi.fn(),
-        onFavoriteDrop: vi.fn(),
-        onFavoriteReorderDrop: vi.fn(),
-        onClosedTabContextMenu: vi.fn(),
-        onTabGroupContextMenu: vi.fn(),
-        onQuickEntryContextMenu: vi.fn(),
-        onTabContextMenu: vi.fn(),
-        onTabDrop: vi.fn(),
-        setDraggingEssentialId: vi.fn(),
-        setDraggingFavoriteId: vi.fn(),
-        setDraggingGroupId: vi.fn(),
-        setDraggingTabId: vi.fn(),
-        splitTabIds: [],
-        workspaceTabs: [activeTab, docsTab]
-      }));
-    });
-
-    expect(container.querySelector(".favorites .tab-row")?.getAttribute("aria-current")).toBe("false");
-    expect(container.querySelector(".favorites .tab-button")?.getAttribute("aria-label")).toBe("Docs, favorite tab");
-
-    act(() => root.unmount());
-  });
-
-  it("uses tab actions for tab-backed Favorites", () => {
-    const activeTab = createTab("Active", "https://active.example");
-    const docsTab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
-    const actions = createActions();
-    const onQuickEntryContextMenu = vi.fn();
-    const onTabContextMenu = vi.fn();
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(createElement(SidebarSections, {
-        actions,
-        activeTab,
-        closedTabs: [],
-        draggingEssentialId: null,
-        draggingFavoriteId: null,
-        draggingGroupId: null,
-        draggingTabId: null,
-        filteredItems: {
-          essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: docsTab }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
@@ -204,11 +162,71 @@ describe("sidebar favorites", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onClosedTabContextMenu: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
+        onTabGroupContextMenu: vi.fn(),
+        onQuickEntryContextMenu: vi.fn(),
+        onTabContextMenu: vi.fn(),
+        onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
+        onToggleSection: vi.fn(),
+        setDraggingEssentialId: vi.fn(),
+        setDraggingFavoriteId: vi.fn(),
+        setDraggingGroupId: vi.fn(),
+        setDraggingTabId: vi.fn(),
+        splitTabIds: [],
+        workspaceTabs: [activeTab, docsTab]
+      }));
+    });
+
+    // docsTab is NOT the active tab (activeTab has a different id, same URL)
+    // → aria-current must be false. URL match is NOT enough.
+    expect(container.querySelector(".favorites .tab-row")?.getAttribute("aria-current")).toBe("false");
+    expect(container.querySelector(".favorites .tab-button")?.getAttribute("aria-label")).toBe("Docs, favorite tab");
+
+    act(() => root.unmount());
+  });
+
+  it("uses tab actions for favorite tabs", () => {
+    const activeTab = createTab("Active", "https://active.example");
+    const docsTab = createFavoriteTab("Docs", "https://docs.example");
+    const actions = createActions();
+    const onQuickEntryContextMenu = vi.fn();
+    const onTabContextMenu = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(SidebarSections, {
+        actions,
+        activeTab,
+        draggingEssentialId: null,
+        draggingFavoriteId: null,
+        draggingGroupId: null,
+        draggingTabId: null,
+        filteredItems: {
+          essentials: [],
+          favorites: [{ kind: "tab", tab: docsTab }],
+          groupedTabs: [],
+          hasMatches: true,
+          isFiltering: false,
+          pinnedTabs: [],
+          regularTabs: [activeTab]
+        },
+        onEssentialDragStart: vi.fn(),
+        onEssentialDrop: vi.fn(),
+        onEssentialReorderDrop: vi.fn(),
+        onFavoriteDragStart: vi.fn(),
+        onFavoriteDrop: vi.fn(),
+        onFavoriteReorderDrop: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
         onQuickEntryContextMenu,
         onTabContextMenu,
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -232,10 +250,9 @@ describe("sidebar favorites", () => {
     act(() => root.unmount());
   });
 
-  it("opens tab-backed Favorites in split by tab id", () => {
+  it("opens favorite tabs in split by tab id", () => {
     const activeTab = createTab("Active", "https://active.example");
-    const docsTab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
+    const docsTab = createFavoriteTab("Docs", "https://docs.example");
     const actions = createActions();
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -244,14 +261,13 @@ describe("sidebar favorites", () => {
       root.render(createElement(SidebarSections, {
         actions,
         activeTab,
-        closedTabs: [],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: docsTab }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
@@ -264,11 +280,14 @@ describe("sidebar favorites", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onClosedTabContextMenu: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -289,10 +308,9 @@ describe("sidebar favorites", () => {
     act(() => root.unmount());
   });
 
-  it("renders tab status on tab-backed Favorites", () => {
+  it("renders tab status on favorite tabs", () => {
     const activeTab = createTab("Active", "https://active.example");
-    const docsTab = { ...createTab("Docs", "https://docs.example"), isMuted: true };
-    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
+    const docsTab = { ...createFavoriteTab("Docs", "https://docs.example"), isMuted: true };
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -300,14 +318,13 @@ describe("sidebar favorites", () => {
       root.render(createElement(SidebarSections, {
         actions: createActions(),
         activeTab,
-        closedTabs: [],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: docsTab }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
@@ -320,11 +337,14 @@ describe("sidebar favorites", () => {
         onFavoriteDragStart: vi.fn(),
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onClosedTabContextMenu: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -347,10 +367,9 @@ describe("sidebar favorites", () => {
     act(() => root.unmount());
   });
 
-  it("drags tab-backed Favorites as plain tab rows", () => {
+  it("drags favorite tabs as plain tab rows (tab drag, not favorite drag)", () => {
     const activeTab = createTab("Active", "https://active.example");
-    const docsTab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
+    const docsTab = createFavoriteTab("Docs", "https://docs.example");
     const setDraggingTabId = vi.fn();
     const onFavoriteDragStart = vi.fn();
     const data = new Map<string, string>();
@@ -361,14 +380,13 @@ describe("sidebar favorites", () => {
       root.render(createElement(SidebarSections, {
         actions: createActions(),
         activeTab,
-        closedTabs: [],
         draggingEssentialId: null,
         draggingFavoriteId: null,
         draggingGroupId: null,
         draggingTabId: null,
         filteredItems: {
           essentials: [],
-          favorites: [favorite],
+          favorites: [{ kind: "tab", tab: docsTab }],
           groupedTabs: [],
           hasMatches: true,
           isFiltering: false,
@@ -381,11 +399,14 @@ describe("sidebar favorites", () => {
         onFavoriteDragStart,
         onFavoriteDrop: vi.fn(),
         onFavoriteReorderDrop: vi.fn(),
-        onClosedTabContextMenu: vi.fn(),
+        onFavoriteTabDrop: vi.fn(),
         onTabGroupContextMenu: vi.fn(),
         onQuickEntryContextMenu: vi.fn(),
         onTabContextMenu: vi.fn(),
         onTabDrop: vi.fn(),
+        onTabsDrop: vi.fn(),
+        onRenameTab: vi.fn(),
+        onToggleSection: vi.fn(),
         setDraggingEssentialId: vi.fn(),
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
@@ -405,6 +426,7 @@ describe("sidebar favorites", () => {
     });
     container.querySelector(".favorites .tab-row")?.dispatchEvent(event);
 
+    // Favorite tabs use tab drag identity, not legacy favorite drag.
     expect(setDraggingTabId).toHaveBeenCalledWith(docsTab.id);
     expect(onFavoriteDragStart).not.toHaveBeenCalled();
     expect(data.get(SIDEBAR_TAB_DRAG_TYPE)).toBe(docsTab.id);
@@ -413,186 +435,6 @@ describe("sidebar favorites", () => {
     act(() => root.unmount());
   });
 
-  it("ignores legacy Favorite payloads on tab-backed Favorite rows", () => {
-    const activeTab = createTab("Active", "https://active.example");
-    const docsTab = createTab("Docs", "https://docs.example");
-    const legacyFavorite = createFavorite("Legacy", "https://legacy.example");
-    const tabBackedFavorite = createFavorite("Docs", docsTab.url, docsTab.id);
-    const onFavoriteReorderDrop = vi.fn();
-    const onTabDrop = vi.fn();
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(createElement(SidebarSections, {
-        actions: createActions(),
-        activeTab,
-        closedTabs: [],
-        draggingEssentialId: null,
-        draggingFavoriteId: null,
-        draggingGroupId: null,
-        draggingTabId: null,
-        filteredItems: {
-          essentials: [],
-          favorites: [legacyFavorite, tabBackedFavorite],
-          groupedTabs: [],
-          hasMatches: true,
-          isFiltering: false,
-          pinnedTabs: [],
-          regularTabs: [activeTab]
-        },
-        onEssentialDragStart: vi.fn(),
-        onEssentialDrop: vi.fn(),
-        onEssentialReorderDrop: vi.fn(),
-        onFavoriteDragStart: vi.fn(),
-        onFavoriteDrop: vi.fn(),
-        onFavoriteReorderDrop,
-        onClosedTabContextMenu: vi.fn(),
-        onTabGroupContextMenu: vi.fn(),
-        onQuickEntryContextMenu: vi.fn(),
-        onTabContextMenu: vi.fn(),
-        onTabDrop,
-        setDraggingEssentialId: vi.fn(),
-        setDraggingFavoriteId: vi.fn(),
-        setDraggingGroupId: vi.fn(),
-        setDraggingTabId: vi.fn(),
-        splitTabIds: [],
-        workspaceTabs: [activeTab, docsTab]
-      }));
-    });
-
-    const tabBackedRow = container.querySelector<HTMLElement>(".favorites .tab-row")!;
-    tabBackedRow.dispatchEvent(createDragEvent("drop", {
-      "text/favorite-id": legacyFavorite.id
-    }));
-
-    expect(onFavoriteReorderDrop).not.toHaveBeenCalled();
-    expect(onTabDrop).not.toHaveBeenCalled();
-
-    act(() => root.unmount());
-  });
-
-  it("keeps legacy URL Favorites on the quick entry path", () => {
-    const activeTab = createTab("Active", "https://active.example");
-    const favorite = createFavorite("Docs", "https://docs.example");
-    const actions = createActions();
-    const onQuickEntryContextMenu = vi.fn();
-    const onTabContextMenu = vi.fn();
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(createElement(SidebarSections, {
-        actions,
-        activeTab,
-        closedTabs: [],
-        draggingEssentialId: null,
-        draggingFavoriteId: null,
-        draggingGroupId: null,
-        draggingTabId: null,
-        filteredItems: {
-          essentials: [],
-          favorites: [favorite],
-          groupedTabs: [],
-          hasMatches: true,
-          isFiltering: false,
-          pinnedTabs: [],
-          regularTabs: [activeTab]
-        },
-        onEssentialDragStart: vi.fn(),
-        onEssentialDrop: vi.fn(),
-        onEssentialReorderDrop: vi.fn(),
-        onFavoriteDragStart: vi.fn(),
-        onFavoriteDrop: vi.fn(),
-        onFavoriteReorderDrop: vi.fn(),
-        onClosedTabContextMenu: vi.fn(),
-        onTabGroupContextMenu: vi.fn(),
-        onQuickEntryContextMenu,
-        onTabContextMenu,
-        onTabDrop: vi.fn(),
-        setDraggingEssentialId: vi.fn(),
-        setDraggingFavoriteId: vi.fn(),
-        setDraggingGroupId: vi.fn(),
-        setDraggingTabId: vi.fn(),
-        splitTabIds: [],
-        workspaceTabs: [activeTab]
-      }));
-    });
-
-    const favoriteButton = container.querySelector(".favorites .favorite-button")!;
-    favoriteButton.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true }));
-    favoriteButton.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete" }));
-    favoriteButton.dispatchEvent(new MouseEvent("auxclick", { bubbles: true, button: 1 }));
-    favoriteButton.dispatchEvent(new MouseEvent("click", { bubbles: true, shiftKey: true }));
-
-    expect(onQuickEntryContextMenu).toHaveBeenCalledWith(expect.objectContaining({ type: "contextmenu" }), favorite, "favorite");
-    expect(onTabContextMenu).not.toHaveBeenCalled();
-    expect(actions.closeTab).not.toHaveBeenCalled();
-    expect(actions.openUrlInSplit).toHaveBeenCalledWith(favorite.url, favorite.title);
-    expect(actions.openTabInSplit).not.toHaveBeenCalled();
-
-    act(() => root.unmount());
-  });
-
-  it("keeps matching legacy URL Favorites visually quick while selecting the existing tab on open", () => {
-    const docsTab = createTab("Docs Tab", "https://docs.example");
-    const activeTab = createTab("Active", "https://active.example");
-    const favorite = createFavorite("Docs", docsTab.url);
-    const actions = createActions();
-    const onQuickEntryContextMenu = vi.fn();
-    const onTabContextMenu = vi.fn();
-    const container = document.createElement("div");
-    const root = createRoot(container);
-
-    act(() => {
-      root.render(createElement(SidebarSections, {
-        actions,
-        activeTab,
-        closedTabs: [],
-        draggingEssentialId: null,
-        draggingFavoriteId: null,
-        draggingGroupId: null,
-        draggingTabId: null,
-        filteredItems: {
-          essentials: [],
-          favorites: [favorite],
-          groupedTabs: [],
-          hasMatches: true,
-          isFiltering: false,
-          pinnedTabs: [],
-          regularTabs: [activeTab, docsTab]
-        },
-        onEssentialDragStart: vi.fn(),
-        onEssentialDrop: vi.fn(),
-        onEssentialReorderDrop: vi.fn(),
-        onFavoriteDragStart: vi.fn(),
-        onFavoriteDrop: vi.fn(),
-        onFavoriteReorderDrop: vi.fn(),
-        onClosedTabContextMenu: vi.fn(),
-        onTabGroupContextMenu: vi.fn(),
-        onQuickEntryContextMenu,
-        onTabContextMenu,
-        onTabDrop: vi.fn(),
-        setDraggingEssentialId: vi.fn(),
-        setDraggingFavoriteId: vi.fn(),
-        setDraggingGroupId: vi.fn(),
-        setDraggingTabId: vi.fn(),
-        splitTabIds: [],
-        workspaceTabs: [activeTab, docsTab]
-      }));
-    });
-
-    const favoriteButton = container.querySelector(".favorites .favorite-button")!;
-    expect(favoriteButton).not.toBeNull();
-    expect(container.querySelector(".favorites .tab-row")).toBeNull();
-    favoriteButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-    expect(actions.selectTab).toHaveBeenCalledWith(docsTab.id);
-    expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
-    expect(onTabContextMenu).not.toHaveBeenCalled();
-
-    act(() => root.unmount());
-  });
 });
 
 function createActions() {
@@ -610,18 +452,4 @@ function createActions() {
     toggleTabGroupCollapsed: vi.fn(),
     updateTabGroup: vi.fn()
   } as unknown as BrowserController["actions"];
-}
-
-function createDragEvent(type: string, data: Record<string, string>) {
-  const event = new Event(type, { bubbles: true, cancelable: true }) as Event & {
-    dataTransfer: DataTransfer;
-  };
-  Object.defineProperty(event, "dataTransfer", {
-    value: {
-      dropEffect: "none",
-      getData: (key: string) => data[key] ?? "",
-      setData: vi.fn()
-    }
-  });
-  return event;
 }

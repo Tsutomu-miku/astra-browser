@@ -63,9 +63,11 @@ import {
   toggleTabMuted,
   toggleTabPinned,
   toggleSplitMode,
-  updateTab
+  updateBrowserState,
+  updateTab,
+  updateTabGroup
 } from "../src/renderer/domain/actions";
-import { createDefaultState, createFavorite } from "../src/renderer/domain/browser";
+import { createDefaultState, createFavorite, createTab } from "../src/renderer/domain/browser";
 import { getActiveTab, getActiveWorkspace } from "../src/renderer/domain/browser/selectors";
 
 describe("domain actions", () => {
@@ -76,21 +78,28 @@ describe("domain actions", () => {
     const withFavorite = toggleActiveTabFavorite(withPin);
     const afterClose = closeActiveTab(withFavorite);
 
-    expect(getActiveWorkspace(withTab).tabs).toHaveLength(2);
+    expect(getActiveWorkspace(withTab).tabs).toHaveLength(4);
     expect(getActiveTab(getActiveWorkspace(withPin)).isPinned).toBe(true);
-    expect(getActiveWorkspace(withFavorite).favorites.at(-1)?.url).toBe(getActiveTab(getActiveWorkspace(withFavorite)).url);
-    expect(getActiveWorkspace(afterClose).tabs).toHaveLength(1);
+    expect(getActiveTab(getActiveWorkspace(withFavorite)).isFavorite).toBe(true);
+    expect(getActiveWorkspace(afterClose).tabs).toHaveLength(3);
     expect(getActiveWorkspace(afterClose).closedTabs[0].url).toBe(getActiveTab(getActiveWorkspace(withFavorite)).url);
-    expect(initial.workspaces[0].tabs).toHaveLength(1);
+    expect(initial.workspaces[0].tabs).toHaveLength(3);
   });
 
   it("opens new and replacement tabs at the active workspace homepage", () => {
     const base = createDefaultState();
     const initial = {
       ...base,
-      workspaces: base.workspaces.map((workspace) => workspace.id === "personal"
-        ? { ...workspace, homepage: "https://space.example/" }
-        : workspace)
+      workspaces: base.workspaces.map((workspace) => {
+        if (workspace.id !== "personal") return workspace;
+        const onlyNewTab = workspace.tabs.filter((tab) => !tab.isFavorite);
+        return {
+          ...workspace,
+          homepage: "https://space.example/",
+          tabs: onlyNewTab,
+          favoriteOrder: []
+        };
+      })
     };
     const withTab = addTab(initial);
     const closed = closeActiveTab(withTab);
@@ -108,6 +117,69 @@ describe("domain actions", () => {
 
     expect(getActiveTab(workspace).url).toBe("https://example.com/");
     expect(workspace.closedTabs).toHaveLength(0);
+  });
+
+  it("restores the most recently closed tab with full metadata", () => {
+    const base = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
+    const originalId = getActiveWorkspace(base).activeTabId!;
+    // Add a second tab first so the group survives the close (empty groups
+    // are pruned, which would null the restored tab's groupId even if the
+    // closed snapshot preserved it).
+    const withSecond = openUrlInActiveWorkspace(base, "other.test", "Other");
+    // groupActiveTab creates a real group and assigns the active tab to it.
+    const grouped = groupActiveTab(withSecond);
+    const groupedWorkspace = getActiveWorkspace(grouped);
+    const groupId = groupedWorkspace.tabGroups[0]?.id;
+    expect(groupId).toBeTruthy();
+    // Put the original tab in the same group, then mark it muted/etc.
+    // Note: pinned and grouped are mutually exclusive, so this test exercises
+    // grouped (not pinned) metadata alongside muted/customTitle/zoom.
+    const assigned = assignTabToGroup(grouped, originalId, groupId);
+    const prepared = updateBrowserState(assigned, (draft) => {
+      const tab = getActiveWorkspace(draft).tabs.find((candidate) => candidate.id === originalId)!;
+      tab.customTitle = "My Tab";
+      tab.isMuted = true;
+      tab.isMediaPlaying = true;
+      tab.isCameraOn = true;
+      tab.isMicrophoneOn = true;
+      tab.hasUnread = true;
+    });
+    // Zoom needs to be applied to the active tab — ensure original is active.
+    const activated = updateBrowserState(prepared, (draft) => {
+      getActiveWorkspace(draft).activeTabId = originalId;
+    });
+    const zoomed = setActiveTabZoom(activated, 1.5);
+    const closed = closeTab(zoomed, originalId);
+    const closedWorkspace = getActiveWorkspace(closed);
+
+    expect(closedWorkspace.closedTabs).toHaveLength(1);
+    const closedSnapshot = closedWorkspace.closedTabs[0];
+    expect(closedSnapshot.isPinned).toBe(false);
+    expect(closedSnapshot.isMuted).toBe(true);
+    expect(closedSnapshot.groupId).toBe(groupId);
+    expect(closedSnapshot.customTitle).toBe("My Tab");
+    expect(closedSnapshot.zoomFactor).toBe(1.5);
+    // Runtime-only flags must NOT leak into the closed-tab snapshot.
+    expect((closedSnapshot as unknown as Record<string, unknown>).isMediaPlaying).toBeUndefined();
+    expect((closedSnapshot as unknown as Record<string, unknown>).isCameraOn).toBeUndefined();
+    expect((closedSnapshot as unknown as Record<string, unknown>).isMicrophoneOn).toBeUndefined();
+    expect((closedSnapshot as unknown as Record<string, unknown>).hasUnread).toBeUndefined();
+
+    const restored = restoreLastClosedTab(closed);
+    const restoredTab = getActiveTab(getActiveWorkspace(restored));
+    expect(restoredTab.id).not.toBe(originalId);
+    expect(restoredTab.url).toBe("https://example.com/");
+    expect(restoredTab.title).toBe("Example");
+    expect(restoredTab.customTitle).toBe("My Tab");
+    expect(restoredTab.groupId).toBe(groupId);
+    expect(restoredTab.isMuted).toBe(true);
+    expect(restoredTab.isPinned).toBe(false);
+    expect(restoredTab.zoomFactor).toBe(1.5);
+    // Runtime flags are reset for the newly restored tab.
+    expect(restoredTab.isMediaPlaying).toBe(false);
+    expect(restoredTab.isCameraOn).toBe(false);
+    expect(restoredTab.isMicrophoneOn).toBe(false);
+    expect(restoredTab.hasUnread).toBe(false);
   });
 
   it("restores a selected recently closed tab", () => {
@@ -182,7 +254,7 @@ describe("domain actions", () => {
     expect(target.tabs.map((candidate) => candidate.id)).toEqual([tab.id]);
     expect(target.activeTabId).toBe(tab.id);
     expect(source.tabs.some((candidate) => candidate.id === tab.id)).toBe(false);
-    expect(source.activeTabId).toBe(source.tabs[0].id);
+    expect(source.tabs.map((candidate) => candidate.id)).toContain(source.activeTabId);
     expect(moved.splitMode).toBe(false);
   });
 
@@ -211,7 +283,7 @@ describe("domain actions", () => {
 
     expect(nextWorkspace.tabs.map((tab) => tab.title)).toEqual(["First"]);
     expect(getActiveTab(nextWorkspace).title).toBe("First");
-    expect(nextWorkspace.closedTabs.map((tab) => tab.title)).toEqual(["Third", "Second", "New Tab"]);
+    expect(nextWorkspace.closedTabs.map((tab) => tab.title)).toEqual(["Third", "Second", "MDN", "Chromium", "New Tab"]);
   });
 
   it("closes tabs to the right and keeps left tabs", () => {
@@ -229,7 +301,7 @@ describe("domain actions", () => {
     });
     const titles = getActiveWorkspace(closed).tabs.map((tab) => tab.title);
 
-    expect(titles).toEqual(["New Tab", "First", "Second"]);
+    expect(titles).toEqual(["New Tab", "Chromium", "MDN", "First", "Second"]);
     expect(getActiveTab(getActiveWorkspace(closed)).title).toBe("Second");
     expect(getActiveWorkspace(closed).closedTabs[0].title).toBe("Third");
   });
@@ -243,7 +315,7 @@ describe("domain actions", () => {
     const closed = closeTabsToRight(third, firstTab.id);
     const nextWorkspace = getActiveWorkspace(closed);
 
-    expect(nextWorkspace.tabs.map((tab) => tab.title)).toEqual(["New Tab", "First"]);
+    expect(nextWorkspace.tabs.map((tab) => tab.title)).toEqual(["New Tab", "Chromium", "MDN", "First"]);
     expect(getActiveTab(nextWorkspace).title).toBe("First");
     expect(nextWorkspace.closedTabs.map((tab) => tab.title).slice(0, 2)).toEqual(["Third", "Second"]);
   });
@@ -279,7 +351,7 @@ describe("domain actions", () => {
 
     expect(nextWorkspace.tabs.map((tab) => tab.title)).toEqual(["Second", "Third"]);
     expect(getActiveTab(nextWorkspace).title).toBe("Second");
-    expect(nextWorkspace.closedTabs.map((tab) => tab.title).slice(0, 2)).toEqual(["First", "New Tab"]);
+    expect(nextWorkspace.closedTabs.map((tab) => tab.title).slice(0, 2)).toEqual(["First", "MDN"]);
   });
 
   it("closes a tab group into recently closed and keeps the nearest tab active", () => {
@@ -294,13 +366,18 @@ describe("domain actions", () => {
     const workspace = getActiveWorkspace(closed);
 
     expect(workspace.tabGroups).toHaveLength(0);
-    expect(workspace.tabs.map((tab) => tab.title)).toEqual(["New Tab", "Third"]);
+    expect(workspace.tabs.map((tab) => tab.title)).toEqual(["New Tab", "Chromium", "MDN", "Third"]);
     expect(getActiveTab(workspace).title).toBe("Third");
     expect(workspace.closedTabs.map((tab) => tab.title).slice(0, 2)).toEqual(["News", "Docs"]);
   });
 
   it("replaces the last open tab when closing its tab group", () => {
-    const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.test", "Docs"));
+    const base = createDefaultState();
+    const personal = base.workspaces.find((ws) => ws.id === "personal")!;
+    // Strip default favorites so the grouped tab is the last remaining tab.
+    personal.tabs = personal.tabs.filter((tab) => tab.title === "New Tab");
+    personal.favoriteOrder = [];
+    const grouped = groupActiveTab(openUrlInActiveWorkspace(base, "docs.test", "Docs"));
     const group = getActiveWorkspace(grouped).tabGroups[0];
     const defaultTab = getActiveWorkspace(grouped).tabs.find((tab) => tab.title === "New Tab")!;
     const onlyGroup = closeTab(grouped, defaultTab.id);
@@ -349,6 +426,36 @@ describe("domain actions", () => {
     );
   });
 
+  it("resets transient runtime flags when duplicating a tab", () => {
+    const base = openUrlInActiveWorkspace(createDefaultState(), "media.example", "Media");
+    const originalId = getActiveWorkspace(base).activeTabId!;
+    const prepared = updateBrowserState(base, (draft) => {
+      const tab = getActiveWorkspace(draft).tabs.find((candidate) => candidate.id === originalId)!;
+      tab.isMediaPlaying = true;
+      tab.isCameraOn = true;
+      tab.isMicrophoneOn = true;
+      tab.isSleeping = true;
+      tab.hasUnread = true;
+    });
+    const duplicated = duplicateTab(prepared, originalId);
+    const copy = getActiveWorkspace(duplicated).tabs.find(
+      (candidate) => candidate.id !== originalId && candidate.url === "https://media.example/"
+    )!;
+
+    expect(copy).toBeTruthy();
+    expect(copy.id).not.toBe(originalId);
+    expect(copy.isMediaPlaying).toBe(false);
+    expect(copy.isCameraOn).toBe(false);
+    expect(copy.isMicrophoneOn).toBe(false);
+    expect(copy.isSleeping).toBe(false);
+    expect(copy.hasUnread).toBe(false);
+    expect(copy.canGoBack).toBe(false);
+    expect(copy.canGoForward).toBe(false);
+    expect(copy.isLoading).toBe(false);
+    // Persistent preferences should still be carried over.
+    expect(copy.zoomFactor).toBe(getActiveWorkspace(prepared).tabs.find((t) => t.id === originalId)!.zoomFactor);
+  });
+
   it("toggles pinned and muted state for a chosen background tab", () => {
     const grouped = groupActiveTab(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
     const withActiveNews = openUrlInActiveWorkspace(grouped, "news.example", "News");
@@ -376,16 +483,14 @@ describe("domain actions", () => {
     const removedEssential = toggleTabEssential(removedFavorite, docsTab.id);
 
     expect(getActiveTab(getActiveWorkspace(addedEssential)).title).toBe("News");
-    expect(getActiveWorkspace(addedFavorite).favorites.at(-1)).toMatchObject({
-      tabId: docsTab.id,
-      title: "Docs",
-      url: docsTab.url
-    });
+    const addedFavWorkspace = getActiveWorkspace(addedFavorite);
+    expect(addedFavWorkspace.tabs.find((t) => t.id === docsTab.id)?.isFavorite).toBe(true);
+    expect(addedFavWorkspace.favoriteOrder).toContain(docsTab.id);
     expect(addedEssential.essentials.at(-1)).toMatchObject({
       title: "Docs",
       url: docsTab.url
     });
-    expect(getActiveWorkspace(removedFavorite).favorites.some((favorite) => favorite.url === docsTab.url)).toBe(false);
+    expect(getActiveWorkspace(removedFavorite).tabs.find((t) => t.id === docsTab.id)?.isFavorite).toBe(false);
     expect(removedEssential.essentials.some((essential) => essential.url === docsTab.url)).toBe(false);
   });
 
@@ -397,13 +502,13 @@ describe("domain actions", () => {
     const duplicateTab = workspace.tabs.find((tab) => tab.title === "Docs duplicate")!;
     const withDocsFavorite = addTabToFavorites(second, docsTab.id);
     const withDuplicateFavorite = addTabToFavorites(withDocsFavorite, duplicateTab.id);
-    const favorites = getActiveWorkspace(withDuplicateFavorite).favorites.filter((favorite) => favorite.url === docsTab.url);
+    const favorites = getActiveWorkspace(withDuplicateFavorite).tabs.filter((t) => t.isFavorite && t.url === docsTab.url);
 
-    expect(favorites.map((favorite) => favorite.tabId)).toContain(docsTab.id);
-    expect(favorites.map((favorite) => favorite.tabId)).toContain(duplicateTab.id);
+    expect(favorites.map((t) => t.id)).toContain(docsTab.id);
+    expect(favorites.map((t) => t.id)).toContain(duplicateTab.id);
   });
 
-  it("toggles Favorites by tab identity before falling back to legacy URL entries", () => {
+  it("toggles Favorites by tab identity", () => {
     const first = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
     const second = openUrlInActiveWorkspace(first, "docs.example", "Docs duplicate");
     const workspace = getActiveWorkspace(second);
@@ -412,32 +517,11 @@ describe("domain actions", () => {
     const withDocsFavorite = addTabToFavorites(second, docsTab.id);
     const withDuplicateFavorite = toggleTabFavorite(withDocsFavorite, duplicateTab.id);
     const withoutDuplicateFavorite = toggleTabFavorite(withDuplicateFavorite, duplicateTab.id);
-    const remainingFavorites = getActiveWorkspace(withoutDuplicateFavorite).favorites.filter((favorite) => favorite.url === docsTab.url);
+    const remainingFavorites = getActiveWorkspace(withoutDuplicateFavorite).tabs.filter((t) => t.isFavorite && t.url === docsTab.url);
 
-    expect(getActiveWorkspace(withDuplicateFavorite).favorites.map((favorite) => favorite.tabId)).toContain(duplicateTab.id);
+    expect(getActiveWorkspace(withDuplicateFavorite).tabs.filter((t) => t.isFavorite).map((t) => t.id)).toContain(duplicateTab.id);
     expect(remainingFavorites).toHaveLength(1);
-    expect(remainingFavorites[0].tabId).toBe(docsTab.id);
-  });
-
-  it("upgrades legacy URL Favorites when a matching tab is added to Favorites", () => {
-    const withDocs = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
-    const docsTab = getActiveTab(getActiveWorkspace(withDocs));
-    const legacyFavorite = createFavorite("Legacy docs", docsTab.url);
-    const legacyState = {
-      ...withDocs,
-      workspaces: withDocs.workspaces.map((workspace) => workspace.id === withDocs.activeWorkspaceId
-        ? { ...workspace, favorites: [legacyFavorite] }
-        : workspace)
-    };
-    const upgraded = addTabToFavorites(legacyState, docsTab.id);
-    const favorites = getActiveWorkspace(upgraded).favorites;
-
-    expect(favorites).toHaveLength(1);
-    expect(favorites[0]).toMatchObject({
-      tabId: docsTab.id,
-      title: "Docs",
-      url: docsTab.url
-    });
+    expect(remainingFavorites[0].id).toBe(docsTab.id);
   });
 
   it("moves tabs into Favorites as their only sidebar folder", () => {
@@ -451,37 +535,35 @@ describe("domain actions", () => {
     expect(tab.isPinned).toBe(false);
     expect(tab.groupId).toBeNull();
     expect(workspace.tabGroups).toHaveLength(0);
-    expect(workspace.favorites.find((favorite) => favorite.tabId === docsTab.id)).toMatchObject({
-      tabId: docsTab.id,
-      title: "Docs",
-      url: docsTab.url
-    });
+    expect(workspace.tabs.find((t) => t.id === docsTab.id)?.isFavorite).toBe(true);
+    expect(workspace.favoriteOrder).toContain(docsTab.id);
   });
 
-  it("removes quick entries by url without requiring a matching tab", () => {
+  it("removes favorites by tab id and essentials by url", () => {
     const withFavorite = toggleActiveTabFavorite(openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs"));
     const withEssential = toggleActiveTabEssential(withFavorite);
-    const url = getActiveTab(getActiveWorkspace(withEssential)).url;
-    const withoutFavorite = removeWorkspaceFavorite(withEssential, url);
+    const workspace = getActiveWorkspace(withEssential);
+    const tabId = getActiveTab(workspace).id;
+    const url = getActiveTab(workspace).url;
+    const withoutFavorite = removeWorkspaceFavorite(withEssential, tabId);
     const withoutEssential = removeEssential(withoutFavorite, url);
 
-    expect(getActiveWorkspace(withoutFavorite).favorites.some((favorite) => favorite.url === url)).toBe(false);
+    expect(getActiveWorkspace(withoutFavorite).tabs.find((t) => t.id === tabId)?.isFavorite).toBe(false);
     expect(withoutEssential.essentials.some((essential) => essential.url === url)).toBe(false);
   });
 
-  it("removes a single Favorite by id when duplicate Favorite URLs exist", () => {
+  it("removes a single Favorite when duplicate Favorite URLs exist", () => {
     const first = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
     const second = openUrlInActiveWorkspace(first, "docs.example", "Docs duplicate");
     const workspace = getActiveWorkspace(second);
     const docsTab = workspace.tabs.find((tab) => tab.title === "Docs")!;
     const duplicateTab = workspace.tabs.find((tab) => tab.title === "Docs duplicate")!;
     const withFavorites = addTabToFavorites(addTabToFavorites(second, docsTab.id), duplicateTab.id);
-    const duplicateFavorite = getActiveWorkspace(withFavorites).favorites.find((favorite) => favorite.tabId === duplicateTab.id)!;
-    const withoutDuplicate = removeWorkspaceFavorite(withFavorites, duplicateFavorite.id);
-    const remainingFavorites = getActiveWorkspace(withoutDuplicate).favorites.filter((favorite) => favorite.url === docsTab.url);
+    const withoutDuplicate = removeWorkspaceFavorite(withFavorites, duplicateTab.id);
+    const remainingFavorites = getActiveWorkspace(withoutDuplicate).tabs.filter((t) => t.isFavorite && t.url === docsTab.url);
 
     expect(remainingFavorites).toHaveLength(1);
-    expect(remainingFavorites[0].tabId).toBe(docsTab.id);
+    expect(remainingFavorites[0].id).toBe(docsTab.id);
   });
 
   it("removes tab-backed Favorites when their tab is closed", () => {
@@ -494,23 +576,8 @@ describe("domain actions", () => {
     const closedWorkspace = getActiveWorkspace(closed);
 
     expect(closedWorkspace.closedTabs[0].url).toBe(docsTab.url);
-    expect(closedWorkspace.favorites.some((favorite) => favorite.tabId === docsTab.id)).toBe(false);
-    expect(closedWorkspace.favorites.some((favorite) => favorite.url === docsTab.url)).toBe(false);
-  });
-
-  it("keeps legacy URL Favorites when a matching tab is closed", () => {
-    const opened = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
-    const docsTab = getActiveTab(getActiveWorkspace(opened));
-    const legacyFavorite = createFavorite("Legacy docs", docsTab.url);
-    const legacyState = {
-      ...opened,
-      workspaces: opened.workspaces.map((workspace) => workspace.id === opened.activeWorkspaceId
-        ? { ...workspace, favorites: [legacyFavorite] }
-        : workspace)
-    };
-    const closed = closeTab(legacyState, docsTab.id);
-
-    expect(getActiveWorkspace(closed).favorites).toEqual([legacyFavorite]);
+    expect(closedWorkspace.favoriteOrder.includes(docsTab.id)).toBe(false);
+    expect(closedWorkspace.tabs.some((t) => t.isFavorite && t.url === docsTab.url)).toBe(false);
   });
 
   it("reorders tabs while preserving the active tab", () => {
@@ -581,15 +648,11 @@ describe("domain actions", () => {
     const pinned = toggleTabPinned(withFirst, first.id);
     const favorited = moveTabToFolderEnd(pinned, first.id, { type: "favorites" });
     const moved = getActiveWorkspace(favorited).tabs.find((tab) => tab.id === first.id)!;
-    const favorite = getActiveWorkspace(favorited).favorites.find((candidate) => candidate.tabId === first.id);
 
     expect(moved.isPinned).toBe(false);
     expect(moved.groupId).toBeNull();
-    expect(favorite).toMatchObject({
-      tabId: first.id,
-      title: "First",
-      url: "https://first.test/"
-    });
+    expect(moved.isFavorite).toBe(true);
+    expect(getActiveWorkspace(favorited).favoriteOrder).toContain(first.id);
   });
 
   it("moves Favorite-backed tabs out of Favorites through tab folder actions", () => {
@@ -599,21 +662,27 @@ describe("domain actions", () => {
     const favorited = moveTabToFolderEnd(withFirst, first.id, { type: "favorites" });
     const unpinned = moveTabToFolderEnd(favorited, first.id, { type: "tabs" });
 
-    expect(getActiveWorkspace(unpinned).favorites.some((favorite) => favorite.tabId === first.id)).toBe(false);
+    expect(getActiveWorkspace(unpinned).tabs.find((t) => t.id === first.id)?.isFavorite).toBe(false);
     expect(getActiveWorkspace(unpinned).tabs.at(-1)?.id).toBe(first.id);
   });
 
-  it("moves dragged tabs into grouped folders", () => {
+  it("places dragged tabs after a group without joining it", () => {
     const withNews = openUrlInActiveWorkspace(groupActiveTab(createDefaultState()), "news.example", "News");
     const workspace = getActiveWorkspace(withNews);
     const group = workspace.tabGroups[0];
     const groupedTarget = workspace.tabs.find((tab) => tab.groupId === group.id)!;
     const newsTab = workspace.tabs.find((tab) => tab.title === "News")!;
     const grouped = moveTabToFolderPosition(withNews, newsTab.id, groupedTarget.id, "after");
-    const moved = getActiveWorkspace(grouped).tabs.find((tab) => tab.id === newsTab.id)!;
+    const updatedWorkspace = getActiveWorkspace(grouped);
+    const moved = updatedWorkspace.tabs.find((tab) => tab.id === newsTab.id)!;
 
+    // before/after only reorders; it never drops the tab into the target's group.
     expect(moved.isPinned).toBe(false);
-    expect(moved.groupId).toBe(group.id);
+    expect(moved.groupId).toBeNull();
+    const groupIndices = updatedWorkspace.tabs
+      .map((tab, index) => (tab.groupId === group.id ? index : -1))
+      .filter((index) => index >= 0);
+    expect(updatedWorkspace.tabs.indexOf(moved)).toBe(Math.max(...groupIndices) + 1);
   });
 
   it("reorders workspaces while preserving the active workspace", () => {
@@ -627,142 +696,119 @@ describe("domain actions", () => {
   it("reorders active workspace favorites", () => {
     const initial = createDefaultState();
     const workspace = getActiveWorkspace(initial);
-    const first = createFavorite("First", "https://first.example");
-    const second = createFavorite("Second", "https://second.example");
-    const third = createFavorite("Third", "https://third.example");
-    workspace.favorites = [first, second, third];
+    // Strip default favorites so the test controls the full favorite set.
+    workspace.tabs = workspace.tabs.filter((tab) => !tab.isFavorite);
+    workspace.favoriteOrder = [];
+    const first = createTab("First", "https://first.example");
+    first.isFavorite = true;
+    const second = createTab("Second", "https://second.example");
+    second.isFavorite = true;
+    const third = createTab("Third", "https://third.example");
+    third.isFavorite = true;
+    workspace.tabs.push(first, second, third);
+    workspace.favoriteOrder = [first.id, second.id, third.id];
 
     const movedBefore = reorderWorkspaceFavorite(initial, third.id, first.id, "before");
     const movedAfter = reorderWorkspaceFavorite(movedBefore, first.id, second.id, "after");
     const ignored = reorderWorkspaceFavorite(movedAfter, "missing", second.id, "before");
 
-    expect(getActiveWorkspace(movedBefore).favorites.map((favorite) => favorite.title)).toEqual(["Third", "First", "Second"]);
-    expect(getActiveWorkspace(movedAfter).favorites.map((favorite) => favorite.title)).toEqual(["Third", "Second", "First"]);
-    expect(getActiveWorkspace(ignored).favorites.map((favorite) => favorite.title)).toEqual(["Third", "Second", "First"]);
+    const wsBefore = getActiveWorkspace(movedBefore);
+    expect(wsBefore.favoriteOrder.map((id) => wsBefore.tabs.find((t) => t.id === id)?.title)).toEqual(["Third", "First", "Second"]);
+    const wsAfter = getActiveWorkspace(movedAfter);
+    expect(wsAfter.favoriteOrder.map((id) => wsAfter.tabs.find((t) => t.id === id)?.title)).toEqual(["Third", "Second", "First"]);
+    const wsIgnored = getActiveWorkspace(ignored);
+    expect(wsIgnored.favoriteOrder.map((id) => wsIgnored.tabs.find((t) => t.id === id)?.title)).toEqual(["Third", "Second", "First"]);
   });
 
   it("moves a Space favorite to another workspace", () => {
-    const initial = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const base = createDefaultState();
+    const personalWs = base.workspaces.find((ws) => ws.id === "personal")!;
+    personalWs.tabs = personalWs.tabs.filter((tab) => !tab.isFavorite);
+    personalWs.favoriteOrder = [];
+    const initial = openUrlInActiveWorkspace(base, "docs.example", "Docs");
     const workspace = getActiveWorkspace(initial);
     const docsTab = getActiveTab(workspace);
-    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
-    workspace.favorites = [favorite];
+    docsTab.isFavorite = true;
+    workspace.favoriteOrder = [docsTab.id];
 
-    const moved = moveWorkspaceFavoriteToWorkspace(initial, favorite.id, "work");
+    const moved = moveWorkspaceFavoriteToWorkspace(initial, docsTab.id, "work");
     const personal = moved.workspaces.find((candidate) => candidate.id === "personal")!;
     const work = moved.workspaces.find((candidate) => candidate.id === "work")!;
 
     expect(moved.activeWorkspaceId).toBe("work");
-    expect(personal.favorites).toHaveLength(0);
+    expect(personal.favoriteOrder).toHaveLength(0);
     expect(personal.tabs.some((tab) => tab.id === docsTab.id)).toBe(false);
     expect(work.tabs.some((tab) => tab.id === docsTab.id)).toBe(true);
     expect(work.activeTabId).toBe(docsTab.id);
-    expect(work.favorites.at(-1)).toMatchObject({
-      tabId: docsTab.id,
-      title: "Docs",
-      url: "https://docs.example/"
-    });
+    expect(work.tabs.find((t) => t.id === docsTab.id)?.isFavorite).toBe(true);
+    expect(work.favoriteOrder).toContain(docsTab.id);
   });
 
   it("preserves the Favorites folder when a Favorite tab moves to another workspace", () => {
-    const initial = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const base = createDefaultState();
+    const personalWs = base.workspaces.find((ws) => ws.id === "personal")!;
+    personalWs.tabs = personalWs.tabs.filter((tab) => !tab.isFavorite);
+    personalWs.favoriteOrder = [];
+    const initial = openUrlInActiveWorkspace(base, "docs.example", "Docs");
     const workspace = getActiveWorkspace(initial);
     const docsTab = getActiveTab(workspace);
-    workspace.favorites = [createFavorite("Docs", docsTab.url, docsTab.id)];
+    docsTab.isFavorite = true;
+    workspace.favoriteOrder = [docsTab.id];
 
     const moved = moveTabToWorkspace(initial, docsTab.id, "work");
     const personal = moved.workspaces.find((candidate) => candidate.id === "personal")!;
     const work = moved.workspaces.find((candidate) => candidate.id === "work")!;
 
-    expect(personal.favorites).toHaveLength(0);
+    expect(personal.favoriteOrder).toHaveLength(0);
     expect(work.tabs.some((tab) => tab.id === docsTab.id)).toBe(true);
-    expect(work.favorites).toContainEqual(expect.objectContaining({ tabId: docsTab.id, title: "Docs" }));
-  });
-
-  it("upgrades legacy URL Favorite folder membership when its matching tab moves to another workspace", () => {
-    const initial = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
-    const workspace = getActiveWorkspace(initial);
-    const docsTab = getActiveTab(workspace);
-    workspace.favorites = [createFavorite("Legacy Docs", docsTab.url)];
-
-    const moved = moveTabToWorkspace(initial, docsTab.id, "work");
-    const personal = moved.workspaces.find((candidate) => candidate.id === "personal")!;
-    const work = moved.workspaces.find((candidate) => candidate.id === "work")!;
-
-    expect(personal.favorites).toHaveLength(0);
-    expect(work.favorites).toContainEqual(expect.objectContaining({
-      tabId: docsTab.id,
-      title: "Docs",
-      url: "https://docs.example/"
-    }));
+    expect(work.tabs.find((t) => t.id === docsTab.id)?.isFavorite).toBe(true);
+    expect(work.favoriteOrder).toContain(docsTab.id);
   });
 
   it("preserves the Favorites folder when a Favorite tab creates a new workspace", () => {
-    const initial = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const base = createDefaultState();
+    const personalWs = base.workspaces.find((ws) => ws.id === "personal")!;
+    personalWs.tabs = personalWs.tabs.filter((tab) => !tab.isFavorite);
+    personalWs.favoriteOrder = [];
+    const initial = openUrlInActiveWorkspace(base, "docs.example", "Docs");
     const workspace = getActiveWorkspace(initial);
     const docsTab = getActiveTab(workspace);
-    workspace.favorites = [createFavorite("Docs", docsTab.url, docsTab.id)];
+    docsTab.isFavorite = true;
+    workspace.favoriteOrder = [docsTab.id];
 
     const moved = moveTabToNewWorkspace(initial, docsTab.id);
     const source = moved.workspaces.find((candidate) => candidate.id === "personal")!;
     const target = getActiveWorkspace(moved);
 
-    expect(source.favorites).toHaveLength(0);
-    expect(target.favorites).toEqual([expect.objectContaining({ tabId: docsTab.id, title: "Docs" })]);
+    expect(source.favoriteOrder).toHaveLength(0);
+    expect(target.tabs.find((t) => t.id === docsTab.id)?.isFavorite).toBe(true);
+    expect(target.favoriteOrder).toEqual([docsTab.id]);
     expect(target.tabs.map((tab) => tab.id)).toEqual([docsTab.id]);
   });
 
-  it("creates a backing tab when moving a legacy Space favorite to another workspace", () => {
-    const initial = createDefaultState();
-    const workspace = getActiveWorkspace(initial);
-    const favorite = createFavorite("Docs", "https://docs.example");
-    workspace.favorites = [favorite];
-
-    const moved = moveWorkspaceFavoriteToWorkspace(initial, favorite.id, "work");
-    const work = moved.workspaces.find((candidate) => candidate.id === "work")!;
-    const movedFavorite = work.favorites.at(-1)!;
-    const createdTab = work.tabs.find((tab) => tab.id === movedFavorite.tabId)!;
-
-    expect(createdTab).toMatchObject({
-      title: "Docs",
-      url: "https://docs.example/"
-    });
-    expect(work.activeTabId).toBe(createdTab.id);
-  });
-
   it("moves a Space favorite to a new workspace", () => {
-    const initial = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
+    const base = createDefaultState();
+    const personalWs = base.workspaces.find((ws) => ws.id === "personal")!;
+    personalWs.tabs = personalWs.tabs.filter((tab) => !tab.isFavorite);
+    personalWs.favoriteOrder = [];
+    const initial = openUrlInActiveWorkspace(base, "docs.example", "Docs");
     const workspace = getActiveWorkspace(initial);
     const docsTab = getActiveTab(workspace);
-    const favorite = createFavorite("Docs", docsTab.url, docsTab.id);
-    workspace.favorites = [favorite];
+    docsTab.isFavorite = true;
+    workspace.favoriteOrder = [docsTab.id];
 
-    const moved = moveWorkspaceFavoriteToNewWorkspace(initial, favorite.id);
+    const moved = moveWorkspaceFavoriteToNewWorkspace(initial, docsTab.id);
     const source = moved.workspaces.find((candidate) => candidate.id === "personal")!;
     const target = getActiveWorkspace(moved);
 
     expect(moved.workspaces).toHaveLength(initial.workspaces.length + 1);
-    expect(source.favorites).toHaveLength(0);
+    expect(source.favoriteOrder).toHaveLength(0);
     expect(source.tabs.some((tab) => tab.id === docsTab.id)).toBe(false);
     expect(target.name).toBe("Docs");
-    expect(target.favorites).toHaveLength(1);
-    expect(target.favorites[0].tabId).toBe(docsTab.id);
+    expect(target.tabs.find((t) => t.id === docsTab.id)?.isFavorite).toBe(true);
+    expect(target.favoriteOrder).toEqual([docsTab.id]);
     expect(target.tabs.map((tab) => tab.id)).toEqual([docsTab.id]);
     expect(getActiveTab(target).id).toBe(docsTab.id);
-  });
-
-  it("creates a backing tab when moving a legacy Space favorite to a new workspace", () => {
-    const initial = createDefaultState();
-    const workspace = getActiveWorkspace(initial);
-    const favorite = createFavorite("Docs", "https://docs.example");
-    workspace.favorites = [favorite];
-
-    const moved = moveWorkspaceFavoriteToNewWorkspace(initial, favorite.id);
-    const target = getActiveWorkspace(moved);
-
-    expect(target.favorites[0].tabId).toBe(target.tabs[0].id);
-    expect(target.tabs).toHaveLength(1);
-    expect(getActiveTab(target).url).toBe("https://docs.example/");
   });
 
   it("reorders global essentials", () => {
@@ -1096,7 +1142,11 @@ describe("domain actions", () => {
   });
 
   it("keeps Memory Saver manual sleep as a no-op when no tabs can be released", () => {
-    const state = createDefaultState();
+    const base = createDefaultState();
+    const personalWs = base.workspaces.find((ws) => ws.id === "personal")!;
+    personalWs.tabs = personalWs.tabs.filter((tab) => !tab.isFavorite);
+    personalWs.favoriteOrder = [];
+    const state = base;
     getActiveWorkspace(state).activeTabId = getActiveWorkspace(state).tabs[0].id;
     const withBackground = openUrlInActiveWorkspace(state, "docs.test", "Docs");
     const slept = sleepInactiveTabs(withBackground);
@@ -1119,7 +1169,11 @@ describe("domain actions", () => {
   });
 
   it("moves focus forward before sleeping the first active tab", () => {
-    const first = openUrlInActiveWorkspace(createDefaultState(), "first.test", "First");
+    const base = createDefaultState();
+    const personalWs = base.workspaces.find((ws) => ws.id === "personal")!;
+    personalWs.tabs = personalWs.tabs.filter((tab) => !tab.isFavorite);
+    personalWs.favoriteOrder = [];
+    const first = openUrlInActiveWorkspace(base, "first.test", "First");
     const second = openUrlInActiveWorkspace(first, "second.test", "Second");
     const workspace = getActiveWorkspace(second);
     const firstTab = workspace.tabs.find((tab) => tab.title === "New Tab")!;

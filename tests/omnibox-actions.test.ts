@@ -48,31 +48,19 @@ describe("getOmniboxAction", () => {
     });
   });
 
-  it("selects Favorite tab suggestions or opens legacy Favorites in a new tab", () => {
+  it("selects Favorite tab suggestions", () => {
     const favoriteSuggestion: OmniboxSuggestion = {
       id: "favorite-1",
-      subtitle: "Favorite",
+      subtitle: "Favorite tab",
       tabId: "tab-favorite-1",
       title: "Docs",
       type: "favorite",
       url: "https://docs.example"
     };
-    const legacyFavoriteSuggestion: OmniboxSuggestion = {
-      id: "favorite-legacy",
-      subtitle: "Favorite",
-      title: "Legacy",
-      type: "favorite",
-      url: "https://legacy.example"
-    };
 
     expect(getOmniboxAction(favoriteSuggestion, "")).toEqual({
       tabId: "tab-favorite-1",
       type: "selectTab"
-    });
-    expect(getOmniboxAction(legacyFavoriteSuggestion, "")).toEqual({
-      title: "Legacy",
-      type: "openUrlInActiveWorkspace",
-      url: "https://legacy.example"
     });
     expect(getOmniboxAction(favoriteSuggestion, "", { altKey: true })).toEqual({
       title: "Docs",
@@ -82,11 +70,6 @@ describe("getOmniboxAction", () => {
     expect(getOmniboxAction(favoriteSuggestion, "", { shiftKey: true })).toEqual({
       tabId: "tab-favorite-1",
       type: "openTabInSplit"
-    });
-    expect(getOmniboxAction(legacyFavoriteSuggestion, "", { shiftKey: true })).toEqual({
-      title: "Legacy",
-      type: "openUrlInSplit",
-      url: "https://legacy.example"
     });
   });
 

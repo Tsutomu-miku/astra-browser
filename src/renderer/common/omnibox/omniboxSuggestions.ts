@@ -1,4 +1,4 @@
-import { resolveFavoriteTab, type BrowserState, type Favorite, type Workspace } from "../../domain/browser";
+import { type BrowserState, type Workspace } from "../../domain/browser";
 import { getActiveWorkspace } from "../../domain/browser/selectors";
 
 type OmniboxSuggestionBase = {
@@ -12,7 +12,7 @@ export type OmniboxSuggestion =
   | (OmniboxSuggestionBase & { type: "navigate"; value: string })
   | (OmniboxSuggestionBase & { type: "tab"; tabId: string; url?: string })
   | (OmniboxSuggestionBase & { type: "essential" | "history"; url: string })
-  | (OmniboxSuggestionBase & { type: "favorite"; tabId?: string; url: string });
+  | (OmniboxSuggestionBase & { type: "favorite"; tabId: string; url: string });
 
 export interface OmniboxInlineCompletion {
   suggestionId: string;
@@ -52,7 +52,7 @@ export function buildOmniboxSuggestions(state: BrowserState, query: string): Omn
       subtitle: `Essential · ${essential.url}`,
       url: essential.url
     })),
-    ...workspace.favorites.map((favorite) => toFavoriteSuggestion(workspace, favorite)),
+    ...getFavoriteTabs(workspace).map((tab) => toFavoriteSuggestion(tab)),
     ...workspace.tabs.map((tab) => ({
       type: "tab" as const,
       completion: getDisplayUrl(tab.url),
@@ -83,20 +83,23 @@ export function buildOmniboxSuggestions(state: BrowserState, query: string): Omn
   return [...suggestions, ...matches].slice(0, SUGGESTION_LIMIT);
 }
 
-function toFavoriteSuggestion(workspace: Workspace, favorite: Favorite): OmniboxSuggestion {
-  const tab = resolveFavoriteTab(workspace, favorite);
-  const url = tab?.url ?? favorite.url;
-  const title = tab?.title || favorite.title || url;
-
+function toFavoriteSuggestion(tab: Workspace["tabs"][number]): OmniboxSuggestion {
   return {
     type: "favorite",
-    completion: getDisplayUrl(url),
-    id: `favorite-${favorite.id}`,
-    ...(tab ? { tabId: tab.id } : {}),
-    title,
-    subtitle: `${tab ? "Favorite tab" : "Favorite"} · ${url}`,
-    url
+    completion: getDisplayUrl(tab.url),
+    id: `favorite-${tab.id}`,
+    tabId: tab.id,
+    title: tab.title || tab.url,
+    subtitle: `Favorite tab · ${tab.url}`,
+    url: tab.url
   };
+}
+
+function getFavoriteTabs(workspace: Workspace): Workspace["tabs"][number][] {
+  const tabById = new Map(workspace.tabs.map((tab) => [tab.id, tab]));
+  return workspace.favoriteOrder
+    .map((id) => tabById.get(id))
+    .filter((tab): tab is Workspace["tabs"][number] => Boolean(tab && tab.isFavorite));
 }
 
 export function getOmniboxInlineCompletion(

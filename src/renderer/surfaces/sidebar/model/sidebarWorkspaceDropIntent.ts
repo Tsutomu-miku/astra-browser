@@ -1,6 +1,5 @@
 import {
   readSidebarClosedTabDragIndex,
-  readSidebarFavoriteDragId,
   readSidebarGroupDragId,
   readSidebarTabDragId,
   readSidebarWorkspaceDragId,
@@ -9,7 +8,6 @@ import {
 
 export type SidebarWorkspaceDropIntent =
   | { type: "closedTab"; closedTabIndex: number }
-  | { type: "favorite"; favoriteId: string }
   | { type: "group"; groupId: string }
   | { type: "tab"; tabId: string }
   | { type: "workspace"; workspaceId: string };
@@ -42,9 +40,7 @@ export function getSidebarWorkspaceDropIntent(
   const isOtherWorkspace = state.targetWorkspaceId !== state.activeWorkspaceId;
   if (!isOtherWorkspace) return null;
 
-  const favoriteId = readSidebarFavoriteDragId(state, getData);
-  if (favoriteId) return { type: "favorite", favoriteId };
-
+  // Workspace favorites drag with tab identity now.
   const groupId = readSidebarGroupDragId(state, getData);
   if (groupId) return { type: "group", groupId };
 
@@ -75,9 +71,7 @@ export function getSidebarNewWorkspaceDropIntent(
     return { type: "closedTab", closedTabIndex };
   }
 
-  const favoriteId = readSidebarFavoriteDragId(state, getData);
-  if (favoriteId) return { type: "favorite", favoriteId };
-
+  // Workspace favorites drag with tab identity.
   const groupId = readSidebarGroupDragId(state, getData);
   if (groupId) return { type: "group", groupId };
 

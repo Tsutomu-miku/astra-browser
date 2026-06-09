@@ -22,20 +22,13 @@ export function getSidebarSearchOpenIntent(
   }
 
   if (modifiers.shiftKey) {
-    if (target.type === "favorite" && target.tabId) {
-      return { type: "splitTab", tabId: target.tabId };
+    if (target.type === "tab" || target.type === "favorite") {
+      return { type: "splitTab", tabId: target.type === "favorite" ? target.tabId : target.id };
     }
-
-    return target.type === "tab"
-      ? { type: "splitTab", tabId: target.id }
-      : { type: "splitUrl", title: target.title, url: target.url };
+    return { type: "splitUrl", title: target.title, url: target.url };
   }
 
   if (target.type === "tab") return { type: "selectTab", tabId: target.id };
-  if (target.type === "favorite") {
-    return target.tabId
-      ? { type: "selectTab", tabId: target.tabId }
-      : { type: "openUrl", title: target.title, url: target.url };
-  }
+  if (target.type === "favorite") return { type: "selectTab", tabId: target.tabId };
   return { type: "navigateUrl", title: target.title, url: target.url };
 }

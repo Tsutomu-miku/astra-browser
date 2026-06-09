@@ -21,6 +21,7 @@ export function SidebarTabsSection({
   draggingTabId,
   faviconCache,
   filteredItems,
+  isCrossFolderDrag,
   onTabContextMenu,
   onTabDrop,
   onTabGroupCreate,
@@ -38,6 +39,7 @@ export function SidebarTabsSection({
   draggingTabId: string | null;
   faviconCache?: FaviconCache;
   filteredItems: SidebarFilterResult;
+  isCrossFolderDrag?: (targetTab: BrowserTab) => (draggedId: string) => boolean;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabDrop: (event: DragEvent<HTMLElement>, targetTabId: string, axis?: DropAxis) => void;
   onTabGroupCreate?: (sourceTabId: string, targetTabId: string) => void;
@@ -102,6 +104,7 @@ export function SidebarTabsSection({
             draggingGroupId={draggingGroupId}
             group={group}
             faviconCache={faviconCache}
+            isCrossFolderDrag={isCrossFolderDrag}
             searchSelectedTabId={activeSearchTarget?.type === "tab" ? activeSearchTarget.id : undefined}
             splitTabIds={splitTabIds}
             tabs={tabs}
@@ -129,6 +132,7 @@ export function SidebarTabsSection({
             draggingTabId={draggingTabId}
             faviconCache={faviconCache}
             id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
+            isCrossFolderDrag={isCrossFolderDrag?.(tab)}
             splitTabIds={splitTabIds}
             isSearchSelected={activeSearchTarget?.type === "tab" && activeSearchTarget.id === tab.id}
             tab={tab}

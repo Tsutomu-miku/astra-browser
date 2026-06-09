@@ -67,7 +67,6 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
     workspace.splitLayout = isSplitLayout(workspace.splitLayout) ? workspace.splitLayout : "horizontal";
     Object.assign(workspace, normalizeWorkspaceProfile(workspace));
     workspace.closedTabs = normalizeClosedTabs(workspace.closedTabs);
-    workspace.favorites = normalizeFavorites(workspace.favorites, state.settings.searchEngine);
     workspace.tabGroups = normalizeTabGroups(workspace.tabGroups);
     workspace.tabs = Array.isArray(workspace.tabs) ? workspace.tabs.filter(Boolean) as BrowserTab[] : [];
 
@@ -91,20 +90,88 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
       tab.groupId = isKnownTabGroup(workspace.tabGroups, tab.groupId) ? tab.groupId : null;
       tab.canGoBack = Boolean(tab.canGoBack);
       tab.canGoForward = Boolean(tab.canGoForward);
+      tab.isFavorite = Boolean(tab.isFavorite);
       tab.isMuted = Boolean(tab.isMuted);
       tab.isPinned = Boolean(tab.isPinned);
-      tab.isLoading = Boolean(tab.isLoading);
+      // Transient runtime flags always start false on startup — they describe
+      // a live <webview>'s state, not something that survives a restart.
+      tab.isLoading = false;
+      tab.isMediaPlaying = false;
+      tab.isCameraOn = false;
+      tab.isMicrophoneOn = false;
+      tab.hasUnread = false;
       tab.isSleeping = Boolean(tab.isSleeping);
-      tab.isMediaPlaying = Boolean(tab.isMediaPlaying);
-      tab.isCameraOn = Boolean(tab.isCameraOn);
-      tab.isMicrophoneOn = Boolean(tab.isMicrophoneOn);
-      tab.hasUnread = Boolean(tab.hasUnread);
       if (typeof tab.customTitle !== "string" || tab.customTitle.trim() === "") {
         delete tab.customTitle;
       }
       tab.lastActiveAt = normalizeTimestamp(tab.lastActiveAt);
       tab.zoomFactor = normalizeZoomFactor(tab.zoomFactor);
     }
+
+    // Migration: old workspace.favorites[] → tab.isFavorite + workspace.favoriteOrder[].
+    // Legacy URL-only favorites (no tabId) are dropped — they are redundant with
+    // Essentials. Favorites whose tabId no longer exists are also dropped.
+    const validTabIds = new Set(workspace.tabs.map((tab) => tab.id));
+    const seenIds = new Set<string>();
+    const migratedOrder: string[] = [];
+
+    // 1. Migrate from old favorites[] array.
+    const oldFavorites = (workspace as Partial<{ favorites: Array<{ tabId?: string } | null> | undefined }>).favorites;
+    if (Array.isArray(oldFavorites)) {
+      for (const fav of oldFavorites) {
+        if (!fav?.tabId || !validTabIds.has(fav.tabId) || seenIds.has(fav.tabId)) continue;
+        seenIds.add(fav.tabId);
+        migratedOrder.push(fav.tabId);
+        const tab = workspace.tabs.find((t) => t.id === fav.tabId);
+        if (tab) tab.isFavorite = true;
+      }
+    }
+
+    // 2. Merge with existing favoriteOrder (from new-format persisted state).
+    const existingOrder = (workspace as { favoriteOrder?: unknown[] }).favoriteOrder;
+    if (Array.isArray(existingOrder)) {
+      for (const id of existingOrder) {
+        if (typeof id !== "string" || !validTabIds.has(id) || seenIds.has(id)) continue;
+        seenIds.add(id);
+        migratedOrder.push(id);
+      }
+    }
+
+    // 3. Catch any tabs that have isFavorite=true but are missing from the order.
+    for (const tab of workspace.tabs) {
+      if (tab.isFavorite && !seenIds.has(tab.id)) {
+        migratedOrder.push(tab.id);
+        seenIds.add(tab.id);
+      }
+    }
+
+    // 4. Enforce invariants.
+    //    - Pinned tabs cannot be favorite or grouped.
+    //    - All tabs in one group share the same `isFavorite` value. Mixed
+    //      groups are coerced to non-favorite so they land in the Tabs section
+    //      rather than being split across sections.
+    for (const tab of workspace.tabs) {
+      if (tab.isPinned) {
+        tab.isFavorite = false;
+        tab.groupId = null;
+      }
+    }
+    for (const group of workspace.tabGroups) {
+      const members = workspace.tabs.filter((tab) => tab.groupId === group.id);
+      if (members.length === 0) continue;
+      const allFavorite = members.every((tab) => tab.isFavorite);
+      if (!allFavorite) {
+        for (const member of members) {
+          member.isFavorite = false;
+        }
+      }
+    }
+    workspace.favoriteOrder = migratedOrder.filter((id) => {
+      const tab = workspace.tabs.find((t) => t.id === id);
+      return Boolean(tab?.isFavorite);
+    });
+    // Clean up the legacy key so it doesn't pollute re-serialized state.
+    delete (workspace as { favorites?: unknown }).favorites;
 
     if (!workspace.activeTabId || !workspace.tabs.some((tab) => tab.id === workspace.activeTabId)) {
       workspace.activeTabId = workspace.tabs[0].id;
@@ -143,7 +210,8 @@ export function applyStartupBehavior(state: BrowserState): BrowserState {
         ...workspace,
         tabs: [tab],
         activeTabId: tab.id,
-        tabGroups: []
+        tabGroups: [],
+        favoriteOrder: []
       };
     })
   };
@@ -181,8 +249,15 @@ export function normalizeClosedTabs(closedTabs: Array<Partial<ClosedTab> | null>
       const url = normalizeAddress(tab.url);
       return {
         title: tab.title || getReadableUrlTitle(url),
+        ...(typeof tab.customTitle === "string" && tab.customTitle.trim() !== "" ? { customTitle: tab.customTitle } : {}),
         url,
         ...(normalizeFaviconUrl(tab.faviconUrl) ? { faviconUrl: normalizeFaviconUrl(tab.faviconUrl)! } : {}),
+        groupId: typeof tab.groupId === "string" ? tab.groupId : null,
+        canGoBack: Boolean(tab.canGoBack),
+        canGoForward: Boolean(tab.canGoForward),
+        isMuted: Boolean(tab.isMuted),
+        isPinned: Boolean(tab.isPinned),
+        zoomFactor: normalizeZoomFactor(tab.zoomFactor),
         closedAt: Number(tab.closedAt) || Date.now()
       };
     })

@@ -288,6 +288,7 @@
 
 .sidebar-section-header:hover .sidebar-new-tab-button,
 .sidebar-section-header:focus-within .sidebar-new-tab-button,
+.tabs-section .sidebar-new-tab-button,
 .sidebar-new-tab-button:focus-visible {
   opacity: 1;
 }
@@ -713,7 +714,7 @@
 }
 
 .tabs-section-toolbar {
-  min-height: 20px;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: flex-end;

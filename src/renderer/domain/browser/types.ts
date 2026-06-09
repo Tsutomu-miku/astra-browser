@@ -18,6 +18,16 @@ export interface SearchEngine {
   url: string;
 }
 
+// BrowserTab state fields fall into two categories:
+//   Persistent  — restored verbatim after a process restart (id, url, title,
+//                 faviconUrl, groupId, canGoBack, canGoForward, isMuted,
+//                 isPinned, zoomFactor, customTitle, lastActiveAt).
+//   Transient   — derived from the live <webview> at runtime and always
+//                 reset to defaults on startup. These must never be trusted
+//                 from serialized state: isMediaPlaying, isCameraOn,
+//                 isMicrophoneOn, hasUnread, isLoading, isSleeping*.
+// * isSleeping is serialized so that memory-saver state survives restarts,
+//   but the tab still starts without a mounted <webview>.
 export interface BrowserTab {
   id: string;
   title: string;
@@ -27,6 +37,7 @@ export interface BrowserTab {
   groupId: string | null;
   canGoBack: boolean;
   canGoForward: boolean;
+  isFavorite: boolean;
   isMuted: boolean;
   isPinned: boolean;
   isLoading: boolean;
@@ -39,10 +50,23 @@ export interface BrowserTab {
   hasUnread: boolean;
 }
 
+// ClosedTab stores a complete snapshot of a BrowserTab at close time,
+// including layout (groupId, isPinned) and preferences (isMuted, zoomFactor,
+// customTitle). Runtime-only flags (isMediaPlaying, isCameraOn,
+// isMicrophoneOn, hasUnread, isLoading) are dropped because they describe
+// a live webview's transient state, not the tab itself.
 export interface ClosedTab {
+  id?: string;
   title: string;
+  customTitle?: string;
   url: string;
   faviconUrl?: string;
+  groupId: string | null;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  isMuted: boolean;
+  isPinned: boolean;
+  zoomFactor: number;
   closedAt: number;
 }
 
@@ -110,7 +134,7 @@ export interface Workspace {
   profileName: string;
   splitLayout: SplitLayout;
   closedTabs: ClosedTab[];
-  favorites: Favorite[];
+  favoriteOrder: string[];
   tabGroups: TabGroup[];
   tabs: BrowserTab[];
   activeTabId: string | null;
@@ -130,9 +154,9 @@ export interface BrowserState {
   workspaces: Workspace[];
 }
 
-export type PartialWorkspace = Partial<Omit<Workspace, "closedTabs" | "favorites" | "tabGroups" | "tabs">> & {
+export type PartialWorkspace = Partial<Omit<Workspace, "closedTabs" | "favoriteOrder" | "tabGroups" | "tabs">> & {
   closedTabs?: Array<Partial<ClosedTab> | null>;
-  favorites?: Array<Partial<Favorite> | null>;
+  favoriteOrder?: Array<string | null>;
   tabGroups?: Array<Partial<TabGroup> | null>;
   tabs?: Array<Partial<BrowserTab> | null>;
 };

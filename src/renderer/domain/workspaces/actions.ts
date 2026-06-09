@@ -6,13 +6,11 @@ import {
   getNextWorkspaceAccent,
   type BrowserState,
   type BrowserTab,
-  type Favorite,
   type SplitLayout,
   type TabGroup,
   type Workspace
 } from "../browser";
 import { getActiveWorkspace } from "../browser/selectors";
-import { takeFavoriteBackingTab, takeTabFavorite } from "../common/favoriteTabs";
 import { pruneEmptyTabGroups } from "../tabs/groups";
 import { clearSplitView } from "../tabs/splitView";
 import { updateBrowserState } from "../browser/updateState";
@@ -47,11 +45,11 @@ export function moveTabToNewWorkspace(state: BrowserState, tabId: string): Brows
     const [tab] = source.tabs.splice(index, 1);
     tab.groupId = null;
     pruneEmptyTabGroups(source);
+    source.favoriteOrder = source.favoriteOrder.filter((id) => id !== tabId);
     replaceEmptyOrMovedActiveTab(draft, source, tabId, index);
 
-    const favorite = takeTabFavorite(source, tab);
     const workspace = createWorkspace(draft, {
-      favorites: favorite ? [favorite] : undefined,
+      favoriteOrder: tab.isFavorite ? [tab.id] : [],
       name: tab.title || getReadableUrlTitle(tab.url),
       tabs: [tab],
       activeTabId: tab.id
@@ -75,9 +73,15 @@ export function moveTabGroupToNewWorkspace(state: BrowserState, groupId: string)
     const movingIds = new Set(movingTabs.map((tab) => tab.id));
     const activeMovedTab = movingTabs.find((tab) => tab.id === source.activeTabId);
     source.tabs = source.tabs.filter((tab) => !movingIds.has(tab.id));
+    source.favoriteOrder = source.favoriteOrder.filter((id) => !movingIds.has(id));
     pruneEmptyTabGroups(source);
     replaceEmptyOrMovedActiveTab(draft, source, activeMovedTab?.id ?? movingTabs[0].id, firstMovedIndex);
 
+    // Group and favorite are mutually exclusive; group wins because the
+    // move is explicitly driven by group identity.
+    for (const movedTab of movingTabs) {
+      movedTab.isFavorite = false;
+    }
     const workspace = createWorkspace(draft, {
       name: group.name,
       tabGroups: [{ ...group }],
@@ -103,7 +107,14 @@ export function restoreClosedTabToNewWorkspace(state: BrowserState, closedIndex:
 
     const tab = {
       ...createTab(closed.title, closed.url),
-      ...(closed.faviconUrl ? { faviconUrl: closed.faviconUrl } : {})
+      ...(closed.faviconUrl ? { faviconUrl: closed.faviconUrl } : {}),
+      ...(closed.customTitle ? { customTitle: closed.customTitle } : {}),
+      groupId: null,
+      canGoBack: Boolean(closed.canGoBack),
+      canGoForward: Boolean(closed.canGoForward),
+      isMuted: Boolean(closed.isMuted),
+      isPinned: Boolean(closed.isPinned),
+      zoomFactor: typeof closed.zoomFactor === "number" ? closed.zoomFactor : 1
     };
     const workspace = createWorkspace(draft, {
       name: closed.title || getReadableUrlTitle(closed.url),
@@ -116,22 +127,28 @@ export function restoreClosedTabToNewWorkspace(state: BrowserState, closedIndex:
   });
 }
 
-export function moveWorkspaceFavoriteToNewWorkspace(state: BrowserState, favoriteId: string): BrowserState {
+export function moveWorkspaceFavoriteToNewWorkspace(state: BrowserState, tabId: string): BrowserState {
   const source = getActiveWorkspace(state);
-  if (!source.favorites.some((favorite) => favorite.id === favoriteId)) {
+  if (!source.tabs.some((tab) => tab.id === tabId)) {
     return state;
   }
 
   return updateBrowserState(state, (draft) => {
     const source = getActiveWorkspace(draft);
-    const index = source.favorites.findIndex((favorite) => favorite.id === favoriteId);
+    const index = source.tabs.findIndex((tab) => tab.id === tabId);
     if (index < 0) return;
 
-    const [favorite] = source.favorites.splice(index, 1);
-    const tab = takeFavoriteBackingTab(draft, source, favorite);
+    const [tab] = source.tabs.splice(index, 1);
+    tab.groupId = null;
+    tab.isPinned = false;
+    tab.isFavorite = true;
+    pruneEmptyTabGroups(source);
+    source.favoriteOrder = source.favoriteOrder.filter((id) => id !== tabId);
+    replaceEmptyOrMovedActiveTab(draft, source, tabId, index);
+
     const workspace = createWorkspace(draft, {
-      favorites: [favorite],
-      name: favorite.title || getReadableUrlTitle(favorite.url),
+      favoriteOrder: [tab.id],
+      name: tab.title || getReadableUrlTitle(tab.url),
       tabs: [tab],
       activeTabId: tab.id
     });
@@ -204,7 +221,7 @@ function createWorkspace(
   state: BrowserState,
   options: {
     activeTabId?: string;
-    favorites?: Favorite[];
+    favoriteOrder?: string[];
     name: string;
     tabGroups?: TabGroup[];
     tabs: BrowserTab[];
@@ -223,7 +240,7 @@ function createWorkspace(
     ...normalizeWorkspaceProfile({ id, name }),
     splitLayout: "horizontal" as SplitLayout,
     closedTabs: [],
-    favorites: options.favorites ?? [],
+    favoriteOrder: options.favoriteOrder?.filter((id) => tabs.some((t) => t.id === id)) ?? [],
     tabGroups: options.tabGroups ?? [],
     tabs,
     activeTabId: options.activeTabId ?? tabs[0].id

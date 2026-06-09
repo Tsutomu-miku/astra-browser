@@ -70,13 +70,20 @@ export function updateDropZone(
   target: DropPlacementTarget,
   pointer: DropPointer,
   axis: DropAxis = "vertical",
-  ontoRatio = 0.33
+  ontoRatio = 0.33,
+  crossFolder = false
 ): DropZonePlacement {
   const placement = getPointerDropZone(target, pointer, axis, ontoRatio);
   target.dataset.dropPlacement = placement;
+  if (crossFolder && placement !== "onto") {
+    target.dataset.dropCrossFolder = "true";
+  } else {
+    delete target.dataset.dropCrossFolder;
+  }
   return placement;
 }
 
 export function clearDropPlacement(target: Pick<DropPlacementTarget, "dataset">) {
   delete target.dataset.dropPlacement;
+  delete target.dataset.dropCrossFolder;
 }

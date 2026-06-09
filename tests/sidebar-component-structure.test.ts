@@ -30,10 +30,16 @@ describe("sidebar component structure", () => {
     const menuDismissal = readFileSync(menuDismissalPath, "utf8");
     const sidebarRowReorderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarRowReorderDrop.ts"), "utf8");
     const workspaceStrip = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceStrip.tsx"), "utf8");
+    const workspaceContextMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/WorkspaceContextMenu.tsx"), "utf8");
+    const sidebarMoreMenu = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/workspaces/SidebarMoreMenu.tsx"), "utf8");
+    const workspaceMenuFiles = [workspaceStrip, workspaceContextMenu, sidebarMoreMenu];
     const sidebarWorkspaceDropIntent = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarWorkspaceDropIntent.ts"), "utf8");
     const sidebarQuickEntryReorderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarQuickEntryReorderDrop.ts"), "utf8");
     const sidebarQuickEntryDragHook = readFileSync(join(root, "src/renderer/surfaces/sidebar/hooks/useSidebarQuickEntryDrag.ts"), "utf8");
     const sidebarItems = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItems.tsx"), "utf8");
+    const sidebarTabRow = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarTabRow.tsx"), "utf8");
+    const sidebarFavoriteButton = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarFavoriteButton.tsx"), "utf8");
+    const sidebarItemFiles = [sidebarItems, sidebarTabRow, sidebarFavoriteButton];
     const sidebarClosedTabButton = readFileSync(join(root, "src/renderer/surfaces/sidebar/components/tabs/ClosedTabButton.tsx"), "utf8");
     const sidebarItemActivation = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarItemActivation.ts"), "utf8");
     const sidebarTabGroupHeaderDrop = readFileSync(join(root, "src/renderer/surfaces/sidebar/model/sidebarTabGroupHeaderDrop.ts"), "utf8");
@@ -92,8 +98,8 @@ describe("sidebar component structure", () => {
     expect(menuDismissal).toContain("useRef");
     expect(menuDismissal).toContain("restoreFocus: false");
     expect(menuDismissal).toContain("window.addEventListener(\"scroll\"");
-    expect(workspaceStrip).toContain('from "../common/SidebarMenuItem"');
-    expect(workspaceStrip).toContain('from "../common/SidebarMenuSurface"');
+    expect(workspaceMenuFiles.some((file) => file.includes('from "../common/SidebarMenuItem"'))).toBe(true);
+    expect(workspaceMenuFiles.some((file) => file.includes('from "../common/SidebarMenuSurface"'))).toBe(true);
     expect(workspaceStrip).toContain("useContextMenuDismissal");
     expect(workspaceStrip).toContain("acceptSidebarRowReorderDrag");
     expect(workspaceStrip).toContain("clearSidebarRowReorderDrop");
@@ -113,16 +119,18 @@ describe("sidebar component structure", () => {
     expect(sidebarQuickEntryReorderDrop).toContain("readSidebarEssentialDragId");
     expect(sidebarQuickEntryReorderDrop).toContain("readSidebarFavoriteDragId");
     expect(sidebarQuickEntryReorderDrop).toContain("getPointerDropPlacement");
-    expect(sidebarItems).toContain('from "../common/SidebarItemActionHints"');
-    expect(sidebarItems).toContain('from "../common/SidebarItemIcon"');
-    expect(sidebarItems).toContain("runSidebarItemPointerActivation");
-    expect(sidebarItems).toContain("acceptSidebarRowReorderDrag");
-    expect(sidebarItems).toContain("resolveSidebarRowReorderDrop");
-    expect(sidebarItems).not.toContain("updateDropPlacement");
-    expect(sidebarItems).not.toContain("clearDropPlacement");
-    expect(sidebarItems).not.toContain("event.altKey");
-    expect(sidebarItems).not.toContain("event.shiftKey");
-    expect(sidebarItems).not.toContain("export function SidebarSectionHeader");
+    expect(sidebarItemFiles.some((file) => file.includes('from "../common/SidebarItemActionHints"'))).toBe(true);
+    expect(sidebarItemFiles.some((file) => file.includes('from "../common/SidebarItemIcon"'))).toBe(true);
+    expect(sidebarItemFiles.some((file) => file.includes("runSidebarItemPointerActivation"))).toBe(true);
+    expect(sidebarItemFiles.some((file) => file.includes("acceptSidebarRowReorderDrag"))).toBe(true);
+    expect(sidebarItemFiles.some((file) => file.includes("resolveSidebarRowReorderDrop"))).toBe(true);
+    for (const source of sidebarItemFiles) {
+      expect(source).not.toContain("updateDropPlacement");
+      expect(source).not.toContain("clearDropPlacement");
+      expect(source).not.toContain("event.altKey");
+      expect(source).not.toContain("event.shiftKey");
+      expect(source).not.toContain("export function SidebarSectionHeader");
+    }
     expect(sidebarClosedTabButton).toContain("runSidebarItemPointerActivation");
     expect(sidebarClosedTabButton).not.toContain("event.altKey");
     expect(sidebarClosedTabButton).not.toContain("event.shiftKey");
@@ -142,7 +150,7 @@ describe("sidebar component structure", () => {
     expect(sidebarSearchBox).toContain("SidebarModifierActionHints");
     expect(sidebarSearchBox).not.toContain("FiEye");
     expect(sidebarSearchBox).not.toContain("FiColumns");
-    expect(workspaceStrip).toContain("sidebar-more-menu");
+    expect(workspaceMenuFiles.some((file) => file.includes("sidebar-more-menu"))).toBe(true);
     expect(sidebarSplitDropTarget).toContain("acceptSidebarSplitDropTarget");
     expect(sidebarSplitDropTarget).toContain("resolveSidebarSplitDrop");
     expect(sidebarSplitDropTarget).toContain("getSidebarSplitDropSourceFromEvent");
@@ -150,8 +158,8 @@ describe("sidebar component structure", () => {
     expect(anchoredContextMenuHook).toContain("useContextMenuDismissal");
     expect(workspaceStrip).not.toContain('from "../tabs/SidebarMenuItem"');
     expect(workspaceStrip).not.toContain("tab-context-menu-separator");
-    expect(workspaceStrip).toContain("sidebar-menu-field");
-    expect(workspaceStrip).toContain("sidebar-menu-swatch");
+    expect(workspaceMenuFiles.some((file) => file.includes("sidebar-menu-field"))).toBe(true);
+    expect(workspaceMenuFiles.some((file) => file.includes("sidebar-menu-swatch"))).toBe(true);
     expect(workspaceStrip).not.toContain("workspace-menu-field");
     expect(workspaceStrip).not.toContain("workspace-menu-swatch");
     expect(tabGroupContextMenu).toContain("sidebar-menu-field");
@@ -160,8 +168,8 @@ describe("sidebar component structure", () => {
     expect(quickEntryContextMenu).toContain("<SidebarMenuSurface");
     expect(closedTabContextMenu).toContain("<SidebarMenuSurface");
     expect(tabGroupContextMenu).toContain("<SidebarMenuSurface");
-    expect(workspaceStrip).toContain("<SidebarMenuSurface");
-    for (const source of [tabContextMenu, quickEntryContextMenu, closedTabContextMenu, tabGroupContextMenu, workspaceStrip]) {
+    expect(workspaceMenuFiles.some((file) => file.includes("<SidebarMenuSurface"))).toBe(true);
+    for (const source of [tabContextMenu, quickEntryContextMenu, closedTabContextMenu, tabGroupContextMenu, ...workspaceMenuFiles]) {
       expect(source).not.toContain("useMenuInitialFocus");
       expect(source).not.toContain("handleMenuKeyboardNavigation");
     }

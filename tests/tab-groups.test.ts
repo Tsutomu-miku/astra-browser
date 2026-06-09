@@ -32,8 +32,8 @@ describe("tab groups", () => {
           name: "Space",
           tabGroups: [{ id: "group", name: "Docs", color: "bad", isCollapsed: true }],
           tabs: [
-            { id: "tab", title: "Docs", url: "docs.example", groupId: "group" },
-            { id: "orphan", title: "Orphan", url: "orphan.example", groupId: "missing" }
+            { id: "tab", title: "Docs", url: "docs.example", groupId: "group", isFavorite: false },
+            { id: "orphan", title: "Orphan", url: "orphan.example", groupId: "missing", isFavorite: false }
           ]
         }
       ]
@@ -98,7 +98,7 @@ describe("tab groups", () => {
 
     expect(moved.activeWorkspaceId).toBe("work");
     expect(source.tabGroups).toHaveLength(0);
-    expect(source.tabs.map((tab) => tab.title)).toEqual(["New Tab"]);
+    expect(source.tabs.map((tab) => tab.title)).toEqual(["New Tab", "Chromium", "MDN"]);
     expect(target.tabGroups[0]).toMatchObject({ id: group.id, name: group.name, color: group.color });
     expect(target.tabs.filter((tab) => tab.groupId === group.id).map((tab) => tab.title)).toEqual(["Docs", "News"]);
     expect(target.activeTabId).toBe(secondTab.id);

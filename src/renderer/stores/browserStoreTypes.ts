@@ -54,10 +54,10 @@ export interface BrowserStore {
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
   moveTabGroupToWorkspace: (groupId: string, workspaceId: string) => void;
-  moveWorkspaceFavoriteToWorkspace: (favoriteId: string, workspaceId: string) => void;
+  moveWorkspaceFavoriteToWorkspace: (tabId: string, workspaceId: string) => void;
   moveTabToNewWorkspace: (tabId: string) => void;
   moveTabGroupToNewWorkspace: (groupId: string) => void;
-  moveWorkspaceFavoriteToNewWorkspace: (favoriteId: string) => void;
+  moveWorkspaceFavoriteToNewWorkspace: (tabId: string) => void;
   restoreClosedTabToNewWorkspace: (closedIndex: number) => void;
   closeGlance: () => void;
   openGlance: (url: string, title?: string) => void;
@@ -66,6 +66,7 @@ export interface BrowserStore {
   openUrlInSplit: (url: string, title?: string) => void;
   moveTabToFolderEnd: (tabId: string, folder: TabFolder) => void;
   moveTabToFolderPosition: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
+  moveTabToFavoritePosition: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   navigateActiveTab: (url: string, webview?: WebviewElement) => void;
   newTab: () => void;
   newTabInGroup: (groupId: string) => void;
@@ -74,11 +75,11 @@ export interface BrowserStore {
   removeHistoryEntry: (historyId: string) => void;
   removeEssential: (url: string) => void;
   removeTabFromSplit: (tabId: string) => void;
-  removeWorkspaceFavorite: (url: string) => void;
+  removeWorkspaceFavorite: (tabId: string) => void;
   replaceBrowserState: (state: BrowserState) => void;
   reorderEssential: (essentialId: string, targetEssentialId: string, placement: TabDropPlacement) => void;
   reorderTabGroup: (groupId: string, targetGroupId: string, placement: TabDropPlacement) => void;
-  reorderWorkspaceFavorite: (favoriteId: string, targetFavoriteId: string, placement: TabDropPlacement) => void;
+  reorderWorkspaceFavorite: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   reorderTab: (tabId: string, targetTabId: string, placement: TabDropPlacement) => void;
   reorderWorkspace: (workspaceId: string, targetWorkspaceId: string, placement: WorkspaceDropPlacement) => void;
   runWebviewAction: (action: WebviewAction, webview?: WebviewElement) => void;

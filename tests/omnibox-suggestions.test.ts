@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   createDefaultState,
-  createFavorite
+  createFavorite,
+  createTab
 } from "../src/renderer/domain/browser";
 import {
   openUrlInActiveWorkspace,
@@ -30,8 +31,9 @@ describe("buildOmniboxSuggestions", () => {
     const opened = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
     const active = getActiveTab(getActiveWorkspace(opened));
     const withHistory = recordHistory(opened, active.id, active.url);
-    const favoriteTab = getActiveTab(getActiveWorkspace(opened));
-    getActiveWorkspace(withHistory).favorites.push(createFavorite("Docs Favorite", favoriteTab.url, favoriteTab.id));
+    const favoriteTab = getActiveTab(getActiveWorkspace(withHistory));
+    favoriteTab.isFavorite = true;
+    getActiveWorkspace(withHistory).favoriteOrder.unshift(favoriteTab.id);
     withHistory.essentials.push(createFavorite("Docs Essential", "https://docs.example/essential"));
     const suggestions = buildOmniboxSuggestions(withHistory, "docs");
 
@@ -46,25 +48,24 @@ describe("buildOmniboxSuggestions", () => {
     expect(suggestions.some((suggestion) => suggestion.type === "history" && suggestion.title === "Docs")).toBe(true);
   });
 
-  it("falls back to URL when a Favorite tab id is stale", () => {
+  it("ignores favoriteOrder entries that do not resolve to existing favorite tabs", () => {
     const opened = openUrlInActiveWorkspace(createDefaultState(), "docs.example", "Docs");
-    const tab = getActiveTab(getActiveWorkspace(opened));
-    getActiveWorkspace(opened).favorites.push(createFavorite("Docs Favorite", tab.url, "missing-tab"));
+    const workspace = getActiveWorkspace(opened);
+    // The "Docs" tab is not marked as favorite; add a non-existent id to favoriteOrder
+    workspace.favoriteOrder.unshift("missing-tab");
 
-    const favoriteSuggestion = buildOmniboxSuggestions(opened, "docs")
-      .find((suggestion) => suggestion.type === "favorite");
+    const favoriteSuggestions = buildOmniboxSuggestions(opened, "docs")
+      .filter((suggestion) => suggestion.type === "favorite");
 
-    expect(favoriteSuggestion).toMatchObject({
-      tabId: tab.id,
-      title: "Docs",
-      type: "favorite"
-    });
+    // Invalid entries are skipped and non-favorite tabs are not surfaced as favorites
+    expect(favoriteSuggestions).toHaveLength(0);
   });
 
   it("matches tab-backed Favorites by current backing tab title and URL", () => {
     const opened = openUrlInActiveWorkspace(createDefaultState(), "docs.example/current", "Current Project Brief");
     const tab = getActiveTab(getActiveWorkspace(opened));
-    getActiveWorkspace(opened).favorites.push(createFavorite("Old Docs", "https://docs.example", tab.id));
+    tab.isFavorite = true;
+    getActiveWorkspace(opened).favoriteOrder.push(tab.id);
 
     const suggestion = buildOmniboxSuggestions(opened, "brief")
       .find((candidate) => candidate.type === "favorite");
@@ -83,7 +84,10 @@ describe("buildOmniboxSuggestions", () => {
     const state = createDefaultState();
     const workspace = getActiveWorkspace(state);
     state.essentials.push(createFavorite("Mail", "https://mail.example"));
-    workspace.favorites.push(createFavorite("Docs", "https://docs.example"));
+    const docsTab = createTab("Docs", "https://docs.example");
+    docsTab.isFavorite = true;
+    workspace.tabs.push(docsTab);
+    workspace.favoriteOrder.push(docsTab.id);
 
     const suggestionTypes = buildOmniboxSuggestions(state, "").map((suggestion) => suggestion.type);
     const firstFavoriteIndex = suggestionTypes.indexOf("favorite");
@@ -96,8 +100,12 @@ describe("buildOmniboxSuggestions", () => {
 
   it("limits suggestion count for compact topbar rendering", () => {
     const state = createDefaultState();
+    const workspace = getActiveWorkspace(state);
     for (let index = 0; index < 20; index += 1) {
-      getActiveWorkspace(state).favorites.push(createFavorite(`Favorite ${index}`, `https://favorite-${index}.example`));
+      const tab = createTab(`Favorite ${index}`, `https://favorite-${index}.example`);
+      tab.isFavorite = true;
+      workspace.tabs.push(tab);
+      workspace.favoriteOrder.push(tab.id);
     }
 
     expect(buildOmniboxSuggestions(state, "")).toHaveLength(8);
@@ -135,7 +143,11 @@ describe("buildOmniboxSuggestions", () => {
 
   it("returns inline completion for title prefixes when the URL does not start with the query", () => {
     const state = createDefaultState();
-    getActiveWorkspace(state).favorites.unshift(createFavorite("Linear Planning", "https://docs.example/linear"));
+    const linearTab = createTab("Linear Planning", "https://docs.example/linear");
+    linearTab.isFavorite = true;
+    const workspace = getActiveWorkspace(state);
+    workspace.tabs.unshift(linearTab);
+    workspace.favoriteOrder.unshift(linearTab.id);
     const suggestions = buildOmniboxSuggestions(state, "lin");
 
     const favorite = suggestions.find((suggestion) => suggestion.type === "favorite" && suggestion.title === "Linear Planning")!;
@@ -148,7 +160,11 @@ describe("buildOmniboxSuggestions", () => {
 
   it("matches title acronyms for compact browser-style lookups", () => {
     const state = createDefaultState();
-    getActiveWorkspace(state).favorites.unshift(createFavorite("GitHub Issues", "https://issues.example"));
+    const issuesTab = createTab("GitHub Issues", "https://issues.example");
+    issuesTab.isFavorite = true;
+    const workspace = getActiveWorkspace(state);
+    workspace.tabs.unshift(issuesTab);
+    workspace.favoriteOrder.unshift(issuesTab.id);
     const suggestions = buildOmniboxSuggestions(state, "ghi");
 
     expect(suggestions[1]).toMatchObject({

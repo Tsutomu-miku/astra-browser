@@ -10,6 +10,18 @@ contextBridge.exposeInMainWorld("astraShell", {
     ipcRenderer.on("download-event", wrapped);
     return () => ipcRenderer.removeListener("download-event", wrapped);
   },
+  onOpenUrlInNewTab: (listener) => {
+    const wrapped = (_event, url) => listener(url);
+    ipcRenderer.on("open-url-in-new-tab", wrapped);
+    return () => ipcRenderer.removeListener("open-url-in-new-tab", wrapped);
+  },
+  // Main-process menu-driven actions. The action name mirrors the ShortcutIntent
+  // `type` field where possible so the renderer can dispatch them uniformly.
+  onMainAction: (listener) => {
+    const wrapped = (_event, action, ...args) => listener(action, args);
+    ipcRenderer.on("main-action", wrapped);
+    return () => ipcRenderer.removeListener("main-action", wrapped);
+  },
   onPermissionRequest: (listener) => {
     const wrapped = (_event, payload) => listener(payload);
     ipcRenderer.on("permission-request", wrapped);
@@ -19,6 +31,8 @@ contextBridge.exposeInMainWorld("astraShell", {
   setProfilePartitions: (partitions) => ipcRenderer.invoke("set-profile-partitions", partitions),
   setPermissionRules: (rules) => ipcRenderer.invoke("set-permission-rules", rules),
   openPath: (filePath) => ipcRenderer.invoke("open-path", filePath),
+  printWebview: (webContentsId) => ipcRenderer.invoke("print-webview", webContentsId),
   showItemInFolder: (filePath) => ipcRenderer.invoke("show-item-in-folder", filePath),
-  getProcessMemory: () => ipcRenderer.invoke("get-process-memory")
+  getProcessMemory: () => ipcRenderer.invoke("get-process-memory"),
+  getFaviconData: (url) => ipcRenderer.invoke("get-favicon-data", url)
 });

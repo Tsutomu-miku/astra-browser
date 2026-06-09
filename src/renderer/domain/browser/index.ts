@@ -1,5 +1,5 @@
 export { DEFAULT_URL, INTERNAL_NEW_TAB_URL, SEARCH_ENGINES } from "./constants";
-export { createDefaultState, createFavorite, createId, createTab, getNextWorkspaceAccent } from "./factory";
+export { createClosedTab, createDefaultState, createFavorite, createId, createTab, getNextWorkspaceAccent } from "./factory";
 export {
   getCachedFaviconUrl,
   getFaviconCacheKey,
@@ -8,7 +8,6 @@ export {
   setCachedFaviconUrl
 } from "./favicon";
 export { formatBytes } from "./formatting";
-export { resolveFavoriteTab, resolveTabBackedFavoriteTab } from "./favorites";
 export { isInternalNewTabUrl, isInternalPageUrl } from "./internalPages";
 export {
   getHomepageUrl,

@@ -39,7 +39,6 @@ describe("browser domain primitives", () => {
           name: "",
           accent: "bad",
           closedTabs: [{ url: "closed.example" }],
-          favorites: [{ url: "github.com" }],
           tabs: [],
           activeTabId: null
         }
@@ -54,7 +53,6 @@ describe("browser domain primitives", () => {
     expect(state.settings.memorySaverIdleMinutes).toBe(30);
     expect(state.workspaces[0].name).toBe("Space");
     expect(state.workspaces[0].homepage).toBe("about:blank");
-    expect(state.workspaces[0].favorites[0].url).toBe("https://github.com/");
     expect(state.workspaces[0].closedTabs[0].url).toBe("https://closed.example/");
     expect(state.essentials).toEqual([]);
     expect(state.workspaces[0].tabs).toHaveLength(1);
@@ -79,6 +77,35 @@ describe("browser domain primitives", () => {
     expect(state.settings.memorySaverEnabled).toBe(false);
     expect(state.settings.memorySaverIdleMinutes).toBe(240);
     expect(state.workspaces[0].tabs[0].lastActiveAt).toBe(123);
+  });
+
+  it("resets transient runtime flags on load regardless of persisted values", () => {
+    const state = normalizeState({
+      settings: { homepage: "about:blank" },
+      workspaces: [{
+        id: "space",
+        tabs: [{
+          id: "t1",
+          title: "Playing",
+          url: "media.example",
+          isLoading: true,
+          isMediaPlaying: true,
+          isCameraOn: true,
+          isMicrophoneOn: true,
+          hasUnread: true,
+          isSleeping: true
+        }]
+      }]
+    });
+    const tab = state.workspaces[0].tabs[0];
+
+    expect(tab.isLoading).toBe(false);
+    expect(tab.isMediaPlaying).toBe(false);
+    expect(tab.isCameraOn).toBe(false);
+    expect(tab.isMicrophoneOn).toBe(false);
+    expect(tab.hasUnread).toBe(false);
+    // isSleeping is semi-persistent: Memory Saver state survives restart.
+    expect(tab.isSleeping).toBe(true);
   });
 
   it("can reset restored tabs to homepage on startup", () => {

@@ -14,11 +14,13 @@ export function BrowserWebview({
   onLoadingChange,
   onFaviconChange,
   onMediaStateChange,
+  onMuteChange,
   onNavigate,
   onPermissionRequest,
   onTitleChange,
   onWebviewReady,
   onWebviewRemoved,
+  onZoomChange,
   partition,
   tab
 }: {
@@ -27,11 +29,13 @@ export function BrowserWebview({
   onLoadingChange: (isLoading: boolean, navigationState: NavigationState) => void;
   onFaviconChange: (faviconUrl: string | undefined) => void;
   onMediaStateChange: (mediaPlaying: boolean) => void;
+  onMuteChange: (isMuted: boolean) => void;
   onNavigate: (url: string) => void;
   onPermissionRequest: (permission: "camera" | "media" | "microphone", active: boolean) => void;
   onTitleChange: (title: string, explicitSet: boolean) => void;
   onWebviewReady: (tabId: string, webview: WebviewElement) => void;
   onWebviewRemoved: (tabId: string, webview: WebviewElement) => void;
+  onZoomChange: (zoomFactor: number) => void;
   partition: string;
   tab: BrowserTab;
 }) {
@@ -42,15 +46,17 @@ export function BrowserWebview({
     onLoadingChange,
     onFaviconChange,
     onMediaStateChange,
+    onMuteChange,
     onNavigate,
     onPermissionRequest,
     onTitleChange,
+    onZoomChange,
     tab
   });
 
   useEffect(() => {
-    latestRef.current = { isActive, onLoadingChange, onFaviconChange, onMediaStateChange, onNavigate, onPermissionRequest, onTitleChange, tab };
-  }, [isActive, onLoadingChange, onFaviconChange, onMediaStateChange, onNavigate, onPermissionRequest, onTitleChange, tab]);
+    latestRef.current = { isActive, onLoadingChange, onFaviconChange, onMediaStateChange, onMuteChange, onNavigate, onPermissionRequest, onTitleChange, onZoomChange, tab };
+  }, [isActive, onLoadingChange, onFaviconChange, onMediaStateChange, onMuteChange, onNavigate, onPermissionRequest, onTitleChange, onZoomChange, tab]);
 
   useEffect(() => {
     const webview = ref.current;
@@ -76,6 +82,26 @@ export function BrowserWebview({
     };
     const onMediaStarted = () => latestRef.current.onMediaStateChange(true);
     const onMediaPaused = () => latestRef.current.onMediaStateChange(false);
+    const onZoomChanged = async () => {
+      // The zoom-changed event carries { newZoomLevel }, but state stores a
+      // zoomFactor. Read it back from the webview so we always round-trip
+      // through the same conversion Electron uses internally.
+      if (typeof webview.getZoomFactor !== "function") return;
+      try {
+        const factor = await webview.getZoomFactor();
+        if (Number.isFinite(factor) && readyRef.current) {
+          latestRef.current.onZoomChange(factor);
+        }
+      } catch {
+        // ignore — webview may have been detached
+      }
+    };
+    const onAudioStateChanged = (event: Event) => {
+      const detail = event as { audioMuted?: boolean };
+      if (typeof detail.audioMuted === "boolean") {
+        latestRef.current.onMuteChange(detail.audioMuted);
+      }
+    };
     const handlePermissionRequest = (event: Event) => {
       const detail = event as { permission?: string };
       if (detail.permission === "media") {
@@ -85,6 +111,18 @@ export function BrowserWebview({
       } else if (detail.permission === "audioCapture") {
         latestRef.current.onPermissionRequest("microphone", true);
       }
+    };
+    // Renderer-side fallback for popups opened from inside a <webview>.
+    // Electron's main-process setWindowOpenHandler is authoritative for most
+    // popup kinds but the legacy DOM-level `new-window` event still fires for
+    // some <webview>-internal cases (notably <a target="_blank"> plain clicks
+    // on some Electron versions). Both paths converge on the same CustomEvent
+    // that useBrowserEffects already listens for.
+    const onNewWindow = (event: Event) => {
+      const targetUrl = (event as { url?: string }).url;
+      if (!targetUrl || targetUrl.startsWith("astra://")) return;
+      event.preventDefault();
+      window.dispatchEvent(new CustomEvent("astra:open-url-in-new-tab", { detail: targetUrl }));
     };
     const onDomReady = () => {
       readyRef.current = true;
@@ -102,6 +140,9 @@ export function BrowserWebview({
     webview.addEventListener("did-navigate-in-page", onNav);
     webview.addEventListener("media-started-playing", onMediaStarted);
     webview.addEventListener("media-paused", onMediaPaused);
+    webview.addEventListener("zoom-changed", onZoomChanged);
+    webview.addEventListener("audio-state-changed", onAudioStateChanged);
+    webview.addEventListener("new-window", onNewWindow);
     webview.addEventListener("permission-request", handlePermissionRequest);
 
     return () => {
@@ -116,6 +157,9 @@ export function BrowserWebview({
       webview.removeEventListener("did-navigate-in-page", onNav);
       webview.removeEventListener("media-started-playing", onMediaStarted);
       webview.removeEventListener("media-paused", onMediaPaused);
+      webview.removeEventListener("zoom-changed", onZoomChanged);
+      webview.removeEventListener("audio-state-changed", onAudioStateChanged);
+      webview.removeEventListener("new-window", onNewWindow);
       webview.removeEventListener("permission-request", handlePermissionRequest);
     };
   }, [onWebviewReady, onWebviewRemoved, tab.id]);
@@ -130,6 +174,7 @@ export function BrowserWebview({
   return (
     <webview
       ref={ref}
+      allowpopups
       className={`browser-view ${isVisible ? "is-visible" : "is-hidden"}`}
       src={tab.url}
       partition={partition}

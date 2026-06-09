@@ -1,11 +1,11 @@
-import { resolveFavoriteTab, type BrowserTab, type Favorite, type Workspace } from "../../domain/browser";
+import { type BrowserTab, type Favorite, type Workspace } from "../../domain/browser";
 import { getGroupedTabs } from "../../domain/tabs/groups";
 
 export type NumberShortcutTarget =
   | { type: "essential"; title: string; url: string }
   | { type: "tab"; tabId: string };
 
-type NumberShortcutWorkspace = Pick<Workspace, "tabGroups" | "tabs"> & Partial<Pick<Workspace, "favorites">>;
+type NumberShortcutWorkspace = Pick<Workspace, "favoriteOrder" | "tabGroups" | "tabs">;
 
 export function getNumberShortcutTarget(
   essentials: Favorite[],
@@ -55,17 +55,11 @@ export function getNumberShortcutTabs(workspace: NumberShortcutWorkspace): Brows
 }
 
 function getNumberShortcutFavoriteTabs(workspace: NumberShortcutWorkspace): BrowserTab[] {
-  const favorites = workspace.favorites ?? [];
-  const seenTabIds = new Set<string>();
-  const favoriteTabs: BrowserTab[] = [];
-
-  for (const favorite of favorites) {
-    const tab = resolveFavoriteTab(workspace, favorite);
-    if (!tab || seenTabIds.has(tab.id)) continue;
-
-    favoriteTabs.push(tab);
-    seenTabIds.add(tab.id);
+  const tabById = new Map(workspace.tabs.map((tab) => [tab.id, tab]));
+  const tabs: BrowserTab[] = [];
+  for (const tabId of workspace.favoriteOrder) {
+    const tab = tabById.get(tabId);
+    if (tab && tab.isFavorite) tabs.push(tab);
   }
-
-  return favoriteTabs;
+  return tabs;
 }

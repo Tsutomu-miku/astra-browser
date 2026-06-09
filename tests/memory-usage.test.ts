@@ -19,6 +19,7 @@ function makeTab(overrides: Partial<BrowserTab> = {}): BrowserTab {
     hasUnread: false,
     id: `tab-${Math.random().toString(36).slice(2, 8)}`,
     isCameraOn: false,
+    isFavorite: false,
     isLoading: false,
     isMediaPlaying: false,
     isMicrophoneOn: false,

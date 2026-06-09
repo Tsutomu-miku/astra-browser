@@ -9,11 +9,11 @@ describe("command content entries", () => {
     const state = createDefaultState();
     const docsTab = createTab("Docs", "https://docs.example");
     const mailTab = createTab("Mail", "https://mail.example");
+    mailTab.isFavorite = true;
     const essential = createFavorite("Docs", docsTab.url, docsTab.id);
-    const favorite = createFavorite("Mail", mailTab.url, mailTab.id);
     const workspace = {
       ...state.workspaces[0],
-      favorites: [favorite],
+      favoriteOrder: [mailTab.id],
       tabs: [docsTab, mailTab]
     };
     state.essentials = [essential];
@@ -31,10 +31,10 @@ describe("command content entries", () => {
   it("opens tab-backed Favorites in split by tab identity", () => {
     const state = createDefaultState();
     const mailTab = createTab("Mail", "https://mail.example");
-    const favorite = createFavorite("Mail", mailTab.url, mailTab.id);
+    mailTab.isFavorite = true;
     const workspace = {
       ...state.workspaces[0],
-      favorites: [favorite],
+      favoriteOrder: [mailTab.id],
       tabs: [mailTab]
     };
     const actions = createActions();
@@ -47,32 +47,32 @@ describe("command content entries", () => {
     expect(actions.openUrlInSplit).not.toHaveBeenCalled();
   });
 
-  it("falls back by URL when a Favorite tab id is stale", () => {
+  it("keeps stale tab-backed Favorites from claiming unrelated matching tabs", () => {
     const state = createDefaultState();
     const docsTab = createTab("Docs", "https://docs.example");
-    const favorite = createFavorite("Docs", docsTab.url, "missing-tab");
     const workspace = {
       ...state.workspaces[0],
-      favorites: [favorite],
+      favoriteOrder: ["missing-tab"],
       tabs: [docsTab]
     };
     const actions = createActions();
 
-    buildContentCommands(state, workspace, actions)
-      .find((command) => command.subtitle.startsWith("Favorite"))
-      ?.run();
+    const favoriteCommands = buildContentCommands(state, workspace, actions)
+      .filter((command) => command.subtitle.startsWith("Favorite"));
 
-    expect(actions.selectTab).toHaveBeenCalledWith(docsTab.id);
-    expect(actions.openUrlInActiveWorkspace).not.toHaveBeenCalled();
+    // Stale favoriteOrder entries that do not resolve to valid favorite tabs
+    // produce no favorite commands and never claim unrelated tabs.
+    expect(favoriteCommands).toHaveLength(0);
+    expect(actions.selectTab).not.toHaveBeenCalled();
   });
 
   it("uses backing tab data for Favorite command display and preview", () => {
     const state = createDefaultState();
     const tab = createTab("Current Docs", "https://docs.example/current");
-    const favorite = createFavorite("Old Docs", "https://docs.example/old", tab.id);
+    tab.isFavorite = true;
     const workspace = {
       ...state.workspaces[0],
-      favorites: [favorite],
+      favoriteOrder: [tab.id],
       tabs: [tab]
     };
     const actions = createActions();

@@ -2,15 +2,13 @@ import { useMemo, type CSSProperties, type MouseEvent } from "react";
 import { FiClock, FiStar, FiZap } from "react-icons/fi";
 
 import { getChromeAccent } from "../../common/theme/chromeTheme";
-import { getReadableUrlTitle, resolveFavoriteTab } from "../../domain/browser";
-import type { Favorite } from "../../domain/browser";
-import type { StartEntryContextMenuItem } from "./components/useStartEntryContextMenu";
+import { getReadableUrlTitle, type Favorite } from "../../domain/browser";
 import type { BrowserController } from "../../app/controller/types";
 import { StartEntryActionHints } from "./components/StartEntryActionHints";
 import { StartEntryContextMenu } from "./components/StartEntryContextMenu";
 import { StartSearch } from "./components/StartSearch";
-import { StartTileGrid } from "./components/StartTileGrid";
-import { useStartEntryContextMenu } from "./components/useStartEntryContextMenu";
+import { StartTileGrid, type StartTileItem } from "./components/StartTileGrid";
+import { useStartEntryContextMenu, type StartEntryContextMenuItem } from "./components/useStartEntryContextMenu";
 import { getStartOpenIntent } from "./startOpenIntent";
 import { getStartPageContent } from "./startPageContent";
 
@@ -26,27 +24,29 @@ export function StartPage({
   const accentStyle = { "--start-accent": getChromeAccent(state.settings, activeWorkspace) } as CSSProperties;
   const { closeMenu, menu, openMenu } = useStartEntryContextMenu();
 
-  function runStartEntry(item: Favorite | StartEntryContextMenuItem, kind: "essential" | "favorite" | "history") {
+  function runStartEntry(item: StartTileItem | StartEntryContextMenuItem, kind: "essential" | "favorite" | "history") {
     if (kind === "favorite") {
-      const tab = resolveFavoriteTab(activeWorkspace, item);
-      tab ? actions.selectTab(tab.id) : actions.openUrlInActiveWorkspace(item.url, item.title);
+      if (item.tabId) {
+        actions.selectTab(item.tabId);
+      } else {
+        actions.openUrlInActiveWorkspace(item.url, item.title);
+      }
       return;
     }
 
     actions.navigateActiveTab(item.url);
   }
 
-  function runStartEntryInSplit(item: Favorite | StartEntryContextMenuItem, kind: "essential" | "favorite" | "history") {
-    if (kind === "favorite") {
-      const tab = resolveFavoriteTab(activeWorkspace, item);
-      tab ? actions.openTabInSplit(tab.id) : actions.openUrlInSplit(item.url, item.title);
+  function runStartEntryInSplit(item: StartTileItem | StartEntryContextMenuItem, kind: "essential" | "favorite" | "history") {
+    if (kind === "favorite" && item.tabId) {
+      actions.openTabInSplit(item.tabId);
       return;
     }
 
     actions.openUrlInSplit(item.url, item.title);
   }
 
-  function openQuickEntry(event: MouseEvent, item: Favorite, kind: "essential" | "favorite") {
+  function openQuickEntry(event: MouseEvent, item: StartTileItem | Favorite, kind: "essential" | "favorite") {
     const intent = getStartOpenIntent(item.url, item.title, {
       altKey: event.altKey,
       shiftKey: event.shiftKey
@@ -160,8 +160,8 @@ export function StartPage({
                 actions.removeHistoryEntry(item.id);
               } else if (kind === "essential") {
                 actions.removeEssential(item.url);
-              } else {
-                actions.removeWorkspaceFavorite(item.id);
+              } else if (item.tabId) {
+                actions.removeWorkspaceFavorite(item.tabId);
               }
             }}
           />

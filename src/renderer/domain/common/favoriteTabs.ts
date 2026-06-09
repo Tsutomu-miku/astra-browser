@@ -1,153 +1,148 @@
 import {
-  createFavorite,
-  createTab,
-  getReadableUrlTitle,
-  getWorkspaceHomepageUrl,
-  resolveFavoriteTab,
   type BrowserState,
   type BrowserTab,
-  type Favorite,
+  type TabGroup,
   type Workspace
 } from "../browser";
 import { pruneEmptyTabGroups } from "../tabs/groups";
 
-export function moveFavoriteBackingTabToWorkspace(
-  state: BrowserState,
-  source: Workspace,
-  target: Workspace,
-  favorite: Favorite
-): BrowserTab {
-  const tab = takeFavoriteBackingTab(state, source, favorite);
-  target.tabs.push(tab);
-  target.activeTabId = tab.id;
-
-  return tab;
-}
-
-export function takeFavoriteBackingTab(state: BrowserState, source: Workspace, favorite: Favorite): BrowserTab {
-  const tab = detachFavoriteBackingTab(state, source, favorite) ?? createTabForFavorite(favorite);
-  favorite.tabId = tab.id;
-  return tab;
-}
-
-export function createTabForFavorite(favorite: Favorite): BrowserTab {
-  return createTab(favorite.title || getReadableUrlTitle(favorite.url), favorite.url);
-}
-
-export function mergeFavoriteByUrl(favorites: Favorite[], favorite: Favorite): Favorite {
-  const existing = favorites.find((candidate) => candidate.url === favorite.url);
-  if (!existing) {
-    favorites.push(favorite);
-    return favorite;
-  }
-
-  existing.title = favorite.title || existing.title;
-  existing.tabId = favorite.tabId;
-  return existing;
-}
-
+/**
+ * Insert a tab into the favorites folder. If the tab belongs to a group,
+ * every sibling in that group is marked favorite as well so the entire
+ * group moves into the favorites section together. Pinned tabs are unpinned
+ * because pinned and favorites are mutually exclusive.
+ */
 export function placeTabInFavoritesFolder(workspace: Workspace, tab: BrowserTab) {
   tab.isPinned = false;
-  tab.groupId = null;
-  pruneEmptyTabGroups(workspace);
-  upsertTabFavorite(workspace, tab);
+  const groupId = tab.groupId;
+  if (groupId) {
+    for (const sibling of workspace.tabs) {
+      if (sibling.groupId === groupId) {
+        sibling.isFavorite = true;
+        if (!workspace.favoriteOrder.includes(sibling.id)) {
+          workspace.favoriteOrder.push(sibling.id);
+        }
+      }
+    }
+  } else {
+    tab.isFavorite = true;
+    if (!workspace.favoriteOrder.includes(tab.id)) {
+      workspace.favoriteOrder.push(tab.id);
+    }
+  }
 }
 
-export function takeTabFavorite(workspace: Workspace, tab: BrowserTab): Favorite | null {
-  const favoriteIndex = workspace.favorites.findIndex((favorite) => (
-    favorite.tabId === tab.id || (!favorite.tabId && favorite.url === tab.url)
-  ));
-  if (favoriteIndex < 0) return null;
-
-  const [favorite] = workspace.favorites.splice(favoriteIndex, 1);
-  favorite.tabId = tab.id;
-  favorite.url = tab.url;
-  favorite.title = tab.title || favorite.title || getReadableUrlTitle(tab.url);
-  return favorite;
-}
-
-export function moveTabFavoriteToWorkspace(source: Workspace, target: Workspace, tab: BrowserTab) {
-  const favorite = takeTabFavorite(source, tab);
-  if (!favorite) return;
-
-  mergeFavoriteByUrl(target.favorites, favorite);
-}
-
+/**
+ * Remove a tab from the favorites folder. If the tab belongs to a group,
+ * every sibling in that group is also removed from favorites so the
+ * group stays coherent inside the Tabs section.
+ */
 export function removeTabFromFavoritesFolder(workspace: Workspace, tab: BrowserTab) {
-  workspace.favorites = workspace.favorites.filter((favorite) => (
-    favorite.tabId !== tab.id && (favorite.tabId || favorite.url !== tab.url)
-  ));
+  const groupId = tab.groupId;
+  if (groupId) {
+    const groupTabIds = new Set(
+      workspace.tabs.filter((sibling) => sibling.groupId === groupId).map((sibling) => sibling.id)
+    );
+    for (const sibling of workspace.tabs) {
+      if (sibling.groupId === groupId) {
+        sibling.isFavorite = false;
+      }
+    }
+    workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => !groupTabIds.has(id));
+  } else {
+    tab.isFavorite = false;
+    workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => id !== tab.id);
+  }
 }
 
-export function isTabInFavoritesFolder(workspace: Workspace, tab: BrowserTab) {
-  return workspace.favorites.some((favorite) => (
-    favorite.tabId === tab.id || (!favorite.tabId && favorite.url === tab.url)
-  ));
+/**
+ * True when the tab is currently a member of the favorites folder.
+ */
+export function isTabInFavoritesFolder(_workspace: Workspace, tab: BrowserTab) {
+  return tab.isFavorite;
 }
 
-export function reorderFavoriteBackingTab(
+/**
+ * Returns true when every tab in the group is marked as a favorite.
+ * Groups with no tabs are considered non-favorite.
+ */
+export function isFavoriteGroup(workspace: Workspace, group: TabGroup): boolean {
+  const members = workspace.tabs.filter((tab) => tab.groupId === group.id);
+  return members.length > 0 && members.every((tab) => tab.isFavorite);
+}
+
+/**
+ * Reorder a favorite tab relative to another favorite tab by id within
+ * workspace.favoriteOrder.
+ */
+export function reorderFavoriteTab(
   workspace: Workspace,
   tabId: string,
   targetTabId: string,
   placement: "before" | "after"
 ) {
-  const favoriteIndex = workspace.favorites.findIndex((favorite) => favorite.tabId === tabId);
-  const targetIndex = workspace.favorites.findIndex((favorite) => favorite.tabId === targetTabId);
-  if (favoriteIndex < 0 || targetIndex < 0) return;
+  const fromIndex = workspace.favoriteOrder.indexOf(tabId);
+  const targetIndex = workspace.favoriteOrder.indexOf(targetTabId);
+  if (fromIndex < 0 || targetIndex < 0) return;
 
-  const [favorite] = workspace.favorites.splice(favoriteIndex, 1);
-  const droppedOnIndex = workspace.favorites.findIndex((candidate) => candidate.tabId === targetTabId);
+  const [id] = workspace.favoriteOrder.splice(fromIndex, 1);
+  const droppedOnIndex = workspace.favoriteOrder.indexOf(targetTabId);
   const insertIndex = placement === "after" ? droppedOnIndex + 1 : droppedOnIndex;
-  workspace.favorites.splice(insertIndex, 0, favorite);
+  workspace.favoriteOrder.splice(insertIndex, 0, id);
 }
 
-function upsertTabFavorite(workspace: Workspace, tab: BrowserTab) {
-  const tabBackedFavorite = workspace.favorites.find((favorite) => favorite.tabId === tab.id);
-  if (tabBackedFavorite) return;
-
-  const legacyFavorite = workspace.favorites.find((favorite) => !favorite.tabId && favorite.url === tab.url);
-  if (legacyFavorite) {
-    legacyFavorite.tabId = tab.id;
-    legacyFavorite.title = tab.title || legacyFavorite.title || getReadableUrlTitle(tab.url);
-    return;
-  }
-
-  workspace.favorites.push(createFavorite(tab.title || getReadableUrlTitle(tab.url), tab.url, tab.id));
+/**
+ * Remove invalid entries from favoriteOrder: ids that refer to tabs which no
+ * longer exist or which are no longer marked as favorites.
+ */
+export function pruneFavoriteOrder(workspace: Workspace) {
+  const validIds = new Set(
+    workspace.tabs.filter((tab) => tab.isFavorite).map((tab) => tab.id)
+  );
+  workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => validIds.has(id));
 }
 
-function detachFavoriteBackingTab(
+/**
+ * Move a favorite tab (and its whole group, if any) from one workspace to
+ * another. Used by cross-workspace favorite drag/move flows.
+ */
+export function moveFavoriteTabToWorkspace(
   state: BrowserState,
-  workspace: Workspace,
-  favorite: Favorite
-): BrowserTab | null {
-  const tab = resolveFavoriteTab(workspace, favorite);
-
-  return tab ? detachTabFromWorkspace(state, workspace, tab.id) : null;
-}
-
-function detachTabFromWorkspace(state: BrowserState, workspace: Workspace, tabId: string): BrowserTab | null {
-  const index = workspace.tabs.findIndex((candidate) => candidate.id === tabId);
-  if (index < 0) return null;
-
-  const [tab] = workspace.tabs.splice(index, 1);
-  tab.groupId = null;
-  pruneEmptyTabGroups(workspace);
-  replaceEmptyOrMovedActiveTab(state, workspace, tab.id, index);
-
-  return tab;
-}
-
-function replaceEmptyOrMovedActiveTab(
-  state: BrowserState,
-  workspace: Workspace,
-  movedTabId: string,
-  movedIndex: number
+  source: Workspace,
+  target: Workspace,
+  tab: BrowserTab
 ) {
-  if (workspace.tabs.length === 0) {
-    const replacement = createTab("New Tab", getWorkspaceHomepageUrl(state, workspace));
-    workspace.tabs.push(replacement);
-    workspace.activeTabId = replacement.id;
-  } else if (workspace.activeTabId === movedTabId || !workspace.tabs.some((tab) => tab.id === workspace.activeTabId)) {
-    workspace.activeTabId = workspace.tabs[Math.min(movedIndex, workspace.tabs.length - 1)].id;
+  const groupId = tab.groupId;
+  const movingTabs: BrowserTab[] = groupId
+    ? source.tabs.filter((t) => t.groupId === groupId)
+    : [tab];
+  const movingIds = new Set(movingTabs.map((t) => t.id));
+
+  for (const movingTab of movingTabs) {
+    const tabIndex = source.tabs.findIndex((t) => t.id === movingTab.id);
+    if (tabIndex >= 0) source.tabs.splice(tabIndex, 1);
   }
+  source.favoriteOrder = source.favoriteOrder.filter((id) => !movingIds.has(id));
+  pruneEmptyTabGroups(source);
+
+  if (source.tabs.length === 0) {
+    const { getWorkspaceHomepageUrl, createTab } = require("../browser") as typeof import("../browser");
+    const replacement = createTab("New Tab", getWorkspaceHomepageUrl(state, source));
+    source.tabs.push(replacement);
+    source.activeTabId = replacement.id;
+  } else if (source.activeTabId === null || !source.tabs.some((t) => t.id === source.activeTabId)) {
+    source.activeTabId = source.tabs[0].id;
+  } else if (movingIds.has(source.activeTabId)) {
+    source.activeTabId = source.tabs[0].id;
+  }
+
+  for (const movingTab of movingTabs) {
+    movingTab.isPinned = false;
+    movingTab.isFavorite = true;
+    target.tabs.push(movingTab);
+    if (!target.favoriteOrder.includes(movingTab.id)) {
+      target.favoriteOrder.push(movingTab.id);
+    }
+  }
+  target.activeTabId = tab.id;
 }

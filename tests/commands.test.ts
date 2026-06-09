@@ -267,7 +267,7 @@ describe("buildCommands", () => {
     const state = openUrlInActiveWorkspace(createDefaultState(), "example.com", "Example");
     const commands = buildCommands(state, commandActions(), vi.fn(), defaultChromeState);
 
-    expect(commands.find((command) => command.title === "Sleep inactive tabs")?.subtitle).toBe("1 releasable · 0 sleeping · 1 protected");
+    expect(commands.find((command) => command.title === "Sleep inactive tabs")?.subtitle).toBe("3 releasable · 0 sleeping · 1 protected");
   });
 
   it("toggles automatic Memory Saver from command palette actions", () => {
@@ -312,7 +312,11 @@ describe("buildCommands", () => {
   });
 
   it("hides the current tab sleep command when focus has nowhere to move", () => {
-    const commands = buildCommands(createDefaultState(), commandActions(), vi.fn(), defaultChromeState);
+    const state = createDefaultState();
+    const workspace = state.workspaces[0];
+    workspace.tabs = workspace.tabs.filter((tab) => !tab.isFavorite);
+    workspace.favoriteOrder = [];
+    const commands = buildCommands(state, commandActions(), vi.fn(), defaultChromeState);
 
     expect(commands.some((command) => command.title === "Sleep current tab")).toBe(false);
   });

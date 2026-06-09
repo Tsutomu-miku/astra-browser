@@ -1,5 +1,5 @@
 import { DEFAULT_URL, WORKSPACE_ACCENTS } from "./constants";
-import type { BrowserState, BrowserTab, Favorite, SplitLayout } from "./types";
+import type { BrowserState, BrowserTab, ClosedTab, Favorite, SplitLayout } from "./types";
 import { DEFAULT_ZOOM_FACTOR } from "./zoom";
 
 const DEFAULT_WORKSPACE_SPLIT_LAYOUT: SplitLayout = "horizontal";
@@ -17,6 +17,7 @@ export function createTab(title: string, url: string): BrowserTab {
     groupId: null,
     canGoBack: false,
     canGoForward: false,
+    isFavorite: false,
     isMuted: false,
     isPinned: false,
     isLoading: false,
@@ -30,6 +31,27 @@ export function createTab(title: string, url: string): BrowserTab {
   };
 }
 
+export function createClosedTab(
+  title: string,
+  url: string,
+  partial: Partial<ClosedTab> = {}
+): ClosedTab {
+  return {
+    title,
+    url,
+    faviconUrl: undefined,
+    customTitle: undefined,
+    groupId: null,
+    canGoBack: false,
+    canGoForward: false,
+    isMuted: false,
+    isPinned: false,
+    zoomFactor: DEFAULT_ZOOM_FACTOR,
+    closedAt: Date.now(),
+    ...partial
+  };
+}
+
 export function createFavorite(title: string, url: string, tabId?: string): Favorite {
   return {
     id: createId(),
@@ -40,6 +62,13 @@ export function createFavorite(title: string, url: string, tabId?: string): Favo
 }
 
 export function createDefaultState(): BrowserState {
+  const chromiumTab = createTab("Chromium", "https://www.chromium.org");
+  chromiumTab.isFavorite = true;
+  const mdnTab = createTab("MDN", "https://developer.mozilla.org");
+  mdnTab.isFavorite = true;
+  const githubTab = createTab("GitHub", "https://github.com");
+  githubTab.isFavorite = true;
+
   return {
     activeWorkspaceId: "personal",
     faviconCache: {},
@@ -71,13 +100,12 @@ export function createDefaultState(): BrowserState {
         profileId: "personal",
         profileName: "Personal",
         closedTabs: [],
-        favorites: [
-          createFavorite("Chromium", "https://www.chromium.org"),
-          createFavorite("MDN", "https://developer.mozilla.org")
-        ],
+        favoriteOrder: [chromiumTab.id, mdnTab.id],
         tabGroups: [],
         tabs: [
-          createTab("New Tab", DEFAULT_URL)
+          createTab("New Tab", DEFAULT_URL),
+          chromiumTab,
+          mdnTab
         ],
         activeTabId: null,
         splitLayout: DEFAULT_WORKSPACE_SPLIT_LAYOUT
@@ -90,12 +118,11 @@ export function createDefaultState(): BrowserState {
         profileId: "work",
         profileName: "Work",
         closedTabs: [],
-        favorites: [
-          createFavorite("GitHub", "https://github.com")
-        ],
+        favoriteOrder: [githubTab.id],
         tabGroups: [],
         tabs: [
-          createTab("Docs", "https://www.chromium.org")
+          createTab("Docs", "https://www.chromium.org"),
+          githubTab
         ],
         activeTabId: null,
         splitLayout: DEFAULT_WORKSPACE_SPLIT_LAYOUT

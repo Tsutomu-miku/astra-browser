@@ -33,6 +33,7 @@ export {
   focusSplitPane,
   moveTabToWorkspace,
   moveTabGroupToWorkspace,
+  moveTabToFavoritePosition,
   moveTabToFolderEnd,
   moveTabToFolderPosition,
   openTabInSplit,

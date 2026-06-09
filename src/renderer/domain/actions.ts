@@ -35,6 +35,7 @@ export {
   groupTabsTogether,
   moveTabToWorkspace,
   moveTabGroupToWorkspace,
+  moveTabToFavoritePosition,
   moveTabToFolderEnd,
   moveTabToFolderPosition,
   newTabInGroup,
