@@ -233,6 +233,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             onTabGroupContextMenu={openTabGroupMenu}
             splitTabIds={state.splitTabIds}
             onQuickEntryContextMenu={openQuickEntryMenu}
+            onRenameGroup={(groupId, name) => actions.updateTabGroup(groupId, { name })}
             onRenameTab={(tabId, customTitle) => actions.updateTab(tabId, { customTitle })}
             onTabContextMenu={openTabMenu}
             onTabDrop={drop.handleTabDrop}

@@ -14,20 +14,19 @@ import { pruneEmptyTabGroups } from "../tabs/groups";
  */
 export function placeTabInFavoritesFolder(workspace: Workspace, tab: BrowserTab) {
   tab.isPinned = false;
+  tab.isFavorite = true;
+  if (!workspace.favoriteOrder.includes(tab.id)) {
+    workspace.favoriteOrder.push(tab.id);
+  }
   const groupId = tab.groupId;
   if (groupId) {
     for (const sibling of workspace.tabs) {
-      if (sibling.groupId === groupId) {
+      if (sibling.groupId === groupId && sibling.id !== tab.id) {
         sibling.isFavorite = true;
         if (!workspace.favoriteOrder.includes(sibling.id)) {
           workspace.favoriteOrder.push(sibling.id);
         }
       }
-    }
-  } else {
-    tab.isFavorite = true;
-    if (!workspace.favoriteOrder.includes(tab.id)) {
-      workspace.favoriteOrder.push(tab.id);
     }
   }
 }
@@ -39,18 +38,18 @@ export function placeTabInFavoritesFolder(workspace: Workspace, tab: BrowserTab)
  */
 export function removeTabFromFavoritesFolder(workspace: Workspace, tab: BrowserTab) {
   const groupId = tab.groupId;
+  tab.isFavorite = false;
   if (groupId) {
-    const groupTabIds = new Set(
-      workspace.tabs.filter((sibling) => sibling.groupId === groupId).map((sibling) => sibling.id)
-    );
+    const groupTabIds = new Set<string>();
     for (const sibling of workspace.tabs) {
       if (sibling.groupId === groupId) {
         sibling.isFavorite = false;
+        groupTabIds.add(sibling.id);
       }
     }
+    groupTabIds.add(tab.id);
     workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => !groupTabIds.has(id));
   } else {
-    tab.isFavorite = false;
     workspace.favoriteOrder = workspace.favoriteOrder.filter((id) => id !== tab.id);
   }
 }

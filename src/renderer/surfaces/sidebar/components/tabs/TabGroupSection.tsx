@@ -1,4 +1,5 @@
-import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
+import { FiFolder } from "react-icons/fi";
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropTargetActive, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
@@ -26,6 +27,7 @@ export function TabGroupSection({
   onGroupTab,
   onMoveTabToGroupFolder,
   onPreview,
+  onRenameGroup,
   onRenameTab,
   onSelect,
   onSplit,
@@ -50,6 +52,7 @@ export function TabGroupSection({
   onGroupTab?: (sourceTabId: string, targetTabId: string) => void;
   onMoveTabToGroupFolder: (tabId: string, groupId: string) => void;
   onPreview: (url: string, title?: string) => void;
+  onRenameGroup?: (groupId: string, customName: string | undefined) => void;
   onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
@@ -62,6 +65,29 @@ export function TabGroupSection({
 }) {
   const hasActiveTab = tabs.some((tab) => tab.id === activeTab.id);
   const tabGroupHeaderDropState = { draggingGroupId, draggingTabId };
+
+  // Inline rename state
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(group.name);
+  const renameInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (isRenaming) {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    }
+  }, [isRenaming]);
+  const commitRename = () => {
+    if (!isRenaming) return;
+    const trimmed = renameDraft.trim();
+    onRenameGroup?.(group.id, trimmed ? trimmed : undefined);
+    setIsRenaming(false);
+  };
+  const cancelRename = () => {
+    if (!isRenaming) return;
+    setRenameDraft(group.name);
+    setIsRenaming(false);
+  };
+
   const handleToggleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (openSidebarKeyboardContextMenu(event)) return;
 
@@ -74,7 +100,13 @@ export function TabGroupSection({
   };
 
   return (
-    <section className="tab-group" style={{ "--group-color": group.color } as CSSProperties}>
+    <section
+      className="tab-group"
+      style={{ "--group-color": group.color } as CSSProperties}
+      data-collapsed={group.isCollapsed}
+      data-empty={tabs.length === 0}
+      data-collapsed-preview={group.isCollapsed && !hasActiveTab && tabs.length > 0}
+    >
       <div
         className="tab-group-header"
         draggable
@@ -83,8 +115,11 @@ export function TabGroupSection({
         data-dragging={draggingGroupId === group.id}
         data-drop-target={Boolean(draggingGroupId && draggingGroupId !== group.id)}
         onContextMenu={(event) => onGroupContextMenu(event, group)}
-        onDoubleClick={onToggle}
         onDragStart={(event) => {
+          if (isRenaming) {
+            event.preventDefault();
+            return;
+          }
           setDraggingGroupId(group.id);
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData(SIDEBAR_DRAG_DATA.groupId, group.id);
@@ -104,9 +139,19 @@ export function TabGroupSection({
           if (next && container.contains(next)) return;
           clearSidebarRowReorderDrop(event);
         }}
+        onKeyDown={(event) => {
+          if (event.key === "F2" && onRenameGroup && !isRenaming) {
+            event.preventDefault();
+            event.stopPropagation();
+            setRenameDraft(group.name);
+            setIsRenaming(true);
+          }
+        }}
         onDrop={(event) => {
           const intent = resolveSidebarTabGroupHeaderDrop(event, tabGroupHeaderDropState, group.id);
           if (!intent) return;
+
+          event.stopPropagation();
 
           if (intent.type === "group") {
             onGroupDrop(event, group.id);
@@ -127,11 +172,53 @@ export function TabGroupSection({
           aria-expanded={!group.isCollapsed}
           aria-label={`${group.isCollapsed ? "Expand" : "Collapse"} tab group ${group.name}`}
           onClick={onToggle}
+          onDoubleClick={onToggle}
           onKeyDown={handleToggleKeyDown}
         >
-          <span className="tab-group-dot" />
+          <FiFolder className="tab-group-folder-icon" />
         </button>
-        <span className="tab-group-title">{group.name}</span>
+        <span className="tab-group-title">
+          {isRenaming ? (
+            <input
+              ref={renameInputRef}
+              className="tab-group-title-input"
+              type="text"
+              value={renameDraft}
+              onClick={(event) => event.stopPropagation()}
+              onDoubleClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+              onDragStart={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              onChange={(event) => setRenameDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  commitRename();
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  cancelRename();
+                }
+              }}
+              onBlur={commitRename}
+            />
+          ) : (
+            <span
+              onDoubleClick={(event) => {
+                if (!onRenameGroup) return;
+                event.preventDefault();
+                event.stopPropagation();
+                setRenameDraft(group.name);
+                setIsRenaming(true);
+              }}
+            >
+              {group.name}
+            </span>
+          )}
+        </span>
         <span className="tab-group-count">{tabs.length}</span>
       </div>
       {(!group.isCollapsed || hasActiveTab) && tabs.map((tab) => (

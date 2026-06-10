@@ -28,6 +28,7 @@ export function SidebarTabsSection({
   onTabGroupCreate,
   onTabGroupContextMenu,
   onTabsDrop,
+  onRenameGroup,
   onRenameTab,
   setDraggingGroupId,
   setDraggingTabId,
@@ -46,6 +47,7 @@ export function SidebarTabsSection({
   onTabGroupCreate?: (sourceTabId: string, targetTabId: string) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
   onTabsDrop: (event: DragEvent<HTMLElement>) => void;
+  onRenameGroup?: (groupId: string, customName: string | undefined) => void;
   onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
   setDraggingGroupId: (groupId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
@@ -128,6 +130,7 @@ export function SidebarTabsSection({
             onGroupDrop={onGroupDrop}
             onGroupContextMenu={onTabGroupContextMenu}
             onPreview={actions.openGlance}
+            onRenameGroup={onRenameGroup}
             onRenameTab={onRenameTab}
             onSelect={actions.selectTab}
             onSplit={actions.openTabInSplit}

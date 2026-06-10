@@ -94,7 +94,7 @@ describe("sidebar tab group section", () => {
     act(() => root.unmount());
   });
 
-  it("keeps tab group titles as display text and routes editing through the context menu", () => {
+  it("renders tab group titles as display text by default, with inline rename and context menu both available", () => {
     const group = tabGroup();
     const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
     const onGroupContextMenu = vi.fn();
@@ -135,7 +135,7 @@ describe("sidebar tab group section", () => {
     const header = container.querySelector<HTMLElement>(".tab-group-header")!;
 
     expect(header.getAttribute("data-collapsed")).toBe("false");
-    expect(container.querySelector(".tab-group-dot")).not.toBeNull();
+    expect(container.querySelector(".tab-group-folder-icon")).not.toBeNull();
     expect(container.querySelector(".tab-group-count")?.textContent).toBe("1");
     expect(container.querySelector(".tab-group-color")).toBeNull();
     expect(container.querySelector('input[type="color"]')).toBeNull();
@@ -160,7 +160,9 @@ describe("sidebar tab group section", () => {
     expect(revealBlock).toContain("opacity: 1");
     expect(revealBlock).not.toContain("transform");
     expect(sidebarGroupsCss).not.toContain(".tab-group-color");
-    expect(sidebarGroupsCss).not.toContain(".tab-group-title-input");
+    expect(sidebarGroupsCss).toContain(".tab-group-folder-icon");
+    expect(sidebarGroupsCss).not.toContain(".tab-group-dot");
+    expect(sidebarGroupsCss).toContain(".tab-group-title-input");
   });
 
   it("moves dropped tabs into the group folder through the shared tab folder action", () => {
@@ -193,6 +195,107 @@ describe("sidebar tab group section", () => {
     act(() => root.unmount());
   });
 
+  it("stops tab drops on the group header from bubbling to parent React drop handlers", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onMoveTabToGroupFolder = vi.fn();
+    const parentDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement("div", {
+        onDrop: parentDrop
+      }, createElement(TabGroupSection, props({
+        activeTab,
+        group,
+        onMoveTabToGroupFolder,
+        setDraggingTabId: vi.fn(),
+        tabs: [activeTab]
+      }))));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    const drop = createDragEvent("drop", {
+      "application/x-astra-sidebar-tab-id": "dragged-tab",
+      "text/plain": "dragged-tab"
+    });
+    header.dispatchEvent(drop);
+
+    expect(onMoveTabToGroupFolder).toHaveBeenCalledWith("dragged-tab", group.id);
+    expect(drop.defaultPrevented).toBe(true);
+    expect(parentDrop).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("stops group reorder drops on the group header from bubbling to parent React drop handlers", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onGroupDrop = vi.fn();
+    const parentDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement("div", {
+        onDrop: parentDrop
+      }, createElement(TabGroupSection, props({
+        activeTab,
+        draggingGroupId: "other-group",
+        group,
+        onGroupDrop,
+        setDraggingGroupId: vi.fn(),
+        tabs: [activeTab]
+      }))));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    const drop = createDragEvent("drop", { "text/group-id": "other-group" });
+    header.dispatchEvent(drop);
+
+    expect(onGroupDrop).toHaveBeenCalledWith(expect.objectContaining({ type: "drop" }), group.id);
+    expect(drop.defaultPrevented).toBe(true);
+    expect(parentDrop).not.toHaveBeenCalled();
+
+    act(() => root.unmount());
+  });
+
+  it("stops same-group header drops from bubbling and clears drop state", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onGroupDrop = vi.fn();
+    const setDraggingGroupId = vi.fn();
+    const parentDrop = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement("div", {
+        onDrop: parentDrop
+      }, createElement(TabGroupSection, props({
+        activeTab,
+        draggingGroupId: group.id,
+        group,
+        onGroupDrop,
+        setDraggingGroupId,
+        tabs: [activeTab]
+      }))));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    const drop = createDragEvent("drop", { "text/group-id": group.id });
+    header.dispatchEvent(drop);
+
+    expect(onGroupDrop).not.toHaveBeenCalled();
+    expect(setDraggingGroupId).toHaveBeenCalledWith(null);
+    expect(drop.defaultPrevented).toBe(true);
+    expect(parentDrop).not.toHaveBeenCalled();
+    expect(header.dataset.dropPlacement).toBeUndefined();
+
+    act(() => root.unmount());
+  });
+
   it("clears same-group drops through the shared header drop resolver", () => {
     const group = tabGroup();
     const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
@@ -219,6 +322,159 @@ describe("sidebar tab group section", () => {
     expect(drop.defaultPrevented).toBe(true);
     expect(onGroupDrop).not.toHaveBeenCalled();
     expect(setDraggingGroupId).toHaveBeenCalledWith(null);
+
+    act(() => root.unmount());
+  });
+
+  it("starts inline rename on title double-click, commits on Enter, cancels on Escape", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onRenameGroup = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        group,
+        onRenameGroup,
+        tabs: [activeTab]
+      })));
+    });
+
+    // By default: no input
+    expect(container.querySelector(".tab-group-title-input")).toBeNull();
+
+    // Double-click the inner title span to start renaming
+    const titleInner = container.querySelector<HTMLSpanElement>(".tab-group-title > span")!;
+    act(() => {
+      titleInner.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }));
+    });
+
+    const input = container.querySelector<HTMLInputElement>(".tab-group-title-input")!;
+    expect(input).not.toBeNull();
+    expect(input.value).toBe(group.name);
+
+    // Type a new name via native setter to bypass React controlled-input handling
+    act(() => {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )!.set!;
+      nativeInputValueSetter.call(input, "New Name");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      const evt = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "Enter" });
+      input.dispatchEvent(evt);
+    });
+
+    expect(onRenameGroup).toHaveBeenCalledWith(group.id, "New Name");
+    expect(container.querySelector(".tab-group-title-input")).toBeNull();
+
+    // Start again, cancel with Escape
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        group: { ...group, name: "New Name" },
+        onRenameGroup,
+        tabs: [activeTab]
+      })));
+    });
+    const titleInner2 = container.querySelector<HTMLSpanElement>(".tab-group-title > span")!;
+    act(() => {
+      titleInner2.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }));
+    });
+    const input2 = container.querySelector<HTMLInputElement>(".tab-group-title-input")!;
+    act(() => {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )!.set!;
+      nativeInputValueSetter.call(input2, "Cancel This");
+      input2.dispatchEvent(new Event("input", { bubbles: true }));
+      const evt = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "Escape" });
+      input2.dispatchEvent(evt);
+    });
+
+    expect(onRenameGroup).toHaveBeenCalledTimes(1); // no additional call
+    expect(container.querySelector(".tab-group-title-input")).toBeNull();
+
+    act(() => root.unmount());
+  });
+
+  it("starts inline rename with F2 and submits via Enter", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onRenameGroup = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        group,
+        onRenameGroup,
+        tabs: [activeTab]
+      })));
+    });
+
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    act(() => {
+      header.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "F2" }));
+    });
+
+    const input = container.querySelector<HTMLInputElement>(".tab-group-title-input")!;
+    expect(input).not.toBeNull();
+
+    // Type and commit with Enter
+    act(() => {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )!.set!;
+      nativeInputValueSetter.call(input, "F2 Renamed");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "Enter" }));
+    });
+
+    expect(onRenameGroup).toHaveBeenCalledWith(group.id, "F2 Renamed");
+
+    act(() => root.unmount());
+  });
+
+  it("prevents starting a drag while renaming", () => {
+    const group = tabGroup();
+    const activeTab = { ...createTab("Docs", "https://docs.example"), groupId: group.id };
+    const onRenameGroup = vi.fn();
+    const setDraggingGroupId = vi.fn();
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(createElement(TabGroupSection, props({
+        activeTab,
+        group,
+        onRenameGroup,
+        setDraggingGroupId,
+        tabs: [activeTab]
+      })));
+    });
+
+    // Start rename via F2
+    const header = container.querySelector<HTMLElement>(".tab-group-header")!;
+    act(() => {
+      header.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "F2" }));
+    });
+    expect(container.querySelector(".tab-group-title-input")).not.toBeNull();
+
+    // Attempt to drag while renaming: should be prevented
+    const dragStart = new Event("dragstart", { bubbles: true, cancelable: true });
+    Object.defineProperty(dragStart, "dataTransfer", {
+      value: { effectAllowed: "move", setData: vi.fn(), getData: vi.fn() }
+    });
+    header.dispatchEvent(dragStart);
+
+    expect(dragStart.defaultPrevented).toBe(true);
+    expect(setDraggingGroupId).not.toHaveBeenCalled();
 
     act(() => root.unmount());
   });

@@ -154,7 +154,11 @@ describe("sidebar selection styles", () => {
       expect(block).not.toContain("var(--accent)");
     }
     expect(essentialBlock).toContain("border-color: transparent");
-    expect(essentialIconBlock).toContain("background: var(--control)");
+    // Essentials favicons use a thin hairline + low-opacity tint instead of a solid
+    // var(--control) square so they don't feel heavy against the sidebar bg.
+    expect(essentialIconBlock).toContain("background:");
+    expect(essentialIconBlock).toContain("border: 1px solid");
+    expect(essentialIconBlock).toContain("var(--muted)");
     expect(newWorkspaceBlock).toContain("border-color: transparent");
     expect(newWorkspaceBlock).toContain("background: transparent");
     expect(newWorkspaceHoverBlock).toContain("border-color: transparent");
@@ -197,9 +201,38 @@ describe("sidebar selection styles", () => {
 });
 
 function getRuleBlock(css: string, selector: string): string {
-  const start = css.indexOf(selector);
-  expect(start).toBeGreaterThanOrEqual(0);
-  const bodyStart = css.indexOf("{", start);
+  // Bare selector substrings like ".favorite-button:hover" also match the
+  // start of nested descendant rules (e.g. ".favorite-button:hover .foo")
+  // that appear earlier in the concatenated stylesheet. To avoid returning
+  // the wrong rule body, find the rule whose block OPENING brace is closest
+  // to the end of the selector itself — i.e. the selector is either the
+  // entire last compound in the selector list or ends with a comma/whitespace
+  // variant. The simplest robust heuristic: pick the match with the smallest
+  // distance between selector end and the following '{', which excludes
+  // matches in the MIDDLE of a multi-selector list.
+  let best = -1;
+  let bestDistance = Infinity;
+  let idx = 0;
+  while (true) {
+    const hit = css.indexOf(selector, idx);
+    if (hit < 0) break;
+    const brace = css.indexOf("{", hit);
+    if (brace < 0) break;
+    const distance = brace - (hit + selector.length);
+    // The brace must be reachable without crossing a '}' (i.e. inside a body)
+    const closeBrace = css.indexOf("}", hit);
+    if (closeBrace >= 0 && closeBrace < brace) {
+      idx = hit + 1;
+      continue;
+    }
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = hit;
+    }
+    idx = hit + 1;
+  }
+  expect(best).toBeGreaterThanOrEqual(0);
+  const bodyStart = css.indexOf("{", best);
   const bodyEnd = css.indexOf("}", bodyStart);
   return css.slice(bodyStart + 1, bodyEnd);
 }

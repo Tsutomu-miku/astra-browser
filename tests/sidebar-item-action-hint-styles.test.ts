@@ -63,15 +63,25 @@ describe("sidebar item action hint styles", () => {
   it("keeps tab row hints and close controls in one stable action rail", () => {
     const rowBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row {");
     const buttonBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-button {\n  position:");
-    const railBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row-actions");
-    const railHintBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row-actions .sidebar-item-action-hints");
+    const railBaseBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row-actions {");
+    const tabRailBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row > .tab-row-actions {");
+    const railHintBlock = getRuleBlock(sidebarLayoutCss, "\n.tab-row > .tab-row-actions .sidebar-item-action-hints");
 
-    expect(rowBlock).toContain("grid-template-columns: minmax(0, 1fr) 56px");
+    // Tab rows use flex (not a fixed-width grid right column) so that the
+    // action rail — absolutely positioned at the right edge — doesn't deduct
+    // from title width until hover/focus expands it. Rest state = full title.
+    expect(rowBlock).toContain("display: flex");
+    expect(rowBlock).toContain("padding-right: 4px");
+    expect(rowBlock).not.toContain("grid-template-columns");
     expect(buttonBlock).toContain("grid-template-columns: 24px minmax(0, 1fr)");
     expect(buttonBlock).not.toContain("grid-template-columns: 24px minmax(0, 1fr) 38px");
-    expect(railBlock).toContain("width: 56px");
-    expect(railBlock).toContain("justify-content: flex-end");
-    expect(railHintBlock).toContain("width: 30px");
+    // Generic rail lays controls out to the right; tab-row rail is absolute.
+    expect(railBaseBlock).toContain("justify-content: flex-end");
+    expect(tabRailBlock).toContain("position: absolute");
+    expect(tabRailBlock).toContain("width: 0");
+    // Hints expand from 0 to 30px when hover/focus engages the rail.
+    expect(railHintBlock).toContain("width: 0");
+    expect(railHintBlock).toContain("opacity: 0");
   });
 });
 

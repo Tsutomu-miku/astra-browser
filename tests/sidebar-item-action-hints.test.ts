@@ -306,7 +306,11 @@ describe("sidebar item action hints", () => {
   });
 
   it("uses in-flow action hints so hover labels do not cover tab titles", () => {
-    expect(sidebarCss).toContain("grid-template-columns: minmax(0, 1fr) 56px");
+    // Tab rows use flex + an absolute-positioned action rail at the right
+    // edge. At rest, the rail is zero-width (no layout cost) and the title
+    // fills the full row width; hover/focus expands the rail to 56px while
+    // reserving matching right padding so text doesn't get covered.
+    expect(sidebarCss).toContain(".tab-row > .tab-row-actions {\n  position: absolute");
     expect(sidebarCss).toContain("grid-template-columns: 24px minmax(0, 1fr)");
     expect(sidebarCss).toContain("grid-template-columns: 22px minmax(0, 1fr) 38px");
     expect(sidebarActionHintsCss).toContain("width: 38px");

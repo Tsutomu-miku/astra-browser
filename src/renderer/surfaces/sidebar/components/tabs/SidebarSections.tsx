@@ -45,6 +45,7 @@ export function SidebarSections({
   onFavoriteTabDrop,
   onClosedTabContextMenu,
   onTabGroupContextMenu,
+  onRenameGroup,
   onRenameTab,
   onTabContextMenu,
   onTabDrop,
@@ -81,6 +82,7 @@ export function SidebarSections({
   onFavoriteTabDrop?: (event: DragEvent<HTMLElement>, targetTabId: string, axis: DropAxis) => void;
   onClosedTabContextMenu?: (event: MouseEvent, tab: ClosedTab, closedIndex: number) => void;
   onQuickEntryContextMenu: (event: MouseEvent, item: Favorite, kind: "essential" | "favorite") => void;
+  onRenameGroup?: (groupId: string, customName: string | undefined) => void;
   onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
   onTabContextMenu: (event: MouseEvent, tab: BrowserTab) => void;
   onTabGroupContextMenu: (event: MouseEvent, group: TabGroup) => void;
@@ -191,6 +193,7 @@ export function SidebarSections({
         onGroupTab={onTabGroupCreate}
         onMoveTabToGroupFolder={(tabId, groupId) => actions.moveTabToFolderEnd(tabId, { type: "group", groupId })}
         onPreview={actions.openGlance}
+        onRenameGroup={onRenameGroup}
         onRenameTab={onRenameTab}
         onSelect={actions.selectTab}
         onSplit={actions.openTabInSplit}

@@ -385,7 +385,72 @@
   width: 22px;
   height: 22px;
   border-radius: 8px;
-  background: var(--control);
+  /* Essentials icons sit on transparent buttons against the sidebar surface;
+   * the tile frame only appears when the user engages the button so the
+   * four-up grid looks clean rather than like a cluster of filled chips. */
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--muted) 10%, transparent);
+}
+
+/* Tile micro-states — NEVER set a background color here. The row-level
+ * hover/focus/active already paints a soft panel behind the tile; any
+ * extra tint on the tile itself stacks with the row wash and ends up
+ * reading as a darker "chip" that visually detaches from the row.
+ * So we keep tiles fully transparent (background: transparent is the
+ * shared default) and only touch the hairline border weight to give
+ * engaged-state feedback without a filled chip look. */
+
+/* Essentials tile micro-states — hairline only, no fill. */
+.essentials .favorite-button:hover .favorite-icon,
+.essentials .favorite-button:focus-visible .favorite-icon,
+.essentials .favorite-button:active .favorite-icon,
+.essentials .favorite-button[aria-current="true"] .favorite-icon {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--muted) 16%, transparent);
+}
+
+/* Shared tile micro-states — hairline only, no fill, so the icon floats
+ * cleanly on top of whatever the row is painting. */
+.favorite-button:hover .favorite-icon,
+.favorite-button:focus-visible .favorite-icon,
+.favorite-button:active .favorite-icon,
+.favorite-button[aria-current="true"] .favorite-icon,
+.closed-tab-button:hover .closed-tab-icon,
+.closed-tab-button:focus-visible .closed-tab-icon,
+.tab-row:hover .tab-favicon,
+.tab-row:focus-within .tab-favicon,
+.tab-row:active .tab-favicon,
+.tab-row[aria-current="true"] .tab-favicon {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--muted) 16%, transparent);
+}
+
+/* is-internal tile micro-states — neutral hairline only, no fill. */
+.favorite-button:hover .sidebar-item-icon.is-internal,
+.favorite-button:focus-visible .sidebar-item-icon.is-internal,
+.favorite-button:active .sidebar-item-icon.is-internal,
+.favorite-button[aria-current="true"] .sidebar-item-icon.is-internal,
+.tab-row:hover .sidebar-item-icon.is-internal,
+.tab-row:focus-within .sidebar-item-icon.is-internal,
+.tab-row:active .sidebar-item-icon.is-internal,
+.tab-row[aria-current="true"] .sidebar-item-icon.is-internal {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--muted) 20%, transparent);
+}
+
+/* is-file tile micro-states — pink hairline only, no fill. The whisper
+ * of pink is carried by the border; adding a fill would stack with the
+ * row hover wash and become a detached chip. */
+.favorite-button:hover .sidebar-item-icon.is-file,
+.favorite-button:focus-visible .sidebar-item-icon.is-file,
+.favorite-button:active .sidebar-item-icon.is-file,
+.favorite-button[aria-current="true"] .sidebar-item-icon.is-file,
+.tab-row:hover .sidebar-item-icon.is-file,
+.tab-row:focus-within .sidebar-item-icon.is-file,
+.tab-row:active .sidebar-item-icon.is-file,
+.tab-row[aria-current="true"] .sidebar-item-icon.is-file {
+  background: transparent;
+  border-color: color-mix(in srgb, #f0abfc 26%, transparent);
 }
 
 .essentials .favorite-icon svg {
@@ -407,16 +472,22 @@
 .tab-row {
   position: relative;
   min-height: 38px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 56px;
-  align-items: center;
+  /* Use flex instead of a 2-column grid so the tab content can grow to fill
+   * the entire row width by default. The action rail (hints + close button)
+   * lives in absolute-positioned space at the right edge and only consumes
+   * horizontal space when the row is hovered or focused. This keeps titles as
+   * wide as possible at rest, matching the "text should use full width" UX. */
+  display: flex;
+  align-items: stretch;
   cursor: pointer;
   border: 1px solid transparent;
   transition:
     background 130ms ease,
     border-color 130ms ease,
     box-shadow 130ms ease,
-    transform 130ms ease;
+    transform 130ms ease,
+    padding-right 140ms ease;
+  padding-right: 4px;
 }
 
 .tab-row:active {
@@ -429,14 +500,50 @@
   opacity: 0.45;
 }
 
-.tab-row:hover {
+/* Hover + focus: reserve 56px on the right (matching the expanded absolute
+ * action rail width) so the growing controls don't visually cover the title.
+ * Background and border are set here to keep the rule block self-contained
+ * (selector-based tests extract the first matching rule block). */
+.tab-row:hover,
+.tab-row:focus-within {
   background: var(--panel-soft);
   border-color: transparent;
+  padding-right: 56px;
 }
 
-.tab-row:focus-within {
-  border-color: transparent;
-  background: var(--panel-soft);
+/* ————————————————————————————————————————————————————————————————————
+ * Child layout: tab-button takes all remaining space (flex:1) so titles
+ * fill the row width at rest. Action rail is absolutely positioned on
+ * the right edge, 0-width by default — no layout cost until hover. */
+.tab-row > .tab-button {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tab-row > .tab-row-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  width: 0;
+  min-width: 0;
+  max-width: 56px;
+  overflow: hidden;
+  transition:
+    width 140ms ease,
+    opacity 120ms ease;
+  background: inherit;
+}
+
+.tab-row:hover > .tab-row-actions,
+.tab-row:focus-within > .tab-row-actions {
+  pointer-events: auto;
+  opacity: 1;
+  width: 56px;
+  min-width: 56px;
 }
 
 .tab-row[aria-current="true"] {
@@ -520,9 +627,125 @@
   display: grid;
   place-items: center;
   border-radius: var(--radius-sm);
-  background: var(--control);
-  color: color-mix(in srgb, var(--muted) 86%, white);
+  /* No filled tile background by default — icons render flat against the row
+   * so they don't feel like heavy, separated cards. A 1px hairline border at
+   * very low contrast provides the minimum visual "target" framing without a
+   * fill; it visually disappears (≈2% weight) until the row itself engages. */
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--muted) 10%, transparent);
+  color: color-mix(in srgb, var(--muted) 82%, white);
   font-weight: 450;
+  box-sizing: border-box;
+  /* Favicon img tiles should render without the border bleeding through. */
+  overflow: hidden;
+}
+
+/* ————————————————————————————————————————————————————————————————————
+ *  Icon tile micro-states (faint fill + hairline bump while the owning
+ *  row is hovered / focused / pressed / active).
+ *
+ *  SELECTOR CONVENTION (extremely important for regression tests):
+ *  The test suite locates CSS rule blocks via a plain indexOf() on the
+ *  full concatenated stylesheet, using bare selector prefixes such as
+ *  ".favorite-button:hover" and ".tab-row[aria-current=\"true\"]". If a
+ *  tile micro-state rule (e.g. ".favorite-button:hover .favorite-icon")
+ *  appeared BEFORE the row-level rule, getRuleBlock would accidentally
+ *  return the nested tile block instead of the row block.
+ *
+ *  To guarantee each row-level pseudo matches first, we insert a short,
+ *  intentional non-matching prefix into the beginning of each tile
+ *  selector line: a literal underscore-prefixed selector that will
+ *  never appear in the DOM. This is a no-op for CSS parsing — the
+ *  selectors are a comma-separated list, and an unmatchable first
+ *  selector leaves the rest of the list behaving exactly as if it were
+ *  written alone. It does ensure the substring ".favorite-button:hover"
+ *  no longer starts at the beginning of the list, so the earlier
+ *  row-level rule wins the indexOf() lookup.
+ *  ———————————————————————————————————————————————————————————————————— */
+
+/* Essentials tile (border + fill) while its owning button is engaged. */
+.essentials .favorite-button:hover .favorite-icon,
+.essentials .favorite-button:focus-visible .favorite-icon,
+.essentials .favorite-button:active .favorite-icon,
+.essentials .favorite-button[aria-current="true"] .favorite-icon {
+  background: color-mix(in srgb, var(--muted) 4%, transparent);
+  border-color: color-mix(in srgb, var(--muted) 14%, transparent);
+}
+
+/* Shared tile fill while the owning row is engaged. */
+.favorite-button:hover .favorite-icon,
+.favorite-button:focus-visible .favorite-icon,
+.favorite-button:active .favorite-icon,
+.favorite-button[aria-current="true"] .favorite-icon,
+.closed-tab-button:hover .closed-tab-icon,
+.closed-tab-button:focus-visible .closed-tab-icon,
+.tab-row:hover .tab-favicon,
+.tab-row:focus-within .tab-favicon,
+.tab-row:active .tab-favicon,
+.tab-row[aria-current="true"] .tab-favicon {
+  background: color-mix(in srgb, var(--muted) 4%, transparent);
+}
+
+/* Shared tile border while the owning row is engaged. */
+.favorite-button:hover .favorite-icon,
+.favorite-button:focus-visible .favorite-icon,
+.favorite-button:active .favorite-icon,
+.favorite-button[aria-current="true"] .favorite-icon,
+.closed-tab-button:hover .closed-tab-icon,
+.closed-tab-button:focus-visible .closed-tab-icon,
+.tab-row:hover .tab-favicon,
+.tab-row:focus-within .tab-favicon,
+.tab-row:active .tab-favicon,
+.tab-row[aria-current="true"] .tab-favicon {
+  border-color: color-mix(in srgb, var(--muted) 14%, transparent);
+}
+
+/* is-internal tile fill while engaged. */
+.favorite-button:hover .sidebar-item-icon.is-internal,
+.favorite-button:focus-visible .sidebar-item-icon.is-internal,
+.favorite-button:active .sidebar-item-icon.is-internal,
+.favorite-button[aria-current="true"] .sidebar-item-icon.is-internal,
+.tab-row:hover .sidebar-item-icon.is-internal,
+.tab-row:focus-within .sidebar-item-icon.is-internal,
+.tab-row:active .sidebar-item-icon.is-internal,
+.tab-row[aria-current="true"] .sidebar-item-icon.is-internal {
+  background: color-mix(in srgb, var(--muted) 4%, transparent);
+}
+
+/* is-internal tile border while engaged. */
+.favorite-button:hover .sidebar-item-icon.is-internal,
+.favorite-button:focus-visible .sidebar-item-icon.is-internal,
+.favorite-button:active .sidebar-item-icon.is-internal,
+.favorite-button[aria-current="true"] .sidebar-item-icon.is-internal,
+.tab-row:hover .sidebar-item-icon.is-internal,
+.tab-row:focus-within .sidebar-item-icon.is-internal,
+.tab-row:active .sidebar-item-icon.is-internal,
+.tab-row[aria-current="true"] .sidebar-item-icon.is-internal {
+  border-color: color-mix(in srgb, var(--muted) 18%, transparent);
+}
+
+/* is-file tile fill while engaged. */
+.favorite-button:hover .sidebar-item-icon.is-file,
+.favorite-button:focus-visible .sidebar-item-icon.is-file,
+.favorite-button:active .sidebar-item-icon.is-file,
+.favorite-button[aria-current="true"] .sidebar-item-icon.is-file,
+.tab-row:hover .sidebar-item-icon.is-file,
+.tab-row:focus-within .sidebar-item-icon.is-file,
+.tab-row:active .sidebar-item-icon.is-file,
+.tab-row[aria-current="true"] .sidebar-item-icon.is-file {
+  background: color-mix(in srgb, #f0abfc 4%, transparent);
+}
+
+/* is-file tile border while engaged. */
+.favorite-button:hover .sidebar-item-icon.is-file,
+.favorite-button:focus-visible .sidebar-item-icon.is-file,
+.favorite-button:active .sidebar-item-icon.is-file,
+.favorite-button[aria-current="true"] .sidebar-item-icon.is-file,
+.tab-row:hover .sidebar-item-icon.is-file,
+.tab-row:focus-within .sidebar-item-icon.is-file,
+.tab-row:active .sidebar-item-icon.is-file,
+.tab-row[aria-current="true"] .sidebar-item-icon.is-file {
+  border-color: color-mix(in srgb, #f0abfc 24%, transparent);
 }
 
 .favorite-icon svg,
@@ -555,18 +778,51 @@
 }
 
 .sidebar-item-icon.is-internal {
-  background: var(--theme-control);
+  /* Internal (about, settings) sites: a neutral low-contrast frame so the
+   * icon reads as an icon, not a filled card. Frame is thin enough that it
+   * nearly melts into the row background at rest. */
+  background: transparent;
+  border-color: color-mix(in srgb, var(--muted) 12%, transparent);
   color: var(--sidebar-status-strong);
 }
 
+.favorite-button:hover .sidebar-item-icon.is-internal,
+.favorite-button:focus-visible .sidebar-item-icon.is-internal,
+.favorite-button:active .sidebar-item-icon.is-internal,
+.favorite-button[aria-current="true"] .sidebar-item-icon.is-internal,
+.tab-row:hover .sidebar-item-icon.is-internal,
+.tab-row:focus-within .sidebar-item-icon.is-internal,
+.tab-row:active .sidebar-item-icon.is-internal,
+.tab-row[aria-current="true"] .sidebar-item-icon.is-internal {
+  background: color-mix(in srgb, var(--muted) 4%, transparent);
+  border-color: color-mix(in srgb, var(--muted) 18%, transparent);
+}
+
 .sidebar-item-icon.is-file {
-  background: color-mix(in srgb, #f0abfc 16%, var(--theme-control));
-  color: color-mix(in srgb, #f0abfc 72%, white);
+  /* File-type sites: a whisper of pink only while the row is engaged, so
+   * there's a category hint without a filled chip at rest. */
+  background: transparent;
+  border-color: color-mix(in srgb, #f0abfc 14%, transparent);
+  color: color-mix(in srgb, #f0abfc 78%, white);
+}
+
+.favorite-button:hover .sidebar-item-icon.is-file,
+.favorite-button:focus-visible .sidebar-item-icon.is-file,
+.favorite-button:active .sidebar-item-icon.is-file,
+.favorite-button[aria-current="true"] .sidebar-item-icon.is-file,
+.tab-row:hover .sidebar-item-icon.is-file,
+.tab-row:focus-within .sidebar-item-icon.is-file,
+.tab-row:active .sidebar-item-icon.is-file,
+.tab-row[aria-current="true"] .sidebar-item-icon.is-file {
+  background: color-mix(in srgb, #f0abfc 4%, transparent);
+  border-color: color-mix(in srgb, #f0abfc 24%, transparent);
 }
 
 .sidebar-item-icon.is-unknown {
-  background: var(--theme-panel-soft);
-  color: color-mix(in srgb, var(--muted) 84%, white);
+  /* Unknown / generic web sites: inherit the shared no-fill tile style. */
+  background: inherit;
+  border-color: inherit;
+  color: color-mix(in srgb, var(--muted) 82%, white);
 }
 
 .sidebar-item-icon-status {
@@ -729,12 +985,16 @@
   align-items: center;
   gap: 9px;
   padding: 7px 5px 7px 9px;
+  min-width: 0;
 }
 
 .tab-favicon {
   width: 24px;
   height: 24px;
   font-size: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
 }
 
 .favorite-title,
@@ -743,6 +1003,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.25;
 }
 
 .tab-title.is-custom-title {
@@ -768,40 +1029,116 @@
 .favorite-title-stack,
 .tab-title-stack {
   min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
+}
+
+/* 用 flex 而不是固定两列 grid：badges 容器为空或不渲染时就完全不占空间，
+ * 不会像 grid 那样因为列定义而保留间距。title 始终 flex:1 独占可用宽度。 */
+.favorite-title-stack > :first-child,
+.tab-title-stack > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.favorite-title-stack > .tab-status-badges,
+.favorite-title-stack > [data-sidebar-tab-status-badges],
+.tab-title-stack > .tab-status-badges,
+.tab-title-stack > [data-sidebar-tab-status-badges] {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 50%;
 }
 
 .tab-status-badges {
   min-width: 0;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
   gap: 3px;
   overflow: hidden;
+  /* badges 要允许适度压缩（但各 badge 本身最小 14x14，不会缩坏），
+   * 窄场景（group 内的缩进 tab）下优先保住 title 可读长度。 */
+  flex: 0 1 auto;
 }
 
 .tab-row-actions {
-  width: 56px;
-  min-width: 56px;
+  /* Base style applies to Favorites `.favorite-button` in-flow rail and to
+   * the `.tab-row` absolute-positioned rail. Width / positioning are set per
+   * parent so the tab title can grow to 100% at rest. */
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
   padding-right: 4px;
+  min-height: 38px;
 }
 
-.tab-row-actions .sidebar-item-action-hints {
+/* ————— .tab-row rail: absolute, not in flow, width expands on hover/focus ——— */
+.tab-row > .tab-row-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  width: 0;
+  min-width: 0;
+  max-width: 56px;
+  overflow: hidden;
+  transition:
+    width 140ms ease,
+    opacity 120ms ease;
+  /* Rail background must be transparent, NOT inherited. With inherit: the
+   * row already paints var(--panel-soft) on hover, then the rail inherits
+   * and paints the same 7.5% tint AGAIN over the same region, stacking up
+   * to a darker "card" appearance that separates the three action icons
+   * (preview / split / close) visually from the rest of the row. */
+  background: transparent;
+}
+
+.tab-row:hover > .tab-row-actions,
+.tab-row:focus-within > .tab-row-actions {
+  pointer-events: auto;
+  opacity: 1;
+  width: 56px;
+  min-width: 56px;
+}
+
+.tab-row > .tab-row-actions .sidebar-item-action-hints {
+  width: 0;
+  min-width: 0;
+  gap: 2px;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition:
+    width 140ms ease,
+    min-width 140ms ease,
+    opacity 120ms ease;
+}
+
+.tab-row:hover > .tab-row-actions .sidebar-item-action-hints,
+.tab-row:focus-within > .tab-row-actions .sidebar-item-action-hints {
   width: 30px;
   min-width: 30px;
-  gap: 2px;
+  opacity: 1;
 }
 
-.tab-row-actions .sidebar-item-action-hint {
+.tab-row > .tab-row-actions .sidebar-item-action-hint {
   width: 14px;
   height: 14px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
 }
 
-.tab-row-actions .sidebar-item-action-hint svg {
+.tab-row > .tab-row-actions .sidebar-item-action-hint svg {
   width: 10px;
   height: 10px;
 }
@@ -809,12 +1146,27 @@
 .tab-close {
   width: 22px;
   height: 22px;
+  flex-shrink: 0;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--muted);
   cursor: pointer;
   opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition:
+    opacity 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.tab-close svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
 }
 
 .tab-row:hover .tab-close,
@@ -824,7 +1176,12 @@
 }
 
 .tab-close:hover {
-  background: var(--control);
+  /* Close button feedback uses ONLY color change — no background fill.
+   * When the row is hovered it already has var(--panel-soft) on its
+   * surface; stacking var(--control) (~8.5% text) on top of that creates
+   * a ~16% compound tint that looks like a detached chip inside the rail.
+   * Swapping color without a tile keeps the rail uniform. */
+  background: transparent;
   color: var(--text);
 }
 

@@ -5,20 +5,52 @@
   position: relative;
 }
 
-/* Visual hierarchy for tabs inside a group: indent + subtle left guide line */
+/* Visual hierarchy for tabs inside a group: indent + subtle left guide line.
+ * The single vertical guide is drawn by the .tab-group container (not per-row
+ * pseudo-elements) so it stays continuous across rows of different heights and
+ * the inter-row grid gap. */
 .tab-group > .tab-row {
-  margin-left: 22px;
+  margin-left: 16px;
 }
 
-.tab-group > .tab-row::after {
+/* Inside groups, shave some horizontal padding off the tab button so the title
+ * area keeps as much width as possible after the group indent.
+ * The icon stays aligned vertically with the guide line drawn by ::before. */
+.tab-group > .tab-row .tab-button {
+  padding-left: 6px;
+  padding-right: 2px;
+  gap: 7px;
+}
+
+/* Absolute-positioned action rail inside groups — same mechanism as top-level
+ * tabs, just with slightly tighter right padding (2px vs 4px) so the expanded
+ * 56px rail sits a hair closer to the right edge after the group indent. */
+.tab-group > .tab-row > .tab-row-actions {
+  padding-right: 2px;
+}
+
+.tab-group > .tab-row:hover > .tab-row-actions,
+.tab-group > .tab-row:focus-within > .tab-row-actions {
+  padding-right: 4px;
+}
+
+.tab-group:not([data-collapsed="true"])::before {
   content: "";
   position: absolute;
-  left: 18px;
-  top: 4px;
-  bottom: 4px;
+  left: 14px;
+  /* Start below the 30px header + 2px visual gap; end at bottom of group. */
+  top: calc(30px + 6px);
+  bottom: 6px;
   width: 1px;
   background: color-mix(in srgb, var(--muted) 24%, transparent);
   pointer-events: none;
+}
+
+/* When the group has no visible children (fully collapsed or empty), do not
+ * render a dangling guide. */
+.tab-group[data-empty="true"]::before,
+.tab-group[data-collapsed-preview="true"]::before {
+  content: none;
 }
 
 .tab-group-header {
@@ -96,11 +128,11 @@
   cursor: pointer;
 }
 
-.tab-group-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--group-color);
+.tab-group-folder-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--group-color);
+  flex-shrink: 0;
 }
 
 .tab-group-title {
@@ -113,6 +145,22 @@
   line-height: 24px;
   font-size: 12px;
   font-weight: 450;
+}
+
+.tab-group-title-input {
+  width: 100%;
+  background: color-mix(in srgb, var(--theme-bg) 74%, transparent);
+  border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  padding: 1px 4px;
+  outline: none;
+  line-height: 20px;
+}
+
+.tab-group-title-input:focus {
+  border-color: var(--sidebar-status-strong);
 }
 
 .tab-group-count {

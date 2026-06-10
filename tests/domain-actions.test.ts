@@ -666,6 +666,20 @@ describe("domain actions", () => {
     expect(getActiveWorkspace(unpinned).tabs.at(-1)?.id).toBe(first.id);
   });
 
+  it("clears favorite status when a favorite tab is moved into a non-favorite group", () => {
+    const grouped = groupActiveTab(createDefaultState());
+    const workspace = getActiveWorkspace(grouped);
+    const group = workspace.tabGroups[0];
+    const favoriteTab = workspace.tabs.find((tab) => tab.isFavorite)!;
+
+    const moved = moveTabToFolderEnd(grouped, favoriteTab.id, { type: "group", groupId: group.id });
+    const movedTab = getActiveWorkspace(moved).tabs.find((tab) => tab.id === favoriteTab.id)!;
+
+    expect(movedTab.groupId).toBe(group.id);
+    expect(movedTab.isFavorite).toBe(false);
+    expect(getActiveWorkspace(moved).favoriteOrder).not.toContain(movedTab.id);
+  });
+
   it("places dragged tabs after a group without joining it", () => {
     const withNews = openUrlInActiveWorkspace(groupActiveTab(createDefaultState()), "news.example", "News");
     const workspace = getActiveWorkspace(withNews);

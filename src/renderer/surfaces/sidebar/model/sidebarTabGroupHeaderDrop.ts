@@ -48,10 +48,14 @@ export function resolveSidebarTabGroupHeaderDrop(
     readDragId: (currentEvent) => readGroupDragId(currentEvent, state),
     targetId: targetGroupId
   });
-  if (groupId) return { type: "group", groupId };
+  if (groupId) {
+    event.preventDefault();
+    return { type: "group", groupId };
+  }
 
   const currentGroupId = readGroupDragId(event, state);
   if (currentGroupId === targetGroupId) {
+    clearDropPlacement(event.currentTarget as DropPlacementTarget);
     event.preventDefault();
     return { type: "currentGroup", groupId: currentGroupId };
   }

@@ -30,6 +30,18 @@ export function App() {
     };
   }, [theme, chromeAccent, themeDef.accent2]);
 
+  // Expose sidebar width on <body> so the shell grid (base.css) can consume it
+  // as the first column. Otherwise dragging the resize handle only changes the
+  // sidebar's internal width and the main view stays at the default offset.
+  useEffect(() => {
+    document.body.style.setProperty("--sidebar-width", `${controller.sidebarWidth}px`);
+    document.body.dataset.sidebarCollapsed = String(controller.sidebarCollapsed);
+    return () => {
+      document.body.style.removeProperty("--sidebar-width");
+      document.body.removeAttribute("data-sidebar-collapsed");
+    };
+  }, [controller.sidebarWidth, controller.sidebarCollapsed]);
+
   return (
     <>
       <Sidebar controller={controller} />
