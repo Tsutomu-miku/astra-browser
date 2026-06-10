@@ -111,6 +111,22 @@ function installIpcHandlers({
     if (!item) return;
     try { item.cancel(); } catch { /* ignore */ }
   });
+  ipcMain.handle("pause-download", (_event, id) => {
+    const item = downloadItems.get(id);
+    if (!item || !item.canPause?.()) return false;
+    try {
+      if (!item.isPaused?.()) item.pause();
+      return true;
+    } catch { return false; }
+  });
+  ipcMain.handle("resume-download", (_event, id) => {
+    const item = downloadItems.get(id);
+    if (!item) return false;
+    try {
+      if (item.isPaused?.()) item.resume();
+      return true;
+    } catch { return false; }
+  });
   ipcMain.handle("show-item-in-folder", (_event, filePath) => {
     if (filePath) shell.showItemInFolder(filePath);
   });

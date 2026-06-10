@@ -84,6 +84,8 @@ export interface BrowserStore {
   groupTabsTogether: (sourceTabId: string, targetTabId: string) => void;
   ingestDownload: (download: DownloadEntry) => void;
   cancelDownload: (id: string) => void;
+  pauseDownload: (id: string) => Promise<boolean>;
+  resumeDownload: (id: string) => Promise<boolean>;
   removeDownload: (id: string) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
@@ -202,6 +204,8 @@ export interface BrowserStore {
   toggleExtensionEnabled: (id: string, enabled: boolean) => void;
   resetSettings: () => void;
   clearAllDownloads: () => void;
+  /** Re-open the download URL in a new tab (used for retry). */
+  retryDownload: (url: string) => void;
   openUserDataFolder: (kind?: "userData" | "profile") => void;
   restartBrowser: () => void;
 }

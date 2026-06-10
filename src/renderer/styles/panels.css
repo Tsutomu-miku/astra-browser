@@ -23,6 +23,12 @@
   border-bottom: 1px solid var(--line);
 }
 
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 h2 {
   margin: 0;
   font-size: 16px;
@@ -111,6 +117,14 @@ h2 {
   accent-color: var(--green);
 }
 
+.download-item.is-paused progress {
+  accent-color: var(--warning);
+}
+
+.download-item.is-terminal {
+  opacity: 0.82;
+}
+
 .download-actions {
   display: flex;
   gap: 6px;
@@ -151,6 +165,12 @@ h2 {
   color: var(--muted);
   cursor: default;
   opacity: 0.48;
+}
+
+.download-context-menu-separator {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--line);
 }
 
 .settings-form,

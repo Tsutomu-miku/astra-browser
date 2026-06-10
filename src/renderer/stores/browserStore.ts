@@ -245,6 +245,51 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   cancelDownload: (id) => {
     void window.astraShell?.cancelDownload(id);
   },
+  pauseDownload: async (id) => {
+    try {
+      const ok = await window.astraShell?.pauseDownload?.(id);
+      if (!ok) {
+        // Best-effort: if pause failed, mark state locally on next ingest to be corrected
+        update(set, (state) => upsertDownload(state, {
+          ...(state.downloads.find((d) => d.id === id) ?? {
+            id,
+            filename: "",
+            totalBytes: 0,
+            receivedBytes: 0,
+            savePath: "",
+            state: "progressing",
+            startedAt: 0
+          }),
+          state: "paused"
+        }));
+      }
+      return Boolean(ok);
+    } catch {
+      return false;
+    }
+  },
+  resumeDownload: async (id) => {
+    try {
+      const ok = await window.astraShell?.resumeDownload?.(id);
+      if (!ok) {
+        update(set, (state) => upsertDownload(state, {
+          ...(state.downloads.find((d) => d.id === id) ?? {
+            id,
+            filename: "",
+            totalBytes: 0,
+            receivedBytes: 0,
+            savePath: "",
+            state: "paused",
+            startedAt: 0
+          }),
+          state: "progressing"
+        }));
+      }
+      return Boolean(ok);
+    } catch {
+      return false;
+    }
+  },
   removeDownload: (id) => update(set, (state) => removeDownload(state, id)),
   ingestPermissionRequest: (request) => {
     const state = useBrowserStore.getState().state;
@@ -558,6 +603,11 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   toggleExtensionEnabled: (id, enabled) => update(set, (state) => toggleExtension(state, id, enabled)),
   resetSettings: () => update(set, resetSettings),
   clearAllDownloads: () => update(set, clearAllDownloads),
+  retryDownload: (url) => {
+    const clean = typeof url === "string" && (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("blob:") || url.startsWith("data:")) ? url : null;
+    if (!clean) return;
+    window.open(clean, "_blank", "noopener");
+  },
   openUserDataFolder: async (kind = "userData") => {
     try {
       const paths = await window.astraShell?.getUserDataPaths?.();

@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { getChromeAccent } from "../common/theme/chromeTheme";
 import { getThemeDefinition } from "../common/theme/themePalette";
 import { useBrowserController } from "./controller/useBrowserController";
+import { useBrowserStore } from "../stores/browserStore";
 import { CommandPalette } from "../surfaces/command/CommandPalette";
 import { FindBar } from "../surfaces/find/FindBar";
 import { GlancePanel } from "../surfaces/glance/GlancePanel";
@@ -16,6 +17,7 @@ import { WebviewGrid } from "../surfaces/webview/WebviewGrid";
 
 export function App() {
   const controller = useBrowserController();
+  const store = useBrowserStore();
   const chromeAccent = getChromeAccent(controller.state.settings, controller.activeWorkspace);
   const theme = controller.state.settings.theme;
   const themeDef = getThemeDefinition(theme);
@@ -65,7 +67,7 @@ export function App() {
         {controller.findOpen && <FindBar controller={controller} />}
       </main>
       {controller.panel === "history" && <HistoryPanel controller={controller} />}
-      {controller.panel === "downloads" && <DownloadsPanel controller={controller} />}
+      {controller.panel === "downloads" && <DownloadsPanel controller={controller} store={store} />}
       {controller.panel === "settings" && <SettingsPanel controller={controller} />}
       {controller.panel === "site" && <SiteInfoPanel controller={controller} />}
       {controller.glance && <GlancePanel controller={controller} />}

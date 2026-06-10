@@ -88,6 +88,8 @@ export interface AstraShellApi {
   resolvePermissionRequest: (id: string, allowed: boolean) => Promise<void>;
   syncForceHttps: (enabled: boolean) => Promise<void>;
   cancelDownload: (id: string) => Promise<void>;
+  pauseDownload: (id: string) => Promise<boolean>;
+  resumeDownload: (id: string) => Promise<boolean>;
   setProfilePartitions: (partitions: string[]) => Promise<void>;
   setPermissionRules: (rules: PermissionRulePayload[]) => Promise<void>;
   showItemInFolder: (filePath: string) => Promise<void>;

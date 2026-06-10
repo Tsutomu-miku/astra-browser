@@ -150,15 +150,21 @@ function installSessionBridge(targetSession, partition = "default") {
     const startedAt = Date.now();
     let hasEmitted = false;
     downloadItems.set(id, item);
-    const buildPayload = (stateOverride) => ({
-      id,
-      filename: item.getFilename(),
-      totalBytes: item.getTotalBytes(),
-      receivedBytes: item.getReceivedBytes(),
-      savePath: item.getSavePath() || "",
-      state: stateOverride ?? "progressing",
-      startedAt
-    });
+    const buildPayload = (stateOverride) => {
+      const baseState = stateOverride ?? "progressing";
+      const isPaused = baseState === "progressing" && item.isPaused?.();
+      return {
+        id,
+        filename: item.getFilename(),
+        totalBytes: item.getTotalBytes(),
+        receivedBytes: item.getReceivedBytes(),
+        savePath: item.getSavePath() || "",
+        state: isPaused ? "paused" : baseState,
+        canPause: baseState === "progressing" ? Boolean(item.canPause?.()) : false,
+        url: item.getURL?.() || "",
+        startedAt
+      };
+    };
     const tryEmit = (stateOverride) => {
       const savePath = item.getSavePath();
       if (!savePath && !stateOverride) return;

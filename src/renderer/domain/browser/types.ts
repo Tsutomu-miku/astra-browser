@@ -119,7 +119,10 @@ export interface DownloadEntry {
   totalBytes: number;
   receivedBytes: number;
   savePath: string;
+  /** progressing | paused | completed | interrupted | cancelled */
   state: string;
+  canPause?: boolean;
+  url?: string;
   startedAt: number;
   finishedAt?: number;
 }

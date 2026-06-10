@@ -5,5 +5,6 @@ export function getDownloadMeta(download: DownloadEntry, progress: number): stri
   if (download.state === "completed") return `${size} · Completed`;
   if (download.state === "interrupted") return `${size} · Interrupted`;
   if (download.state === "cancelled") return `${size} · Cancelled`;
+  if (download.state === "paused") return `${size} · Paused · ${progress}%`;
   return `${size} · ${progress}%`;
 }
