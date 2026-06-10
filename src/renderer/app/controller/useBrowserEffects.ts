@@ -7,7 +7,7 @@ import {
   type SitePermissionRule,
   type Workspace
 } from "../../domain/browser";
-import type { MainProcessAction, PermissionRequestEvent } from "../../types/electron";
+import type { MainProcessAction, PermissionRequestEvent, SavePasswordRequestEvent } from "../../types/electron";
 import { resolveShortcut, type ShortcutIntent } from "../../common/shortcuts/keyboardShortcuts";
 
 interface BrowserActions {
@@ -44,6 +44,7 @@ interface BrowserEffectsOptions {
   safeBrowsing: boolean;
   ingestDownload: (download: DownloadEntry) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
+  ingestPasswordSavePrompt: (prompt: SavePasswordRequestEvent) => void;
   onShortcut: (intent: ShortcutIntent) => void;
   openUrlInNewTab: (url: string) => void;
   sitePermissions: SitePermissionRule[];
@@ -143,6 +144,7 @@ export function useBrowserEffects({
   safeBrowsing,
   ingestDownload,
   ingestPermissionRequest,
+  ingestPasswordSavePrompt,
   onShortcut,
   openUrlInNewTab,
   sitePermissions,
@@ -184,6 +186,10 @@ export function useBrowserEffects({
   useEffect(() => window.astraShell?.onPermissionRequest((request) => {
     ingestPermissionRequest(request);
   }), [ingestPermissionRequest]);
+
+  useEffect(() => window.astraShell?.onSavePasswordRequest?.((prompt) => {
+    ingestPasswordSavePrompt(prompt);
+  }), [ingestPasswordSavePrompt]);
 
   useEffect(() => {
     window.astraShell?.setProfilePartitions(getBrowserPartitions({ workspaces }));

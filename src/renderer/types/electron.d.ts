@@ -43,6 +43,13 @@ export interface ProcessMemorySnapshot {
   webviewWorkingSetBytes: number;
 }
 
+export interface SavePasswordRequestEvent {
+  id: string;
+  origin: string;
+  username: string;
+  password: string;
+}
+
 export type MainProcessAction =
   | "close-active-tab"
   | "find-match"
@@ -80,12 +87,14 @@ export interface AstraShellApi {
   onMainAction: (listener: (action: MainProcessAction, args: unknown[]) => void) => () => void;
   onOpenUrlInNewTab: (listener: (url: string) => void) => () => void;
   onPermissionRequest: (listener: (payload: PermissionRequestEvent) => void) => () => void;
+  onSavePasswordRequest: (listener: (payload: SavePasswordRequestEvent) => void) => () => void;
   openIncognitoWindow: () => Promise<void>;
   openGuestWindow: () => Promise<void>;
   openPath: (filePath: string) => Promise<string>;
   printWebview: (webContentsId: number) => Promise<void>;
   relaunch: () => Promise<void>;
   resolvePermissionRequest: (id: string, allowed: boolean) => Promise<void>;
+  resolvePasswordSave?: (id: string, accepted: boolean) => Promise<void>;
   syncForceHttps: (enabled: boolean) => Promise<void>;
   cancelDownload: (id: string) => Promise<void>;
   pauseDownload: (id: string) => Promise<boolean>;

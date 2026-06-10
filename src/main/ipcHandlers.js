@@ -106,6 +106,11 @@ function installIpcHandlers({
   ipcMain.handle("resolve-permission-request", (_event, id, allowed) => {
     resolvePermissionRequest(id, allowed);
   });
+  ipcMain.handle("resolve-save-password", (_event, _id, _accepted) => {
+    // Renderer owns the vault encryption; this IPC exists so the main process
+    // can hook site-level "never save this origin" rules in M3.
+    return true;
+  });
   ipcMain.handle("cancel-download", (_event, id) => {
     const item = downloadItems.get(id);
     if (!item) return;

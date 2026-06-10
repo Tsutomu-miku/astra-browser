@@ -11,6 +11,7 @@ import { DownloadsPanel, HistoryPanel, SettingsPanel } from "../surfaces/panels/
 import { SiteInfoPanel } from "../surfaces/panels/SiteInfoPanel";
 import { PermissionPrompt } from "../surfaces/permissions/PermissionPrompt";
 import { SafeBrowsingPrompt } from "../surfaces/permissions/SafeBrowsingPrompt";
+import { SavePasswordPrompt } from "../surfaces/permissions/SavePasswordPrompt";
 import { Sidebar } from "../surfaces/sidebar/Sidebar";
 import { Topbar } from "../surfaces/topbar/Topbar";
 import { WebviewGrid } from "../surfaces/webview/WebviewGrid";
@@ -72,6 +73,7 @@ export function App() {
       {controller.panel === "site" && <SiteInfoPanel controller={controller} />}
       {controller.glance && <GlancePanel controller={controller} />}
       {controller.permissionRequest && <PermissionPrompt controller={controller} />}
+      {controller.passwordSavePrompt && <SavePasswordPrompt controller={controller} />}
       {controller.safeBrowsingAlert && (
         <SafeBrowsingPrompt
           alert={controller.safeBrowsingAlert}

@@ -30,6 +30,12 @@ contextBridge.exposeInMainWorld("astraShell", {
     ipcRenderer.on("permission-request", wrapped);
     return () => ipcRenderer.removeListener("permission-request", wrapped);
   },
+  onSavePasswordRequest: (listener) => {
+    const wrapped = (_event, payload) => listener(payload);
+    ipcRenderer.on("save-password-request", wrapped);
+    return () => ipcRenderer.removeListener("save-password-request", wrapped);
+  },
+  resolvePasswordSave: (id, accepted) => ipcRenderer.invoke("resolve-save-password", id, Boolean(accepted)),
   resolvePermissionRequest: (id, allowed) => ipcRenderer.invoke("resolve-permission-request", id, allowed),
   cancelDownload: (id) => ipcRenderer.invoke("cancel-download", id),
   pauseDownload: (id) => ipcRenderer.invoke("pause-download", id),

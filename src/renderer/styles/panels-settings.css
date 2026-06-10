@@ -467,3 +467,179 @@
 .memory-usage-hint strong {
   color: var(--text);
 }
+
+/* ===== M2.4 Autofill / Password vault ===== */
+
+.field-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-inline > input,
+.field-inline > select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.field-inline > textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.autofill-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 0 0;
+  list-style: none;
+}
+
+.autofill-list > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.autofill-list > li:hover {
+  background: var(--panel-soft);
+}
+
+.autofill-main {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.autofill-main code,
+.autofill-main strong,
+.autofill-main span,
+.autofill-main small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autofill-main small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.vault-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  font-weight: 650;
+}
+
+.password-search {
+  width: 100%;
+  min-width: 180px;
+}
+
+.password-search input {
+  flex: 1 1 auto;
+}
+
+.password-inline-reveal {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.password-inline-text {
+  max-width: 20ch;
+  font-size: 12px;
+}
+
+/* ===== Password editor modal ===== */
+
+.password-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(4px);
+}
+
+.password-editor-dialog {
+  width: min(480px, calc(100vw - 32px));
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--chrome-strong);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.password-editor-header,
+.password-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-color: var(--line);
+}
+
+.password-editor-header {
+  border-bottom: 1px solid var(--line);
+}
+
+.password-editor-header h3 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.password-editor-body {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  max-height: 66vh;
+  overflow: auto;
+}
+
+.password-editor-body textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--theme-bg) 92%, var(--theme-text) 8%);
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+}
+
+.password-editor-footer {
+  border-top: 1px solid var(--line);
+  justify-content: flex-end;
+}
+
+.password-editor-error {
+  margin: 0;
+  color: var(--theme-danger);
+}
+

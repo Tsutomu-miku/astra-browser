@@ -130,6 +130,14 @@ import {
   type ReaderSettings,
   type TranslationSettings
 } from "../domain/browser";
+import {
+  createPasswordEntry,
+  decryptSecret,
+  isVaultUnlocked,
+  lockVault,
+  passwordMatchesOrigin,
+  unlockVault
+} from "../domain/browser/passwordVault";
 import { applyReaderStyles, extractReaderContent } from "../domain/browser/readerMode";
 import { getPermissionRule } from "../domain/permissions/sitePermissions";
 import { loadBrowserState, saveBrowserState } from "../platform/persistence/browserStorage";
@@ -154,6 +162,8 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   pageHtmlCache: new Map(),
   panel: null,
   permissionRequest: null,
+  passwordSavePrompt: null,
+  passwordVaultUnlocked: isVaultUnlocked(),
   safeBrowsingAlert: null,
   sidebarCollapsed: false,
   sidebarWidth: initialUiState.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH,
@@ -466,6 +476,69 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   upsertPassword: (entry) => update(set, (state) => upsertPassword(state, entry)),
   removePassword: (id) => update(set, (state) => removePassword(state, id)),
   touchPasswordUsed: (id) => update(set, (state) => touchPasswordUsed(state, id)),
+  ingestPasswordSavePrompt: (prompt) => {
+    const origin = prompt?.origin;
+    if (!origin || !prompt?.username) return;
+    // de-duplicate: a prompt with same (origin, username) is an update
+    const current = get().passwordSavePrompt;
+    const isDuplicate =
+      current && passwordMatchesOrigin({ origin: current.origin, id: "" } as never, origin) && current.username === prompt.username;
+    set({
+      passwordSavePrompt: isDuplicate
+        ? { ...current, password: prompt.password || current.password }
+        : {
+          id: prompt.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          origin,
+          username: prompt.username,
+          password: prompt.password ?? ""
+        }
+    });
+  },
+  rejectPasswordSavePrompt: (id) => {
+    const current = get().passwordSavePrompt;
+    if (!current || current.id === id) set({ passwordSavePrompt: null });
+  },
+  acceptPasswordSavePrompt: async (id) => {
+    const current = get().passwordSavePrompt;
+    if (!current || current.id !== id) return;
+    try {
+      if (!isVaultUnlocked()) await unlockVault();
+      const entry = await createPasswordEntry({
+        origin: current.origin,
+        username: current.username,
+        password: current.password,
+        notes: ""
+      });
+      set({ passwordVaultUnlocked: true });
+      update(set, (state) => upsertPassword(state, entry));
+    } finally {
+      set({ passwordSavePrompt: null });
+    }
+  },
+  unlockPasswordVault: async (passphrase) => {
+    try {
+      await unlockVault(passphrase ?? "");
+      set({ passwordVaultUnlocked: true });
+    } catch (err) {
+      set({ passwordVaultUnlocked: isVaultUnlocked() });
+      throw err;
+    }
+  },
+  lockPasswordVault: () => {
+    lockVault();
+    set({ passwordVaultUnlocked: false });
+  },
+  decryptPassword: async (id) => {
+    const entry = get().state.settings.autofill.passwords.find((p) => p.id === id);
+    if (!entry) return null;
+    try {
+      if (!isVaultUnlocked()) await unlockVault();
+      set({ passwordVaultUnlocked: true });
+      return await decryptSecret(entry.encryptedPassword);
+    } catch {
+      return null;
+    }
+  },
   upsertAddress: (entry) => update(set, (state) => upsertAddress(state, entry)),
   removeAddress: (id) => update(set, (state) => removeAddress(state, id)),
   upsertPaymentMethod: (entry) => update(set, (state) => upsertPaymentMethod(state, entry)),

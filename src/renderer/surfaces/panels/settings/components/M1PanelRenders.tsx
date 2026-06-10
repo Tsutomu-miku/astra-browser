@@ -6,6 +6,7 @@ import type {
   DownloadEntry,
   ExtensionEntry,
   HistoryEntry,
+  PasswordEntry,
   ProfileEntry,
   ReaderSettings,
   SearchEngineKey,
@@ -37,8 +38,14 @@ export interface M1PanelProps {
   /* autofill */
   autofill: AutofillDatabase;
   onAddPassword: () => void;
-  onEditPassword: (entry: { id: string }) => void;
+  onEditPassword: (entry: PasswordEntry) => void;
+  onRevealPassword: (id: string) => Promise<string | null>;
   onRemovePassword: (id: string) => void;
+  passwordVaultUnlocked: boolean;
+  onUnlockVault: (passphrase?: string) => Promise<void>;
+  onLockVault: () => void;
+  passwordSearchQuery: string;
+  setPasswordSearchQuery: (q: string) => void;
   onAddAddress: () => void;
   onRemoveAddress: (id: string) => void;
   onAddPaymentMethod: () => void;
@@ -132,7 +139,13 @@ export function renderM1Panels(
           autofill={p.autofill}
           onAddPassword={p.onAddPassword}
           onEditPassword={p.onEditPassword}
+          onRevealPassword={p.onRevealPassword}
           onRemovePassword={p.onRemovePassword}
+          passwordVaultUnlocked={p.passwordVaultUnlocked}
+          onUnlockVault={p.onUnlockVault}
+          onLockVault={p.onLockVault}
+          passwordSearchQuery={p.passwordSearchQuery}
+          setPasswordSearchQuery={p.setPasswordSearchQuery}
           onAddAddress={p.onAddAddress}
           onRemoveAddress={p.onRemoveAddress}
           onAddPaymentMethod={p.onAddPaymentMethod}

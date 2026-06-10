@@ -22,6 +22,8 @@ import type { LegacyPanelProps } from "./settings/components/legacy/LegacyPanelR
 import { renderLegacyPanels } from "./settings/components/legacy/LegacyPanelRenders";
 import type { M1PanelProps } from "./settings/components/M1PanelRenders";
 import { renderM1Panels } from "./settings/components/M1PanelRenders";
+import { createPasswordEntry } from "../../domain/browser/passwordVault";
+import { PasswordEditorDialog } from "./settings/components/autofill/PasswordEditorDialog";
 import { SettingsSectionNav } from "./settings/components/SettingsSectionNav";
 import { UpcomingSettingsSection } from "./settings/components/UpcomingSettingsSection";
 import {
@@ -45,6 +47,8 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
   const [historyQuery, setHistoryQuery] = useState("");
   const bookmarksImportInputRef = useRef<HTMLInputElement | null>(null);
   const [bookmarksImportStatus, setBookmarksImportStatus] = useState<string | null>(null);
+  const [passwordSearchQuery, setPasswordSearchQuery] = useState("");
+  const [editingPassword, setEditingPassword] = useState<PasswordEntry | null>(null);
 
   const sectionById = useMemo(() => {
     const map = new Map<SettingsSectionId, (typeof SETTINGS_SECTIONS)[number]>();
@@ -152,21 +156,22 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
 
   const m1PanelProps: M1PanelProps = {
     autofill: state.settings.autofill,
-    onAddPassword: async () => {
-      const origin = activeTab?.url || "https://example.com";
-      actions.upsertPassword({
-        id: "",
-        origin,
-        username: "new-user",
-        encryptedPassword: "",
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      } as PasswordEntry);
-    },
-    onEditPassword: (_entry) => {
-      /* 内联编辑将在设置页 21-section 完成后续补全 */
-    },
+    onAddPassword: async () => setEditingPassword({
+      id: "",
+      origin: activeTab?.url || "https://",
+      username: "",
+      encryptedPassword: "",
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }),
+    onEditPassword: (entry) => setEditingPassword(entry),
+    onRevealPassword: (id) => actions.decryptPassword(id),
     onRemovePassword: actions.removePassword,
+    passwordVaultUnlocked: controller?.passwordVaultUnlocked ?? false,
+    onUnlockVault: (passphrase) => actions.unlockPasswordVault(passphrase),
+    onLockVault: () => actions.lockPasswordVault(),
+    passwordSearchQuery,
+    setPasswordSearchQuery,
     onAddAddress: () => actions.upsertAddress({
       id: "",
       label: "Home",
@@ -304,6 +309,48 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
           )}
         </div>
       </form>
+      {editingPassword && (
+        <PasswordEditorDialog
+          entry={editingPassword}
+          onClose={() => setEditingPassword(null)}
+          onSave={async (next) => {
+            // Only encrypt once we have a non-empty plaintext password.
+            // Existing PasswordEntry keeps encryptedPassword if no plaintext
+            // replacement was provided (user only edited username/notes).
+            const isNew = !editingPassword.id;
+            const needEncryption = Boolean(next.plaintextPassword) || isNew;
+            let encryptedPassword = editingPassword.encryptedPassword;
+            if (needEncryption) {
+              try {
+                if (!controller?.passwordVaultUnlocked) await actions.unlockPasswordVault();
+                if (next.plaintextPassword) {
+                  const created = await createPasswordEntry({
+                    origin: next.origin,
+                    username: next.username,
+                    password: next.plaintextPassword,
+                    notes: next.notes
+                  });
+                  encryptedPassword = created.encryptedPassword;
+                }
+              } catch (err) {
+                setEditingPassword(null);
+                return err instanceof Error ? err.message : String(err);
+              }
+            }
+            actions.upsertPassword({
+              id: editingPassword.id || `pwd-${Date.now()}`,
+              origin: next.origin,
+              username: next.username,
+              notes: next.notes,
+              encryptedPassword,
+              createdAt: editingPassword.createdAt || Date.now(),
+              updatedAt: Date.now()
+            });
+            setEditingPassword(null);
+            return null;
+          }}
+        />
+      )}
     </aside>
   );
 }

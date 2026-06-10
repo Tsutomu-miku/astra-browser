@@ -39,6 +39,14 @@ export interface BrowserStore {
   pageHtmlCache: Map<string, string>;
   panel: Panel;
   permissionRequest: PermissionRequestEvent | null;
+  passwordSavePrompt: {
+    id: string;
+    origin: string;
+    username: string;
+    /** Plaintext (memory only; never persisted until encrypted via upsertPassword). */
+    password: string;
+  } | null;
+  passwordVaultUnlocked: boolean;
   safeBrowsingAlert: {
     url: string;
     reason: string;
@@ -182,6 +190,17 @@ export interface BrowserStore {
   upsertPassword: (entry: PasswordEntry) => void;
   removePassword: (id: string) => void;
   touchPasswordUsed: (id: string) => void;
+  /** Add a save-password prompt shown in the password prompt bubble. */
+  ingestPasswordSavePrompt: (prompt: { id: string; origin: string; username: string; password: string }) => void;
+  /** Dismiss the save-password prompt without saving. */
+  rejectPasswordSavePrompt: (id: string) => void;
+  /** Save the prompt to the vault (creates PasswordEntry, encrypts if vault unlocked). */
+  acceptPasswordSavePrompt: (id: string) => Promise<void>;
+  /** Unlock the in-memory vault (MVP passphrase is empty; M2 adds user-chosen password + keytar). */
+  unlockPasswordVault: (passphrase?: string) => Promise<void>;
+  lockPasswordVault: () => void;
+  /** Decrypt a PasswordEntry (returns plaintext password; requires unlocked vault). */
+  decryptPassword: (id: string) => Promise<string | null>;
   upsertAddress: (entry: AddressEntry) => void;
   removeAddress: (id: string) => void;
   upsertPaymentMethod: (entry: PaymentMethodEntry) => void;

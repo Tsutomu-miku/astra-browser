@@ -14,6 +14,9 @@ import { MemorySaverSection } from "../src/renderer/surfaces/panels/settings/com
 import { SettingsSectionNav } from "../src/renderer/surfaces/panels/settings/components/SettingsSectionNav";
 import { SpaceSettingsSection } from "../src/renderer/surfaces/panels/settings/components/SpaceSettingsSection";
 import { WorkspaceManagementSection } from "../src/renderer/surfaces/panels/settings/components/WorkspaceManagementSection";
+import { AutofillSettingsSection } from "../src/renderer/surfaces/panels/settings/components/autofill/AutofillSettingsSection";
+import type { PasswordEntry } from "../src/renderer/domain/browser";
+import { PasswordEditorDialog } from "../src/renderer/surfaces/panels/settings/components/autofill/PasswordEditorDialog";
 
 const panelsSettingsCss = readFileSync(join(__dirname, "../src/renderer/styles/panels-settings.css"), "utf8");
 
@@ -191,5 +194,82 @@ describe("settings panel sections", () => {
     expect(panelsSettingsCss).toContain(".memory-saver-delay-options button[aria-pressed=\"true\"]");
     expect(panelsSettingsCss).toContain(".memory-usage-section");
     expect(panelsSettingsCss).toContain(".memory-workspace-list");
+  });
+
+  it("renders the Autofill panel with vault controls, password list, and search", () => {
+    const passwords: PasswordEntry[] = [
+      { id: "1", origin: "https://github.com", username: "octocat", encryptedPassword: "x.y", notes: "", usedAt: 0, createdAt: 0, updatedAt: 0 },
+      { id: "2", origin: "https://example.com", username: "alice", encryptedPassword: "a.b", createdAt: 0, updatedAt: 0 }
+    ];
+    const html = renderToStaticMarkup(createElement(AutofillSettingsSection, {
+      autofill: { passwords, addresses: [], paymentMethods: [] },
+      onAddPassword: vi.fn(),
+      onEditPassword: vi.fn(),
+      onRevealPassword: async () => "plain",
+      onRemovePassword: vi.fn(),
+      passwordVaultUnlocked: true,
+      onUnlockVault: vi.fn(),
+      onLockVault: vi.fn(),
+      passwordSearchQuery: "",
+      setPasswordSearchQuery: vi.fn(),
+      onAddAddress: vi.fn(),
+      onRemoveAddress: vi.fn(),
+      onAddPaymentMethod: vi.fn(),
+      onRemovePaymentMethod: vi.fn()
+    }));
+
+    expect(html).toContain('aria-label="Autofill and passwords"');
+    expect(html).toContain("Vault unlocked");
+    expect(html).toContain("octocat");
+    expect(html).toContain("alice");
+    expect(html).toContain("Reveal password");
+    expect(html).toContain("Copy password");
+    expect(html).toContain("Search saved passwords…");
+  });
+
+  it("filters Autofill passwords by search query and hides vault unlock when locked", () => {
+    const passwords: PasswordEntry[] = [
+      { id: "1", origin: "https://github.com", username: "octocat", encryptedPassword: "x.y", createdAt: 0, updatedAt: 0 },
+      { id: "2", origin: "https://mail.example.com", username: "alice", encryptedPassword: "a.b", createdAt: 0, updatedAt: 0 }
+    ];
+    const html = renderToStaticMarkup(createElement(AutofillSettingsSection, {
+      autofill: { passwords, addresses: [], paymentMethods: [] },
+      onAddPassword: vi.fn(),
+      onEditPassword: vi.fn(),
+      onRevealPassword: async () => null,
+      onRemovePassword: vi.fn(),
+      passwordVaultUnlocked: false,
+      onUnlockVault: vi.fn(),
+      onLockVault: vi.fn(),
+      passwordSearchQuery: "github",
+      setPasswordSearchQuery: vi.fn(),
+      onAddAddress: vi.fn(),
+      onRemoveAddress: vi.fn(),
+      onAddPaymentMethod: vi.fn(),
+      onRemovePaymentMethod: vi.fn()
+    }));
+    expect(html).toContain("Vault locked");
+    expect(html).toContain("octocat");
+    expect(html).not.toContain("alice");
+  });
+
+  it("renders the password editor dialog", () => {
+    const html = renderToStaticMarkup(createElement(PasswordEditorDialog, {
+      entry: { id: "", origin: "https://new.test", username: "", encryptedPassword: "", createdAt: 0, updatedAt: 0 },
+      onClose: vi.fn(),
+      onSave: async () => null
+    }));
+    expect(html).toContain("Add password");
+    expect(html).toContain("Origin / URL");
+    expect(html).toContain("Password");
+    expect(html).toContain("password-editor-dialog");
+  });
+
+  it("styles the autofill + password editor", () => {
+    expect(panelsSettingsCss).toContain(".autofill-list");
+    expect(panelsSettingsCss).toContain(".vault-status-row");
+    expect(panelsSettingsCss).toContain(".password-inline-reveal");
+    expect(panelsSettingsCss).toContain(".password-editor-backdrop");
+    expect(panelsSettingsCss).toContain(".password-editor-header");
   });
 });
