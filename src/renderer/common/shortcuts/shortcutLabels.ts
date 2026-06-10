@@ -10,6 +10,7 @@ export const shortcutLabels = {
   hardReload: "Ctrl/Cmd+Shift+R",
   history: "Ctrl/Cmd+H",
   mute: "Ctrl/Cmd+M",
+  pip: "Ctrl/Cmd+Alt+P",
   newIncognitoWindow: "Ctrl/Cmd+Shift+N",
   newTab: "Ctrl/Cmd+T",
   nextTab: "Ctrl/Cmd+Tab",

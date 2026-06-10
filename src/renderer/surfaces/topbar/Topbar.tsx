@@ -9,6 +9,7 @@ import {
   FiGlobe,
   FiInfo,
   FiLock,
+  FiMaximize2,
   FiMinus,
   FiPlus,
   FiRefreshCw,
@@ -257,6 +258,15 @@ export function Topbar({ controller }: { controller: BrowserController }) {
           onClick={actions.toggleActiveTabMuted}
         >
           {activeTab.isMuted ? <FiVolumeX /> : <FiVolume2 />}
+        </button>
+        <button
+          className="icon-button"
+          data-page-action="pip"
+          title="Toggle Picture-in-Picture"
+          type="button"
+          onClick={() => { void actions.toggleActivePictureInPicture?.(); }}
+        >
+          <FiMaximize2 />
         </button>
         <div className="zoom-controls" aria-label="Page zoom">
           <button className="icon-button" title="Zoom out" type="button" onClick={actions.zoomOut}><FiMinus /></button>

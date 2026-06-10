@@ -47,5 +47,7 @@ contextBridge.exposeInMainWorld("astraShell", {
     syncSettings: (settings) => ipcRenderer.invoke("safe-browsing:sync-settings", settings),
     checkNavigation: (url) => ipcRenderer.invoke("safe-browsing:check-navigation", url),
     checkDownload: (payload) => ipcRenderer.invoke("safe-browsing:check-download", payload)
-  }
+  },
+  togglePictureInPicture: (webContentsId) => ipcRenderer.invoke("pip:toggle-active-tab", webContentsId),
+  syncMediaSession: (payload) => ipcRenderer.invoke("media-session:sync-tab", payload)
 });

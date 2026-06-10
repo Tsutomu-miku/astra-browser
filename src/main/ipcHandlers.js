@@ -8,6 +8,11 @@ const {
   openGuestWindow
 } = require("./forceHttpsGuest");
 const safeBrowsing = require("./safeBrowsing");
+const {
+  findActiveWebviewId,
+  syncMediaSessionOnTabSwitch,
+  togglePictureInPicture
+} = require("./mediaSessionAndPiP");
 
 function installIpcHandlers({
   downloadItems,
@@ -184,6 +189,16 @@ function installIpcHandlers({
     const parentWin = BrowserWindow.fromWebContents(event.sender);
     const bounds = parentWin && !parentWin.isDestroyed() ? parentWin.getBounds() : null;
     openGuestWindow(bounds);
+  });
+  /* ===== M2.6 U-1 MediaSession + U-2 PiP ===== */
+  ipcMain.handle("pip:toggle-active-tab", (_event, webContentsId) => {
+    const targetId = typeof webContentsId === "number"
+      ? webContentsId
+      : findActiveWebviewId();
+    return togglePictureInPicture(targetId);
+  });
+  ipcMain.handle("media-session:sync-tab", (_event, payload) => {
+    return syncMediaSessionOnTabSwitch(payload || {});
   });
   /* ===== M2.3 Safe Browsing IPC ===== */
   ipcMain.handle("safe-browsing:sync-settings", async (_event, settings) => {

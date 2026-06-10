@@ -144,6 +144,12 @@ export function buildCommands(
       shortcut: shortcutLabels.resetZoom,
       run: actions.resetActiveTabZoom
     },
+    {
+      title: "Toggle Picture-in-Picture",
+      subtitle: "Float the active video on top of all windows",
+      shortcut: shortcutLabels.pip,
+      run: () => { void actions.toggleActivePictureInPicture?.(); }
+    },
     ...sleepCurrentTabCommands,
     { title: "Sleep inactive tabs", subtitle: memorySaver.summary, run: actions.sleepInactiveTabs },
     {

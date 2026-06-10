@@ -172,6 +172,8 @@ export interface BrowserStore {
     severity?: "low" | "medium" | "high";
     action: "block" | "proceed";
   }) => void;
+  toggleActivePictureInPicture: (activeWebviewId?: number) => Promise<{ success: boolean; reason?: string; entering?: boolean }>;
+  syncMediaSessionOnTabSwitch: (payload: { fromId?: number; toId?: number }) => void;
   updateSettings: (patch: Partial<BrowserState["settings"]>) => void;
   updateReaderSettings: (patch: Partial<ReaderSettings>) => void;
   updateTranslationSettings: (patch: Partial<TranslationSettings>) => void;

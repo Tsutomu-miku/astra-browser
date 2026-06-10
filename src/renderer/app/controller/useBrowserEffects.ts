@@ -31,6 +31,7 @@ interface BrowserActions {
   toggleActiveDevTools: () => void;
   toggleActiveTabFavorite: () => void;
   toggleActiveTabMuted: () => void;
+  toggleActivePictureInPicture: () => void;
   toggleSidebar: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -120,6 +121,9 @@ function dispatchMainAction(actions: BrowserActions, findQuery: string, action: 
       break;
     case "toggle-devtools":
       actions.toggleActiveDevTools();
+      break;
+    case "toggle-picture-in-picture":
+      actions.toggleActivePictureInPicture();
       break;
     case "new-incognito-window":
       actions.newIncognitoWindow();

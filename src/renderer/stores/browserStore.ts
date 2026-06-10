@@ -525,6 +525,18 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   dismissSafeBrowsingAlert: () => {
     set({ safeBrowsingAlert: null });
   },
+  toggleActivePictureInPicture: async (activeWebviewId) => {
+    const id = typeof activeWebviewId === "number" ? activeWebviewId : undefined;
+    try {
+      const result = await window.astraShell?.togglePictureInPicture?.(id);
+      return result ?? { success: false, reason: "no-ipc" };
+    } catch (err) {
+      return { success: false, reason: err instanceof Error ? err.message : String(err) };
+    }
+  },
+  syncMediaSessionOnTabSwitch: (payload) => {
+    void window.astraShell?.syncMediaSession?.(payload);
+  },
   ungroupActiveTab: () => update(set, ungroupActiveTab),
   ungroupTab: (tabId) => update(set, (state) => ungroupTab(state, tabId)),
   ungroupTabGroup: (groupId) => update(set, (state) => ungroupTabGroup(state, groupId)),

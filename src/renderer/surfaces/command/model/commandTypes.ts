@@ -55,6 +55,7 @@ export interface CommandActions {
   toggleActiveTabEssential: () => void;
   toggleActiveTabMuted: () => void;
   toggleActiveTabPinned: () => void;
+  toggleActivePictureInPicture?: () => Promise<unknown>;
   toggleCompactMode: () => void;
   toggleFloatingSidebar: () => void;
   toggleFloatingToolbar: () => void;

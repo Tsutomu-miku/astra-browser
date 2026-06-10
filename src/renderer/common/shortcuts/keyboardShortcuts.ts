@@ -21,6 +21,7 @@ export type ShortcutIntent =
   | { type: "resetZoom" }
   | { type: "toggleFavorite" }
   | { type: "toggleMute" }
+  | { type: "togglePictureInPicture" }
   | { type: "toggleCompactMode" }
   | { type: "toggleFloatingSidebar" }
   | { type: "toggleFloatingToolbar" }
@@ -147,6 +148,10 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   if (event.altKey && key === "t") {
     return { type: "toggleFloatingToolbar" };
+  }
+
+  if (event.altKey && key === "p") {
+    return { type: "togglePictureInPicture" };
   }
 
   if (event.altKey && key === "c") {

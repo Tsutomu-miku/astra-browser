@@ -167,6 +167,11 @@ function buildApplicationMenu() {
         { type: "separator" },
         { role: "togglefullscreen" },
         {
+          label: "Toggle Picture-in-Picture",
+          accelerator: isMac ? "Cmd+Alt+P" : "Ctrl+Alt+P",
+          click: () => sendToFocusedRenderer("toggle-picture-in-picture")
+        },
+        {
           label: "Toggle Sidebar",
           accelerator: "CmdOrCtrl+B",
           click: () => sendToFocusedRenderer("toggle-sidebar")
@@ -234,6 +239,11 @@ function buildApplicationMenu() {
           label: "Mute/Unmute Tab",
           accelerator: "CmdOrCtrl+M",
           click: () => sendToFocusedRenderer("toggle-active-tab-muted")
+        },
+        {
+          label: "Toggle Picture-in-Picture",
+          accelerator: isMac ? "Cmd+Shift+P" : "Ctrl+Shift+P",
+          click: () => sendToFocusedRenderer("toggle-picture-in-picture")
         },
         {
           label: "Add to Favorites",

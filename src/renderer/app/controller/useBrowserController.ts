@@ -55,6 +55,26 @@ export function useBrowserController() {
     useBrowserStore.getState().setAddressValue(activeTab.url);
   }, [activeTab.url]);
 
+  /* ===== M2.6 U-1: 切换 Tab 时同步 MediaSession（暂停前 Tab、接管媒体键）。
+   *   通过 useRef 记录上一个活跃 Tab 的 webContentsId，对比当前 activeTab。
+   *   这是 Option A：通过 store 响应式订阅，覆盖所有 tab 切换路径（selectTab、
+   *   selectAdjacentTab、closeTab、switchWorkspace 等）。
+   */
+  const previousTabIdRef = useRef<{ tabId?: string; webContentsId?: number }>({});
+
+  useEffect(() => {
+    const prev = previousTabIdRef.current;
+    const currentWebviewId = activeWebview?.getWebContentsId?.();
+    const currentId: number | undefined = typeof currentWebviewId === "number" ? currentWebviewId : undefined;
+    if (prev.tabId !== undefined && prev.tabId !== activeTab.id) {
+      void actions.syncMediaSessionOnTabSwitch?.({
+        fromId: prev.webContentsId,
+        toId: currentId
+      });
+    }
+    previousTabIdRef.current = { tabId: activeTab.id, webContentsId: currentId };
+  }, [activeTab.id, activeWebview, actions]);
+
   useEffect(() => {
     if (!activeWebview) return;
 
@@ -101,6 +121,7 @@ export function useBrowserController() {
       toggleActiveDevTools: () => store.toggleActiveDevTools(activeWebview),
       toggleActiveTabFavorite: actions.toggleActiveTabFavorite,
       toggleActiveTabMuted: actions.toggleActiveTabMuted,
+      toggleActivePictureInPicture: actions.toggleActivePictureInPicture,
       toggleSidebar: store.toggleSidebar,
       zoomIn: () => store.zoomIn(activeWebview),
       zoomOut: () => store.zoomOut(activeWebview)

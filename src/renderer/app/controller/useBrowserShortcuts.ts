@@ -76,6 +76,8 @@ export function useBrowserShortcuts({
       actions.toggleActiveTabFavorite();
     } else if (intent.type === "toggleMute") {
       actions.toggleActiveTabMuted();
+    } else if (intent.type === "togglePictureInPicture") {
+      void actions.toggleActivePictureInPicture();
     } else if (intent.type === "zoomIn") {
       store.zoomIn(activeWebview);
     } else if (intent.type === "zoomOut") {

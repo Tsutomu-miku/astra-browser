@@ -216,6 +216,11 @@ export function useBrowserActions({
     reportSafeBrowsingDecision: store.reportSafeBrowsingDecision,
     checkSafeBrowsingForNavigation: store.checkSafeBrowsingForNavigation,
     dismissSafeBrowsingAlert: store.dismissSafeBrowsingAlert,
+    toggleActivePictureInPicture: () => {
+      const id = activeWebview?.getWebContentsId?.();
+      return store.toggleActivePictureInPicture(typeof id === "number" ? id : undefined);
+    },
+    syncMediaSessionOnTabSwitch: store.syncMediaSessionOnTabSwitch,
     toggleApplicationDevTools: () => {
       void window.astraShell?.toggleDevTools();
     },
