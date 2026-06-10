@@ -91,6 +91,19 @@ export interface AstraShellApi {
   setPermissionRules: (rules: PermissionRulePayload[]) => Promise<void>;
   showItemInFolder: (filePath: string) => Promise<void>;
   toggleDevTools: (webContentsId?: number) => Promise<void>;
+  safeBrowsing?: {
+    syncSettings: (settings: { enabled: boolean; remoteLookupUrl?: string }) => Promise<void>;
+    checkNavigation: (url: string) => Promise<SafeBrowsingCheckResult>;
+    checkDownload: (payload: { url: string; filename?: string }) => Promise<SafeBrowsingCheckResult>;
+  };
+}
+
+export interface SafeBrowsingCheckResult {
+  allowed: boolean;
+  reason?: string;
+  severity?: "low" | "medium" | "high";
+  url?: string;
+  filename?: string;
 }
 
 declare global {

@@ -27,6 +27,7 @@ interface BrowserActions {
   setFindOpen: (open: boolean) => void;
   setPanel: (panel: "downloads" | "history" | "settings" | null) => void;
   syncForceHttps: (enabled: boolean) => void;
+  syncSafeBrowsing: (settings: { enabled: boolean; remoteLookupUrl?: string }) => void;
   toggleActiveDevTools: () => void;
   toggleActiveTabFavorite: () => void;
   toggleActiveTabMuted: () => void;
@@ -39,6 +40,7 @@ interface BrowserEffectsOptions {
   actions: BrowserActions;
   findQuery: string;
   forceHttps: boolean;
+  safeBrowsing: boolean;
   ingestDownload: (download: DownloadEntry) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   onShortcut: (intent: ShortcutIntent) => void;
@@ -134,6 +136,7 @@ export function useBrowserEffects({
   actions,
   findQuery,
   forceHttps,
+  safeBrowsing,
   ingestDownload,
   ingestPermissionRequest,
   onShortcut,
@@ -149,6 +152,10 @@ export function useBrowserEffects({
   useEffect(() => {
     actions.syncForceHttps(forceHttps);
   }, [actions, forceHttps]);
+
+  useEffect(() => {
+    actions.syncSafeBrowsing({ enabled: safeBrowsing });
+  }, [actions, safeBrowsing]);
 
   useEffect(() => window.astraShell?.onOpenUrlInNewTab((url) => {
     openUrlInNewTab(url);

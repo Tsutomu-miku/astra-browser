@@ -212,6 +212,10 @@ export function useBrowserActions({
     newIncognitoWindow: store.newIncognitoWindow,
     newGuestWindow: store.newGuestWindow,
     syncForceHttps: store.syncForceHttps,
+    syncSafeBrowsing: store.syncSafeBrowsing,
+    reportSafeBrowsingDecision: store.reportSafeBrowsingDecision,
+    checkSafeBrowsingForNavigation: store.checkSafeBrowsingForNavigation,
+    dismissSafeBrowsingAlert: store.dismissSafeBrowsingAlert,
     toggleApplicationDevTools: () => {
       void window.astraShell?.toggleDevTools();
     },

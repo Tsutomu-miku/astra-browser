@@ -154,6 +154,7 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   pageHtmlCache: new Map(),
   panel: null,
   permissionRequest: null,
+  safeBrowsingAlert: null,
   sidebarCollapsed: false,
   sidebarWidth: initialUiState.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH,
   state: initialState,
@@ -496,6 +497,33 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     // 同步 settings 到主进程（K-1）：BrowserState.settings.forceHttps 变化时，
     // useBrowserEffect 会把最新值传过来，这里直接转发给 main，返回的副作用在 main 端处理。
     void window.astraShell?.syncForceHttps?.(enabled);
+  },
+  syncSafeBrowsing: (settings) => {
+    void window.astraShell?.safeBrowsing?.syncSettings?.(settings);
+  },
+  reportSafeBrowsingDecision: (_decision) => {
+    /* 一次性 proceed 由闭包内 proceedCallback 直接记录，这里 no-op（统计埋点在 M2 尾期补） */
+  },
+  checkSafeBrowsingForNavigation: async (url) => {
+    const result = await window.astraShell?.safeBrowsing?.checkNavigation?.(url);
+    if (!result || result.allowed) return { blocked: false };
+    const alert = {
+      url: result.url ?? url,
+      reason: result.reason ?? "unsafe",
+      severity: result.severity
+    };
+    set({
+      safeBrowsingAlert: {
+        ...alert,
+        proceedCallback: () => {
+          useBrowserStore.getState().dismissSafeBrowsingAlert();
+        }
+      }
+    });
+    return { blocked: true, alert };
+  },
+  dismissSafeBrowsingAlert: () => {
+    set({ safeBrowsingAlert: null });
   },
   ungroupActiveTab: () => update(set, ungroupActiveTab),
   ungroupTab: (tabId) => update(set, (state) => ungroupTab(state, tabId)),

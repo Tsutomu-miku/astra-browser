@@ -9,6 +9,7 @@ import { GlancePanel } from "../surfaces/glance/GlancePanel";
 import { DownloadsPanel, HistoryPanel, SettingsPanel } from "../surfaces/panels/Panels";
 import { SiteInfoPanel } from "../surfaces/panels/SiteInfoPanel";
 import { PermissionPrompt } from "../surfaces/permissions/PermissionPrompt";
+import { SafeBrowsingPrompt } from "../surfaces/permissions/SafeBrowsingPrompt";
 import { Sidebar } from "../surfaces/sidebar/Sidebar";
 import { Topbar } from "../surfaces/topbar/Topbar";
 import { WebviewGrid } from "../surfaces/webview/WebviewGrid";
@@ -69,6 +70,13 @@ export function App() {
       {controller.panel === "site" && <SiteInfoPanel controller={controller} />}
       {controller.glance && <GlancePanel controller={controller} />}
       {controller.permissionRequest && <PermissionPrompt controller={controller} />}
+      {controller.safeBrowsingAlert && (
+        <SafeBrowsingPrompt
+          alert={controller.safeBrowsingAlert}
+          onGoBack={() => controller.dismissSafeBrowsingAlert()}
+          onProceed={() => controller.dismissSafeBrowsingAlert()}
+        />
+      )}
       {controller.commandOpen && <CommandPalette controller={controller} />}
     </>
   );

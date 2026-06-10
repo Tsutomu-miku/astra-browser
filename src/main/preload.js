@@ -42,5 +42,10 @@ contextBridge.exposeInMainWorld("astraShell", {
   relaunch: () => ipcRenderer.invoke("app-relaunch"),
   getUserDataPaths: () => ipcRenderer.invoke("get-user-data-paths"),
   syncForceHttps: (enabled) => ipcRenderer.invoke("sync-force-https", enabled),
-  openGuestWindow: () => ipcRenderer.invoke("open-guest-window")
+  openGuestWindow: () => ipcRenderer.invoke("open-guest-window"),
+  safeBrowsing: {
+    syncSettings: (settings) => ipcRenderer.invoke("safe-browsing:sync-settings", settings),
+    checkNavigation: (url) => ipcRenderer.invoke("safe-browsing:check-navigation", url),
+    checkDownload: (payload) => ipcRenderer.invoke("safe-browsing:check-download", payload)
+  }
 });

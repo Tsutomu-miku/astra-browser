@@ -39,12 +39,24 @@ export interface BrowserStore {
   pageHtmlCache: Map<string, string>;
   panel: Panel;
   permissionRequest: PermissionRequestEvent | null;
+  safeBrowsingAlert: {
+    url: string;
+    reason: string;
+    severity?: "low" | "medium" | "high";
+    proceedCallback?: () => void;
+  } | null;
   sidebarCollapsed: boolean;
   sidebarWidth: number;
   state: BrowserState;
   glance: { title: string; url: string } | null;
   cachePageHtml: (tabId: string, html: string) => void;
   openActiveTabReader: () => void;
+  /* ===== M2.3 Safe Browsing ===== */
+  checkSafeBrowsingForNavigation: (url: string) => Promise<{
+    blocked: boolean;
+    alert?: { url: string; reason: string; severity?: "low" | "medium" | "high" };
+  }>;
+  dismissSafeBrowsingAlert: () => void;
   addTabToFavorites: (tabId: string) => void;
   addWorkspace: () => void;
   assignTabToGroup: (tabId: string, groupId: string) => void;
@@ -153,6 +165,13 @@ export interface BrowserStore {
   newIncognitoWindow: () => void;
   newGuestWindow: () => void;
   syncForceHttps: (enabled: boolean) => void;
+  syncSafeBrowsing: (settings: { enabled: boolean; remoteLookupUrl?: string }) => void;
+  reportSafeBrowsingDecision: (decision: {
+    url: string;
+    reason: string;
+    severity?: "low" | "medium" | "high";
+    action: "block" | "proceed";
+  }) => void;
   updateSettings: (patch: Partial<BrowserState["settings"]>) => void;
   updateReaderSettings: (patch: Partial<ReaderSettings>) => void;
   updateTranslationSettings: (patch: Partial<TranslationSettings>) => void;

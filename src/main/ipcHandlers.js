@@ -7,6 +7,7 @@ const {
   getInstalledSessions,
   openGuestWindow
 } = require("./forceHttpsGuest");
+const safeBrowsing = require("./safeBrowsing");
 
 function installIpcHandlers({
   downloadItems,
@@ -183,6 +184,21 @@ function installIpcHandlers({
     const parentWin = BrowserWindow.fromWebContents(event.sender);
     const bounds = parentWin && !parentWin.isDestroyed() ? parentWin.getBounds() : null;
     openGuestWindow(bounds);
+  });
+  /* ===== M2.3 Safe Browsing IPC ===== */
+  ipcMain.handle("safe-browsing:sync-settings", async (_event, settings) => {
+    safeBrowsing.setEnabled(Boolean(settings?.enabled));
+    if (typeof settings?.remoteLookupUrl === "string") {
+      safeBrowsing.setRemoteLookupUrl(settings.remoteLookupUrl);
+    }
+  });
+  ipcMain.handle("safe-browsing:check-navigation", async (_event, url) => {
+    if (typeof url !== "string") return { allowed: true };
+    return safeBrowsing.checkNavigation(url);
+  });
+  ipcMain.handle("safe-browsing:check-download", async (_event, payload) => {
+    if (!payload || typeof payload !== "object") return { allowed: true };
+    return safeBrowsing.checkDownload(payload);
   });
 }
 
