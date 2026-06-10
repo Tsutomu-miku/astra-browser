@@ -103,6 +103,7 @@ import {
   updateWorkspaceById,
   upsertAddress,
   upsertDownload,
+  removeDownload,
   upsertPassword,
   upsertPaymentMethod
 } from "../domain/actions";
@@ -120,6 +121,7 @@ import {
   type ReaderSettings,
   type TranslationSettings
 } from "../domain/browser";
+import { applyReaderStyles, extractReaderContent } from "../domain/browser/readerMode";
 import { getPermissionRule } from "../domain/permissions/sitePermissions";
 import { loadBrowserState, saveBrowserState } from "../platform/persistence/browserStorage";
 import { loadBrowserUiState, saveBrowserUiState } from "../platform/persistence/browserUiStorage";
@@ -130,7 +132,7 @@ import { syncMuted, syncZoom } from "./browserStoreWebviewSync";
 const initialState = loadBrowserState();
 const initialUiState = loadBrowserUiState();
 
-export const useBrowserStore = create<BrowserStore>((set) => ({
+export const useBrowserStore = create<BrowserStore>((set, get) => ({
   addressValue: "",
   commandOpen: false,
   commandQuery: "",
@@ -140,12 +142,51 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   findResult: null,
   floatingSidebarOpen: false,
   floatingToolbarOpen: false,
+  pageHtmlCache: new Map(),
   panel: null,
   permissionRequest: null,
   sidebarCollapsed: false,
   sidebarWidth: initialUiState.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH,
   state: initialState,
   glance: null,
+  cachePageHtml: (tabId, html) => {
+    const cache = get().pageHtmlCache;
+    cache.set(tabId, html);
+    if (cache.size > 16) {
+      const firstKey = cache.keys().next().value;
+      if (typeof firstKey === "string") cache.delete(firstKey);
+    }
+    set({ pageHtmlCache: cache });
+  },
+  openActiveTabReader: () => {
+    const { state, pageHtmlCache } = get();
+    const workspace = state.workspaces.find((ws) => ws.id === state.activeWorkspaceId);
+    if (!workspace) return;
+    const tab = workspace.tabs.find((t) => t.id === workspace.activeTabId);
+    if (!tab) return;
+    const html = pageHtmlCache.get(tab.id);
+    const title = tab.title || "Reader view";
+    if (!html) {
+      /* 尚未缓存 HTML。页面停止加载后会填充缓存并可再次打开。 */
+      set({ glance: { title, url: tab.url } });
+      return;
+    }
+    try {
+      const readerContent = extractReaderContent(html);
+      const styled = applyReaderStyles({
+        content: readerContent,
+        fontSize: state.settings.reader.fontSize,
+        fontFamily: state.settings.reader.fontFamily,
+        lineHeight: state.settings.reader.lineHeight,
+        contentWidth: state.settings.reader.contentWidth,
+        theme: state.settings.reader.theme
+      });
+      const readerUrl = `data:text/html;charset=utf-8,${encodeURIComponent(styled)}`;
+      set({ glance: { title: title || readerContent.title || "Reader view", url: readerUrl } });
+    } catch {
+      set({ glance: { title, url: tab.url } });
+    }
+  },
   addTabToFavorites: (tabId) => update(set, (state) => addTabToFavorites(state, tabId)),
   addWorkspace: () => update(set, addWorkspace),
   assignTabToGroup: (tabId, groupId) => update(set, (state) => assignTabToGroup(state, tabId, groupId)),
@@ -191,6 +232,10 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     update(set, (state) => upsertDownload(state, download));
     set({ panel: "downloads" });
   },
+  cancelDownload: (id) => {
+    void window.astraShell?.cancelDownload(id);
+  },
+  removeDownload: (id) => update(set, (state) => removeDownload(state, id)),
   ingestPermissionRequest: (request) => {
     const state = useBrowserStore.getState().state;
     const profileId = getProfileIdForPartition(state, request.partition) ?? getActiveProfileId(state);
@@ -376,17 +421,21 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   /* ===== Bookmarks import ===== */
   importBookmarks: (html, opts) => {
     const result = importBookmarksFromHtml(html, { source: opts.source, maxCount: opts.maxCount });
-    return update(set, (state) => {
+    let essentialsAdded = 0;
+    let favoritesAdded = 0;
+    update(set, (state) => {
       // 1) 合并 Essentials（去重）
       const seenEssentialUrls = new Set(state.essentials.map((e) => e.url));
       const newEssentials = result.essentials.filter((e) => !seenEssentialUrls.has(e.url));
+      essentialsAdded = newEssentials.length;
       state.essentials = [...state.essentials, ...newEssentials];
-      // 2) 其它书签按 folder → 第一个 workspace 的 favorites（按 "Other Bookmarks" → tab favorite 统一写入 active workspace）
+      // 2) 其它书签按 folder → 第一个 workspace 的 favorites
       const workspace = state.workspaces.find((ws) => ws.id === state.activeWorkspaceId) ?? state.workspaces[0];
       if (!workspace) return state;
       const allFolderFavs = Object.values(result.favoritesByFolder).flat();
+      const existingUrls = new Set(workspace.tabs.map((t) => t.url));
       for (const fav of allFolderFavs) {
-        // 创建一个 tab 作为 favorite
+        if (existingUrls.has(fav.url)) continue;
         const tab = {
           id: fav.id,
           title: fav.title,
@@ -409,9 +458,11 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
         } satisfies import("../domain/browser").BrowserTab;
         workspace.tabs.push(tab);
         workspace.favoriteOrder.push(tab.id);
+        favoritesAdded++;
       }
       return state;
     });
+    return { essentialsAdded, favoritesAdded };
   },
   toggleActiveDevTools: (webview) => {
     // 优先级：当前聚焦的 webview（Tab/Split/Glance）> 主窗口 Renderer。

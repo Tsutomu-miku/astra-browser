@@ -1,4 +1,5 @@
 const { app, BrowserWindow, session } = require("electron");
+const fs = require("node:fs");
 const path = require("node:path");
 const { installWindowDiagnostics, toggleDevTools } = require("./diagnostics");
 const { installIpcHandlers } = require("./ipcHandlers");
@@ -12,11 +13,53 @@ const bridgedSessions = new WeakSet();
 const sessionPartitions = new WeakMap();
 const permissionCallbacks = new Map();
 const permissionRules = new Map();
+const downloadItems = new Map();
 
-function createWindow() {
+function windowStatePath() {
+  return path.join(app.getPath("userData"), "window-state.json");
+}
+
+function loadWindowStates() {
+  try {
+    const raw = fs.readFileSync(windowStatePath(), "utf-8");
+    const data = JSON.parse(raw);
+    return Array.isArray(data.windows) ? data.windows : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveWindowStates() {
+  const snapshot = [];
+  for (const win of windows) {
+    if (!win || win.isDestroyed()) continue;
+    try {
+      const bounds = win.getBounds();
+      snapshot.push({
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
+        isMaximized: win.isMaximized(),
+        isFullScreen: win.isFullScreen()
+      });
+    } catch {
+      /* ignore tearing */
+    }
+  }
+  try {
+    fs.writeFileSync(windowStatePath(), JSON.stringify({ windows: snapshot }));
+  } catch {
+    /* userData may not be writable — non-fatal */
+  }
+}
+
+function createWindow(saved) {
   const win = new BrowserWindow({
-    width: 1440,
-    height: 960,
+    x: saved?.isMaximized ? undefined : saved?.x,
+    y: saved?.isMaximized ? undefined : saved?.y,
+    width: saved?.width ?? 1440,
+    height: saved?.height ?? 960,
     minWidth: 960,
     minHeight: 640,
     title: "Astra Browser",
@@ -26,16 +69,26 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      plugins: true,
       webviewTag: true
     }
   });
 
+  if (saved?.isMaximized) win.maximize();
+  if (saved?.isFullScreen) win.setFullScreen(true);
   windows.add(win);
   installWindowDiagnostics(win);
 
   win.on("closed", () => {
     windows.delete(win);
+    saveWindowStates();
   });
+  win.on("resize", saveWindowStates);
+  win.on("move", saveWindowStates);
+  win.on("maximize", saveWindowStates);
+  win.on("unmaximize", saveWindowStates);
+  win.on("enter-full-screen", saveWindowStates);
+  win.on("leave-full-screen", saveWindowStates);
 
   installSessionBridge(session.defaultSession, "default");
   if (DEV_SERVER_URL) {
@@ -82,6 +135,7 @@ function installSessionBridge(targetSession, partition = "default") {
     const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const startedAt = Date.now();
     let hasEmitted = false;
+    downloadItems.set(id, item);
     const buildPayload = (stateOverride) => ({
       id,
       filename: item.getFilename(),
@@ -93,11 +147,6 @@ function installSessionBridge(targetSession, partition = "default") {
     });
     const tryEmit = (stateOverride) => {
       const savePath = item.getSavePath();
-      // The renderer consumes savePath for the Open / Show-in-folder
-      // buttons, so we suppress the initial broadcast until Electron has
-      // resolved the user's save location. Progress events that arrive
-      // before the path is resolved are queued implicitly: the next
-      // broadcast after resolution will carry the latest byte counts.
       if (!savePath && !stateOverride) return;
       const payload = buildPayload(stateOverride);
       if (stateOverride === "completed" || stateOverride === "cancelled" || stateOverride === "interrupted") {
@@ -106,6 +155,9 @@ function installSessionBridge(targetSession, partition = "default") {
         broadcastDownload(payload);
       }
       hasEmitted = true;
+      if (stateOverride === "completed" || stateOverride === "cancelled" || stateOverride === "interrupted") {
+        downloadItems.delete(id);
+      }
     };
 
     // Kick off an emit as soon as the save path is available; if the user
@@ -170,6 +222,7 @@ function getPermissionKey(partition, origin, permission) {
 }
 
 installIpcHandlers({
+  downloadItems,
   getPermissionKey,
   installSessionBridge,
   permissionRules,
@@ -179,18 +232,25 @@ installIpcHandlers({
 
 app.whenReady().then(() => {
   installApplicationMenu();
-  createWindow();
+  const saved = loadWindowStates();
+  if (saved.length > 0) {
+    saved.forEach((s) => createWindow(s));
+  } else {
+    createWindow(null);
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      createWindow(null);
     }
   });
 });
 
 app.on("new-window-requested", () => {
-  createWindow();
+  createWindow(null);
 });
+
+app.on("before-quit", saveWindowStates);
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {

@@ -3,6 +3,7 @@ export type WebviewAction = "goBack" | "goForward" | "reload" | "reloadIgnoringC
 export type WebviewElement = HTMLElement & {
   canGoBack?: () => boolean;
   canGoForward?: () => boolean;
+  executeJavaScript?: (code: string) => Promise<unknown>;
   findInPage?: (text: string, options?: { findNext?: boolean; forward?: boolean }) => void;
   getZoomFactor?: () => Promise<number>;
   getWebContentsId?: () => number;

@@ -3,6 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 
 function installIpcHandlers({
+  downloadItems,
   getPermissionKey,
   installSessionBridge,
   permissionRules,
@@ -42,6 +43,7 @@ function installIpcHandlers({
         preload: path.join(__dirname, "preload.js"),
         partition: "in-memory:astra-incognito-" + Date.now().toString(36),
         contextIsolation: true,
+        plugins: true,
         sandbox: false,
         webviewTag: true
       }
@@ -114,6 +116,16 @@ function installIpcHandlers({
   });
   ipcMain.handle("resolve-permission-request", (_event, id, allowed) => {
     resolvePermissionRequest(id, allowed);
+  });
+  ipcMain.handle("cancel-download", (_event, id) => {
+    const item = downloadItems.get(id);
+    if (item) {
+      try {
+        item.cancel();
+      } catch {
+        /* item may already be in a terminal state */
+      }
+    }
   });
   ipcMain.handle("show-item-in-folder", (_event, filePath) => {
     if (filePath) {

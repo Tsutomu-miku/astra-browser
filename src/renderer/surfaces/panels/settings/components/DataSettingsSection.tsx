@@ -27,7 +27,10 @@ export function DataSettingsSection({
   onUpdateMemorySaver,
   profileStorageEntries,
   profileStorageError,
-  profileStorageStatus
+  profileStorageStatus,
+  bookmarksImportStatus,
+  bookmarksImportInputRef,
+  onImportBookmarks
 }: {
   dataSummary: string;
   importInputRef: RefObject<HTMLInputElement | null>;
@@ -48,6 +51,9 @@ export function DataSettingsSection({
   profileStorageEntries: WorkspaceStorageUsage[];
   profileStorageError: string | null;
   profileStorageStatus: string;
+  bookmarksImportStatus: string | null;
+  bookmarksImportInputRef: RefObject<HTMLInputElement | null>;
+  onImportBookmarks: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
     <section className="settings-pane" aria-label="Data settings">
@@ -86,6 +92,24 @@ export function DataSettingsSection({
           type="file"
           accept="application/json,.json"
           onChange={onImportBackup}
+        />
+      </section>
+      <section className="settings-section" aria-label="Bookmarks import">
+        <div className="section-copy">
+          <span>Bookmarks import</span>
+          <span>{bookmarksImportStatus ?? "Import Chrome / Edge / Firefox / Safari Netscape bookmarks.html"}</span>
+        </div>
+        <div className="button-cluster">
+          <button className="toolbar-button" type="button" onClick={() => bookmarksImportInputRef.current?.click()}>
+            Import bookmarks (HTML)
+          </button>
+        </div>
+        <input
+          ref={bookmarksImportInputRef}
+          className="hidden-file-input"
+          type="file"
+          accept="text/html,.html"
+          onChange={onImportBookmarks}
         />
       </section>
       <ProfileStorageSection

@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld("astraShell", {
     return () => ipcRenderer.removeListener("permission-request", wrapped);
   },
   resolvePermissionRequest: (id, allowed) => ipcRenderer.invoke("resolve-permission-request", id, allowed),
+  cancelDownload: (id) => ipcRenderer.invoke("cancel-download", id),
   setProfilePartitions: (partitions) => ipcRenderer.invoke("set-profile-partitions", partitions),
   setPermissionRules: (rules) => ipcRenderer.invoke("set-permission-rules", rules),
   openPath: (filePath) => ipcRenderer.invoke("open-path", filePath),

@@ -91,7 +91,10 @@ describe("settings panel sections", () => {
       onUpdateMemorySaver: vi.fn(),
       profileStorageEntries: [],
       profileStorageError: null,
-      profileStorageStatus: "ready"
+      profileStorageStatus: "ready",
+      bookmarksImportStatus: null,
+      bookmarksImportInputRef: createRef<HTMLInputElement>(),
+      onImportBookmarks: vi.fn()
     }));
     const workspaceHtml = renderToStaticMarkup(createElement(WorkspaceManagementSection, {
       activeWorkspaceId: "personal",

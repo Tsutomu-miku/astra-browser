@@ -85,3 +85,9 @@ export function upsertDownload(state: BrowserState, download: DownloadEntry): Br
     draft.downloads = draft.downloads.slice(0, 80);
   });
 }
+
+export function removeDownload(state: BrowserState, id: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    draft.downloads = draft.downloads.filter((entry) => entry.id !== id);
+  });
+}

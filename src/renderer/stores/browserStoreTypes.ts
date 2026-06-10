@@ -34,12 +34,15 @@ export interface BrowserStore {
   findResult: FindResultState | null;
   floatingSidebarOpen: boolean;
   floatingToolbarOpen: boolean;
+  pageHtmlCache: Map<string, string>;
   panel: Panel;
   permissionRequest: PermissionRequestEvent | null;
   sidebarCollapsed: boolean;
   sidebarWidth: number;
   state: BrowserState;
   glance: { title: string; url: string } | null;
+  cachePageHtml: (tabId: string, html: string) => void;
+  openActiveTabReader: () => void;
   addTabToFavorites: (tabId: string) => void;
   addWorkspace: () => void;
   assignTabToGroup: (tabId: string, groupId: string) => void;
@@ -66,6 +69,8 @@ export interface BrowserStore {
   groupTab: (tabId: string) => void;
   groupTabsTogether: (sourceTabId: string, targetTabId: string) => void;
   ingestDownload: (download: DownloadEntry) => void;
+  cancelDownload: (id: string) => void;
+  removeDownload: (id: string) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
   moveTabGroupToWorkspace: (groupId: string, workspaceId: string) => void;
@@ -154,7 +159,10 @@ export interface BrowserStore {
   removeAddress: (id: string) => void;
   upsertPaymentMethod: (entry: PaymentMethodEntry) => void;
   removePaymentMethod: (id: string) => void;
-  importBookmarks: (html: string, opts: { source: "chrome" | "edge" | "firefox" | "safari" | "html"; maxCount?: number }) => void;
+  importBookmarks: (html: string, opts: { source: "chrome" | "edge" | "firefox" | "safari" | "html"; maxCount?: number }) => {
+    essentialsAdded: number;
+    favoritesAdded: number;
+  };
   updateTabGroup: (groupId: string, patch: Partial<Pick<Workspace["tabGroups"][number], "name" | "color">>) => void;
   updateTab: (tabId: string, patch: Partial<BrowserTab>) => void;
   updateWorkspaceById: (workspaceId: string, patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>) => void;

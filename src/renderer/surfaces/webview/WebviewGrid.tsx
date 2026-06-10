@@ -171,6 +171,7 @@ export function WebviewGrid({ controller }: { controller: BrowserController }) {
                   actions.updateTab(tab.id, { zoomFactor });
                 }
               }}
+              onPageContent={(tabId, html) => actions.cachePageHtml(tabId, html)}
             />
           );
 

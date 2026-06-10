@@ -16,6 +16,7 @@ export function BrowserWebview({
   onMediaStateChange,
   onMuteChange,
   onNavigate,
+  onPageContent,
   onPermissionRequest,
   onTitleChange,
   onWebviewReady,
@@ -31,6 +32,7 @@ export function BrowserWebview({
   onMediaStateChange: (mediaPlaying: boolean) => void;
   onMuteChange: (isMuted: boolean) => void;
   onNavigate: (url: string) => void;
+  onPageContent?: (tabId: string, html: string) => void;
   onPermissionRequest: (permission: "camera" | "media" | "microphone", active: boolean) => void;
   onTitleChange: (title: string, explicitSet: boolean) => void;
   onWebviewReady: (tabId: string, webview: WebviewElement) => void;
@@ -48,6 +50,7 @@ export function BrowserWebview({
     onMediaStateChange,
     onMuteChange,
     onNavigate,
+    onPageContent,
     onPermissionRequest,
     onTitleChange,
     onZoomChange,
@@ -55,8 +58,8 @@ export function BrowserWebview({
   });
 
   useEffect(() => {
-    latestRef.current = { isActive, onLoadingChange, onFaviconChange, onMediaStateChange, onMuteChange, onNavigate, onPermissionRequest, onTitleChange, onZoomChange, tab };
-  }, [isActive, onLoadingChange, onFaviconChange, onMediaStateChange, onMuteChange, onNavigate, onPermissionRequest, onTitleChange, onZoomChange, tab]);
+    latestRef.current = { isActive, onLoadingChange, onFaviconChange, onMediaStateChange, onMuteChange, onNavigate, onPageContent, onPermissionRequest, onTitleChange, onZoomChange, tab };
+  }, [isActive, onLoadingChange, onFaviconChange, onMediaStateChange, onMuteChange, onNavigate, onPageContent, onPermissionRequest, onTitleChange, onZoomChange, tab]);
 
   useEffect(() => {
     const webview = ref.current;
@@ -66,7 +69,25 @@ export function BrowserWebview({
     const fallbackNavigationState = () => ({ canGoBack: false, canGoForward: false });
     const readNavigationState = () => readyRef.current ? getNavigationState(webview) : fallbackNavigationState();
     const onStart = () => latestRef.current.onLoadingChange(true, readNavigationState());
-    const onStop = () => latestRef.current.onLoadingChange(false, readNavigationState());
+    const onStop = async () => {
+      latestRef.current.onLoadingChange(false, readNavigationState());
+      if (
+        readyRef.current &&
+        latestRef.current.onPageContent &&
+        typeof webview.executeJavaScript === "function" &&
+        latestRef.current.tab.url &&
+        !latestRef.current.tab.url.startsWith("data:")
+      ) {
+        try {
+          const html = await webview.executeJavaScript("document.documentElement.outerHTML");
+          if (typeof html === "string") {
+            latestRef.current.onPageContent(latestRef.current.tab.id, html);
+          }
+        } catch {
+          /* ignore OOP-framed content we cannot introspect */
+        }
+      }
+    };
     const onTitle = (event: Event) => {
       const detail = event as { title?: string; explicitSet?: boolean };
       const nextTitle = detail.title ?? latestRef.current.tab.title;

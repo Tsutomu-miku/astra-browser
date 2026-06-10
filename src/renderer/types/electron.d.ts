@@ -81,6 +81,7 @@ export interface AstraShellApi {
   openPath: (filePath: string) => Promise<string>;
   printWebview: (webContentsId: number) => Promise<void>;
   resolvePermissionRequest: (id: string, allowed: boolean) => Promise<void>;
+  cancelDownload: (id: string) => Promise<void>;
   setProfilePartitions: (partitions: string[]) => Promise<void>;
   setPermissionRules: (rules: PermissionRulePayload[]) => Promise<void>;
   showItemInFolder: (filePath: string) => Promise<void>;

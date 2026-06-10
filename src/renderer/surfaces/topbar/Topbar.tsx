@@ -2,9 +2,11 @@ import {
   FiAlertTriangle,
   FiArrowLeft,
   FiArrowRight,
+  FiBook,
   FiBookmark,
   FiColumns,
   FiEye,
+  FiGlobe,
   FiInfo,
   FiLock,
   FiMinus,
@@ -18,7 +20,7 @@ import {
   FiZap
 } from "react-icons/fi";
 
-import { isEssential, isTabFavorite } from "../../domain/browser";
+import { buildTranslateUrl, isEssential, isTabFavorite } from "../../domain/browser";
 import { getUrlIdentity } from "../../domain/browser/urlIdentity";
 import { formatZoomPercent } from "../../domain/browser/zoom";
 import type { BrowserController } from "../../app/controller/types";
@@ -33,6 +35,7 @@ import { useWorkspacePillContextMenu } from "./components/useWorkspacePillContex
 export function Topbar({ controller }: { controller: BrowserController }) {
   const { activeTab, activeWorkspace, actions, addressValue, compactMode, floatingToolbarOpen, setAddressValue, setPanel, state } = controller;
   const identity = getUrlIdentity(activeTab.url);
+  const isHttpPage = identity.security === "secure" || identity.security === "insecure";
   const omnibox = useOmniboxController({ actions, addressValue, setAddressValue, state });
   const reloadButton = getReloadButtonState(activeTab.isLoading);
   const pageIdentityMenu = usePageIdentityContextMenu();
@@ -94,6 +97,33 @@ export function Topbar({ controller }: { controller: BrowserController }) {
               aria-activedescendant={omnibox.suggestionsOpen && omnibox.suggestions.length > 0 ? `address-suggestion-${omnibox.activeIndex}` : undefined}
             />
           </span>
+          {isHttpPage && (
+            <>
+              <button
+                className="icon-button address-end"
+                title={`Translate page to ${state.settings.translation.preferredTarget}`}
+                type="button"
+                onClick={() => {
+                  const url = buildTranslateUrl({
+                    provider: state.settings.translation.provider,
+                    url: activeTab.url,
+                    targetLang: state.settings.translation.preferredTarget
+                  });
+                  if (url) actions.openUrlInSplit(url, `Translated: ${activeTab.title ?? "Page"}`);
+                }}
+              >
+                <FiGlobe />
+              </button>
+              <button
+                className="icon-button address-end"
+                title="Toggle reader view"
+                type="button"
+                onClick={() => actions.openActiveTabReader()}
+              >
+                <FiBook />
+              </button>
+            </>
+          )}
         </form>
         {omnibox.suggestionsOpen && omnibox.suggestions.length > 0 && (
           <div className="omnibox-suggestions" id="address-suggestions" role="listbox" aria-label="Address suggestions">

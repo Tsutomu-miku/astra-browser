@@ -6,6 +6,7 @@ export {
   navigateActiveTab,
   openUrlInActiveWorkspace,
   recordHistory,
+  removeDownload,
   removeHistoryEntry,
   upsertDownload
 } from "./browsing/actions";

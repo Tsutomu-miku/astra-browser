@@ -50,6 +50,9 @@ export interface LegacyPanelProps {
   historyCount: number;
   downloadCount: number;
   permissionCount: number;
+  bookmarksImportStatus: string | null;
+  bookmarksImportInputRef: RefObject<HTMLInputElement | null>;
+  onImportBookmarks: (event: ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function renderLegacyPanels(
@@ -101,6 +104,9 @@ export function renderLegacyPanels(
           profileStorageEntries={p.profileStorageEntries}
           profileStorageError={p.profileStorageError}
           profileStorageStatus={p.profileStorageStatus}
+          bookmarksImportStatus={p.bookmarksImportStatus}
+          bookmarksImportInputRef={p.bookmarksImportInputRef}
+          onImportBookmarks={p.onImportBookmarks}
         />
       );
     case "workspaces":

@@ -39,6 +39,8 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [historyQuery, setHistoryQuery] = useState("");
+  const bookmarksImportInputRef = useRef<HTMLInputElement | null>(null);
+  const [bookmarksImportStatus, setBookmarksImportStatus] = useState<string | null>(null);
 
   const sectionById = useMemo(() => {
     const map = new Map<SettingsSectionId, (typeof SETTINGS_SECTIONS)[number]>();
@@ -64,6 +66,22 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
       setImportStatus(`Imported ${file.name}`);
     } catch {
       setImportStatus("Import failed");
+    }
+  };
+
+  const importBookmarks = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const html = await file.text();
+      const summary = actions.importBookmarks(html, { source: "html" });
+      const parts: string[] = [];
+      if (summary.essentialsAdded) parts.push(`${summary.essentialsAdded} essentials`);
+      if (summary.favoritesAdded) parts.push(`${summary.favoritesAdded} favorites`);
+      setBookmarksImportStatus(`Imported ${file.name} — ${parts.join(" + ") || "0 bookmarks"}`);
+    } catch {
+      setBookmarksImportStatus("Bookmarks import failed");
     }
   };
 
@@ -117,7 +135,10 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
     onDeleteWorkspace: actions.deleteWorkspace,
     historyCount,
     downloadCount,
-    permissionCount
+    permissionCount,
+    bookmarksImportStatus,
+    bookmarksImportInputRef,
+    onImportBookmarks: importBookmarks
   };
 
   const m1PanelProps: M1PanelProps = {
@@ -187,9 +208,7 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
     downloads: state.downloads,
     onOpenDownload: (path: string) => void window.astraShell?.openPath(path),
     onOpenPath: (path: string) => void window.astraShell?.showItemInFolder(path),
-    onCancelDownload: () => {
-      /* main 进程 download-item.cancel 桥接在下载中心 IPC 阶段接入 */
-    },
+    onCancelDownload: actions.cancelDownload,
 
     history: state.history,
     historyQuery,

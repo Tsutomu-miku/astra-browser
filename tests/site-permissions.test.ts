@@ -1,5 +1,9 @@
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { PermissionPrompt } from "../src/renderer/surfaces/permissions/PermissionPrompt";
+import type { BrowserController } from "../src/renderer/app/controller/types";
 import {
   clearSitePermission,
   clearSitePermissionsForOrigin,
@@ -67,5 +71,33 @@ describe("sitePermissions", () => {
     expect(getPermissionLabel("media")).toBe("Camera and microphone");
     expect(getPermissionLabel("midiSysex")).toBe("MIDI devices");
     expect(getPermissionLabel("displayCapture")).toBe("Display Capture");
+  });
+
+  it("renders the permission prompt with origin + permission and invokes actions", () => {
+    const resolve = vi.fn();
+    const controller = {
+      permissionRequest: {
+        id: "req-1",
+        origin: "https://example.com",
+        partition: "persist:personal",
+        permission: "media",
+        profileId: "personal"
+      },
+      actions: { resolvePermissionRequest: resolve }
+    } as unknown as BrowserController;
+    const html = renderToString(createElement(PermissionPrompt, { controller }));
+    expect(html).toContain("permission-prompt");
+    expect(html).toContain("https://example.com");
+    expect(html.toLowerCase()).toContain("camera and microphone");
+    expect(html).toContain("Block");
+    expect(html).toContain("Allow");
+
+    /* Confirm prompt with no pending request returns null. */
+    const emptyHtml = renderToString(
+      createElement(PermissionPrompt, {
+        controller: { ...controller, permissionRequest: null } as unknown as BrowserController
+      })
+    );
+    expect(emptyHtml).toBe("");
   });
 });
