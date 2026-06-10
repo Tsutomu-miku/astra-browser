@@ -104,6 +104,80 @@ export interface DownloadEntry {
   finishedAt?: number;
 }
 
+export interface PasswordEntry {
+  id: string;
+  origin: string;
+  username: string;
+  encryptedPassword: string;
+  notes?: string;
+  usedAt?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AddressEntry {
+  id: string;
+  label: string;
+  recipient: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  region?: string;
+  postalCode?: string;
+  country?: string;
+  phone?: string;
+  email?: string;
+  createdAt: number;
+}
+
+export interface PaymentMethodEntry {
+  id: string;
+  label: string;
+  cardholderName: string;
+  cardLastFour: string;
+  encryptedCardDetails: string;
+  expiryMonth?: number;
+  expiryYear?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AutofillDatabase {
+  passwords: PasswordEntry[];
+  addresses: AddressEntry[];
+  paymentMethods: PaymentMethodEntry[];
+}
+
+export type ReaderTheme = "light" | "sepia" | "dark";
+
+export interface ReaderSettings {
+  enabled: boolean;
+  theme: ReaderTheme;
+  fontSize: number;
+  fontFamily: string;
+  lineHeight: number;
+  contentWidth: number;
+}
+
+export type TranslationProvider = "google" | "libretranslate" | "disabled";
+
+export interface TranslationSettings {
+  provider: TranslationProvider;
+  autoTranslate: boolean;
+  preferredTarget: string;
+  /** origin 级例外：跳过翻译 */
+  skipOrigins: string[];
+  lastUsed?: string;
+}
+
+export interface BookmarksImportBatch {
+  id: string;
+  source: "chrome" | "edge" | "firefox" | "safari" | "html";
+  importedAt: number;
+  importedEssentials: string[];
+  importedFavorites: string[];
+}
+
 export type FaviconCache = Record<string, string>;
 
 export type SitePermissionDecision = "allow" | "block";
@@ -133,6 +207,9 @@ export interface BrowserSettings {
   searchEngine: SearchEngineKey;
   startupBehavior: StartupBehavior;
   theme: ThemeKey;
+  autofill: AutofillDatabase;
+  reader: ReaderSettings;
+  translation: TranslationSettings;
 }
 
 export interface Workspace {
@@ -171,11 +248,24 @@ export type PartialWorkspace = Partial<Omit<Workspace, "closedTabs" | "favoriteO
   tabs?: Array<Partial<BrowserTab> | null>;
 };
 
+export type PartialAutofillDatabase = {
+  passwords?: Array<Partial<PasswordEntry> | null>;
+  addresses?: Array<Partial<AddressEntry> | null>;
+  paymentMethods?: Array<Partial<PaymentMethodEntry> | null>;
+};
+
+export type PartialReaderSettings = Partial<ReaderSettings>;
+export type PartialTranslationSettings = Partial<TranslationSettings>;
+
 export type PartialBrowserState = Partial<Omit<BrowserState, "settings" | "workspaces">> & {
   essentials?: Array<Partial<Favorite> | null>;
   faviconCache?: Record<string, unknown>;
   perOriginZoom?: Array<Partial<PerOriginZoomRule> | null>;
-  settings?: Partial<BrowserSettings>;
+  settings?: Partial<Omit<BrowserSettings, "autofill" | "reader" | "translation">> & {
+    autofill?: PartialAutofillDatabase;
+    reader?: PartialReaderSettings;
+    translation?: PartialTranslationSettings;
+  };
   sitePermissions?: Array<Partial<SitePermissionRule> | null>;
   workspaces?: PartialWorkspace[];
 };

@@ -1,10 +1,16 @@
 import type { TabDropPlacement, TabFolder, WorkspaceDropPlacement } from "../domain/actions";
 import type {
+  AddressEntry,
+  AutofillDatabase,
   BrowserState,
   BrowserTab,
   DownloadEntry,
   IncognitoSessionMode,
+  PasswordEntry,
+  PaymentMethodEntry,
+  ReaderSettings,
   SplitLayout,
+  TranslationSettings,
   Workspace
 } from "../domain/browser";
 import type { WebviewAction, WebviewElement } from "../types/browser-ui";
@@ -139,6 +145,16 @@ export interface BrowserStore {
   toggleActiveDevTools: (webview?: WebviewElement) => void;
   newIncognitoWindow: () => void;
   updateSettings: (patch: Partial<BrowserState["settings"]>) => void;
+  updateReaderSettings: (patch: Partial<ReaderSettings>) => void;
+  updateTranslationSettings: (patch: Partial<TranslationSettings>) => void;
+  upsertPassword: (entry: PasswordEntry) => void;
+  removePassword: (id: string) => void;
+  touchPasswordUsed: (id: string) => void;
+  upsertAddress: (entry: AddressEntry) => void;
+  removeAddress: (id: string) => void;
+  upsertPaymentMethod: (entry: PaymentMethodEntry) => void;
+  removePaymentMethod: (id: string) => void;
+  importBookmarks: (html: string, opts: { source: "chrome" | "edge" | "firefox" | "safari" | "html"; maxCount?: number }) => void;
   updateTabGroup: (groupId: string, patch: Partial<Pick<Workspace["tabGroups"][number], "name" | "color">>) => void;
   updateTab: (tabId: string, patch: Partial<BrowserTab>) => void;
   updateWorkspaceById: (workspaceId: string, patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>) => void;

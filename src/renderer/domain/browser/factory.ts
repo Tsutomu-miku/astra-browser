@@ -92,7 +92,22 @@ export function createDefaultState(): BrowserState {
       perOriginZoom: [],
       searchEngine: "google",
       startupBehavior: "restore",
-      theme: "arc-dark"
+      theme: "arc-dark",
+      autofill: { passwords: [], addresses: [], paymentMethods: [] },
+      reader: {
+        enabled: false,
+        theme: "light",
+        fontSize: 16,
+        fontFamily: "serif",
+        lineHeight: 1.6,
+        contentWidth: 70
+      },
+      translation: {
+        provider: "google",
+        autoTranslate: false,
+        preferredTarget: "zh-CN",
+        skipOrigins: []
+      }
     },
     workspaces: [
       {

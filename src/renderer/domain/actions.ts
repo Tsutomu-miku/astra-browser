@@ -14,10 +14,19 @@ export {
   clearPerOriginZoom,
   clearSitePermissionRule,
   clearSitePermissionRulesForOrigin,
+  removeAddress,
+  removePassword,
+  removePaymentMethod,
   setIncognitoMode,
   setPerOriginZoom,
   setSitePermission,
-  updateSettings
+  touchPasswordUsed,
+  updateReaderSettings,
+  updateSettings,
+  updateTranslationSettings,
+  upsertAddress,
+  upsertPassword,
+  upsertPaymentMethod
 } from "./permissions/settingsActions";
 export {
   addTab,

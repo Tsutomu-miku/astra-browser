@@ -1,13 +1,9 @@
 /**
- * 设置页 16 主区块（对齐 PRD §3.14 "Chrome settings 16-section minimum skeleton"）。
- *
- * 优先级规则（与 PRD 同步）：
- *   core   → P0，M0 骨架 + M1/M2 交付真实内容；
- *   polish → P1，M1/M3 期间填内容；
- *   far    → P2，M3/M4 才实现。
- *
- * PRD §5 M0 要求：骨架可导航（即 16 个 entry 能点入并显示交付信息），
- * 不要求内容真实可交互。`implementation` 字段供导航 + 渲染占位/真实面板使用。
+ * 设置页 16-section 骨架 + legacy 5 个（global/space/data/workspaces/about）。
+ * 拆分：
+ *   - SECTION_DEFS：id / label / milestone / prdRef / priority / summary / scope
+ *   - M1_INTERACTIVE：8 主面板 + performance(历史)/accessibility(阅读)/languages(翻译)
+ *   - LEGACY_REAL：5 项仍使用真实 panel
  */
 
 export type SettingsSectionImplementation =
@@ -28,7 +24,6 @@ export type SettingsSectionImplementation =
   | "system"
   | "reset-and-cleanup"
   | "about"
-  // Legacy 4 panels — 保留以便老链接还能进入新骨架的相应位置
   | "global"
   | "space"
   | "data"
@@ -38,26 +33,14 @@ export type SettingsSectionPriority = "core" | "polish" | "far";
 
 export interface SettingsSection {
   id: SettingsSectionImplementation;
-  /** 真实导航条目用的标签（英文 + 短，匹配 Chrome settings 风格） */
   label: string;
-  /** 交付时间分带（PRD §5 的 M0–M4），仅用于占位面板显示 */
   milestone: "M0" | "M1" | "M2" | "M3" | "M4";
-  /** 对应 PRD 的章节号 */
   prdRef: string;
-  /** 对应 §3.14 的优先级估算 */
   priority: SettingsSectionPriority;
-  /** 1–2 行摘要；M0 占位面板直接展示这个文案 */
   summary: string;
-  /** 条目下方显示的详细交付点列表（M0 占位面板展示） */
   scope: string[];
 }
 
-/**
- * 16 个 Chrome-level 主区块 + About Astra + 2 个 legacy 别名（global→appearance，
- * space/→workspaces 并入后也保留别名）。
- *
- * 导航顺序严格按 Chrome settings 侧边栏（PRD §3.14）。
- */
 export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     id: "you-and-astra",
@@ -282,7 +265,28 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
 
 export type SettingsSectionId = SettingsSection["id"];
 
-/** Legacy 4 项仍然真实渲染内容；其余 16 项先进入占位面板。 */
+const LEGACY_REAL: ReadonlySet<SettingsSectionId> = new Set([
+  "global", "space", "data", "workspaces", "about"
+]);
+
+const M1_INTERACTIVE: ReadonlySet<SettingsSectionId> = new Set([
+  "autofill",
+  "privacy-and-security",
+  "appearance",
+  "search-engine",
+  "default-browser",
+  "startup",
+  "site-settings",
+  "downloads",
+  "performance",
+  "accessibility",
+  "languages"
+]);
+
 export function isLegacyRealSection(id: SettingsSectionId): boolean {
-  return id === "global" || id === "space" || id === "data" || id === "workspaces";
+  return LEGACY_REAL.has(id);
+}
+
+export function isInteractiveSection(id: SettingsSectionId): boolean {
+  return LEGACY_REAL.has(id) || M1_INTERACTIVE.has(id);
 }

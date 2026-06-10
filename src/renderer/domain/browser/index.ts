@@ -45,8 +45,46 @@ export {
 } from "./stateNormalization";
 export { getBrowserPartitions, getProfileIdForPartition, getWorkspacePartition } from "../workspaces/profiles";
 export { getSplitTabIds, MAX_SPLIT_VIEW_TABS } from "../tabs/splitView";
+export {
+  createPasswordEntry,
+  decryptSecret,
+  encryptSecret,
+  getVaultMetadata,
+  isVaultUnlocked,
+  lockVault,
+  normalizeOrigin as normalizePasswordOrigin,
+  passwordMatchesOrigin,
+  unlockVault,
+  type AddressEntry,
+  type PasswordEntry,
+  type PasswordDraft,
+  type PaymentMethodEntry,
+  type VaultMetadata
+} from "./passwordVault";
+export {
+  importBookmarksFromHtml,
+  type BookmarksImportBatch,
+  type ImportedBookmarkFolder,
+  type ImportedBookmarkNode
+} from "./bookmarksImport";
+export {
+  applyReaderStyles,
+  extractReaderContent,
+  type ReaderContent,
+  type ReaderTheme
+} from "./readerMode";
+export {
+  buildTranslateUrl,
+  detectLanguage,
+  getTranslationPanelStatus,
+  type TranslationProvider,
+  type TranslationSettings
+} from "./translation";
 
 export type {
+  AddressEntry as AutofillAddressEntry,
+  AutofillDatabase,
+  BookmarksImportBatch as BookmarksImportRecord,
   BrowserState,
   BrowserSettings,
   BrowserTab,
@@ -57,13 +95,18 @@ export type {
   Favorite,
   HistoryEntry,
   IncognitoSessionMode,
+  PartialAutofillDatabase,
   PartialBrowserState,
+  PasswordEntry as AutofillPasswordEntry,
+  PaymentMethodEntry as AutofillPaymentMethodEntry,
   PerOriginZoomRule,
+  ReaderSettings,
   SearchEngineKey,
   SitePermissionRule,
   SplitLayout,
   StartupBehavior,
   TabGroup,
   ThemeKey,
+  TranslationSettings as BrowserTranslationSettings,
   Workspace
 } from "./types";

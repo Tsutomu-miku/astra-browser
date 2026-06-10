@@ -52,8 +52,11 @@ import {
   navigateActiveTab,
   openUrlInActiveWorkspace,
   recordHistory,
+  removeAddress,
   removeEssential,
   removeHistoryEntry,
+  removePassword,
+  removePaymentMethod,
   reorderWorkspace,
   reorderTab,
   removeWorkspaceFavorite,
@@ -87,22 +90,35 @@ import {
   toggleTabMuted,
   toggleTabPinned,
   toggleSplitMode,
+  touchPasswordUsed,
   ungroupActiveTab,
   ungroupTab,
   ungroupTabGroup,
+  updateReaderSettings,
   updateTabGroup,
   updateSettings,
   updateTab,
+  updateTranslationSettings,
   updateWorkspace,
   updateWorkspaceById,
-  upsertDownload
+  upsertAddress,
+  upsertDownload,
+  upsertPassword,
+  upsertPaymentMethod
 } from "../domain/actions";
 import {
   getBrowserPartitions,
   getProfileIdForPartition,
   getWorkspacePartition,
   getZoomForUrl,
-  type BrowserState
+  importBookmarksFromHtml,
+  type AddressEntry,
+  type AutofillDatabase,
+  type BrowserState,
+  type PasswordEntry,
+  type PaymentMethodEntry,
+  type ReaderSettings,
+  type TranslationSettings
 } from "../domain/browser";
 import { getPermissionRule } from "../domain/permissions/sitePermissions";
 import { loadBrowserState, saveBrowserState } from "../platform/persistence/browserStorage";
@@ -346,6 +362,57 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   toggleSplitMode: () => update(set, toggleSplitMode),
   setIncognito: (mode) => update(set, (state) => setIncognitoMode(state, mode)),
   setPerOriginZoom: (origin, zoom) => update(set, (state) => setPerOriginZoom(state, origin, zoom)),
+  /* ===== Autofill actions ===== */
+  upsertPassword: (entry) => update(set, (state) => upsertPassword(state, entry)),
+  removePassword: (id) => update(set, (state) => removePassword(state, id)),
+  touchPasswordUsed: (id) => update(set, (state) => touchPasswordUsed(state, id)),
+  upsertAddress: (entry) => update(set, (state) => upsertAddress(state, entry)),
+  removeAddress: (id) => update(set, (state) => removeAddress(state, id)),
+  upsertPaymentMethod: (entry) => update(set, (state) => upsertPaymentMethod(state, entry)),
+  removePaymentMethod: (id) => update(set, (state) => removePaymentMethod(state, id)),
+  /* ===== Reader / Translation ===== */
+  updateReaderSettings: (patch) => update(set, (state) => updateReaderSettings(state, patch)),
+  updateTranslationSettings: (patch) => update(set, (state) => updateTranslationSettings(state, patch)),
+  /* ===== Bookmarks import ===== */
+  importBookmarks: (html, opts) => {
+    const result = importBookmarksFromHtml(html, { source: opts.source, maxCount: opts.maxCount });
+    return update(set, (state) => {
+      // 1) 合并 Essentials（去重）
+      const seenEssentialUrls = new Set(state.essentials.map((e) => e.url));
+      const newEssentials = result.essentials.filter((e) => !seenEssentialUrls.has(e.url));
+      state.essentials = [...state.essentials, ...newEssentials];
+      // 2) 其它书签按 folder → 第一个 workspace 的 favorites（按 "Other Bookmarks" → tab favorite 统一写入 active workspace）
+      const workspace = state.workspaces.find((ws) => ws.id === state.activeWorkspaceId) ?? state.workspaces[0];
+      if (!workspace) return state;
+      const allFolderFavs = Object.values(result.favoritesByFolder).flat();
+      for (const fav of allFolderFavs) {
+        // 创建一个 tab 作为 favorite
+        const tab = {
+          id: fav.id,
+          title: fav.title,
+          url: fav.url,
+          faviconUrl: undefined,
+          groupId: null,
+          canGoBack: false,
+          canGoForward: false,
+          isFavorite: true,
+          isMuted: false,
+          isPinned: false,
+          isLoading: false,
+          isSleeping: true,
+          lastActiveAt: Date.now(),
+          zoomFactor: 1,
+          isMediaPlaying: false,
+          isCameraOn: false,
+          isMicrophoneOn: false,
+          hasUnread: false
+        } satisfies import("../domain/browser").BrowserTab;
+        workspace.tabs.push(tab);
+        workspace.favoriteOrder.push(tab.id);
+      }
+      return state;
+    });
+  },
   toggleActiveDevTools: (webview) => {
     // 优先级：当前聚焦的 webview（Tab/Split/Glance）> 主窗口 Renderer。
     // diagnostics.js 里的 F12 会走到主窗口，这里让 UI 层能显式传 webContentsId。
