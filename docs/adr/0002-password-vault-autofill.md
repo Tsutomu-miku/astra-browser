@@ -3,8 +3,9 @@
 | 字段 | 值 |
 | --- | --- |
 | 状态 | Proposed (PoC @ M1 前 2 周) |
-| 负责人 | TBD |
+| 负责人 | zhangmian.02 |
 | 决策日期 | 2026-06-27 |
+| PoC 分支 | `feature/poc-password-vault` |
 | 关联 PRD 条目 | P-1, P-2, P-4, P-5, P-8 |
 | 关联临界点 | §4.3 第 1 项 |
 

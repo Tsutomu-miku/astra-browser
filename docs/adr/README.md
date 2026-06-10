@@ -14,12 +14,13 @@
 | 0001 | Chrome Web Store (MV3) 扩展兼容层 | Proposed | E-1/E-2/E-3, §6 #2 |
 | 0002 | 密码库 & 自动填充架构 | Proposed | P-1/P-2/P-4/P-5/P-8, §6 #3 |
 | 0003 | Safe Browsing 接入策略 | Proposed | K-1/K-6/D-3, §6 #4 |
+| 0004 | DevTools Coverage (E-4) | Accepted | E-4, §6 #6 |
 
 ## 规划中（M1 末之前应出）
 
 | 规划编号 | 主题 | 触发条件 |
 | --- | --- | --- |
-| 0004 | 多窗口 × Space 状态同步模型（windowId ↔ spaceId） | 启动 W-1 开发前 |
-| 0005 | 翻译模块选型（Google Translate API vs Marian/Argos 本地） | 启动 V-12 前 |
-| 0006 | Electron webview → BrowserView 迁移必要性评估 | M1 末性能测试 |
-| 0007 | 代码签名 & macOS Notarization CI 流水线 | 启动 W-11 前 |
+| 0005 | 多窗口 × Space 状态同步模型（windowId ↔ spaceId） | 启动 W-1 开发前 |
+| 0006 | 翻译模块选型（Google Translate API vs Marian/Argos 本地） | 启动 V-12 前 |
+| 0007 | Electron webview → BrowserView 迁移必要性评估 | M1 末性能测试 |
+| 0008 | 代码签名 & macOS Notarization CI 流水线 | 启动 W-11 前 |

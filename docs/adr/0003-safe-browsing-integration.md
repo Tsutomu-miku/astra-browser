@@ -3,8 +3,9 @@
 | 字段 | 值 |
 | --- | --- |
 | 状态 | Proposed (PoC @ M1 前 2 周) |
-| 负责人 | TBD |
+| 负责人 | zhangmian.02 |
 | 决策日期 | 2026-06-27 |
+| PoC 分支 | `feature/poc-safe-browsing` |
 | 关联 PRD 条目 | K-1, K-6, D-3 |
 | 关联临界点 | §4.3 第 5/7 项 |
 

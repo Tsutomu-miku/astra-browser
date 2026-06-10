@@ -68,14 +68,27 @@ acceptance and PRD.md §4.3 for the 20-item "daily driver" threshold.
 | M3 | Weeks 18–31 | Batch 4 P1 expansion | DevTools parity, accounts/sync, multiple windows, native install/notarization/signing, full Playwright smoke matrix |
 | M4 | 2027+ | Batch 4 long tail | AI suite (notes/Easel/Boost/Summarize), multi-device sync, advanced history, mobile, Chromium-native embedding if required |
 
+### Milestones 0–4 与 PRD §5.x 映射表
+
+> 与 `docs/PRD.md` §5 时间分带一一对应。PRD 是 Why & Scope，本文件是执行板（含任务级细分）。
+
+| PRD §5 分带 | 时间窗口 | 对应本 ROADMAP | 核心交付（对应当 PRD §4.3 临界点） |
+| --- | --- | --- | --- |
+| **M0 — 稳定化收尾** | 当前 → 2026-06-30 | Batch 1（P0 稳定化）+ M0 附加项 | 设置页 16 区块导航骨架、页面缩放 + 站点记忆、F12/Ctrl+Shift+I 统一 DevTools 入口、无痕模式开关、Playwright Electron 测试脚手架 |
+| **M1 — 日驱底线 Batch A** | 2026-07-01 → 2026-08-15 | Batch 2（P1 Arc 体验）+ Batch 5（新增） | 密码库 UI + 集成、设置页 8 个主面板可交互、权限系统 UI（5 种 MVP）、下载中心 MVP、完整历史视图、书签导入、页面级翻译、阅读模式、PDF 表单填写、多窗口 + 会话恢复 MVP |
+| **M2 — 日驱底线 Batch B** | 2026-08-16 → 2026-10-15 | Batch 3（P1 日驱完整性）+ Batch 6（新增） | 无痕 + 访客模式完整、强制 HTTPS + Safe Browsing API、危险下载阻断、站点级缩放例外、DevTools 全入口覆盖、CWS MV3 扩展兼容 Top 20、全局媒体控件 + PiP、PWA 安装、打印 UI + 另存 PDF、自动更新 + 签名 + Notarization |
+| **M3 — 差异化 Arc 风格** | 2026-10-16 → 2027-02-10（春节） | Batch 4（P2 扩展）前半 | 四窗 Split + Group 分屏、Peek 可交互预览、Tab 关联笔记、Boost 可视化隐藏元素、AI 页面/PDF 总结、Tab Stashes、完整主题系统、后台权限实时告警、多路 PiP、节能模式 + 资源中心、astra://flags、多窗口 × Space 语义 |
+| **M4 — 平台 / 生态** | 2027 春节之后 | Batch 4（P2 扩展）后半 | 跨设备同步、Passkey、Journey 语义历史、AI 套件全量、Easel 协作白板、Little Arc、Profile/企业 Teams 管理、Kids/VPN、移动端 |
+
 ### Batch 1: P0 Stabilization
 
-Status: active.
+Status: **mostly complete** (M0 delivered).
 
 - P0-2 Tab identity and cross-surface Favorite semantics.
 - P0-3 Sidebar drag-and-drop semantics and Electron manual QA.
 - P0-6 Memory safety baseline, especially webview sleep/wake lifecycle and protected tabs.
 - P0-5 Packaging baseline, including per-arch macOS/Windows artifacts and Linux metadata.
+- **M0 delivered (2026-06-10):** Settings page 16-section navigation skeleton, per-origin zoom (U-7), unified F12/Ctrl+Shift+I DevTools entry (E-4 MVP), incognito mode switch (K-12 MVP), Playwright Electron integration test scaffolding (`tests-e2e/`), 3 risk PoC ADRs (0001-0003), DevTools coverage ADR (0004, Accepted).
 
 Exit criteria:
 
@@ -85,7 +98,7 @@ Exit criteria:
 
 ### Batch 2: P1 Arc/Zen Experience
 
-Status: next.
+Status: **in progress** (M1 partially delivered).
 
 - Sidebar visual hierarchy: spacing, density, section rhythm, quiet active state, restrained typography, configurable chrome accent, collapsed state, and recently closed placement.
 - Iconography: real site favicons for tabs where available, consistent symbolic icons for actions and status, clear favicon fallbacks, no placeholder-looking controls in primary chrome.
@@ -93,6 +106,7 @@ Status: next.
 - Compact chrome: floating sidebar/topbar reveal, pin/unpin controls, address field behavior, and content-first layout.
 - Split and Glance: visible affordances, no duplicate tab-backed splits, predictable pane focus, and polished controls.
 - Command palette, omnibox, sidebar search, and start page: same object semantics and modifier hints.
+- **M1 delivered (2026-06-10):** Password vault backend (PBKDF2+AES-GCM), bookmarks HTML import UI, reader mode MVP, translation MVP, 21/21 settings sections interactive (profiles/extensions/print/system/reset panels), permission UI test, downloads cancel IPC, translate+reader topbar, PDFium forms, multi-window state restore.
 
 Exit criteria:
 
@@ -102,11 +116,15 @@ Exit criteria:
 
 ### Batch 3: P1 Daily Browser Completeness
 
-Status: queued.
+Status: **in progress** (M2.1–M2.5 partially delivered).
 
 - Settings, permissions, history, downloads, find, zoom, and browsing data flows.
 - Profile-scoped permission/storage clarity.
 - Command palette coverage for daily browser operations.
+- **M2.1 delivered (2026-06-10):** 21/21 settings sections interactive + profiles/extensions + print/system/reset panels.
+- **M2.2 delivered (2026-06-10):** Force HTTPS (K-1) + Guest mode (K-12) + menu entries.
+- **M2.3 delivered (2026-06-10):** Safe Browsing MVP (K-6/D-3) offline + remote + danger downloads.
+- **M2.5 delivered (2026-06-10):** DevTools coverage ADR (E-4, Accepted) + astra://flags MVP (E-10).
 
 ### Batch 4: P2 Expansion
 
@@ -123,11 +141,7 @@ Status: deferred.
 - Persist normalized browser state locally.
 - Restore a valid session with at least one Space and one tab.
 - Keep active Space webviews mounted across ordinary tab switching.
-- Never leave the browser with zero workspaces or zero tabs in a workspace.
-
-Progress: mostly implemented.
-
-Acceptance:
+Progress: mostly implemented. M0 delivered per-origin zoom (U-7) with site-level memory, unified F12/Ctrl+Shift+I DevTools entry (E-4 MVP), and astra://flags experimental switches (E-10). M1 delivered multi-window state restore (W-1/W-2 MVP).
 
 - `pnpm check` passes.
 - Starting the app shows a usable browser shell.
@@ -198,11 +212,7 @@ Small requirements:
 - Spaces must be reorderable.
 - Tabs, groups, closed tabs, and Favorites must move across Spaces with explicit actions.
 - Each Space must use a stable Chromium profile partition.
-- Space homepage and profile metadata must persist.
-
-Progress: mostly implemented.
-
-### P0-5 Packaging Baseline
+Progress: mostly implemented. M2.2 added Guest mode (K-12 MVP) with separate in-memory partition and menu entries. M2.1 added profile selection and extension management to settings panels.
 
 - macOS, Windows, and Linux package scripts must produce distributable artifacts.
 - macOS x64 and arm64 artifacts must be generated separately, not as a universal package by default.
@@ -321,17 +331,13 @@ Progress: partially implemented. Omnibox Favorite suggestions now use current ba
 - Site permissions must be profile-scoped.
 - History, downloads, find, and zoom must cover daily browser workflows.
 
-Progress: partially implemented.
-
-### P1-5 Documentation And QA
+Progress: partially implemented. M2.1 delivered 21/21 settings sections interactive (profiles/extensions/print/system/reset panels). M2.2 delivered force HTTPS (K-1) and Guest mode (K-12) with menu entries. M2.3 delivered Safe Browsing MVP (K-6/D-3) with offline hash DB + remote lookup + danger download blocking. Downloads IPC cancel handler implemented. History domain module exists. Per-origin zoom (U-7) implemented with site-level memory. Permission UI test skeleton exists. Full download center UI, unified permission dialog system, and history view UI remain pending.
 
 - Requirements must include priority, object identity, default action, modifiers, drag behavior, and tests for new browser interactions.
 - Every user-facing feature should update docs and add regression tests.
 - Manual QA scenarios should exist for Electron-only behavior such as drag-and-drop and packaging.
 
-Progress: started.
-
-## P2 Requirements
+Progress: started. PRD.md (Rev. 2026-06-10) provides full feature inventory and 5-phase roadmap. 8 ADRs planned (4 drafted: 0001-0004, 4 skeletons: 0005-0008). Playwright Electron integration test scaffolding delivered with 3 M0 smoke tests (app, zoom, devtools entry). REQUIREMENTS.md provides full functional requirements. PROJECT_SPEC.md and ARCHITECTURE.md define engineering blueprint and runtime architecture.
 
 - Native Chromium UI integration or lower-level Chromium embedding if Electron becomes limiting.
 - Extension marketplace compatibility.
@@ -357,8 +363,19 @@ Progress: started.
 | Split and Glance | Partial | Core interactions exist; tab-backed Favorites use tab identity across sidebar, Start, omnibox, and command palette split paths; needs integrated QA. |
 | Command palette | Partial | Broad command coverage exists; object semantics need continued alignment. |
 | Memory management | Partial | Sleeping and Memory Saver exist; lifecycle QA should continue. |
+| **Settings** | **Mostly done** | **21/21 sections interactive (M2.1), profiles/extensions/print/system/reset panels delivered.** |
+| **Security & Privacy** | **Partial** | **Force HTTPS (K-1) + Guest mode (K-12) delivered (M2.2); Safe Browsing MVP (K-6/D-3) offline+remote+danger downloads delivered (M2.3).** |
+| **Password vault** | **Partial** | **Backend PBKDF2+AES-GCM exists; UI and full integration pending.** |
+| **DevTools** | **Partial** | **Unified F12/Ctrl+Shift+I entry (E-4 MVP) + coverage ADR (0004 Accepted) + astra://flags MVP (E-10) delivered (M2.5).** |
+| **Translation & Reader mode** | **Partial** | **Translation MVP + reader mode MVP + topbar integration delivered (M1).** |
+| **PDF forms** | **Partial** | **PDFium forms delivered (M1).** |
+| **Multi-window & session restore** | **Partial** | **Multi-window state restore delivered (M1); full cross-window Space sync pending.** |
+| **Bookmarks import** | **Partial** | **HTML import UI delivered (M1); full cross-browser import pending.** |
+| **Downloads** | **Partial** | **IPC cancel handler delivered; full download center UI pending.** |
+| **Permissions** | **Partial** | **UI test skeleton exists; full permission dialog system pending.** |
+| **Playwright e2e tests** | **Started** | **Scaffolding + 3 M0 smoke tests delivered (app, zoom, devtools entry).** |
 | Packaging | Mostly done | Multi-platform scripts and release workflow exist; artifact size should keep being monitored. |
-| Documentation | Partial | Requirements were broad; this roadmap is the new prioritization baseline. |
+| Documentation | Partial | Requirements were broad; this roadmap is the new prioritization baseline; 8 ADRs planned (4 drafted, 4 skeletons). |
 
 ## Requirement Split Template
 
