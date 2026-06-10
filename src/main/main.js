@@ -1,9 +1,22 @@
+/* eslint-disable max-lines */
+// main.js is the Electron entry point: window lifecycle + menu + diagnostics
+// + IPC + protocol installation. Splitting it further would scatter the
+// cross-cutting concerns (window/session) without real clarity.
 const { app, BrowserWindow, session } = require("electron");
 const fs = require("node:fs");
 const path = require("node:path");
 const { installWindowDiagnostics, toggleDevTools } = require("./diagnostics");
 const { installIpcHandlers } = require("./ipcHandlers");
 const { installApplicationMenu } = require("./appMenu");
+const { installAstraProtocol } = require("./astraProtocol");
+
+/* M2.5 E-10: register astra:// protocol (newtab + flags).
+ *   - astra://app -> renderer SPA
+ *   - astra://newtab -> newtab
+ *   - astra://flags -> experimental features
+ * Must be installed before app.whenReady fires.
+ */
+installAstraProtocol();
 
 const APP_ORIGIN = "astra://app";
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
