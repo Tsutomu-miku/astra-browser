@@ -559,6 +559,44 @@
   gap: 8px;
 }
 
+.permission-actions-col {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.permission-actions-col .toolbar-button {
+  justify-content: center;
+}
+
+.permission-prompt-card {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  max-width: 430px;
+}
+
+.permission-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  margin-right: 4px;
+  font-size: 14px;
+}
+
+.permission-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.permission-remember input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
 .primary-action {
   background: color-mix(in srgb, var(--accent) 34%, var(--control));
   color: var(--theme-inverse);

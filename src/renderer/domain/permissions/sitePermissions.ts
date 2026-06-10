@@ -14,10 +14,50 @@ export const COMMON_SITE_PERMISSIONS = [
 const PERMISSION_LABELS: Record<string, string> = {
   geolocation: "Location",
   media: "Camera and microphone",
+  "media-video": "Camera",
+  "media-audio": "Microphone",
   midiSysex: "MIDI devices",
+  midi: "MIDI",
   notifications: "Notifications",
-  pointerLock: "Pointer lock"
+  pointerLock: "Pointer lock",
+  "pointer-lock": "Pointer lock",
+  fullscreen: "Fullscreen",
+  "clipboard-read": "Read clipboard",
+  "clipboard-sanitized-write": "Write clipboard",
+  clipboard: "Clipboard",
+  openExternal: "Open external apps",
+  "open-external": "Open external apps",
+  contacts: "Contacts",
+  "background-sync": "Background sync",
+  "nfc": "NFC",
+  "sensors": "Sensors"
 };
+
+export const PERMISSION_ICONS: Record<string, string> = {
+  geolocation: "📍",
+  media: "🎙️",
+  "media-video": "📷",
+  "media-audio": "🎤",
+  midiSysex: "🎹",
+  midi: "🎹",
+  notifications: "🔔",
+  pointerLock: "🖱️",
+  "pointer-lock": "🖱️",
+  fullscreen: "⛶",
+  "clipboard-read": "📋",
+  "clipboard-sanitized-write": "📝",
+  clipboard: "📋",
+  openExternal: "↗",
+  "open-external": "↗",
+  contacts: "👥",
+  "background-sync": "🔄",
+  nfc: "📡",
+  sensors: "📐"
+};
+
+export function getPermissionIcon(permission: string): string {
+  return PERMISSION_ICONS[permission] ?? "🔒";
+}
 
 export function getOriginFromUrl(value: string | undefined): string | null {
   try {

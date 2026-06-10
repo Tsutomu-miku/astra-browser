@@ -8,6 +8,7 @@ import {
   clearSitePermission,
   clearSitePermissionsForOrigin,
   getOriginFromUrl,
+  getPermissionIcon,
   getPermissionLabel,
   getPermissionRule,
   normalizeSitePermissions,
@@ -69,8 +70,15 @@ describe("sitePermissions", () => {
 
   it("formats known and unknown permission names", () => {
     expect(getPermissionLabel("media")).toBe("Camera and microphone");
+    expect(getPermissionLabel("media-video")).toBe("Camera");
+    expect(getPermissionLabel("media-audio")).toBe("Microphone");
+    expect(getPermissionLabel("notifications")).toBe("Notifications");
+    expect(getPermissionLabel("clipboard-read")).toBe("Read clipboard");
     expect(getPermissionLabel("midiSysex")).toBe("MIDI devices");
     expect(getPermissionLabel("displayCapture")).toBe("Display Capture");
+    expect(getPermissionIcon("media-video")).toBe("📷");
+    expect(getPermissionIcon("notifications")).toBe("🔔");
+    expect(getPermissionIcon("unknown-kind")).toBe("🔒");
   });
 
   it("renders the permission prompt with origin + permission and invokes actions", () => {
@@ -89,6 +97,7 @@ describe("sitePermissions", () => {
     expect(html).toContain("permission-prompt");
     expect(html).toContain("https://example.com");
     expect(html.toLowerCase()).toContain("camera and microphone");
+    expect(html).toContain("Remember this decision");
     expect(html).toContain("Block");
     expect(html).toContain("Allow");
 
@@ -99,5 +108,23 @@ describe("sitePermissions", () => {
       })
     );
     expect(emptyHtml).toBe("");
+  });
+
+  it("renders camera, mic, location, notifications, and clipboard prompts", () => {
+    for (const kind of ["media-video", "media-audio", "geolocation", "notifications", "clipboard-read"]) {
+      const html = renderToString(createElement(PermissionPrompt, {
+        controller: {
+          permissionRequest: {
+            id: `r-${kind}`,
+            origin: "https://apps.test",
+            permission: kind,
+            requestingUrl: "https://apps.test/login"
+          },
+          actions: { resolvePermissionRequest: vi.fn() }
+        } as unknown as BrowserController
+      }));
+      expect(html).toContain(getPermissionLabel(kind));
+      expect(html).toContain("permission-prompt-card");
+    }
   });
 });
