@@ -43,6 +43,9 @@ export {
   SystemSection
 } from "./system/SystemPanels";
 export {
+  InstalledAppsSection
+} from "./system/InstalledAppsPanel";
+export {
   ExtensionsSection,
   YouAndAstraSection
 } from "./you/YouAndExtensionsPanels";

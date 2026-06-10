@@ -45,6 +45,9 @@ interface BrowserEffectsOptions {
   ingestDownload: (download: DownloadEntry) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   ingestPasswordSavePrompt: (prompt: SavePasswordRequestEvent) => void;
+  ingestPendingPwaInstallPrompt: (prompt: import("../../types/electron").PwaInstallPromptPayload) => void;
+  ingestInstalledPwaApp: (app: import("../../types/electron").PwaInstalledAppRecord) => void;
+  reloadInstalledPwaApps: () => Promise<void> | void;
   onShortcut: (intent: ShortcutIntent) => void;
   openUrlInNewTab: (url: string) => void;
   sitePermissions: SitePermissionRule[];
@@ -145,6 +148,9 @@ export function useBrowserEffects({
   ingestDownload,
   ingestPermissionRequest,
   ingestPasswordSavePrompt,
+  ingestPendingPwaInstallPrompt,
+  ingestInstalledPwaApp,
+  reloadInstalledPwaApps,
   onShortcut,
   openUrlInNewTab,
   sitePermissions,
@@ -190,6 +196,19 @@ export function useBrowserEffects({
   useEffect(() => window.astraShell?.onSavePasswordRequest?.((prompt) => {
     ingestPasswordSavePrompt(prompt);
   }), [ingestPasswordSavePrompt]);
+
+  /* ===== M2.4 W-3 PWA install event ingestion ===== */
+  useEffect(() => window.astraShell?.onPwaInstallPromptAvailable?.((payload) => {
+    ingestPendingPwaInstallPrompt(payload);
+  }), [ingestPendingPwaInstallPrompt]);
+
+  useEffect(() => window.astraShell?.onPwaAppInstalled?.((record) => {
+    ingestInstalledPwaApp(record);
+  }), [ingestInstalledPwaApp]);
+
+  useEffect(() => {
+    void reloadInstalledPwaApps();
+  }, [reloadInstalledPwaApps]);
 
   useEffect(() => {
     window.astraShell?.setProfilePartitions(getBrowserPartitions({ workspaces }));

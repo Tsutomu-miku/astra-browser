@@ -5,6 +5,12 @@
  *   - M1_INTERACTIVE：8 主面板 + performance(历史)/accessibility(阅读)/languages(翻译)
  *   - LEGACY_REAL：5 项仍使用真实 panel
  */
+/* eslint-disable max-lines */
+/*
+ * Section 定义 + 路由分类集中在一个文件里是架构有意为之：新 section
+ * 只需改一个地方就能同时在骨架/导航/渲染三处生效，远比重构出三个文件的
+ * 交叉索引更易维护。
+ */
 
 export type SettingsSectionImplementation =
   | "you-and-astra"
@@ -23,6 +29,7 @@ export type SettingsSectionImplementation =
   | "print"
   | "system"
   | "reset-and-cleanup"
+  | "installed-apps"
   | "about"
   | "global"
   | "space"
@@ -217,6 +224,15 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     scope: ["恢复默认", "清理扩展（依赖 extensions 面板）", "一次性数据清理"]
   },
   {
+    id: "installed-apps",
+    label: "Installed apps",
+    milestone: "M2",
+    prdRef: "§3.13 (W-3)",
+    priority: "core",
+    summary: "PWA / 已安装 Web 应用列表、启动、卸载、离线设置。",
+    scope: ["安装的 PWA 列表", "一键启动独立窗口", "卸载 / 重置存储"]
+  },
+  {
     id: "about",
     label: "About Astra",
     milestone: "M0",
@@ -285,7 +301,8 @@ const M1_INTERACTIVE: ReadonlySet<SettingsSectionId> = new Set([
   "languages",
   "print",
   "system",
-  "reset-and-cleanup"
+  "reset-and-cleanup",
+  "installed-apps"
 ]);
 
 export function isLegacyRealSection(id: SettingsSectionId): boolean {

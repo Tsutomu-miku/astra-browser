@@ -693,6 +693,57 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   restartBrowser: () => {
     void window.astraShell?.relaunch?.();
   },
+  /* ===== M2.4 W-3 PWA install ===== */
+  ingestPendingPwaInstallPrompt: (prompt) => update(set, (state) => {
+    const existing = state.pendingPwaInstallPrompts.find((p) => p.origin === prompt.origin);
+    if (!existing) {
+      state.pendingPwaInstallPrompts.push({ ...prompt });
+    } else {
+      Object.assign(existing, prompt);
+    }
+    return state;
+  }),
+  dismissPendingPwaInstallPrompt: (origin) => update(set, (state) => {
+    state.pendingPwaInstallPrompts = state.pendingPwaInstallPrompts.filter((p) => p.origin !== origin);
+    return state;
+  }),
+  confirmPwaInstall: async (origin) => {
+    const result = await window.astraShell?.pwaConfirmInstall?.(origin);
+    update(set, (state) => {
+      state.pendingPwaInstallPrompts = state.pendingPwaInstallPrompts.filter((p) => p.origin !== origin);
+      return state;
+    });
+    return result ?? { accepted: false, reason: "no-ipc" };
+  },
+  ingestInstalledPwaApp: (app) => update(set, (state) => {
+    const existing = state.installedPwaApps.find((p) => p.origin === app.origin);
+    if (!existing) {
+      state.installedPwaApps.push({ ...app });
+    } else {
+      Object.assign(existing, app);
+    }
+    return state;
+  }),
+  reloadInstalledPwaApps: async () => {
+    const apps = await window.astraShell?.pwaListInstalled?.();
+    if (Array.isArray(apps)) {
+      update(set, (state) => {
+        state.installedPwaApps = [...apps];
+        return state;
+      });
+    }
+  },
+  launchInstalledPwa: (origin) => window.astraShell?.pwaLaunch?.(origin) ?? Promise.resolve({ ok: false, reason: "no-ipc" }),
+  uninstallPwa: async (origin) => {
+    const result = await window.astraShell?.pwaUninstall?.(origin);
+    if (result?.ok) {
+      update(set, (state) => {
+        state.installedPwaApps = state.installedPwaApps.filter((a) => a.origin !== origin);
+        return state;
+      });
+    }
+    return result ?? { ok: false, reason: "no-ipc" };
+  },
   zoomIn: (webview) => update(set, (state) => {
     const after = stepActiveTabZoom(state, 1);
     // 同步写入 per-origin 以便下次访问恢复

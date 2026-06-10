@@ -123,6 +123,8 @@ export function createDefaultState(): BrowserState {
       { id: "personal", name: "Personal", color: "#7dd3fc", createdAt: Date.now() }
     ],
     extensions: [],
+    pendingPwaInstallPrompts: [],
+    installedPwaApps: [],
     workspaces: [
       {
         id: "personal",

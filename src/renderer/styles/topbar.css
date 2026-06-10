@@ -359,6 +359,27 @@
     0 2px 12px rgba(0, 0, 0, 0.18);
 }
 
+/* M2.4 W-3 PWA install: end-of-address-row icon buttons live inside the
+ * form grid so they line up with the translate/reader buttons and don't
+ * jump when available. We use a dedicated column in the address template
+ * when any such button exists.
+ */
+.address-form:has(.address-end:last-of-type) {
+  grid-template-columns: minmax(78px, auto) minmax(0, 1fr) auto;
+}
+
+.address-end.is-pwa {
+  color: color-mix(in srgb, var(--accent) 85%, var(--text));
+}
+
+.address-end.is-pwa:hover {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.address-end.is-pwa svg {
+  fill: none;
+}
+
 .topbar-workspace-dot {
   width: 8px;
   height: 8px;

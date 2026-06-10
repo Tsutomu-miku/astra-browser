@@ -9,6 +9,7 @@ const { installWindowDiagnostics, toggleDevTools } = require("./diagnostics");
 const { installIpcHandlers } = require("./ipcHandlers");
 const { installApplicationMenu } = require("./appMenu");
 const { installAstraProtocol } = require("./astraProtocol");
+const { installPwaListeners } = require("./pwaInstall");
 
 /* M2.5 E-10: register astra:// protocol (newtab + flags).
  *   - astra://app -> renderer SPA
@@ -249,6 +250,19 @@ installIpcHandlers({
   resolvePermissionRequest,
   toggleDevTools
 });
+
+/* M2.4 W-3 PWA install: beforeinstallprompt capture + standalone launcher.
+ * Broadcast helper fans events out to all renderer windows so whichever
+ * topbar has the matching active tab can surface the install affordance.
+ */
+function sendToAll(channel, payload) {
+  for (const win of windows) {
+    try {
+      if (!win.isDestroyed()) win.webContents.send(channel, payload);
+    } catch { /* ignore */ }
+  }
+}
+installPwaListeners({ sendToAll });
 
 /* M2.2 K-1 force HTTPS：在 session 创建时立即注入拦截器。
  *   因为 forceHttpsEnabled 默认 false，首次 attach 是 no-op；后续

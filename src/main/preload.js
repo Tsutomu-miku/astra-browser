@@ -57,5 +57,19 @@ contextBridge.exposeInMainWorld("astraShell", {
     checkDownload: (payload) => ipcRenderer.invoke("safe-browsing:check-download", payload)
   },
   togglePictureInPicture: (webContentsId) => ipcRenderer.invoke("pip:toggle-active-tab", webContentsId),
-  syncMediaSession: (payload) => ipcRenderer.invoke("media-session:sync-tab", payload)
+  syncMediaSession: (payload) => ipcRenderer.invoke("media-session:sync-tab", payload),
+  onPwaInstallPromptAvailable: (listener) => {
+    const wrapped = (_event, payload) => listener(payload);
+    ipcRenderer.on("pwa:install-prompt-available", wrapped);
+    return () => ipcRenderer.removeListener("pwa:install-prompt-available", wrapped);
+  },
+  onPwaAppInstalled: (listener) => {
+    const wrapped = (_event, payload) => listener(payload);
+    ipcRenderer.on("pwa:app-installed", wrapped);
+    return () => ipcRenderer.removeListener("pwa:app-installed", wrapped);
+  },
+  pwaConfirmInstall: (origin) => ipcRenderer.invoke("pwa:confirm-install", origin),
+  pwaListInstalled: () => ipcRenderer.invoke("pwa:list-installed"),
+  pwaLaunch: (origin) => ipcRenderer.invoke("pwa:launch", origin),
+  pwaUninstall: (origin) => ipcRenderer.invoke("pwa:uninstall", origin)
 });

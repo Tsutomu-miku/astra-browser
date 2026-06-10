@@ -121,6 +121,17 @@ export interface AstraShellApi {
     checkNavigation: (url: string) => Promise<SafeBrowsingCheckResult>;
     checkDownload: (payload: { url: string; filename?: string }) => Promise<SafeBrowsingCheckResult>;
   };
+  /* ===== M2.4 W-3 PWA install ===== */
+  onPwaInstallPromptAvailable: (
+    listener: (payload: PwaInstallPromptPayload) => void
+  ) => () => void;
+  onPwaAppInstalled: (
+    listener: (payload: PwaInstalledAppRecord) => void
+  ) => () => void;
+  pwaConfirmInstall: (origin: string) => Promise<PwaInstallConfirmResult>;
+  pwaListInstalled: () => Promise<PwaInstalledAppRecord[]>;
+  pwaLaunch: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
+  pwaUninstall: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
 }
 
 export interface PiPToggleResult {
@@ -135,6 +146,28 @@ export interface SafeBrowsingCheckResult {
   severity?: "low" | "medium" | "high";
   url?: string;
   filename?: string;
+}
+
+/* ===== M2.4 W-3 PWA install ===== */
+export interface PwaInstallPromptPayload {
+  origin: string;
+  platforms: string[];
+  title: string;
+  url: string;
+}
+
+export interface PwaInstalledAppRecord {
+  id: string;
+  origin: string;
+  name: string;
+  startUrl: string;
+  icon?: string;
+}
+
+export interface PwaInstallConfirmResult {
+  accepted: boolean;
+  outcome?: string;
+  reason?: string;
 }
 
 declare global {

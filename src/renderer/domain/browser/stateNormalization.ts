@@ -40,6 +40,8 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
   state.sitePermissions = normalizeSitePermissions(state.sitePermissions);
   state.profiles = normalizeProfiles(state.profiles);
   state.extensions = normalizeExtensions(state.extensions);
+  state.pendingPwaInstallPrompts = normalizePwaPrompts(state.pendingPwaInstallPrompts);
+  state.installedPwaApps = normalizeInstalledPwaApps(state.installedPwaApps);
   state.settings = { ...fallback.settings, ...(state.settings ?? {}) };
   if (!isSearchEngineKey(state.settings.searchEngine)) state.settings.searchEngine = fallback.settings.searchEngine;
   if (!isStartupBehavior(state.settings.startupBehavior)) state.settings.startupBehavior = fallback.settings.startupBehavior;
@@ -250,4 +252,38 @@ function normalizeDefaultZoomFactor(value: unknown): number {
   const factor = Number(value);
   if (!Number.isFinite(factor)) return DEFAULT_ZOOM_FACTOR;
   return normalizeZoomFactor(factor);
+}
+
+function normalizePwaPrompts(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, unknown> & { origin: string } =>
+      Boolean(item && typeof item === "object" && typeof (item as { origin?: unknown }).origin === "string")
+    )
+    .map((item) => ({
+      origin: item.origin,
+      platforms: Array.isArray(item.platforms)
+        ? item.platforms.filter((p): p is string => typeof p === "string")
+        : [],
+      title: typeof item.title === "string" ? item.title : item.origin,
+      url: typeof item.url === "string" ? item.url : item.origin
+    }));
+}
+
+function normalizeInstalledPwaApps(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, unknown> & { origin: string } =>
+      Boolean(item && typeof item === "object" && typeof (item as { origin?: unknown }).origin === "string")
+    )
+    .map((item) => {
+      const origin = item.origin;
+      return {
+        id: typeof item.id === "string" ? item.id : origin,
+        origin,
+        name: typeof item.name === "string" ? item.name : origin,
+        startUrl: typeof item.startUrl === "string" ? item.startUrl : origin + "/",
+        icon: typeof item.icon === "string" ? item.icon : undefined
+      };
+    });
 }

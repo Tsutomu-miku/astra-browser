@@ -1,3 +1,9 @@
+/* eslint-disable max-lines */
+/*
+ * Topbar 本身承载 navigation / omnibox / identity / workspace pill 五块，
+ * 还要按当前 activeTab 切换条件渲染（PWA 安装、翻译、阅读模式入口）。
+ * 拆分会让五块的状态联动变麻烦，保持单文件。
+ */
 import {
   FiAlertTriangle,
   FiArrowLeft,
@@ -41,6 +47,18 @@ export function Topbar({ controller }: { controller: BrowserController }) {
   const reloadButton = getReloadButtonState(activeTab.isLoading);
   const pageIdentityMenu = usePageIdentityContextMenu();
   const workspacePillMenu = useWorkspacePillContextMenu();
+
+  // W-3 PWA install: surface an install affordance when the active tab's
+  // origin has a pending beforeinstallprompt captured in state.
+  const activeOrigin = (() => {
+    try { return new URL(activeTab.url).origin; } catch { return ""; }
+  })();
+  const pendingInstallPrompt = isHttpPage && activeOrigin
+    ? state.pendingPwaInstallPrompts.find((p) => p.origin === activeOrigin)
+    : undefined;
+  const alreadyInstalled = isHttpPage && activeOrigin
+    ? state.installedPwaApps.find((a) => a.origin === activeOrigin)
+    : undefined;
 
   return (
     <header className="topbar">
@@ -124,6 +142,37 @@ export function Topbar({ controller }: { controller: BrowserController }) {
                 <FiBook />
               </button>
             </>
+          )}
+          {(pendingInstallPrompt || alreadyInstalled) && (
+            <button
+              className="icon-button address-end is-pwa"
+              title={
+                alreadyInstalled
+                  ? `Launch ${alreadyInstalled.name} (installed PWA)`
+                  : `Install ${pendingInstallPrompt?.title || "this site"} as an app`
+              }
+              type="button"
+              onClick={() => {
+                if (alreadyInstalled) {
+                  void actions.launchInstalledPwa(alreadyInstalled.origin);
+                } else if (pendingInstallPrompt) {
+                  void actions.confirmPwaInstall(pendingInstallPrompt.origin);
+                }
+              }}
+              onContextMenu={(e) => {
+                if (alreadyInstalled) {
+                  e.preventDefault();
+                  if (window.confirm(`Uninstall ${alreadyInstalled.name}?`)) {
+                    void actions.uninstallPwa(alreadyInstalled.origin);
+                  }
+                } else if (pendingInstallPrompt) {
+                  e.preventDefault();
+                  actions.dismissPendingPwaInstallPrompt(pendingInstallPrompt.origin);
+                }
+              }}
+            >
+              <FiPlus />
+            </button>
           )}
         </form>
         {omnibox.suggestionsOpen && omnibox.suggestions.length > 0 && (

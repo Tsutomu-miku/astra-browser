@@ -227,4 +227,14 @@ export interface BrowserStore {
   retryDownload: (url: string) => void;
   openUserDataFolder: (kind?: "userData" | "profile") => void;
   restartBrowser: () => void;
+  /* ===== M2.4 W-3 PWA install ===== */
+  ingestPendingPwaInstallPrompt: (
+    prompt: import("../domain/browser").PwaInstallPrompt
+  ) => void;
+  dismissPendingPwaInstallPrompt: (origin: string) => void;
+  confirmPwaInstall: (origin: string) => Promise<import("../types/electron").PwaInstallConfirmResult>;
+  ingestInstalledPwaApp: (app: import("../domain/browser").InstalledPwaApp) => void;
+  reloadInstalledPwaApps: () => Promise<void>;
+  launchInstalledPwa: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
+  uninstallPwa: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
 }

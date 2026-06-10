@@ -271,7 +271,15 @@ export function useBrowserActions({
     openUserDataFolder: store.openUserDataFolder,
     restartBrowser: store.restartBrowser,
     zoomIn: () => store.zoomIn(activeWebview),
-    zoomOut: () => store.zoomOut(activeWebview)
+    zoomOut: () => store.zoomOut(activeWebview),
+    /* ===== M2.4 W-3 PWA install ===== */
+    ingestPendingPwaInstallPrompt: store.ingestPendingPwaInstallPrompt,
+    dismissPendingPwaInstallPrompt: store.dismissPendingPwaInstallPrompt,
+    confirmPwaInstall: store.confirmPwaInstall,
+    ingestInstalledPwaApp: store.ingestInstalledPwaApp,
+    reloadInstalledPwaApps: store.reloadInstalledPwaApps,
+    launchInstalledPwa: store.launchInstalledPwa,
+    uninstallPwa: store.uninstallPwa
   }), [activeWebview, focusAddressBar, peekCompactChrome, peekCompactSidebar, peekCompactToolbar, store, webviews]);
 }
 

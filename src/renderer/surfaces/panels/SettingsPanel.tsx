@@ -287,7 +287,13 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
       downloads: downloadCount,
       permissions: permissionCount,
       autofill: autofillCount
-    }
+    },
+
+    /* ===== M2.4 W-3 Installed apps ===== */
+    installedApps: state.installedPwaApps,
+    onLaunchInstalledApp: (origin) => actions.launchInstalledPwa(origin),
+    onUninstallApp: (origin) => actions.uninstallPwa(origin),
+    onRefreshInstalledApps: () => actions.reloadInstalledPwaApps()
   };
 
   return (

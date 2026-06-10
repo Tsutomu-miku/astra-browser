@@ -34,6 +34,22 @@ export interface ExtensionEntry {
   installedAt: number;
 }
 
+/* M2.4 W-3: PWA install UI state. */
+export interface PwaInstallPrompt {
+  origin: string;
+  platforms: string[];
+  title: string;
+  url: string;
+}
+
+export interface InstalledPwaApp {
+  id: string;
+  origin: string;
+  name: string;
+  startUrl: string;
+  icon?: string;
+}
+
 export interface SearchEngine {
   name: string;
   url: string;
@@ -287,6 +303,9 @@ export interface BrowserState {
   profiles: ProfileEntry[];
   extensions: ExtensionEntry[];
   workspaces: Workspace[];
+  /* M2.4 W-3 PWA install: origin-keyed pending prompts + installed registry. */
+  pendingPwaInstallPrompts: PwaInstallPrompt[];
+  installedPwaApps: InstalledPwaApp[];
 }
 
 export type PartialWorkspace = Partial<Omit<Workspace, "closedTabs" | "favoriteOrder" | "tabGroups" | "tabs">> & {
@@ -317,5 +336,7 @@ export type PartialBrowserState = Partial<Omit<BrowserState, "settings" | "works
   sitePermissions?: Array<Partial<SitePermissionRule> | null>;
   profiles?: Array<Partial<ProfileEntry> | null>;
   extensions?: Array<Partial<ExtensionEntry> | null>;
+  pendingPwaInstallPrompts?: Array<Partial<PwaInstallPrompt> | null>;
+  installedPwaApps?: Array<Partial<InstalledPwaApp> | null>;
   workspaces?: PartialWorkspace[];
 };

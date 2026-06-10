@@ -6,6 +6,7 @@ import type {
   DownloadEntry,
   ExtensionEntry,
   HistoryEntry,
+  InstalledPwaApp,
   PasswordEntry,
   ProfileEntry,
   ReaderSettings,
@@ -21,6 +22,7 @@ import {
   DownloadsSection,
   ExtensionsSection,
   HistorySection,
+  InstalledAppsSection,
   PrintSection,
   PrivacySecuritySection,
   ReaderSettingsSection,
@@ -126,6 +128,12 @@ export interface M1PanelProps {
   onClearHistory: () => void;
   onClearDownloads: () => void;
   browsingDataCount: { history: number; downloads: number; permissions: number; autofill: number };
+
+  /* ===== M2.4 W-3 Installed apps ===== */
+  installedApps: InstalledPwaApp[];
+  onLaunchInstalledApp: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
+  onUninstallApp: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
+  onRefreshInstalledApps: () => Promise<void> | void;
 }
 
 export function renderM1Panels(
@@ -267,6 +275,15 @@ export function renderM1Panels(
           onClearHistory={p.onClearHistory}
           onClearDownloads={p.onClearDownloads}
           browsingDataCount={p.browsingDataCount}
+        />
+      );
+    case "installed-apps":
+      return (
+        <InstalledAppsSection
+          installedApps={p.installedApps}
+          onLaunchApp={p.onLaunchInstalledApp}
+          onUninstallApp={p.onUninstallApp}
+          onRefresh={p.onRefreshInstalledApps}
         />
       );
     default:

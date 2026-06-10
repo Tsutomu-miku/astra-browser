@@ -18,6 +18,11 @@ const {
   syncMediaSessionOnTabSwitch,
   togglePictureInPicture
 } = require("./mediaSessionAndPiP");
+const pwaInstall = require("./pwaInstall");
+const pwaConfirmInstall = pwaInstall.confirmInstall;
+const pwaLaunch = pwaInstall.launchInstalledApp;
+const pwaList = pwaInstall.listInstalledApps;
+const pwaUninstall = pwaInstall.uninstallApp;
 
 function installIpcHandlers({
   downloadItems,
@@ -274,6 +279,11 @@ function installIpcHandlers({
     if (!payload || typeof payload !== "object") return { allowed: true };
     return safeBrowsing.checkDownload(payload);
   });
+  /* ===== M2.4 W-3 PWA install ===== */
+  ipcMain.handle("pwa:confirm-install", (_event, origin) => pwaConfirmInstall(origin));
+  ipcMain.handle("pwa:list-installed", () => pwaList());
+  ipcMain.handle("pwa:launch", (_event, origin) => pwaLaunch(origin));
+  ipcMain.handle("pwa:uninstall", (_event, origin) => pwaUninstall(origin));
 }
 
 function getSessionsForClearing(partitions) {
