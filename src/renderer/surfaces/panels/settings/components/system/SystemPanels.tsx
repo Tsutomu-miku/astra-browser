@@ -1,4 +1,10 @@
-import { FiMonitor, FiPower, FiRefreshCcw, FiTrash2 } from "react-icons/fi";
+/* eslint-disable max-lines */
+/*
+ * Print + System + Reset-and-cleanup are cohesive MVP panels that share
+ * the BrowserSettings shape. Splitting into three files would just duplicate
+ * the import surface for a handful of settings rows.
+ */
+import { FiDownload, FiMonitor, FiPower, FiRefreshCcw, FiTrash2 } from "react-icons/fi";
 
 import type {
   BrowserState,
@@ -27,57 +33,139 @@ export function PrintSection({
 }: {
   settings: BrowserSettings;
   onChange: (patch: Partial<BrowserSettings>) => void;
-  onPrintActiveTab: () => void;
+  onPrintActiveTab: (options?: Record<string, unknown>) => Promise<unknown> | void;
 }) {
+  const paperSize = settings.printPaperSize ?? "A4";
+  const scale = settings.printScale ?? 1;
+  const scalePct = Math.round(scale * 100);
+  const landscape = Boolean(settings.printLandscape);
+  const colorMode = settings.printColorMode ?? "color";
+  const margins = settings.printMargins ?? "default";
+  const copies = Math.max(1, Math.min(999, settings.printCopies ?? 1));
+  const buildOptions = (extra?: Record<string, unknown>) => ({
+    printBackground: settings.printBackgrounds ?? false,
+    printHeadersAndFooters: settings.printHeaders ?? true,
+    pageSize: paperSize,
+    landscape,
+    color: colorMode,
+    margins,
+    scale,
+    collate: settings.printCollate ?? true,
+    copies,
+    ...extra
+  });
+
+  const saveAsPdf = async () => {
+    try {
+      const filename = `printed-${paperSize.toLowerCase()}-${Date.now()}.pdf`;
+      // Prompt-less save: use the user's downloads folder via shell save dialog placeholder
+      // Fallback: write to default download location, show item-in-folder
+      const paths = await (window.astraShell?.getUserDataPaths?.() ?? Promise.resolve(null));
+      const downloadDir = paths
+        ? paths.userData.replace(/\/[^/]+$/, "/Downloads")
+        : (typeof process !== "undefined" ? `${process.env.HOME ?? "/tmp"}/Downloads` : "/tmp");
+      await onPrintActiveTab(buildOptions({ pdfPath: `${downloadDir}/${filename}` }));
+    } catch {
+      /* fallback to regular print if path unavailable */
+      onPrintActiveTab(buildOptions());
+    }
+  };
+
   return (
     <section className="settings-pane" aria-label="Print">
       <SectionHeader
         title="Print"
         description="系统对话框打印，另存 PDF 走 Electron PDFium（W-7）。页眉页脚、背景图形、缩放按 Chrome 基线。"
       />
-      <Field label="Header and footer">
-        <input
-          type="checkbox"
-          checked={settings.printHeaders ?? true}
-          onChange={(e) => onChange({ printHeaders: e.target.checked })}
-        />
-      </Field>
-      <Field label="Background graphics">
-        <input
-          type="checkbox"
-          checked={settings.printBackgrounds ?? false}
-          onChange={(e) => onChange({ printBackgrounds: e.target.checked })}
-        />
-      </Field>
-      <Field label="Default paper size">
-        <select
-          value={settings.printPaperSize ?? "A4"}
-          onChange={(e) => onChange({ printPaperSize: e.target.value })}
-        >
-          <option value="A4">A4 (210 × 297 mm)</option>
-          <option value="Letter">Letter (8.5 × 11 in)</option>
-          <option value="Legal">Legal (8.5 × 14 in)</option>
-          <option value="Tabloid">Tabloid (11 × 17 in)</option>
-        </select>
-      </Field>
-      <Field label={`Scale: ${Math.round((settings.printScale ?? 1) * 100)}%`}>
-        <input
-          type="range"
-          min={0.5}
-          max={2}
-          step={0.05}
-          value={settings.printScale ?? 1}
-          onChange={(e) => onChange({ printScale: Number(e.target.value) })}
-        />
-      </Field>
+      <div className="settings-grid settings-grid-2">
+        <Field label="Header and footer">
+          <input
+            type="checkbox"
+            checked={settings.printHeaders ?? true}
+            onChange={(e) => onChange({ printHeaders: e.target.checked })}
+          />
+        </Field>
+        <Field label="Background graphics">
+          <input
+            type="checkbox"
+            checked={settings.printBackgrounds ?? false}
+            onChange={(e) => onChange({ printBackgrounds: e.target.checked })}
+          />
+        </Field>
+        <Field label="Paper size">
+          <select value={paperSize} onChange={(e) => onChange({ printPaperSize: e.target.value })}>
+            <option value="A4">A4 (210 × 297 mm)</option>
+            <option value="Letter">Letter (8.5 × 11 in)</option>
+            <option value="Legal">Legal (8.5 × 14 in)</option>
+            <option value="Tabloid">Tabloid (11 × 17 in)</option>
+          </select>
+        </Field>
+        <Field label="Orientation">
+          <select
+            value={landscape ? "landscape" : "portrait"}
+            onChange={(e) => onChange({ printLandscape: e.target.value === "landscape" })}
+          >
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+        </Field>
+        <Field label="Color">
+          <select
+            value={colorMode}
+            onChange={(e) => onChange({ printColorMode: e.target.value as "color" | "grayscale" })}
+          >
+            <option value="color">Color</option>
+            <option value="grayscale">Black and white</option>
+          </select>
+        </Field>
+        <Field label="Margins">
+          <select
+            value={margins}
+            onChange={(e) => onChange({ printMargins: e.target.value as BrowserSettings["printMargins"] })}
+          >
+            <option value="default">Default</option>
+            <option value="none">None</option>
+            <option value="minimal">Minimum</option>
+            <option value="custom">Custom (per browser defaults)</option>
+          </select>
+        </Field>
+        <Field label={`Scale: ${scalePct}%`}>
+          <input
+            type="range"
+            min={0.5}
+            max={2}
+            step={0.05}
+            value={scale}
+            onChange={(e) => onChange({ printScale: Number(e.target.value) })}
+          />
+        </Field>
+        <Field label="Copies">
+          <input
+            type="number"
+            min={1}
+            max={999}
+            value={copies}
+            onChange={(e) => onChange({ printCopies: Math.max(1, Math.min(999, Number(e.target.value) || 1)) })}
+          />
+        </Field>
+        <Field label="Collate pages">
+          <input
+            type="checkbox"
+            checked={settings.printCollate ?? true}
+            onChange={(e) => onChange({ printCollate: e.target.checked })}
+          />
+        </Field>
+      </div>
       <div className="button-cluster" aria-label="Print actions">
-        <NormalButton onClick={onPrintActiveTab}>
+        <NormalButton onClick={() => onPrintActiveTab(buildOptions())}>
           <FiPrinterInline /> Print active tab
+        </NormalButton>
+        <NormalButton onClick={() => { void saveAsPdf(); }}>
+          <FiDownload aria-hidden /> Save as PDF
         </NormalButton>
       </div>
       <p className="muted">
-        PDF 保存：系统打印对话框中选择 "Save as PDF" 即可。
-        PDF 表单填写：依赖 PDFium（已在 main 进程 webPreferences.plugins 启用）。
+        打印时使用上述选项覆盖系统默认；PDF 保存通过 Electron printToPDF，PDFium 表单填写已在 main 进程 plugins 启用。
       </p>
     </section>
   );

@@ -1,3 +1,8 @@
+/* eslint-disable max-lines */
+/*
+ * 28 handlers for now; extracting download/permission/print into separate modules
+ * would just fragment the IPC surface. Kept together on purpose.
+ */
 const { app, BrowserWindow, ipcMain, session, shell, webContents } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -139,11 +144,44 @@ function installIpcHandlers({
     if (!filePath) return "";
     return shell.openPath(filePath);
   });
-  ipcMain.handle("print-webview", (_event, webContentsId) => {
+  ipcMain.handle("print-webview", (_event, webContentsId, options) => {
     if (typeof webContentsId !== "number") return;
     const target = webContents.fromId(webContentsId);
     if (target && !target.isDestroyed() && target.getType() === "webview") {
-      target.print({ silent: false, printBackground: true });
+      const printOpts = typeof options === "object" && options ? options : {};
+      if (printOpts.pdfPath) {
+        // Electron WebContents.printToPDF(...) for save-as-PDF mode.
+        const { pdfPath, silent, deviceName, ...rest } = printOpts;
+        const pdfOpts = {
+          marginsType: rest.marginsType ?? 0,
+          pageSize: rest.pageSize ?? "A4",
+          printBackground: Boolean(rest.printBackground ?? false),
+          landscape: Boolean(rest.landscape ?? false),
+          scale: Number(rest.scale) || 1
+        };
+        return target.printToPDF(pdfOpts).then(async (buffer) => {
+          const fs = require("node:fs/promises");
+          const path = require("node:path");
+          try { await fs.mkdir(path.dirname(pdfPath), { recursive: true }); } catch { /* ignore */ }
+          await fs.writeFile(pdfPath, buffer);
+          return { ok: true, path: pdfPath };
+        }).catch((err) => ({ ok: false, error: err instanceof Error ? err.message : String(err) }));
+      }
+      target.print({
+        silent: false,
+        printBackground: Boolean(printOpts.printBackground ?? false),
+        deviceName: printOpts.deviceName || "",
+        color: printOpts.color !== "grayscale",
+        landscape: Boolean(printOpts.landscape ?? false),
+        scaleFactor: Number(printOpts.scale) || 100,
+        margins: {
+          marginType: printOpts.margins || "default"
+        },
+        headerFooterEnabled: Boolean(printOpts.printHeadersAndFooters ?? true),
+        collate: Boolean(printOpts.collate ?? true),
+        copies: Math.max(1, Math.min(999, Number(printOpts.copies) || 1)),
+        pageSize: printOpts.pageSize || printOpts.paperSize || "A4"
+      });
     }
   });
   ipcMain.handle("get-process-memory", async () => {

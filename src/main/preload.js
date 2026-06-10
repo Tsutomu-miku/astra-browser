@@ -43,7 +43,7 @@ contextBridge.exposeInMainWorld("astraShell", {
   setProfilePartitions: (partitions) => ipcRenderer.invoke("set-profile-partitions", partitions),
   setPermissionRules: (rules) => ipcRenderer.invoke("set-permission-rules", rules),
   openPath: (filePath) => ipcRenderer.invoke("open-path", filePath),
-  printWebview: (webContentsId) => ipcRenderer.invoke("print-webview", webContentsId),
+  printWebview: (webContentsId, options) => ipcRenderer.invoke("print-webview", webContentsId, options),
   showItemInFolder: (filePath) => ipcRenderer.invoke("show-item-in-folder", filePath),
   getProcessMemory: () => ipcRenderer.invoke("get-process-memory"),
   getFaviconData: (url) => ipcRenderer.invoke("get-favicon-data", url),

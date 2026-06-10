@@ -18,7 +18,7 @@ interface BrowserActions {
   newGuestWindow: () => void;
   newTab: () => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
-  printActiveTab: () => void;
+  printActiveTab: (options?: Record<string, unknown>) => void | Promise<unknown>;
   resetActiveTabZoom: () => void;
   restoreLastClosedTab: () => void;
   runWebviewAction: (action: "goBack" | "goForward" | "reload" | "reloadIgnoringCache") => void;

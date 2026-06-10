@@ -91,7 +91,18 @@ export interface AstraShellApi {
   openIncognitoWindow: () => Promise<void>;
   openGuestWindow: () => Promise<void>;
   openPath: (filePath: string) => Promise<string>;
-  printWebview: (webContentsId: number) => Promise<void>;
+  printWebview: (webContentsId: number, options?: {
+    printBackground?: boolean;
+    printHeadersAndFooters?: boolean;
+    color?: "color" | "grayscale";
+    landscape?: boolean;
+    scale?: number;
+    margins?: "default" | "none" | "minimal" | "custom";
+    collate?: boolean;
+    copies?: number;
+    pageSize?: "A4" | "Letter" | "Legal" | "Tabloid" | string;
+    pdfPath?: string;
+  }) => Promise<void | { ok: boolean; path?: string; error?: string }>;
   relaunch: () => Promise<void>;
   resolvePermissionRequest: (id: string, allowed: boolean) => Promise<void>;
   resolvePasswordSave?: (id: string, accepted: boolean) => Promise<void>;

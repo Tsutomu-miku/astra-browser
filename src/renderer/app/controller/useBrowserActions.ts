@@ -161,13 +161,13 @@ export function useBrowserActions({
     reorderWorkspaceFavorite: store.reorderWorkspaceFavorite,
     reorderTab: store.reorderTab,
     resetActiveTabZoom: () => store.resetActiveTabZoom(activeWebview),
-    printActiveTab: () => {
+    printActiveTab: (options?: Record<string, unknown>) => {
       const webContentsId = activeWebview?.getWebContentsId?.();
       if (typeof webContentsId === "number") {
-        void window.astraShell?.printWebview(webContentsId);
-      } else {
-        activeWebview?.print?.();
+        return window.astraShell?.printWebview(webContentsId, options);
       }
+      void activeWebview?.print?.(options);
+      return undefined;
     },
     resolvePermissionRequest: store.resolvePermissionRequest,
     restoreClosedTab: (closedIndex: number) => {

@@ -115,7 +115,7 @@ export interface M1PanelProps {
   /* ===== M2.1 Print / System ===== */
   settings: BrowserSettings;
   onChangeSettings: (patch: Partial<BrowserSettings>) => void;
-  onPrintActiveTab: () => void;
+  onPrintActiveTab: (options?: Record<string, unknown>) => void | Promise<unknown>;
   onOpenFolder: (kind: "userData" | "profile") => void;
   onRestartBrowser: () => void;
   autoUpdateStatus: string;

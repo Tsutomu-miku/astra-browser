@@ -239,6 +239,13 @@ export interface BrowserSettings {
   printBackgrounds?: boolean;
   printPaperSize?: "A4" | "Letter" | "Legal" | "Tabloid" | string;
   printScale?: number;
+  printMargins?: "default" | "none" | "minimal" | "custom";
+  printLandscape?: boolean;
+  printCollate?: boolean;
+  printCopies?: number;
+  printColorMode?: "color" | "grayscale";
+  /** When set, the next print should produce a PDF at this path (then reset to empty). */
+  printOutputPath?: string;
 
   /* M2: System / Safe Browsing (W-14 / K-6) */
   backgroundAppMode?: boolean;

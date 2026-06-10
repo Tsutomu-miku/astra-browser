@@ -272,7 +272,7 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
     /* ===== M2.1 Print / System ===== */
     settings: state.settings,
     onChangeSettings: (patch) => actions.updateSettings(patch),
-    onPrintActiveTab: () => actions.printActiveTab(),
+    onPrintActiveTab: (options) => actions.printActiveTab(options),
     onOpenFolder: (kind) => actions.openUserDataFolder(kind),
     onRestartBrowser: () => actions.restartBrowser(),
     autoUpdateStatus: "not configured",
