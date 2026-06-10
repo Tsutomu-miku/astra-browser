@@ -49,6 +49,7 @@ export type MainProcessAction =
   | "focus-address"
   | "navigate-history"
   | "new-incognito-window"
+  | "new-guest-window"
   | "new-tab"
   | "open-command"
   | "open-downloads"
@@ -79,10 +80,12 @@ export interface AstraShellApi {
   onOpenUrlInNewTab: (listener: (url: string) => void) => () => void;
   onPermissionRequest: (listener: (payload: PermissionRequestEvent) => void) => () => void;
   openIncognitoWindow: () => Promise<void>;
+  openGuestWindow: () => Promise<void>;
   openPath: (filePath: string) => Promise<string>;
   printWebview: (webContentsId: number) => Promise<void>;
   relaunch: () => Promise<void>;
   resolvePermissionRequest: (id: string, allowed: boolean) => Promise<void>;
+  syncForceHttps: (enabled: boolean) => Promise<void>;
   cancelDownload: (id: string) => Promise<void>;
   setProfilePartitions: (partitions: string[]) => Promise<void>;
   setPermissionRules: (rules: PermissionRulePayload[]) => Promise<void>;

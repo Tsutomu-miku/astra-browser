@@ -79,6 +79,11 @@ function buildApplicationMenu() {
           click: () => sendToFocusedRenderer("new-incognito-window")
         },
         {
+          label: "New Guest Window",
+          accelerator: "CmdOrCtrl+Shift+M",
+          click: () => sendToFocusedRenderer("new-guest-window")
+        },
+        {
           label: "Close Tab",
           accelerator: "CmdOrCtrl+W",
           click: () => sendToFocusedRenderer("close-active-tab")

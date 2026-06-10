@@ -210,6 +210,8 @@ export function useBrowserActions({
     toggleFloatingSidebar: store.toggleFloatingSidebar,
     toggleFloatingToolbar: store.toggleFloatingToolbar,
     newIncognitoWindow: store.newIncognitoWindow,
+    newGuestWindow: store.newGuestWindow,
+    syncForceHttps: store.syncForceHttps,
     toggleApplicationDevTools: () => {
       void window.astraShell?.toggleDevTools();
     },

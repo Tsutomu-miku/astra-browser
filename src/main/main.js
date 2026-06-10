@@ -110,6 +110,7 @@ function installSessionBridge(targetSession, partition = "default") {
     sessionPartitions.set(targetSession, partition);
   }
   bridgedSessions.add(targetSession);
+  applyForceHttpsToSession(targetSession, false);
   targetSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
     const partition = sessionPartitions.get(targetSession) ?? "default";
     const requestingUrl = details.requestingUrl || webContents.getURL();
@@ -229,6 +230,13 @@ installIpcHandlers({
   resolvePermissionRequest,
   toggleDevTools
 });
+
+/* M2.2 K-1 force HTTPS：在 session 创建时立即注入拦截器。
+ *   因为 forceHttpsEnabled 默认 false，首次 attach 是 no-op；后续
+ *   renderer 通过 "sync-force-https" IPC 切换状态时 ipcHandlers 会再
+ *   次对所有安装的 session 统一重新 apply。
+ */
+const { applyForceHttpsToSession } = require("./ipcHandlers");
 
 app.whenReady().then(() => {
   installApplicationMenu();

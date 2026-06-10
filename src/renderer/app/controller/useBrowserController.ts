@@ -86,6 +86,7 @@ export function useBrowserController() {
       focusAddressBar: actions.focusAddressBar,
       newTab: actions.newTab,
       newIncognitoWindow: store.newIncognitoWindow,
+      newGuestWindow: store.newGuestWindow,
       openUrlInActiveWorkspace: actions.openUrlInActiveWorkspace,
       printActiveTab: actions.printActiveTab,
       resetActiveTabZoom: actions.resetActiveTabZoom,
@@ -95,6 +96,7 @@ export function useBrowserController() {
       setCommandOpen: (open) => store.setCommandOpen(open),
       setFindOpen: (open) => store.setFindOpen(open),
       setPanel: store.setPanel,
+      syncForceHttps: actions.syncForceHttps,
       toggleActiveDevTools: () => store.toggleActiveDevTools(activeWebview),
       toggleActiveTabFavorite: actions.toggleActiveTabFavorite,
       toggleActiveTabMuted: actions.toggleActiveTabMuted,
@@ -103,6 +105,7 @@ export function useBrowserController() {
       zoomOut: () => store.zoomOut(activeWebview)
     },
     findQuery: store.findQuery,
+    forceHttps: store.state.settings.forceHttps ?? false,
     ingestDownload: store.ingestDownload,
     ingestPermissionRequest: store.ingestPermissionRequest,
     onShortcut: handleShortcut,

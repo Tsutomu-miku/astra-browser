@@ -2,6 +2,12 @@ const { app, BrowserWindow, ipcMain, session, shell, webContents } = require("el
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
+const {
+  applyForceHttpsToSession,
+  getInstalledSessions,
+  openGuestWindow
+} = require("./forceHttpsGuest");
+
 function installIpcHandlers({
   downloadItems,
   getPermissionKey,
@@ -12,8 +18,6 @@ function installIpcHandlers({
 }) {
   ipcMain.handle("app-version", () => app.getVersion());
   ipcMain.handle("toggle-devtools", (event, webContentsId) => {
-    // PRD §5 M0 交付 E-4：统一 DevTools 入口。
-    // 优先开到指定 webContentsId（通常是当前活跃 tab 的 webview）；fallback 到主窗口。
     if (typeof webContentsId === "number") {
       const target = webContents.fromId(webContentsId);
       if (target && !target.isDestroyed()) {
@@ -22,14 +26,9 @@ function installIpcHandlers({
       }
     }
     const win = BrowserWindow.fromWebContents(event.sender);
-    if (win) {
-      toggleDevTools(win);
-    }
+    if (win) toggleDevTools(win);
   });
   ipcMain.handle("open-incognito-window", (event) => {
-    // PRD §5 M0 交付 K-12 MVP：in-memory 无痕窗口。
-    // 无痕窗口使用默认 session 的 in-memory 副本（`partition` 前缀不带 persist:），
-    // 所有状态、cookie、缓存都不写磁盘。
     const parentWin = BrowserWindow.fromWebContents(event.sender);
     const bounds = parentWin && !parentWin.isDestroyed() ? parentWin.getBounds() : null;
     const incognito = new BrowserWindow({
@@ -48,23 +47,16 @@ function installIpcHandlers({
         webviewTag: true
       }
     });
-
     const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
-    if (DEV_SERVER_URL) {
-      incognito.loadURL(DEV_SERVER_URL + "#?mode=incognito");
-    } else {
-      incognito.loadFile(path.join(__dirname, "../../dist/renderer/index.html"), {
-        hash: "?mode=incognito"
-      });
-    }
-
+    if (DEV_SERVER_URL) incognito.loadURL(DEV_SERVER_URL + "#?mode=incognito");
+    else incognito.loadFile(path.join(__dirname, "../../dist/renderer/index.html"), { hash: "?mode=incognito" });
     require("./diagnostics").installWindowDiagnostics(incognito);
     incognito.on("closed", () => {
       try {
         incognito.webContents.session.clearCache();
         incognito.webContents.session.clearStorageData();
       } catch {
-        /* ignore — session was already torn down */
+        /* ignore */
       }
     });
   });
@@ -85,13 +77,7 @@ function installIpcHandlers({
         targetSession.getCacheSize(),
         getDirectorySize(storagePath)
       ]);
-
-      return {
-        partition,
-        cacheBytes,
-        storageBytes,
-        storagePath
-      };
+      return { partition, cacheBytes, storageBytes, storagePath };
     }));
   });
   ipcMain.handle("set-profile-partitions", (_event, partitions) => {
@@ -107,10 +93,7 @@ function installIpcHandlers({
         !rule?.origin ||
         !rule?.permission ||
         !["allow", "block"].includes(rule?.decision)
-      ) {
-        continue;
-      }
-
+      ) continue;
       permissionRules.set(getPermissionKey(rule.partition, rule.origin, rule.permission), rule.decision);
     }
   });
@@ -119,18 +102,11 @@ function installIpcHandlers({
   });
   ipcMain.handle("cancel-download", (_event, id) => {
     const item = downloadItems.get(id);
-    if (item) {
-      try {
-        item.cancel();
-      } catch {
-        /* item may already be in a terminal state */
-      }
-    }
+    if (!item) return;
+    try { item.cancel(); } catch { /* ignore */ }
   });
   ipcMain.handle("show-item-in-folder", (_event, filePath) => {
-    if (filePath) {
-      shell.showItemInFolder(filePath);
-    }
+    if (filePath) shell.showItemInFolder(filePath);
   });
   ipcMain.handle("open-path", (_event, filePath) => {
     if (!filePath) return "";
@@ -138,17 +114,13 @@ function installIpcHandlers({
   });
   ipcMain.handle("print-webview", (_event, webContentsId) => {
     if (typeof webContentsId !== "number") return;
-    const target = require("electron").webContents.fromId(webContentsId);
+    const target = webContents.fromId(webContentsId);
     if (target && !target.isDestroyed() && target.getType() === "webview") {
       target.print({ silent: false, printBackground: true });
     }
   });
-  ipcMain.handle("get-process-memory", async (_event) => {
+  ipcMain.handle("get-process-memory", async () => {
     const appMetrics = app.getAppMetrics();
-    // ProcessMetric.memory.workingSetSize is reported in bytes by Electron on
-    // all platforms (one entry per child process: GPU, utility, each <webview>,
-    // etc.). The total RSS is the main process' RSS plus the working-set size
-    // of every child process — no extra multiplication needed.
     const webviewWorkingSetBytes = appMetrics.reduce(
       (sum, metric) => sum + (Number.isFinite(metric.memory?.workingSetSize) ? metric.memory.workingSetSize : 0),
       0
@@ -161,22 +133,15 @@ function installIpcHandlers({
       sampledAt: Date.now(),
       totalBytes: mainRss + webviewWorkingSetBytes,
       webviewCount: appMetrics.length,
-      webviewWorkingSetBytes: webviewWorkingSetBytes
+      webviewWorkingSetBytes
     };
   });
-  // Proxy favicon fetches through the user's profile sessions. The renderer's
-  // <img> tags load via the default session and can't access cookies from a
-  // profile's <webview>, so favicons on login-gated sites 403. This handler
-  // retries the fetch through every session we know about (default + every
-  // live webContents' session) and returns a data URL on the first hit.
   ipcMain.handle("get-favicon-data", async (_event, faviconUrl) => {
     if (typeof faviconUrl !== "string" || !faviconUrl) return null;
     try {
       const parsed = new URL(faviconUrl);
       if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
 
     const sessions = new Set([session.defaultSession]);
     for (const win of BrowserWindow.getAllWindows()) {
@@ -185,9 +150,7 @@ function installIpcHandlers({
         for (const child of win.webContents?.getAllWebContents?.() ?? []) {
           if (child && !child.isDestroyed()) sessions.add(child.session);
         }
-      } catch {
-        // ignore destroyed windows
-      }
+      } catch { /* ignore */ }
     }
 
     for (const targetSession of sessions) {
@@ -202,20 +165,25 @@ function installIpcHandlers({
         if (buffer.length === 0) continue;
         const contentType = response.headers.get("content-type") || "image/x-icon";
         return `data:${contentType};base64,${buffer.toString("base64")}`;
-      } catch {
-        // try next session
-      }
+      } catch { /* try next */ }
     }
     return null;
   });
-  ipcMain.handle("app-relaunch", () => {
-    app.relaunch();
-    app.quit();
-  });
+  ipcMain.handle("app-relaunch", () => { app.relaunch(); app.quit(); });
   ipcMain.handle("get-user-data-paths", () => ({
     userData: app.getPath("userData"),
     profile: app.getPath("userData")
   }));
+  ipcMain.handle("sync-force-https", (_event, enabled) => {
+    for (const targetSession of getInstalledSessions()) {
+      applyForceHttpsToSession(targetSession, Boolean(enabled));
+    }
+  });
+  ipcMain.handle("open-guest-window", (event) => {
+    const parentWin = BrowserWindow.fromWebContents(event.sender);
+    const bounds = parentWin && !parentWin.isDestroyed() ? parentWin.getBounds() : null;
+    openGuestWindow(bounds);
+  });
 }
 
 function getSessionsForClearing(partitions) {
@@ -223,7 +191,6 @@ function getSessionsForClearing(partitions) {
   for (const partition of getValidPartitions(partitions)) {
     targets.push(session.fromPartition(partition));
   }
-
   return Array.from(new Set(targets));
 }
 
@@ -237,34 +204,19 @@ function isValidPartition(partition) {
 }
 
 async function getDirectorySize(directoryPath) {
-  if (!directoryPath) {
-    return 0;
-  }
-
+  if (!directoryPath) return 0;
   try {
     const entries = await fs.readdir(directoryPath, { withFileTypes: true });
     const sizes = await Promise.all(entries.map(async (entry) => {
       const entryPath = path.join(directoryPath, entry.name);
-      if (entry.isSymbolicLink()) {
-        return 0;
-      }
-
-      if (entry.isDirectory()) {
-        return getDirectorySize(entryPath);
-      }
-
-      if (!entry.isFile()) {
-        return 0;
-      }
-
+      if (entry.isSymbolicLink() || entry.isFile === undefined) return 0;
+      if (entry.isDirectory()) return getDirectorySize(entryPath);
+      if (!entry.isFile()) return 0;
       const stat = await fs.stat(entryPath);
       return stat.size;
     }));
-
     return sizes.reduce((sum, size) => sum + size, 0);
-  } catch {
-    return 0;
-  }
+  } catch { return 0; }
 }
 
 module.exports = {

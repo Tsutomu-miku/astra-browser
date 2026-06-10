@@ -15,6 +15,7 @@ interface BrowserActions {
   findInPage: (query: string, forward?: boolean) => void;
   focusAddressBar: () => void;
   newIncognitoWindow: () => void;
+  newGuestWindow: () => void;
   newTab: () => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
   printActiveTab: () => void;
@@ -25,6 +26,7 @@ interface BrowserActions {
   setCommandOpen: (open: boolean) => void;
   setFindOpen: (open: boolean) => void;
   setPanel: (panel: "downloads" | "history" | "settings" | null) => void;
+  syncForceHttps: (enabled: boolean) => void;
   toggleActiveDevTools: () => void;
   toggleActiveTabFavorite: () => void;
   toggleActiveTabMuted: () => void;
@@ -36,6 +38,7 @@ interface BrowserActions {
 interface BrowserEffectsOptions {
   actions: BrowserActions;
   findQuery: string;
+  forceHttps: boolean;
   ingestDownload: (download: DownloadEntry) => void;
   ingestPermissionRequest: (request: PermissionRequestEvent) => void;
   onShortcut: (intent: ShortcutIntent) => void;
@@ -119,6 +122,9 @@ function dispatchMainAction(actions: BrowserActions, findQuery: string, action: 
     case "new-incognito-window":
       actions.newIncognitoWindow();
       break;
+    case "new-guest-window":
+      actions.newGuestWindow();
+      break;
     default:
       break;
   }
@@ -127,6 +133,7 @@ function dispatchMainAction(actions: BrowserActions, findQuery: string, action: 
 export function useBrowserEffects({
   actions,
   findQuery,
+  forceHttps,
   ingestDownload,
   ingestPermissionRequest,
   onShortcut,
@@ -138,6 +145,10 @@ export function useBrowserEffects({
   useEffect(() => window.astraShell?.onDownloadEvent((download) => {
     ingestDownload(download);
   }), [ingestDownload]);
+
+  useEffect(() => {
+    actions.syncForceHttps(forceHttps);
+  }, [actions, forceHttps]);
 
   useEffect(() => window.astraShell?.onOpenUrlInNewTab((url) => {
     openUrlInNewTab(url);

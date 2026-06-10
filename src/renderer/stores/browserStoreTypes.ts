@@ -151,6 +151,8 @@ export interface BrowserStore {
   setPerOriginZoom: (origin: string, zoom: number) => void;
   toggleActiveDevTools: (webview?: WebviewElement) => void;
   newIncognitoWindow: () => void;
+  newGuestWindow: () => void;
+  syncForceHttps: (enabled: boolean) => void;
   updateSettings: (patch: Partial<BrowserState["settings"]>) => void;
   updateReaderSettings: (patch: Partial<ReaderSettings>) => void;
   updateTranslationSettings: (patch: Partial<TranslationSettings>) => void;

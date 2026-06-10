@@ -489,6 +489,14 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     }
     void window.astraShell?.openIncognitoWindow?.();
   },
+  newGuestWindow: () => {
+    void window.astraShell?.openGuestWindow?.();
+  },
+  syncForceHttps: (enabled) => {
+    // 同步 settings 到主进程（K-1）：BrowserState.settings.forceHttps 变化时，
+    // useBrowserEffect 会把最新值传过来，这里直接转发给 main，返回的副作用在 main 端处理。
+    void window.astraShell?.syncForceHttps?.(enabled);
+  },
   ungroupActiveTab: () => update(set, ungroupActiveTab),
   ungroupTab: (tabId) => update(set, (state) => ungroupTab(state, tabId)),
   ungroupTabGroup: (groupId) => update(set, (state) => ungroupTabGroup(state, groupId)),
