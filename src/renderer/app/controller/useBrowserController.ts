@@ -135,6 +135,7 @@ export function useBrowserController() {
     ingestPendingPwaInstallPrompt: store.ingestPendingPwaInstallPrompt,
     ingestInstalledPwaApp: store.ingestInstalledPwaApp,
     reloadInstalledPwaApps: store.reloadInstalledPwaApps,
+    reloadInstalledExtensions: store.reloadInstalledExtensions,
     onShortcut: handleShortcut,
     openUrlInNewTab: (url) => store.openUrlInActiveWorkspace(url),
     sitePermissions: store.state.sitePermissions,

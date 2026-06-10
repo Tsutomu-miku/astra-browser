@@ -221,6 +221,18 @@ export interface BrowserStore {
   addExtension: (ext: Omit<ExtensionEntry, "id" | "installedAt">) => void;
   removeExtension: (id: string) => void;
   toggleExtensionEnabled: (id: string, enabled: boolean) => void;
+  /** M2.5 E-1/E-2 MV3 PoC：从文件夹安装真实 CRX/manifest 扩展。 */
+  installMv3ExtensionFromFolder: (folderPath: string) => Promise<{ ok: boolean; id?: string; reason?: string }>;
+  uninstallMv3Extension: (id: string) => Promise<{ ok: boolean; reason?: string }>;
+  setMv3ExtensionEnabled: (id: string, enabled: boolean) => Promise<boolean>;
+  reloadInstalledExtensions: () => Promise<void>;
+  pickFolderAndInstallMv3Extension: () => Promise<{
+    canceled?: boolean;
+    ok?: boolean;
+    folder?: string;
+    id?: string;
+    reason?: string;
+  }>;
   resetSettings: () => void;
   clearAllDownloads: () => void;
   /** Re-open the download URL in a new tab (used for retry). */

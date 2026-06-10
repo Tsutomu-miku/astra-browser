@@ -261,8 +261,8 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
     onToggleExtension: (id, enabled) => actions.toggleExtensionEnabled(id, enabled),
     onUninstallExtension: (id) => actions.removeExtension(id),
     onInstallExtensionFromFile: () => {
-      /* M2.1 MVP：安装入口占位，提示用户 Chrome Web Store 是主要来源 */
-      setPanel("extensions" as never);
+      // M2.5 E-1/E-2 MV3 PoC：通过系统对话框选择解压目录并安装。
+      void actions.pickFolderAndInstallMv3Extension();
     },
     onOpenExtensionStore: () => actions.openUrlInActiveWorkspace(
       "https://chromewebstore.google.com",

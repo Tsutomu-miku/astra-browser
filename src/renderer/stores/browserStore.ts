@@ -674,6 +674,60 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   addExtension: (ext) => update(set, (state) => addExtension(state, ext)),
   removeExtension: (id) => update(set, (state) => removeExtension(state, id)),
   toggleExtensionEnabled: (id, enabled) => update(set, (state) => toggleExtension(state, id, enabled)),
+  /* M2.5 E-1/E-2 MV3 PoC: renderer registry 和真实 mv3 后端保持双向同步，
+   * 同时 update set 两份，真实后端以 main 进程为主。
+   */
+  installMv3ExtensionFromFolder: async (folderPath) => {
+    const result = await window.astraShell?.mv3Extensions?.installFromFolder?.(folderPath);
+    if (result?.ok) await useBrowserStore.getState().reloadInstalledExtensions();
+    return result ?? { ok: false, reason: "no-ipc" };
+  },
+  uninstallMv3Extension: async (id) => {
+    const result = await window.astraShell?.mv3Extensions?.uninstall?.(id);
+    if (result?.ok) await useBrowserStore.getState().reloadInstalledExtensions();
+    return result ?? { ok: false, reason: "no-ipc" };
+  },
+  setMv3ExtensionEnabled: async (id, enabled) => {
+    const backendOk = await window.astraShell?.mv3Extensions?.setEnabled?.(id, enabled);
+    update(set, (state) => toggleExtension(state, id, enabled));
+    await useBrowserStore.getState().reloadInstalledExtensions();
+    return Boolean(backendOk);
+  },
+  reloadInstalledExtensions: async () => {
+    const list = await window.astraShell?.mv3Extensions?.list?.();
+    if (!Array.isArray(list)) return;
+    update(set, (state) => {
+      // 合并：已存在的扩展在真实后端里更新 enabled；未知的扩展以真实后端为准。
+      const seen = new Set<string>();
+      for (const real of list) {
+        seen.add(real.id);
+        const existing = state.extensions.find((e) => e.id === real.id);
+        if (existing) {
+          existing.enabled = real.enabled;
+          existing.name = real.name || existing.name;
+          existing.version = real.version || existing.version;
+          existing.description = real.description || existing.description;
+        } else {
+          state.extensions.push({
+            id: real.id,
+            name: real.name,
+            version: real.version,
+            description: real.description,
+            enabled: real.enabled,
+            installedAt: Date.now()
+          });
+        }
+      }
+      return state;
+    });
+  },
+  pickFolderAndInstallMv3Extension: async () => {
+    const res = await window.astraShell?.mv3Extensions?.pickFolderAndInstall?.();
+    if (res && !res.canceled && res.ok) {
+      await useBrowserStore.getState().reloadInstalledExtensions();
+    }
+    return res ?? { ok: false, reason: "no-ipc" };
+  },
   resetSettings: () => update(set, resetSettings),
   clearAllDownloads: () => update(set, clearAllDownloads),
   retryDownload: (url) => {

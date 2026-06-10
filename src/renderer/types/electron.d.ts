@@ -132,6 +132,24 @@ export interface AstraShellApi {
   pwaListInstalled: () => Promise<PwaInstalledAppRecord[]>;
   pwaLaunch: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
   pwaUninstall: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
+
+  /* ===== M2.5 E-1/E-2 MV3 extension compatibility (PoC) ===== */
+  mv3Extensions: {
+    list: () => Promise<Array<{
+      id: string;
+      name: string;
+      version: string;
+      description: string;
+      enabled: boolean;
+    }>>;
+    setEnabled: (id: string, enabled: boolean) => Promise<boolean>;
+    uninstall: (id: string) => Promise<{ ok: boolean; reason?: string }>;
+    installFromFolder: (folderPath: string) => Promise<{ ok: boolean; id?: string; reason?: string }>;
+    pickFolderAndInstall: () => Promise<
+      | { canceled: true }
+      | { canceled: false; folder: string; ok: boolean; id?: string; reason?: string }
+    >;
+  };
 }
 
 export interface PiPToggleResult {

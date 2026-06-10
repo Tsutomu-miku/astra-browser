@@ -71,5 +71,13 @@ contextBridge.exposeInMainWorld("astraShell", {
   pwaConfirmInstall: (origin) => ipcRenderer.invoke("pwa:confirm-install", origin),
   pwaListInstalled: () => ipcRenderer.invoke("pwa:list-installed"),
   pwaLaunch: (origin) => ipcRenderer.invoke("pwa:launch", origin),
-  pwaUninstall: (origin) => ipcRenderer.invoke("pwa:uninstall", origin)
+  pwaUninstall: (origin) => ipcRenderer.invoke("pwa:uninstall", origin),
+  /* ===== M2.5 E-1/E-2 MV3 extensions PoC ===== */
+  mv3Extensions: {
+    list: () => ipcRenderer.invoke("mv3:list-extensions"),
+    setEnabled: (id, enabled) => ipcRenderer.invoke("mv3:enable-extension", id, enabled),
+    uninstall: (id) => ipcRenderer.invoke("mv3:uninstall-extension", id),
+    installFromFolder: (folderPath) => ipcRenderer.invoke("mv3:install-from-folder", folderPath),
+    pickFolderAndInstall: () => ipcRenderer.invoke("mv3:pick-folder-for-install")
+  }
 });

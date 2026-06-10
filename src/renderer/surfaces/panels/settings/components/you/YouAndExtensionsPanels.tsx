@@ -121,14 +121,14 @@ export function ExtensionsSection({
     <section className="settings-pane" aria-label="Extensions">
       <SectionHeader
         title="Extensions"
-        description="Chrome Web Store (MV3) 兼容（E-1~E-3）。Top 20 扩展冒烟测试在 M2 尾期接入独立兼容层后开启。"
+        description="Chrome Web Store MV3 兼容（E-1~E-3 PoC）：storage/runtime/tabs/DNR 4 个命名空间 + content_scripts + SW host。通过 astra://flags.mv3-extensions 启用。"
       />
 
       <div className="button-cluster" aria-label="Install extensions">
         <NormalButton onClick={onOpenStore}>
           <FiDownload aria-hidden /> Open Chrome Web Store
         </NormalButton>
-        <NormalButton onClick={onInstallFromFile}>
+        <NormalButton onClick={onInstallFromFile} aria-label="选择已解压扩展目录（包含 manifest.json）">
           <FiPlus aria-hidden /> Load unpacked
         </NormalButton>
       </div>
@@ -136,7 +136,7 @@ export function ExtensionsSection({
       <div className="field field-group">
         <GroupHeader title={`Installed (${extensions.length})`}>
           {extensions.length === 0 ? (
-            <Empty text="未安装扩展。点击上面的 Chrome Web Store 打开官方市场选择扩展。" />
+            <Empty text="未安装扩展。Chrome Web Store 官方扩展选择后下载 CRX，或点击 Load unpacked 选择解压目录。" />
           ) : (
             <ul className="autofill-list">
               {extensions.map((ext) => (
@@ -174,8 +174,9 @@ export function ExtensionsSection({
       </div>
 
       <p className="muted">
-        扩展 Side Panel API（V-2）、Declarative Net Request、Service Worker 后台生命周期、
-        chrome.storage 隔离分区 — MV3 兼容层在独立 PR 合入后可启用。
+        已启用 PoC：content_scripts 主世界注入 + session 级 DNR 规则 +
+        chrome.storage.local/sync/tabs/runtime SW host。MV3 全部 chrome.* 命名空间、
+        Side Panel API、CWS 自动更新在后续版本接入。
       </p>
     </section>
   );

@@ -48,6 +48,7 @@ interface BrowserEffectsOptions {
   ingestPendingPwaInstallPrompt: (prompt: import("../../types/electron").PwaInstallPromptPayload) => void;
   ingestInstalledPwaApp: (app: import("../../types/electron").PwaInstalledAppRecord) => void;
   reloadInstalledPwaApps: () => Promise<void> | void;
+  reloadInstalledExtensions: () => Promise<void> | void;
   onShortcut: (intent: ShortcutIntent) => void;
   openUrlInNewTab: (url: string) => void;
   sitePermissions: SitePermissionRule[];
@@ -151,6 +152,7 @@ export function useBrowserEffects({
   ingestPendingPwaInstallPrompt,
   ingestInstalledPwaApp,
   reloadInstalledPwaApps,
+  reloadInstalledExtensions,
   onShortcut,
   openUrlInNewTab,
   sitePermissions,
@@ -209,6 +211,11 @@ export function useBrowserEffects({
   useEffect(() => {
     void reloadInstalledPwaApps();
   }, [reloadInstalledPwaApps]);
+
+  /* ===== M2.5 E-1/E-2 MV3 extension compat PoC: load registry on mount ===== */
+  useEffect(() => {
+    void reloadInstalledExtensions();
+  }, [reloadInstalledExtensions]);
 
   useEffect(() => {
     window.astraShell?.setProfilePartitions(getBrowserPartitions({ workspaces }));

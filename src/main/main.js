@@ -10,6 +10,8 @@ const { installIpcHandlers } = require("./ipcHandlers");
 const { installApplicationMenu } = require("./appMenu");
 const { installAstraProtocol } = require("./astraProtocol");
 const { installPwaListeners } = require("./pwaInstall");
+const { loadFlags } = require("./astraProtocol");
+const mv3Extensions = require("./mv3Extensions");
 
 /* M2.5 E-10: register astra:// protocol (newtab + flags).
  *   - astra://app -> renderer SPA
@@ -200,6 +202,8 @@ function installSessionBridge(targetSession, partition = "default") {
       tryEmit(state);
     });
   });
+  /* M2.5 E-1/E-2：如果 mv3 开关启用，给新 session 注入 content scripts + DNR。 */
+  mv3Extensions.attachSession(targetSession);
 }
 
 function broadcastPermissionRequest(payload) {
@@ -263,6 +267,12 @@ function sendToAll(channel, payload) {
   }
 }
 installPwaListeners({ sendToAll });
+
+/* M2.5 E-1/E-2 MV3 扩展兼容层（PoC，受 astra://flags 控制）。
+ * 启用后在每个 session 上挂 content_scripts + DNR，并为有
+ * background.service_worker 的扩展启动隐藏窗口的 SW host。
+ */
+mv3Extensions.bootstrap(app.getPath("userData"), loadFlags());
 
 /* M2.2 K-1 force HTTPS：在 session 创建时立即注入拦截器。
  *   因为 forceHttpsEnabled 默认 false，首次 attach 是 no-op；后续
