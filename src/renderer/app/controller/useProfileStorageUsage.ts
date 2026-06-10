@@ -21,7 +21,7 @@ export function useProfileStorageUsage(workspaces: Workspace[]) {
   const [status, setStatus] = useState<StorageStatus>("idle");
   const [entries, setEntries] = useState<WorkspaceStorageUsage[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const partitions = useMemo(() => Array.from(new Set(workspaces.map(getWorkspacePartition))), [workspaces]);
+  const partitions = useMemo(() => Array.from(new Set(workspaces.map((ws) => getWorkspacePartition(ws)))), [workspaces]);
 
   const refresh = useCallback(async () => {
     if (!window.astraShell?.getProfileStorageUsage) {

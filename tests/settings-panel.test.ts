@@ -27,8 +27,10 @@ describe("settings panel sections", () => {
     expect(html).toContain("Global");
     expect(html).toContain("Space");
     expect(html).toContain("Data");
-    expect(html).toContain("Spaces");
-    expect(html).toContain("Appearance, homepage, search");
+    expect(html).toContain("Workspaces");
+    expect(html).toContain("Appearance");
+    expect(html).toContain("Autofill and passwords");
+    expect(html).toContain("Privacy and security");
   });
 
   it("renders global and Space settings as separate panes", () => {

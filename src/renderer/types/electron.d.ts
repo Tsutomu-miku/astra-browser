@@ -48,6 +48,7 @@ export type MainProcessAction =
   | "find-match"
   | "focus-address"
   | "navigate-history"
+  | "new-incognito-window"
   | "new-tab"
   | "open-command"
   | "open-downloads"
@@ -61,6 +62,7 @@ export type MainProcessAction =
   | "select-adjacent-tab"
   | "toggle-active-tab-favorite"
   | "toggle-active-tab-muted"
+  | "toggle-devtools"
   | "toggle-sidebar"
   | "zoom-in"
   | "zoom-out";
@@ -75,13 +77,14 @@ export interface AstraShellApi {
   onMainAction: (listener: (action: MainProcessAction, args: unknown[]) => void) => () => void;
   onOpenUrlInNewTab: (listener: (url: string) => void) => () => void;
   onPermissionRequest: (listener: (payload: PermissionRequestEvent) => void) => () => void;
+  openIncognitoWindow: () => Promise<void>;
   openPath: (filePath: string) => Promise<string>;
   printWebview: (webContentsId: number) => Promise<void>;
   resolvePermissionRequest: (id: string, allowed: boolean) => Promise<void>;
   setProfilePartitions: (partitions: string[]) => Promise<void>;
   setPermissionRules: (rules: PermissionRulePayload[]) => Promise<void>;
   showItemInFolder: (filePath: string) => Promise<void>;
-  toggleDevTools: () => Promise<void>;
+  toggleDevTools: (webContentsId?: number) => Promise<void>;
 }
 
 declare global {

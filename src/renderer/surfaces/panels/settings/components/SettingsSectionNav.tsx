@@ -1,4 +1,26 @@
-import { FiDatabase, FiGlobe, FiGrid, FiLayers } from "react-icons/fi";
+import {
+  FiActivity,
+  FiAward,
+  FiBookOpen,
+  FiCheckCircle,
+  FiCopy,
+  FiDatabase,
+  FiDownloadCloud,
+  FiEye,
+  FiFeather,
+  FiGlobe,
+  FiGrid,
+  FiHome,
+  FiImage,
+  FiLayers,
+  FiPrinter,
+  FiRefreshCw,
+  FiSettings,
+  FiShield,
+  FiSliders,
+  FiTerminal,
+  FiUsers
+} from "react-icons/fi";
 
 import { SETTINGS_SECTIONS, type SettingsSectionId } from "../model/settingsSections";
 
@@ -31,8 +53,48 @@ export function SettingsSectionNav({
 }
 
 function getSectionIcon(section: SettingsSectionId) {
-  if (section === "global") return <FiGlobe />;
-  if (section === "space") return <FiLayers />;
-  if (section === "data") return <FiDatabase />;
-  return <FiGrid />;
+  switch (section) {
+    case "you-and-astra":
+      return <FiUsers />;
+    case "autofill":
+      return <FiCopy />;
+    case "privacy-and-security":
+      return <FiShield />;
+    case "appearance":
+    case "global":
+      return <FiEye />;
+    case "search-engine":
+      return <FiBookOpen />;
+    case "default-browser":
+      return <FiCheckCircle />;
+    case "startup":
+      return <FiHome />;
+    case "site-settings":
+      return <FiSliders />;
+    case "performance":
+      return <FiActivity />;
+    case "accessibility":
+      return <FiFeather />;
+    case "extensions":
+      return <FiGrid />;
+    case "languages":
+      return <FiGlobe />;
+    case "downloads":
+      return <FiDownloadCloud />;
+    case "print":
+      return <FiPrinter />;
+    case "system":
+      return <FiTerminal />;
+    case "reset-and-cleanup":
+      return <FiRefreshCw />;
+    case "about":
+      return <FiAward />;
+    case "space":
+    case "workspaces":
+      return <FiLayers />;
+    case "data":
+      return <FiDatabase />;
+    default:
+      return <FiSettings />;
+  }
 }

@@ -39,6 +39,9 @@ export function useBrowserActions({
     },
     clearSitePermission: store.clearSitePermission,
     clearSitePermissionsForOrigin: store.clearSitePermissionsForOrigin,
+    clearPerOriginZoom: store.clearPerOriginZoom,
+    clearAllPerOriginZoomSettings: store.clearAllPerOriginZoomSettings,
+    setPerOriginZoom: store.setPerOriginZoom,
     duplicateActiveTab: () => {
       store.duplicateActiveTab();
       peekCompactChrome();
@@ -202,9 +205,11 @@ export function useBrowserActions({
     toggleActiveTabEssential: store.toggleActiveTabEssential,
     toggleActiveTabMuted: () => store.toggleActiveTabMuted(activeWebview),
     toggleActiveTabPinned: store.toggleActiveTabPinned,
+    toggleActiveDevTools: () => store.toggleActiveDevTools(activeWebview),
     toggleCompactMode: store.toggleCompactMode,
     toggleFloatingSidebar: store.toggleFloatingSidebar,
     toggleFloatingToolbar: store.toggleFloatingToolbar,
+    newIncognitoWindow: store.newIncognitoWindow,
     toggleApplicationDevTools: () => {
       void window.astraShell?.toggleDevTools();
     },

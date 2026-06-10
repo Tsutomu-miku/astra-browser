@@ -1,3 +1,20 @@
+export {
+  clearAllPerOriginZoom,
+  clearPerOriginZoom,
+  getZoomForOrigin,
+  getZoomForUrl,
+  normalizePerOriginZoom,
+  upsertPerOriginZoom
+} from "./perOriginZoom";
+export {
+  DEFAULT_ZOOM_FACTOR,
+  formatZoomPercent,
+  MAX_ZOOM_FACTOR,
+  MIN_ZOOM_FACTOR,
+  normalizeZoomFactor,
+  stepZoomFactor,
+  ZOOM_STEP
+} from "./zoom";
 export { DEFAULT_URL, INTERNAL_NEW_TAB_URL, SEARCH_ENGINES } from "./constants";
 export { createClosedTab, createDefaultState, createFavorite, createId, createTab, getNextWorkspaceAccent } from "./factory";
 export {
@@ -39,7 +56,9 @@ export type {
   FaviconCache,
   Favorite,
   HistoryEntry,
+  IncognitoSessionMode,
   PartialBrowserState,
+  PerOriginZoomRule,
   SearchEngineKey,
   SitePermissionRule,
   SplitLayout,

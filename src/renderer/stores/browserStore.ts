@@ -13,7 +13,9 @@ import {
   addTabToFavorites,
   assignTabToGroup,
   addWorkspace,
+  clearAllPerOriginZoomSettings,
   clearHistory,
+  clearPerOriginZoom,
   clearWorkspaceBrowsingData,
   closeActiveTab,
   closeTab,
@@ -65,6 +67,8 @@ import {
   selectAdjacentTab,
   selectTab,
   setActiveTabZoom,
+  setIncognitoMode,
+  setPerOriginZoom,
   setWorkspaceSplitLayout,
   sleepIdleTabs,
   sleepInactiveTabs,
@@ -97,6 +101,7 @@ import {
   getBrowserPartitions,
   getProfileIdForPartition,
   getWorkspacePartition,
+  getZoomForUrl,
   type BrowserState
 } from "../domain/browser";
 import { getPermissionRule } from "../domain/permissions/sitePermissions";
@@ -154,6 +159,8 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     update(set, (state) => clearSitePermissionRule(state, profileId, origin, permission)),
   clearSitePermissionsForOrigin: (profileId, origin) =>
     update(set, (state) => clearSitePermissionRulesForOrigin(state, profileId, origin)),
+  clearPerOriginZoom: (origin) => update(set, (state) => clearPerOriginZoom(state, origin)),
+  clearAllPerOriginZoomSettings: () => update(set, clearAllPerOriginZoomSettings),
   deleteWorkspace: (workspaceId) => update(set, (state) => deleteWorkspace(state, workspaceId)),
   duplicateActiveTab: () => update(set, duplicateActiveTab),
   duplicateTab: (tabId) => update(set, (state) => duplicateTab(state, tabId)),
@@ -232,7 +239,17 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   reorderTabGroup: (groupId, targetGroupId, placement) =>
     update(set, (state) => reorderTabGroup(state, groupId, targetGroupId, placement)),
   reorderTab: (tabId, targetTabId, placement) => update(set, (state) => reorderTab(state, tabId, targetTabId, placement)),
-  resetActiveTabZoom: (webview) => update(set, (state) => syncZoom(resetActiveTabZoom(state), webview)),
+  resetActiveTabZoom: (webview) => {
+    const before = useBrowserStore.getState().state;
+    const activeUrl = getActiveUrl(before);
+    const next = update(set, (state) => syncZoom(resetActiveTabZoom(state), webview));
+    // 如果存在 per-origin 规则，重置到 defaultZoomFactor 也同步清掉，避免下次又被规则覆盖。
+    const overridden = getZoomForUrl(before.settings.perOriginZoom, activeUrl);
+    if (overridden !== undefined) {
+      update(set, (s) => clearPerOriginZoom(s, activeUrl));
+    }
+    return next;
+  },
   resolvePermissionRequest: (decision) => {
     const request = useBrowserStore.getState().permissionRequest;
     if (!request) return;
@@ -251,12 +268,33 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   restoreLastClosedTab: () => update(set, restoreLastClosedTab),
   runWebviewAction: (action, webview) => webview?.[action]?.(),
   selectAdjacentTab: (direction) => update(set, (state) => selectAdjacentTab(state, direction)),
-  selectTab: (tabId) => update(set, (state) => selectTab(state, tabId)),
+  selectTab: (tabId) => update(set, (state) => {
+    const selected = selectTab(state, tabId);
+    const ws = selected.workspaces.find((x) => x.id === selected.activeWorkspaceId);
+    const active = ws?.tabs.find((t) => t.id === ws.activeTabId);
+    const overridden = active
+      ? getZoomForUrl(selected.settings.perOriginZoom, active.url)
+      : undefined;
+    if (!active || overridden === undefined) return selected;
+    // tab 切换时若有 per-origin 规则，先写 tab.zoomFactor，再同步给 webview
+    active.zoomFactor = overridden;
+    return selected;
+  }),
   sleepIdleTabs: () => update(set, sleepIdleTabs),
   sleepInactiveTabs: () => update(set, sleepInactiveTabs),
   sleepTabGroup: (groupId) => update(set, (state) => sleepTabGroup(state, groupId)),
   sleepTab: (tabId) => update(set, (state) => sleepTab(state, tabId)),
-  setActiveTabZoom: (zoomFactor, webview) => update(set, (state) => syncZoom(setActiveTabZoom(state, zoomFactor), webview)),
+  setActiveTabZoom: (zoomFactor, webview) => {
+    const before = useBrowserStore.getState().state;
+    const activeUrl = getActiveUrl(before);
+    const next = update(set, (state) => syncZoom(setActiveTabZoom(state, zoomFactor), webview));
+    // 主动设置 zoom（非快捷键步长）→ 写入 per-origin，下次访问同站点恢复
+    const origin = activeUrl ? new URL(activeUrl).origin : null;
+    if (origin && (origin.startsWith("http://") || origin.startsWith("https://"))) {
+      update(set, (state) => setPerOriginZoom(state, origin, zoomFactor));
+    }
+    return next;
+  },
   setAddressValue: (addressValue) => {
     if (useBrowserStore.getState().addressValue !== addressValue) {
       set({ addressValue });
@@ -306,6 +344,24 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
     ? { floatingSidebarOpen: !state.floatingSidebarOpen, sidebarCollapsed: true }
     : { sidebarCollapsed: !state.sidebarCollapsed }),
   toggleSplitMode: () => update(set, toggleSplitMode),
+  setIncognito: (mode) => update(set, (state) => setIncognitoMode(state, mode)),
+  setPerOriginZoom: (origin, zoom) => update(set, (state) => setPerOriginZoom(state, origin, zoom)),
+  toggleActiveDevTools: (webview) => {
+    // 优先级：当前聚焦的 webview（Tab/Split/Glance）> 主窗口 Renderer。
+    // diagnostics.js 里的 F12 会走到主窗口，这里让 UI 层能显式传 webContentsId。
+    const webContentsId = typeof webview === "object" && webview && typeof (webview as { getWebContentsId?: () => number }).getWebContentsId === "function"
+      ? (webview as { getWebContentsId: () => number }).getWebContentsId()
+      : undefined;
+    void window.astraShell?.toggleDevTools?.(webContentsId);
+  },
+  newIncognitoWindow: () => {
+    const mode = useBrowserStore.getState().state.settings.incognito;
+    if (mode !== "in-memory") {
+      // 先自动启用 in-memory 模式（K-12 MVP：打开 incognito 就会同时打开模式）
+      update(set, (state) => setIncognitoMode(state, "in-memory"));
+    }
+    void window.astraShell?.openIncognitoWindow?.();
+  },
   ungroupActiveTab: () => update(set, ungroupActiveTab),
   ungroupTab: (tabId) => update(set, (state) => ungroupTab(state, tabId)),
   ungroupTabGroup: (groupId) => update(set, (state) => ungroupTabGroup(state, groupId)),
@@ -314,8 +370,41 @@ export const useBrowserStore = create<BrowserStore>((set) => ({
   updateTab: (tabId, patch) => update(set, (state) => updateTab(state, tabId, patch)),
   updateWorkspaceById: (workspaceId, patch) => update(set, (state) => updateWorkspaceById(state, workspaceId, patch)),
   updateWorkspace: (patch) => update(set, (state) => updateWorkspace(state, patch)),
-  zoomIn: (webview) => update(set, (state) => syncZoom(stepActiveTabZoom(state, 1), webview)),
-  zoomOut: (webview) => update(set, (state) => syncZoom(stepActiveTabZoom(state, -1), webview))
+  zoomIn: (webview) => update(set, (state) => {
+    const after = stepActiveTabZoom(state, 1);
+    // 同步写入 per-origin 以便下次访问恢复
+    const activeUrl = getActiveUrl(after);
+    try {
+      const origin = activeUrl && new URL(activeUrl).origin;
+      if (origin && (origin.startsWith("http://") || origin.startsWith("https://"))) {
+        const activeTab = after.workspaces.find((ws) => ws.id === after.activeWorkspaceId)
+          ?.tabs.find((tab) => tab.id === after.workspaces.find((ws) => ws.id === after.activeWorkspaceId)?.activeTabId);
+        if (activeTab) {
+          return setPerOriginZoom(syncZoom(after, webview), origin, activeTab.zoomFactor);
+        }
+      }
+    } catch {
+      /* ignore malformed URLs */
+    }
+    return syncZoom(after, webview);
+  }),
+  zoomOut: (webview) => update(set, (state) => {
+    const after = stepActiveTabZoom(state, -1);
+    const activeUrl = getActiveUrl(after);
+    try {
+      const origin = activeUrl && new URL(activeUrl).origin;
+      if (origin && (origin.startsWith("http://") || origin.startsWith("https://"))) {
+        const ws = after.workspaces.find((x) => x.id === after.activeWorkspaceId);
+        const activeTab = ws?.tabs.find((t) => t.id === ws.activeTabId);
+        if (activeTab) {
+          return setPerOriginZoom(syncZoom(after, webview), origin, activeTab.zoomFactor);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    return syncZoom(after, webview);
+  })
 }));
 
 function update(

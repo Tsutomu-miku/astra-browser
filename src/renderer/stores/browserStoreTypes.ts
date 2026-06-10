@@ -1,5 +1,12 @@
 import type { TabDropPlacement, TabFolder, WorkspaceDropPlacement } from "../domain/actions";
-import type { BrowserState, BrowserTab, DownloadEntry, SplitLayout, Workspace } from "../domain/browser";
+import type {
+  BrowserState,
+  BrowserTab,
+  DownloadEntry,
+  IncognitoSessionMode,
+  SplitLayout,
+  Workspace
+} from "../domain/browser";
 import type { WebviewAction, WebviewElement } from "../types/browser-ui";
 import type { PermissionRequestEvent } from "../types/electron";
 
@@ -41,6 +48,8 @@ export interface BrowserStore {
   closeTab: (tabId: string) => void;
   clearSitePermission: (profileId: string, origin: string, permission: string) => void;
   clearSitePermissionsForOrigin: (profileId: string, origin: string) => void;
+  clearPerOriginZoom: (origin: string) => void;
+  clearAllPerOriginZoomSettings: () => void;
   deleteWorkspace: (workspaceId: string) => void;
   duplicateActiveTab: () => void;
   duplicateTab: (tabId: string) => void;
@@ -125,6 +134,10 @@ export interface BrowserStore {
   ungroupTabGroup: (groupId: string) => void;
   zoomIn: (webview?: WebviewElement) => void;
   zoomOut: (webview?: WebviewElement) => void;
+  setIncognito: (mode: IncognitoSessionMode) => void;
+  setPerOriginZoom: (origin: string, zoom: number) => void;
+  toggleActiveDevTools: (webview?: WebviewElement) => void;
+  newIncognitoWindow: () => void;
   updateSettings: (patch: Partial<BrowserState["settings"]>) => void;
   updateTabGroup: (groupId: string, patch: Partial<Pick<Workspace["tabGroups"][number], "name" | "color">>) => void;
   updateTab: (tabId: string, patch: Partial<BrowserTab>) => void;

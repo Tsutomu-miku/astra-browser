@@ -30,6 +30,7 @@ export interface CommandActions {
   groupTab: (tabId: string) => void;
   moveTabToWorkspace: (tabId: string, workspaceId: string) => void;
   navigateActiveTab: (url: string) => void;
+  newIncognitoWindow: () => void;
   openGlance: (url: string, title?: string) => void;
   openFind: () => void;
   peekCompactChrome: () => void;
@@ -49,6 +50,7 @@ export interface CommandActions {
   sleepInactiveTabs: () => void;
   sleepTab: (tabId: string) => void;
   switchWorkspace: (workspaceId: string) => void;
+  toggleActiveDevTools: () => void;
   toggleActiveTabFavorite: () => void;
   toggleActiveTabEssential: () => void;
   toggleActiveTabMuted: () => void;

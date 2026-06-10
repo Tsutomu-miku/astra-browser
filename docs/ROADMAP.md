@@ -54,6 +54,20 @@ When a P0/P1 implementation reveals architecture that cannot support the target 
 
 ## Current Execution Batches
 
+### Milestone Bands 0–4 (maps to `docs/PRD.md` §5)
+
+These longer bands align the 4 execution batches with the gap inventory and risk
+schedule in PRD.md. Scope inside each band is non-normative — see PRD.md §5 for
+acceptance and PRD.md §4.3 for the 20-item "daily driver" threshold.
+
+| Band | Window | Maps to batch | Core delivery |
+| --- | --- | --- | --- |
+| M0 | Weeks 0–3 | Batch 1 tail + infra | P0 no-regressions, Playwright Electron scaffolding, 3 risk PoCs (MV3 compat, password-store, Safe Browsing) each with `docs/adr/NNN-*.md` |
+| M1 | Weeks 4–9 | Batch 2 finish | Sidebar/omnibox/Split/Glance Arc-parity; PRD §4.3 20-item daily-driver checklist ≥ 18/20 green |
+| M2 | Weeks 10–17 | Batch 3 + P0 extensions | Settings/permissions/history/downloads MVP; Chrome Web Store MV3 install baseline; local encrypted password store; Safe Browsing real-time lookup |
+| M3 | Weeks 18–31 | Batch 4 P1 expansion | DevTools parity, accounts/sync, multiple windows, native install/notarization/signing, full Playwright smoke matrix |
+| M4 | 2027+ | Batch 4 long tail | AI suite (notes/Easel/Boost/Summarize), multi-device sync, advanced history, mobile, Chromium-native embedding if required |
+
 ### Batch 1: P0 Stabilization
 
 Status: active.

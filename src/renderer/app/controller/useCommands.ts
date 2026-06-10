@@ -113,6 +113,12 @@ export function buildCommands(
       run: actions.newTab
     },
     {
+      title: "New incognito window",
+      subtitle: "Create in-memory session with no history or cookie persistence",
+      shortcut: shortcutLabels.newIncognitoWindow,
+      run: actions.newIncognitoWindow
+    },
+    {
       title: "Reopen closed tab",
       subtitle: workspace.closedTabs[0]?.title ?? "No closed tabs in this workspace",
       shortcut: shortcutLabels.restoreClosedTab,
@@ -227,6 +233,12 @@ export function buildCommands(
       subtitle: "Inspect the Astra shell",
       shortcut: shortcutLabels.devTools,
       run: actions.toggleApplicationDevTools
+    },
+    {
+      title: "Inspect current page",
+      subtitle: `Open DevTools for: ${activeTab.title || activeTab.url}`,
+      shortcut: shortcutLabels.devTools,
+      run: actions.toggleActiveDevTools
     },
     { title: "New workspace", subtitle: "Create a new Space", run: actions.addWorkspace },
     ...workspaceDeleteCommands,

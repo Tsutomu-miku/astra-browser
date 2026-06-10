@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, session, shell, webContents } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
@@ -10,11 +10,61 @@ function installIpcHandlers({
   toggleDevTools
 }) {
   ipcMain.handle("app-version", () => app.getVersion());
-  ipcMain.handle("toggle-devtools", (event) => {
+  ipcMain.handle("toggle-devtools", (event, webContentsId) => {
+    // PRD §5 M0 交付 E-4：统一 DevTools 入口。
+    // 优先开到指定 webContentsId（通常是当前活跃 tab 的 webview）；fallback 到主窗口。
+    if (typeof webContentsId === "number") {
+      const target = webContents.fromId(webContentsId);
+      if (target && !target.isDestroyed()) {
+        toggleDevTools({ webContents: target });
+        return;
+      }
+    }
     const win = BrowserWindow.fromWebContents(event.sender);
     if (win) {
       toggleDevTools(win);
     }
+  });
+  ipcMain.handle("open-incognito-window", (event) => {
+    // PRD §5 M0 交付 K-12 MVP：in-memory 无痕窗口。
+    // 无痕窗口使用默认 session 的 in-memory 副本（`partition` 前缀不带 persist:），
+    // 所有状态、cookie、缓存都不写磁盘。
+    const parentWin = BrowserWindow.fromWebContents(event.sender);
+    const bounds = parentWin && !parentWin.isDestroyed() ? parentWin.getBounds() : null;
+    const incognito = new BrowserWindow({
+      width: bounds?.width ?? 1200,
+      height: bounds?.height ?? 800,
+      x: bounds ? bounds.x + 40 : undefined,
+      y: bounds ? bounds.y + 40 : undefined,
+      backgroundColor: "#121212",
+      title: "Astra (Incognito)",
+      webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
+        partition: "in-memory:astra-incognito-" + Date.now().toString(36),
+        contextIsolation: true,
+        sandbox: false,
+        webviewTag: true
+      }
+    });
+
+    const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
+    if (DEV_SERVER_URL) {
+      incognito.loadURL(DEV_SERVER_URL + "#?mode=incognito");
+    } else {
+      incognito.loadFile(path.join(__dirname, "../../dist/renderer/index.html"), {
+        hash: "?mode=incognito"
+      });
+    }
+
+    require("./diagnostics").installWindowDiagnostics(incognito);
+    incognito.on("closed", () => {
+      try {
+        incognito.webContents.session.clearCache();
+        incognito.webContents.session.clearStorageData();
+      } catch {
+        /* ignore — session was already torn down */
+      }
+    });
   });
   ipcMain.handle("clear-browsing-data", async (_event, partitions) => {
     const targets = getSessionsForClearing(partitions);
@@ -162,7 +212,8 @@ function getValidPartitions(partitions) {
 }
 
 function isValidPartition(partition) {
-  return typeof partition === "string" && partition.startsWith("persist:");
+  return typeof partition === "string" &&
+    (partition.startsWith("persist:") || partition.startsWith("in-memory:"));
 }
 
 async function getDirectorySize(directoryPath) {

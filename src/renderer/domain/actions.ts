@@ -10,8 +10,12 @@ export {
   upsertDownload
 } from "./browsing/actions";
 export {
+  clearAllPerOriginZoomSettings,
+  clearPerOriginZoom,
   clearSitePermissionRule,
   clearSitePermissionRulesForOrigin,
+  setIncognitoMode,
+  setPerOriginZoom,
   setSitePermission,
   updateSettings
 } from "./permissions/settingsActions";

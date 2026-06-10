@@ -84,9 +84,12 @@ export function createDefaultState(): BrowserState {
     sitePermissions: [],
     settings: {
       chromeAccentMode: "neutral",
+      defaultZoomFactor: 1,
       homepage: DEFAULT_URL,
+      incognito: "disabled",
       memorySaverEnabled: true,
       memorySaverIdleMinutes: 30,
+      perOriginZoom: [],
       searchEngine: "google",
       startupBehavior: "restore",
       theme: "arc-dark"

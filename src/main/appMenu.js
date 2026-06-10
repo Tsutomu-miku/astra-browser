@@ -74,6 +74,11 @@ function buildApplicationMenu() {
           click: () => app.emit("new-window-requested")
         },
         {
+          label: "New Incognito Window",
+          accelerator: "CmdOrCtrl+Shift+N",
+          click: () => sendToFocusedRenderer("new-incognito-window")
+        },
+        {
           label: "Close Tab",
           accelerator: "CmdOrCtrl+W",
           click: () => sendToFocusedRenderer("close-active-tab")
@@ -175,7 +180,7 @@ function buildApplicationMenu() {
         {
           label: "Developer Tools",
           accelerator: isMac ? "Cmd+Alt+I" : "Ctrl+Shift+I",
-          click: (menuItem, browserWindow) => browserWindow?.webContents.toggleDevTools()
+          click: () => sendToFocusedRenderer("toggle-devtools")
         }
       ]
     },

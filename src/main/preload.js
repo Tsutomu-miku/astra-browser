@@ -4,7 +4,10 @@ contextBridge.exposeInMainWorld("astraShell", {
   clearBrowsingData: (partitions) => ipcRenderer.invoke("clear-browsing-data", partitions),
   getProfileStorageUsage: (partitions) => ipcRenderer.invoke("get-profile-storage-usage", partitions),
   getVersion: () => ipcRenderer.invoke("app-version"),
-  toggleDevTools: () => ipcRenderer.invoke("toggle-devtools"),
+  // 可选 webContentsId：如果传入，开到那个 tab 的 webview；否则开主窗口 DevTools
+  // （PRD E-4 统一入口）
+  toggleDevTools: (webContentsId) => ipcRenderer.invoke("toggle-devtools", webContentsId),
+  openIncognitoWindow: () => ipcRenderer.invoke("open-incognito-window"),
   onDownloadEvent: (listener) => {
     const wrapped = (_event, payload) => listener(payload);
     ipcRenderer.on("download-event", wrapped);

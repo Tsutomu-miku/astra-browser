@@ -2,6 +2,7 @@ export type SearchEngineKey = "google" | "duckduckgo" | "bing";
 export type StartupBehavior = "restore" | "homepage";
 export type ChromeAccentMode = "neutral" | "space";
 export type SplitLayout = "grid" | "horizontal" | "vertical";
+export type IncognitoSessionMode = "disabled" | "in-memory";
 export type ThemeKey =
   | "arc-dark"
   | "arc-light"
@@ -115,11 +116,20 @@ export interface SitePermissionRule {
   updatedAt: number;
 }
 
+export interface PerOriginZoomRule {
+  origin: string;
+  zoomFactor: number;
+  updatedAt: number;
+}
+
 export interface BrowserSettings {
   chromeAccentMode: ChromeAccentMode;
+  defaultZoomFactor: number;
   homepage: string;
+  incognito: IncognitoSessionMode;
   memorySaverEnabled: boolean;
   memorySaverIdleMinutes: number;
+  perOriginZoom: PerOriginZoomRule[];
   searchEngine: SearchEngineKey;
   startupBehavior: StartupBehavior;
   theme: ThemeKey;
@@ -164,6 +174,7 @@ export type PartialWorkspace = Partial<Omit<Workspace, "closedTabs" | "favoriteO
 export type PartialBrowserState = Partial<Omit<BrowserState, "settings" | "workspaces">> & {
   essentials?: Array<Partial<Favorite> | null>;
   faviconCache?: Record<string, unknown>;
+  perOriginZoom?: Array<Partial<PerOriginZoomRule> | null>;
   settings?: Partial<BrowserSettings>;
   sitePermissions?: Array<Partial<SitePermissionRule> | null>;
   workspaces?: PartialWorkspace[];

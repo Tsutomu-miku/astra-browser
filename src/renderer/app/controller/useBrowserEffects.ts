@@ -14,6 +14,7 @@ interface BrowserActions {
   closeActiveTab: () => void;
   findInPage: (query: string, forward?: boolean) => void;
   focusAddressBar: () => void;
+  newIncognitoWindow: () => void;
   newTab: () => void;
   openUrlInActiveWorkspace: (url: string, title?: string) => void;
   printActiveTab: () => void;
@@ -24,6 +25,7 @@ interface BrowserActions {
   setCommandOpen: (open: boolean) => void;
   setFindOpen: (open: boolean) => void;
   setPanel: (panel: "downloads" | "history" | "settings" | null) => void;
+  toggleActiveDevTools: () => void;
   toggleActiveTabFavorite: () => void;
   toggleActiveTabMuted: () => void;
   toggleSidebar: () => void;
@@ -110,6 +112,12 @@ function dispatchMainAction(actions: BrowserActions, findQuery: string, action: 
       break;
     case "reset-zoom":
       actions.resetActiveTabZoom();
+      break;
+    case "toggle-devtools":
+      actions.toggleActiveDevTools();
+      break;
+    case "new-incognito-window":
+      actions.newIncognitoWindow();
       break;
     default:
       break;

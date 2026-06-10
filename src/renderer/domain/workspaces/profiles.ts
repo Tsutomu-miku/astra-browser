@@ -2,13 +2,27 @@ import type { BrowserState, Workspace } from "../browser/types";
 
 const DEFAULT_PROFILE_ID = "default";
 const PARTITION_PREFIX = "persist:astra-";
+/**
+ * 无痕/访客模式 partition（Electron 的 in-memory session）。
+ * PRD §5 M0 交付 K-12 MVP：不写 cookie、localStorage、cache 到磁盘。
+ */
+const IN_MEMORY_PARTITION_PREFIX = "in-memory:astra-incognito-";
 
-export function getWorkspacePartition(workspace: Pick<Workspace, "profileId">): string {
+export type PartitionKind = "persistent" | "incognito";
+
+export function getWorkspacePartition(workspace: Pick<Workspace, "profileId">, kind: PartitionKind = "persistent"): string {
+  if (kind === "incognito") {
+    return `${IN_MEMORY_PARTITION_PREFIX}${normalizeWorkspaceProfileId(workspace.profileId)}-${Date.now().toString(36)}`;
+  }
   return `${PARTITION_PREFIX}${normalizeWorkspaceProfileId(workspace.profileId)}`;
 }
 
+export function isIncognitoPartition(partition: string): boolean {
+  return partition.startsWith(IN_MEMORY_PARTITION_PREFIX) || partition.startsWith("in-memory:");
+}
+
 export function getBrowserPartitions(state: Pick<BrowserState, "workspaces">): string[] {
-  return Array.from(new Set(state.workspaces.map(getWorkspacePartition)));
+  return Array.from(new Set(state.workspaces.map((ws) => getWorkspacePartition(ws))));
 }
 
 export function getProfileIdForPartition(
