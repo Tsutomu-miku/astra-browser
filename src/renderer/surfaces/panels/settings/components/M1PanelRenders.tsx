@@ -4,7 +4,9 @@ import type {
   AutofillDatabase,
   BrowserSettings,
   DownloadEntry,
+  ExtensionEntry,
   HistoryEntry,
+  ProfileEntry,
   ReaderSettings,
   SearchEngineKey,
   SitePermissionRule,
@@ -16,13 +18,18 @@ import {
   AutofillSettingsSection,
   DefaultBrowserSection,
   DownloadsSection,
+  ExtensionsSection,
   HistorySection,
+  PrintSection,
   PrivacySecuritySection,
   ReaderSettingsSection,
+  ResetAndCleanupSection,
   SearchEngineSection,
   SiteSettingsSection,
   StartupSection,
-  TranslationSettingsSection
+  SystemSection,
+  TranslationSettingsSection,
+  YouAndAstraSection
 } from "./M1Panels";
 import type { SettingsSectionId } from "../model/settingsSections";
 
@@ -85,6 +92,33 @@ export interface M1PanelProps {
   activeUrl: string | null;
   onUpdateTranslation: (patch: Partial<TranslationSettings>) => void;
   onTranslateNow: (targetLang: string) => void;
+
+  /* ===== M2.1 Profiles / Extensions ===== */
+  profiles: ProfileEntry[];
+  activeProfileId: string;
+  onSwitchProfile: (id: string) => void;
+  onAddProfile: (name: string, color: string) => void;
+  onDeleteProfile: (id: string) => void;
+  extensions: ExtensionEntry[];
+  onToggleExtension: (id: string, enabled: boolean) => void;
+  onUninstallExtension: (id: string) => void;
+  onInstallExtensionFromFile?: () => void;
+  onOpenExtensionStore?: () => void;
+
+  /* ===== M2.1 Print / System ===== */
+  settings: BrowserSettings;
+  onChangeSettings: (patch: Partial<BrowserSettings>) => void;
+  onPrintActiveTab: () => void;
+  onOpenFolder: (kind: "userData" | "profile") => void;
+  onRestartBrowser: () => void;
+  autoUpdateStatus: string;
+
+  /* ===== M2.1 Reset-and-cleanup ===== */
+  onResetSettings: () => void;
+  onClearAllBrowsingData: () => void;
+  onClearHistory: () => void;
+  onClearDownloads: () => void;
+  browsingDataCount: { history: number; downloads: number; permissions: number; autofill: number };
 }
 
 export function renderM1Panels(
@@ -172,6 +206,54 @@ export function renderM1Panels(
           activeUrl={p.activeUrl}
           onChange={p.onUpdateTranslation}
           onTranslateNow={p.onTranslateNow}
+        />
+      );
+    case "you-and-astra":
+      return (
+        <YouAndAstraSection
+          profiles={p.profiles}
+          activeProfileId={p.activeProfileId}
+          onSwitchProfile={p.onSwitchProfile}
+          onAddProfile={p.onAddProfile}
+          onDeleteProfile={p.onDeleteProfile}
+        />
+      );
+    case "extensions":
+      return (
+        <ExtensionsSection
+          extensions={p.extensions}
+          onToggleEnabled={p.onToggleExtension}
+          onUninstall={p.onUninstallExtension}
+          onInstallFromFile={p.onInstallExtensionFromFile}
+          onOpenStore={p.onOpenExtensionStore}
+        />
+      );
+    case "print":
+      return (
+        <PrintSection
+          settings={p.settings}
+          onChange={p.onChangeSettings}
+          onPrintActiveTab={p.onPrintActiveTab}
+        />
+      );
+    case "system":
+      return (
+        <SystemSection
+          settings={p.settings}
+          onChange={p.onChangeSettings}
+          onOpenFolder={p.onOpenFolder}
+          onRestartBrowser={p.onRestartBrowser}
+          autoUpdateStatus={p.autoUpdateStatus}
+        />
+      );
+    case "reset-and-cleanup":
+      return (
+        <ResetAndCleanupSection
+          onResetSettings={p.onResetSettings}
+          onClearAllBrowsingData={p.onClearAllBrowsingData}
+          onClearHistory={p.onClearHistory}
+          onClearDownloads={p.onClearDownloads}
+          browsingDataCount={p.browsingDataCount}
         />
       );
     default:

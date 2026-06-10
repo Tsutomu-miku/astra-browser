@@ -208,6 +208,14 @@ function installIpcHandlers({
     }
     return null;
   });
+  ipcMain.handle("app-relaunch", () => {
+    app.relaunch();
+    app.quit();
+  });
+  ipcMain.handle("get-user-data-paths", () => ({
+    userData: app.getPath("userData"),
+    profile: app.getPath("userData")
+  }));
 }
 
 function getSessionsForClearing(partitions) {

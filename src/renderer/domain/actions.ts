@@ -27,7 +27,16 @@ export {
   updateTranslationSettings,
   upsertAddress,
   upsertPassword,
-  upsertPaymentMethod
+  upsertPaymentMethod,
+  /* ===== M2.1 Profile / Extension / Reset ===== */
+  addProfile,
+  removeProfile,
+  switchProfile,
+  addExtension,
+  removeExtension,
+  toggleExtension,
+  resetSettings,
+  clearAllDownloads
 } from "./permissions/settingsActions";
 export {
   addTab,

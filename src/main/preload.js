@@ -38,5 +38,7 @@ contextBridge.exposeInMainWorld("astraShell", {
   printWebview: (webContentsId) => ipcRenderer.invoke("print-webview", webContentsId),
   showItemInFolder: (filePath) => ipcRenderer.invoke("show-item-in-folder", filePath),
   getProcessMemory: () => ipcRenderer.invoke("get-process-memory"),
-  getFaviconData: (url) => ipcRenderer.invoke("get-favicon-data", url)
+  getFaviconData: (url) => ipcRenderer.invoke("get-favicon-data", url),
+  relaunch: () => ipcRenderer.invoke("app-relaunch"),
+  getUserDataPaths: () => ipcRenderer.invoke("get-user-data-paths")
 });

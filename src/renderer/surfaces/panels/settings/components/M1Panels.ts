@@ -37,3 +37,12 @@ export {
   Row,
   SectionHeader
 } from "./shared/SettingsUIPrimitives";
+export {
+  PrintSection,
+  ResetAndCleanupSection,
+  SystemSection
+} from "./system/SystemPanels";
+export {
+  ExtensionsSection,
+  YouAndAstraSection
+} from "./you/YouAndExtensionsPanels";

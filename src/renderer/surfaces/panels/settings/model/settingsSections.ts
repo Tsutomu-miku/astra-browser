@@ -270,6 +270,7 @@ const LEGACY_REAL: ReadonlySet<SettingsSectionId> = new Set([
 ]);
 
 const M1_INTERACTIVE: ReadonlySet<SettingsSectionId> = new Set([
+  "you-and-astra",
   "autofill",
   "privacy-and-security",
   "appearance",
@@ -280,7 +281,11 @@ const M1_INTERACTIVE: ReadonlySet<SettingsSectionId> = new Set([
   "downloads",
   "performance",
   "accessibility",
-  "languages"
+  "extensions",
+  "languages",
+  "print",
+  "system",
+  "reset-and-cleanup"
 ]);
 
 export function isLegacyRealSection(id: SettingsSectionId): boolean {

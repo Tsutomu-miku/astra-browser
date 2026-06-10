@@ -5,9 +5,11 @@ import type {
   BrowserState,
   BrowserTab,
   DownloadEntry,
+  ExtensionEntry,
   IncognitoSessionMode,
   PasswordEntry,
   PaymentMethodEntry,
+  ProfileEntry,
   ReaderSettings,
   SplitLayout,
   TranslationSettings,
@@ -167,4 +169,16 @@ export interface BrowserStore {
   updateTab: (tabId: string, patch: Partial<BrowserTab>) => void;
   updateWorkspaceById: (workspaceId: string, patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>) => void;
   updateWorkspace: (patch: Partial<Pick<Workspace, "name" | "accent" | "homepage" | "profileName">>) => void;
+  /* ===== M2.1 Profiles / Extensions / Reset ===== */
+  addProfile: (name: string, color: string) => void;
+  removeProfile: (id: string) => void;
+  switchProfile: (id: string) => void;
+  switchActiveProfile: (profileId: string) => void;
+  addExtension: (ext: Omit<ExtensionEntry, "id" | "installedAt">) => void;
+  removeExtension: (id: string) => void;
+  toggleExtensionEnabled: (id: string, enabled: boolean) => void;
+  resetSettings: () => void;
+  clearAllDownloads: () => void;
+  openUserDataFolder: (kind?: "userData" | "profile") => void;
+  restartBrowser: () => void;
 }

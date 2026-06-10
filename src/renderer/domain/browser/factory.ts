@@ -107,8 +107,22 @@ export function createDefaultState(): BrowserState {
         autoTranslate: false,
         preferredTarget: "zh-CN",
         skipOrigins: []
-      }
+      },
+      printHeaders: true,
+      printBackgrounds: false,
+      printPaperSize: "A4",
+      printScale: 1,
+      backgroundAppMode: true,
+      hardwareAcceleration: true,
+      lowPowerMode: false,
+      forceHttps: false,
+      safeBrowsingEnabled: true,
+      activeProfileId: "personal"
     },
+    profiles: [
+      { id: "personal", name: "Personal", color: "#7dd3fc", createdAt: Date.now() }
+    ],
+    extensions: [],
     workspaces: [
       {
         id: "personal",

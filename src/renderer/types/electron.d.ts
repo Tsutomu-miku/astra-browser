@@ -73,6 +73,7 @@ export interface AstraShellApi {
   getProfileStorageUsage: (partitions: string[]) => Promise<ProfileStorageUsage[]>;
   getProcessMemory: () => Promise<ProcessMemorySnapshot>;
   getVersion: () => Promise<string>;
+  getUserDataPaths: () => Promise<{ userData: string; profile: string }>;
   onDownloadEvent: (listener: (payload: DownloadEvent) => void) => () => void;
   onMainAction: (listener: (action: MainProcessAction, args: unknown[]) => void) => () => void;
   onOpenUrlInNewTab: (listener: (url: string) => void) => () => void;
@@ -80,6 +81,7 @@ export interface AstraShellApi {
   openIncognitoWindow: () => Promise<void>;
   openPath: (filePath: string) => Promise<string>;
   printWebview: (webContentsId: number) => Promise<void>;
+  relaunch: () => Promise<void>;
   resolvePermissionRequest: (id: string, allowed: boolean) => Promise<void>;
   cancelDownload: (id: string) => Promise<void>;
   setProfilePartitions: (partitions: string[]) => Promise<void>;

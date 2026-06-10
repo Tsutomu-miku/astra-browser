@@ -1,9 +1,14 @@
+/* eslint-disable max-lines */
+// Settings / Profile / Extension / Autofill / Reader / Translation actions
+// share an updateBrowserState entry point and normalization helpers.
 import type {
   AddressEntry,
   AutofillDatabase,
   BrowserState,
+  ExtensionEntry,
   PasswordEntry,
   PaymentMethodEntry,
+  ProfileEntry,
   ReaderSettings,
   SitePermissionRule,
   TranslationSettings
@@ -28,6 +33,8 @@ export function updateSettings(state: BrowserState, patch: Partial<BrowserState[
     draft.settings.autofill = normalizeAutofillDatabase(draft.settings.autofill);
     draft.settings.reader = normalizeReaderSettings(draft.settings.reader);
     draft.settings.translation = normalizeTranslationSettings(draft.settings.translation);
+    draft.profiles = normalizeProfiles(draft.profiles);
+    draft.extensions = normalizeExtensions(draft.extensions);
   });
 }
 
@@ -242,4 +249,124 @@ function clamp(value: number, min: number, max: number, fallback: number): numbe
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, n));
+}
+
+/* ======= Profiles + Extensions (M2 C-1 / E-1) ======= */
+
+export function normalizeProfiles(value: unknown): ProfileEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((p): p is Partial<ProfileEntry> => Boolean(p) && typeof p === "object")
+    .map((p, index) => ({
+      id: typeof p.id === "string" && p.id.length > 0 ? p.id : `profile-${index}-${Date.now().toString(36)}`,
+      name: typeof p.name === "string" && p.name.length > 0 ? p.name : `Profile ${index + 1}`,
+      color: /^#([0-9a-f]{6}|[0-9a-f]{3})$/i.test(String(p.color ?? "")) ? String(p.color) : "#60a5fa",
+      createdAt: Number.isFinite(Number(p.createdAt)) ? Number(p.createdAt) : Date.now()
+    }));
+}
+
+export function normalizeExtensions(value: unknown): ExtensionEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((e): e is Partial<ExtensionEntry> => Boolean(e) && typeof e === "object")
+    .map((e, index) => ({
+      id: typeof e.id === "string" && e.id.length > 0 ? e.id : `ext-${index}-${Date.now().toString(36)}`,
+      name: typeof e.name === "string" && e.name.length > 0 ? e.name : `Extension ${index + 1}`,
+      version: typeof e.version === "string" ? e.version : "0.0.1",
+      description: typeof e.description === "string" ? e.description : undefined,
+      enabled: Boolean(e.enabled),
+      installedAt: Number.isFinite(Number(e.installedAt)) ? Number(e.installedAt) : Date.now()
+    }));
+}
+
+export function addProfile(state: BrowserState, name: string, color: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    draft.profiles.push({
+      id: `profile-${Date.now().toString(36)}`,
+      name,
+      color,
+      createdAt: Date.now()
+    });
+  });
+}
+
+export function removeProfile(state: BrowserState, id: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    if (draft.profiles.length <= 1) return;
+    draft.profiles = draft.profiles.filter((p) => p.id !== id);
+    if (draft.settings.activeProfileId === id) {
+      draft.settings.activeProfileId = draft.profiles[0]?.id;
+    }
+  });
+}
+
+export function switchProfile(state: BrowserState, id: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const next = draft.profiles.find((p) => p.id === id);
+    if (next) draft.settings.activeProfileId = next.id;
+  });
+}
+
+export function addExtension(state: BrowserState, ext: Omit<ExtensionEntry, "id" | "installedAt">): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    draft.extensions.push({
+      id: `ext-${Date.now().toString(36)}`,
+      installedAt: Date.now(),
+      ...ext
+    });
+  });
+}
+
+export function removeExtension(state: BrowserState, id: string): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    draft.extensions = draft.extensions.filter((e) => e.id !== id);
+  });
+}
+
+export function toggleExtension(state: BrowserState, id: string, enabled: boolean): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const ext = draft.extensions.find((e) => e.id === id);
+    if (ext) ext.enabled = enabled;
+  });
+}
+
+/* ======= Reset (M2 reset-and-cleanup) ======= */
+
+export function resetSettings(state: BrowserState): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    const preserved = {
+      autofill: draft.settings.autofill,
+      reader: draft.settings.reader,
+      translation: draft.settings.translation
+    };
+    const defaults = {
+      chromeAccentMode: "neutral" as const,
+      defaultZoomFactor: 1,
+      homepage: draft.settings.homepage,
+      incognito: "disabled" as const,
+      memorySaverEnabled: true,
+      memorySaverIdleMinutes: 30,
+      perOriginZoom: [],
+      searchEngine: "google" as const,
+      startupBehavior: "restore" as const,
+      theme: "arc-dark" as const,
+      printHeaders: true,
+      printBackgrounds: false,
+      printPaperSize: "A4" as const,
+      printScale: 1,
+      backgroundAppMode: true,
+      hardwareAcceleration: true,
+      lowPowerMode: false,
+      forceHttps: false,
+      safeBrowsingEnabled: true,
+      ...preserved
+    };
+    draft.settings = { ...draft.settings, ...defaults };
+  });
+}
+
+export function clearAllDownloads(state: BrowserState): BrowserState {
+  return updateBrowserState(state, (draft) => {
+    draft.downloads = [];
+  });
 }

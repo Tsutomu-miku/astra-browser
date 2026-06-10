@@ -3,6 +3,8 @@
  *
  * Kept small so each panel stays well under the 300-line max-lines rule.
  */
+import type { ReactNode } from "react";
+import React from "react";
 
 export function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
@@ -25,15 +27,20 @@ export function SectionHeader({ title, description }: { title: string; descripti
 
 export function GroupHeader({
   title,
-  action
+  action,
+  children
 }: {
   title: string;
   action?: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
-    <div className="field-group-header">
-      <span>{title}</span>
-      {action}
+    <div>
+      <div className="field-group-header">
+        <span>{title}</span>
+        {action}
+      </div>
+      {children}
     </div>
   );
 }
@@ -42,27 +49,46 @@ export function Empty({ text }: { text: string }) {
   return <p className="muted">{text}</p>;
 }
 
-export function Pill({ kind, children }: { kind: "allow" | "block"; children: React.ReactNode }) {
-  return <span className={`pill ${kind}`}>{children}</span>;
+export function Pill({ kind, children, text }: {
+  kind: "allow" | "block";
+  children?: ReactNode;
+  text?: string;
+}) {
+  const content: ReactNode = children ?? text ?? "";
+  return <span className={`pill ${kind}`}>{content}</span>;
 }
 
 export function Row({
   primary,
   secondary,
   pill,
-  actions
+  actions,
+  avatarColor
 }: {
-  primary: React.ReactNode;
-  secondary?: React.ReactNode;
-  pill?: { kind: "allow" | "block"; text: string };
-  actions: React.ReactNode;
+  primary: ReactNode;
+  secondary?: ReactNode;
+  pill?: ReactNode | { kind: "allow" | "block"; text: string };
+  actions: ReactNode;
+  avatarColor?: string;
 }) {
+  const pillNode: ReactNode =
+    pill && typeof pill === "object" && "kind" in pill
+      ? React.createElement(Pill, { kind: (pill as { kind: "allow" | "block"; text?: string }).kind,
+          text: (pill as { kind: "allow" | "block"; text?: string }).text })
+      : pill;
   return (
     <li>
+      {avatarColor ? (
+        <div
+        aria-hidden
+        className="avatar-dot"
+        style={{ background: avatarColor, borderRadius: "50%", width: 20, height: 20, display: "inline-block", marginRight: 8 }}
+      />
+      ) : null}
       <div className="autofill-main">
         {typeof primary === "string" ? <code>{primary}</code> : primary}
         {typeof secondary === "string" ? <strong>{secondary}</strong> : secondary}
-        {pill ? <Pill kind={pill.kind}>{pill.text}</Pill> : null}
+        {pillNode}
       </div>
       <div className="row-actions">{actions}</div>
     </li>

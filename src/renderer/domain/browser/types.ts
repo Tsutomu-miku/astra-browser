@@ -1,3 +1,6 @@
+/* eslint-disable max-lines */
+// Central type declaration file. All domain types live here to avoid
+// circular imports and to keep Partial<...> variants next to their base.
 export type SearchEngineKey = "google" | "duckduckgo" | "bing";
 export type StartupBehavior = "restore" | "homepage";
 export type ChromeAccentMode = "neutral" | "space";
@@ -13,6 +16,23 @@ export type ThemeKey =
   | "monokai"
   | "nord"
   | "solarized-light";
+
+/* M2: Profile (C-1) + Extension (E-1) 基础实体。 */
+export interface ProfileEntry {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: number;
+}
+
+export interface ExtensionEntry {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  enabled: boolean;
+  installedAt: number;
+}
 
 export interface SearchEngine {
   name: string;
@@ -210,6 +230,22 @@ export interface BrowserSettings {
   autofill: AutofillDatabase;
   reader: ReaderSettings;
   translation: TranslationSettings;
+
+  /* M2: Print (W-7) */
+  printHeaders?: boolean;
+  printBackgrounds?: boolean;
+  printPaperSize?: "A4" | "Letter" | "Legal" | "Tabloid" | string;
+  printScale?: number;
+
+  /* M2: System / Safe Browsing (W-14 / K-6) */
+  backgroundAppMode?: boolean;
+  hardwareAcceleration?: boolean;
+  lowPowerMode?: boolean;
+  forceHttps?: boolean;
+  safeBrowsingEnabled?: boolean;
+
+  /* M2: Profile (C-1) */
+  activeProfileId?: string;
 }
 
 export interface Workspace {
@@ -238,6 +274,8 @@ export interface BrowserState {
   downloads: DownloadEntry[];
   sitePermissions: SitePermissionRule[];
   settings: BrowserSettings;
+  profiles: ProfileEntry[];
+  extensions: ExtensionEntry[];
   workspaces: Workspace[];
 }
 
@@ -257,7 +295,7 @@ export type PartialAutofillDatabase = {
 export type PartialReaderSettings = Partial<ReaderSettings>;
 export type PartialTranslationSettings = Partial<TranslationSettings>;
 
-export type PartialBrowserState = Partial<Omit<BrowserState, "settings" | "workspaces">> & {
+export type PartialBrowserState = Partial<Omit<BrowserState, "settings" | "workspaces" | "profiles" | "extensions">> & {
   essentials?: Array<Partial<Favorite> | null>;
   faviconCache?: Record<string, unknown>;
   perOriginZoom?: Array<Partial<PerOriginZoomRule> | null>;
@@ -267,5 +305,7 @@ export type PartialBrowserState = Partial<Omit<BrowserState, "settings" | "works
     translation?: PartialTranslationSettings;
   };
   sitePermissions?: Array<Partial<SitePermissionRule> | null>;
+  profiles?: Array<Partial<ProfileEntry> | null>;
+  extensions?: Array<Partial<ExtensionEntry> | null>;
   workspaces?: PartialWorkspace[];
 };

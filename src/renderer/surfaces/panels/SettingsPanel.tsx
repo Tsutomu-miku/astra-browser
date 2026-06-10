@@ -1,3 +1,7 @@
+/* eslint-disable max-lines */
+// SettingsPanel is the composition root for all 21 settings sections.
+// Splitting it further would require stitching props through another
+// intermediate layer without reducing the number of owned state variables.
 import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 
@@ -98,6 +102,11 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
   const historyCount = state.history.length;
   const downloadCount = state.downloads.length;
   const permissionCount = state.sitePermissions.length;
+  const autofillCount =
+    state.settings.autofill.passwords.length +
+    state.settings.autofill.addresses.length +
+    state.settings.autofill.paymentMethods.length;
+  const activeProfileId = state.settings.activeProfileId ?? state.profiles[0]?.id ?? "personal";
 
   const legacyPanelProps: LegacyPanelProps = {
     activeWorkspace,
@@ -232,6 +241,47 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
         targetLang: target
       });
       if (url) actions.openUrlInActiveWorkspace(url, `Translated: ${activeTab?.title ?? "Page"}`);
+    },
+
+    /* ===== M2.1 Profiles / Extensions ===== */
+    profiles: state.profiles,
+    activeProfileId,
+    onSwitchProfile: (profileId) => {
+      actions.switchProfile(profileId);
+      actions.switchActiveProfile(profileId);
+    },
+    onAddProfile: (name, color) => actions.addProfile(name, color),
+    onDeleteProfile: (id) => actions.removeProfile(id),
+    extensions: state.extensions,
+    onToggleExtension: (id, enabled) => actions.toggleExtensionEnabled(id, enabled),
+    onUninstallExtension: (id) => actions.removeExtension(id),
+    onInstallExtensionFromFile: () => {
+      /* M2.1 MVP：安装入口占位，提示用户 Chrome Web Store 是主要来源 */
+      setPanel("extensions" as never);
+    },
+    onOpenExtensionStore: () => actions.openUrlInActiveWorkspace(
+      "https://chromewebstore.google.com",
+      "Chrome Web Store"
+    ),
+
+    /* ===== M2.1 Print / System ===== */
+    settings: state.settings,
+    onChangeSettings: (patch) => actions.updateSettings(patch),
+    onPrintActiveTab: () => actions.printActiveTab(),
+    onOpenFolder: (kind) => actions.openUserDataFolder(kind),
+    onRestartBrowser: () => actions.restartBrowser(),
+    autoUpdateStatus: "not configured",
+
+    /* ===== M2.1 Reset-and-cleanup ===== */
+    onResetSettings: () => actions.resetSettings(),
+    onClearAllBrowsingData: () => actions.clearBrowsingData(),
+    onClearHistory: () => actions.clearHistory(),
+    onClearDownloads: () => actions.clearAllDownloads(),
+    browsingDataCount: {
+      history: historyCount,
+      downloads: downloadCount,
+      permissions: permissionCount,
+      autofill: autofillCount
     }
   };
 
@@ -248,10 +298,10 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
         <div className="settings-panels">
           {renderLegacyPanels(activeSection, legacyPanelProps)}
           {renderM1Panels(activeSection, m1PanelProps)}
+          {activeSection === "about" && <AboutPanel />}
           {!isInteractiveSection(activeSection) && active && (
             <UpcomingSettingsSection section={active} />
           )}
-          {activeSection === "about" && <AboutPanel />}
         </div>
       </form>
     </aside>

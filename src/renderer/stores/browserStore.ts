@@ -105,7 +105,16 @@ import {
   upsertDownload,
   removeDownload,
   upsertPassword,
-  upsertPaymentMethod
+  upsertPaymentMethod,
+  /* ===== M2.1 Profile / Extension / Reset ===== */
+  addProfile,
+  removeProfile,
+  switchProfile,
+  addExtension,
+  removeExtension,
+  toggleExtension,
+  resetSettings,
+  clearAllDownloads
 } from "../domain/actions";
 import {
   getBrowserPartitions,
@@ -488,6 +497,31 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   updateTab: (tabId, patch) => update(set, (state) => updateTab(state, tabId, patch)),
   updateWorkspaceById: (workspaceId, patch) => update(set, (state) => updateWorkspaceById(state, workspaceId, patch)),
   updateWorkspace: (patch) => update(set, (state) => updateWorkspace(state, patch)),
+  /* ===== M2.1 Profiles / Extensions / Reset ===== */
+  addProfile: (name, color) => update(set, (state) => addProfile(state, name, color)),
+  removeProfile: (id) => update(set, (state) => removeProfile(state, id)),
+  switchProfile: (id) => update(set, (state) => switchProfile(state, id)),
+  switchActiveProfile: (profileId) => update(set, (state) => {
+    state.settings.activeProfileId = profileId;
+    return state;
+  }),
+  addExtension: (ext) => update(set, (state) => addExtension(state, ext)),
+  removeExtension: (id) => update(set, (state) => removeExtension(state, id)),
+  toggleExtensionEnabled: (id, enabled) => update(set, (state) => toggleExtension(state, id, enabled)),
+  resetSettings: () => update(set, resetSettings),
+  clearAllDownloads: () => update(set, clearAllDownloads),
+  openUserDataFolder: async (kind = "userData") => {
+    try {
+      const paths = await window.astraShell?.getUserDataPaths?.();
+      const target = paths?.[kind] ?? "";
+      if (target) void window.astraShell?.openPath?.(target);
+    } catch {
+      /* ignore — dev mode IPC may not be available */
+    }
+  },
+  restartBrowser: () => {
+    void window.astraShell?.relaunch?.();
+  },
   zoomIn: (webview) => update(set, (state) => {
     const after = stepActiveTabZoom(state, 1);
     // 同步写入 per-origin 以便下次访问恢复

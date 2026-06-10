@@ -17,6 +17,10 @@ import type {
 import { isThemeKey } from "../../common/theme/themePalette";
 import { getHomepageUrl, getReadableUrlTitle, getWorkspaceHomepageUrl, normalizeAddress } from "./navigation";
 import { normalizeSitePermissions } from "../permissions/sitePermissions";
+import {
+  normalizeExtensions,
+  normalizeProfiles
+} from "../permissions/settingsActions";
 import { getSplitTabIds, pruneSplitTabIds } from "../tabs/splitView";
 import { normalizeTabGroups } from "../tabs/groups";
 import { normalizeWorkspaceProfile } from "../workspaces/profiles";
@@ -34,6 +38,8 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
   state.essentials = normalizeFavorites(state.essentials, state.settings?.searchEngine);
   state.faviconCache = normalizeFaviconCache(state.faviconCache);
   state.sitePermissions = normalizeSitePermissions(state.sitePermissions);
+  state.profiles = normalizeProfiles(state.profiles);
+  state.extensions = normalizeExtensions(state.extensions);
   state.settings = { ...fallback.settings, ...(state.settings ?? {}) };
   if (!isSearchEngineKey(state.settings.searchEngine)) state.settings.searchEngine = fallback.settings.searchEngine;
   if (!isStartupBehavior(state.settings.startupBehavior)) state.settings.startupBehavior = fallback.settings.startupBehavior;

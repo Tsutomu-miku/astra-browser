@@ -242,6 +242,18 @@ export function useBrowserActions({
     updateTab: store.updateTab,
     updateWorkspaceById: store.updateWorkspaceById,
     updateWorkspace: store.updateWorkspace,
+    /* ===== M2.1 Profiles / Extensions / Reset ===== */
+    addProfile: store.addProfile,
+    removeProfile: store.removeProfile,
+    switchProfile: store.switchProfile,
+    switchActiveProfile: store.switchActiveProfile,
+    addExtension: store.addExtension,
+    removeExtension: store.removeExtension,
+    toggleExtensionEnabled: store.toggleExtensionEnabled,
+    resetSettings: store.resetSettings,
+    clearAllDownloads: store.clearAllDownloads,
+    openUserDataFolder: store.openUserDataFolder,
+    restartBrowser: store.restartBrowser,
     zoomIn: () => store.zoomIn(activeWebview),
     zoomOut: () => store.zoomOut(activeWebview)
   }), [activeWebview, focusAddressBar, peekCompactChrome, peekCompactSidebar, peekCompactToolbar, store, webviews]);
