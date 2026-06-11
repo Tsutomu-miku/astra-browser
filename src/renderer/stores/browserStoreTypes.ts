@@ -16,7 +16,7 @@ import type {
   Workspace
 } from "../domain/browser";
 import type { WebviewAction, WebviewElement } from "../types/browser-ui";
-import type { PermissionRequestEvent } from "../types/electron";
+import type { AutoUpdateState, PermissionRequestEvent } from "../types/electron";
 
 export type Panel = "history" | "downloads" | "settings" | "site" | null;
 
@@ -249,4 +249,11 @@ export interface BrowserStore {
   reloadInstalledPwaApps: () => Promise<void>;
   launchInstalledPwa: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
   uninstallPwa: (origin: string) => Promise<{ ok: boolean; reason?: string }>;
+  /* ===== M2.5 W-10 auto-update ===== */
+  autoUpdateState: AutoUpdateState | null;
+  setAutoUpdateState: (state: AutoUpdateState) => void;
+  refreshAutoUpdateState: () => Promise<void>;
+  checkForUpdates: () => Promise<{ ok: boolean; hasUpdate?: boolean; error?: string; reason?: string }>;
+  downloadUpdate: () => Promise<{ ok: boolean; error?: string; reason?: string }>;
+  installUpdateAndRestart: () => Promise<boolean>;
 }

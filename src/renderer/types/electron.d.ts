@@ -150,6 +150,56 @@ export interface AstraShellApi {
       | { canceled: false; folder: string; ok: boolean; id?: string; reason?: string }
     >;
   };
+  autoUpdate: AutoUpdateApi;
+}
+
+/**
+ * M2.5 W-10: electron-updater 状态 + IPC。
+ */
+export type AutoUpdateStatus =
+  | "idle"
+  | "checking"
+  | "available"
+  | "not-available"
+  | "downloading"
+  | "ready"
+  | "error";
+
+export interface AutoUpdateInfoFile {
+  url: string;
+  size: number;
+}
+
+export interface AutoUpdateInfo {
+  version: string;
+  releaseName: string | null;
+  releaseNotes: string | null;
+  releaseDate: string | null;
+  files: AutoUpdateInfoFile[];
+}
+
+export interface AutoUpdateProgress {
+  percent: number;
+  bytesPerSecond: number;
+  transferred: number;
+  total: number;
+}
+
+export interface AutoUpdateState {
+  status: AutoUpdateStatus;
+  currentVersion: string;
+  info: AutoUpdateInfo | null;
+  error: string | null;
+  progress: AutoUpdateProgress | null;
+  isEnabled: boolean;
+}
+
+export interface AutoUpdateApi {
+  getState: () => Promise<AutoUpdateState>;
+  check: () => Promise<{ ok: boolean; hasUpdate?: boolean; error?: string; reason?: string }>;
+  download: () => Promise<{ ok: boolean; error?: string; reason?: string }>;
+  installAndRestart: () => Promise<boolean>;
+  onStateChange: (listener: (state: AutoUpdateState) => void) => () => void;
 }
 
 export interface PiPToggleResult {

@@ -284,7 +284,12 @@ export function useBrowserActions({
     ingestInstalledPwaApp: store.ingestInstalledPwaApp,
     reloadInstalledPwaApps: store.reloadInstalledPwaApps,
     launchInstalledPwa: store.launchInstalledPwa,
-    uninstallPwa: store.uninstallPwa
+    uninstallPwa: store.uninstallPwa,
+    /* ===== M2.5 W-10 auto-update ===== */
+    refreshAutoUpdateState: store.refreshAutoUpdateState,
+    checkForUpdates: store.checkForUpdates,
+    downloadUpdate: store.downloadUpdate,
+    installUpdateAndRestart: store.installUpdateAndRestart
   }), [activeWebview, focusAddressBar, peekCompactChrome, peekCompactSidebar, peekCompactToolbar, store, webviews]);
 }
 

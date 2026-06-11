@@ -12,6 +12,7 @@ const { installAstraProtocol } = require("./astraProtocol");
 const { installPwaListeners } = require("./pwaInstall");
 const { loadFlags } = require("./astraProtocol");
 const mv3Extensions = require("./mv3Extensions");
+const { initUpdater } = require("./autoUpdaterService");
 
 /* M2.5 E-10: register astra:// protocol (newtab + flags).
  *   - astra://app -> renderer SPA
@@ -267,6 +268,9 @@ function sendToAll(channel, payload) {
   }
 }
 installPwaListeners({ sendToAll });
+
+/* M2.5 W-10 自动更新：electron-updater 初始化（仅 isPackaged 环境启用）。 */
+initUpdater({ sendToAll, allowPrerelease: false });
 
 /* M2.5 E-1/E-2 MV3 扩展兼容层（PoC，受 astra://flags 控制）。
  * 启用后在每个 session 上挂 content_scripts + DNR，并为有

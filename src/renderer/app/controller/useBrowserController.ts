@@ -136,6 +136,8 @@ export function useBrowserController() {
     ingestInstalledPwaApp: store.ingestInstalledPwaApp,
     reloadInstalledPwaApps: store.reloadInstalledPwaApps,
     reloadInstalledExtensions: store.reloadInstalledExtensions,
+    onAutoUpdateStateChange: store.setAutoUpdateState,
+    refreshAutoUpdateState: store.refreshAutoUpdateState,
     onShortcut: handleShortcut,
     openUrlInNewTab: (url) => store.openUrlInActiveWorkspace(url),
     sitePermissions: store.state.sitePermissions,

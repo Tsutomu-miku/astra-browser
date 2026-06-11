@@ -3,9 +3,11 @@
 // Splitting it further would require stitching props through another
 // intermediate layer without reducing the number of owned state variables.
 import { type ChangeEvent, useMemo, useRef, useState } from "react";
-import { FiX } from "react-icons/fi";
+import { FiDownload, FiRefreshCw, FiX } from "react-icons/fi";
 
 import { createBrowserStateBackup, parseBrowserStateBackup } from "../../platform/persistence/browserBackup";
+import { useBrowserStore } from "../../stores/browserStore";
+import type { AutoUpdateState } from "../../types/electron";
 import type { BrowserController } from "../../app/controller/types";
 import { useMemoryUsage } from "../../app/controller/useMemoryUsage";
 import { useProfileStorageUsage } from "../../app/controller/useProfileStorageUsage";
@@ -38,6 +40,7 @@ export function getDataSummary(history: number, downloads: number, permissions: 
 
 export function SettingsPanel({ controller }: { controller: BrowserController }) {
   const { actions, activeWorkspace, setPanel, state } = controller;
+  const autoUpdateState = useBrowserStore((s) => s.autoUpdateState);
   const profileStorage = useProfileStorageUsage(state.workspaces);
   const memoryUsage = useMemoryUsage(state.workspaces, profileStorage.entries);
   const memorySaver = getMemorySaverState(activeWorkspace, state);
@@ -275,7 +278,23 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
     onPrintActiveTab: (options) => actions.printActiveTab(options),
     onOpenFolder: (kind) => actions.openUserDataFolder(kind),
     onRestartBrowser: () => actions.restartBrowser(),
-    autoUpdateStatus: "not configured",
+    autoUpdateStatus: (() => {
+      if (!autoUpdateState) return "dev (not packaged)";
+      const map: Record<string, string> = {
+        idle: autoUpdateState.isEnabled ? "idle" : "dev (disabled)",
+        checking: "checking…",
+        available: `update available: ${autoUpdateState.info?.version ?? ""}`,
+        "not-available": "up to date",
+        downloading: `downloading ${autoUpdateState.progress?.percent.toFixed?.(1) ?? 0}%`,
+        ready: `${autoUpdateState.info?.version ?? "new version"} ready — restart to install`,
+        error: `error: ${autoUpdateState.error ?? ""}`
+      };
+      return map[autoUpdateState.status] ?? autoUpdateState.status;
+    })(),
+    autoUpdateState,
+    onCheckForUpdates: () => actions.checkForUpdates(),
+    onDownloadUpdate: () => actions.downloadUpdate(),
+    onInstallUpdateAndRestart: () => actions.installUpdateAndRestart(),
 
     /* ===== M2.1 Reset-and-cleanup ===== */
     onResetSettings: () => actions.resetSettings(),
@@ -309,7 +328,12 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
         <div className="settings-panels">
           {renderLegacyPanels(activeSection, legacyPanelProps)}
           {renderM1Panels(activeSection, m1PanelProps)}
-          {activeSection === "about" && <AboutPanel />}
+          {activeSection === "about" && <AboutPanel
+            autoUpdateState={m1PanelProps.autoUpdateState}
+            onCheckForUpdates={m1PanelProps.onCheckForUpdates}
+            onDownloadUpdate={m1PanelProps.onDownloadUpdate}
+            onInstallUpdateAndRestart={m1PanelProps.onInstallUpdateAndRestart}
+          />}
           {!isInteractiveSection(activeSection) && active && (
             <UpcomingSettingsSection section={active} />
           )}
@@ -361,14 +385,42 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
   );
 }
 
-function AboutPanel() {
+function AboutPanel({
+  autoUpdateState,
+  onCheckForUpdates,
+  onDownloadUpdate,
+  onInstallUpdateAndRestart
+}: {
+  autoUpdateState: AutoUpdateState | null;
+  onCheckForUpdates: () => unknown;
+  onDownloadUpdate: () => unknown;
+  onInstallUpdateAndRestart: () => unknown;
+}) {
+  const currentVersion = autoUpdateState?.currentVersion ?? "(dev mode)";
+  const isEnabled = autoUpdateState?.isEnabled ?? false;
+  const status = autoUpdateState?.status ?? "idle";
+
+  const statusText: Record<string, string> = {
+    idle: isEnabled ? "等待检查更新…" : "开发模式 · 自动更新已禁用",
+    checking: "正在检查更新…",
+    available: `发现新版本 ${autoUpdateState?.info?.version ?? ""}`,
+    "not-available": "已是最新版本",
+    downloading: `正在下载 ${autoUpdateState?.progress?.percent.toFixed(1)}%…`,
+    ready: `${autoUpdateState?.info?.version ?? ""} 已下载，点击安装并重启`,
+    error: `更新失败：${autoUpdateState?.error ?? ""}`
+  };
+
+  const isReady = status === "ready";
+  const canCheck = !["checking", "downloading", "ready"].includes(status);
+  const canDownload = status === "available";
+
   return (
     <section className="settings-pane" aria-label="About Astra">
       <div className="about-panel-grid">
         <label className="field"><span>App</span><strong>Astra Browser</strong></label>
         <label className="field">
           <span>Version</span>
-          <code>{typeof window.astraShell?.getVersion === "function" ? "(loaded via main IPC)" : "(dev mode)"}</code>
+          <code>{currentVersion}</code>
         </label>
         <label className="field"><span>Engine</span><code>Electron 42 · Chromium</code></label>
         <label className="field"><span>Open source</span>
@@ -376,10 +428,40 @@ function AboutPanel() {
             github.com/Tsutomu-miku/astra-browser
           </a>
         </label>
+        <label className="field"><span>Auto update</span>
+          <span className={isReady ? "pill is-allow" : status === "error" ? "pill is-block" : "pill"}>
+            {statusText[status]}
+          </span>
+        </label>
+        <div className="button-cluster about-update-cluster" role="group" aria-label="Update actions">
+          <button
+            type="button"
+            className="normal-button"
+            disabled={!canCheck || !isEnabled}
+            onClick={() => void onCheckForUpdates()}
+          >
+            <FiRefreshCw aria-hidden /> Check for updates
+          </button>
+          <button
+            type="button"
+            className="normal-button"
+            disabled={!canDownload}
+            onClick={() => void onDownloadUpdate()}
+          >
+            <FiDownload aria-hidden /> Download now
+          </button>
+          <button
+            type="button"
+            className={isReady ? "danger-button" : "normal-button"}
+            disabled={!isReady}
+            onClick={() => void onInstallUpdateAndRestart()}
+          >
+            {isReady ? "Install and restart" : "Install (waiting for download)"}
+          </button>
+        </div>
         <p className="muted">
-          M0 skeleton only. Full About page with license details, changelog,
-          and auto-update progress will land in M2 alongside W-10 (auto-update)
-          and W-11 (notarization / EV signing).
+          自动更新通过 GitHub Releases 的 latest-mac.yml / latest.yml 清单（provider = GitHub）。
+          包签名与 Notarization 见 ADR-0008 & docs/SIGNING.md。
         </p>
       </div>
     </section>

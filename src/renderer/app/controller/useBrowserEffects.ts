@@ -49,6 +49,8 @@ interface BrowserEffectsOptions {
   ingestInstalledPwaApp: (app: import("../../types/electron").PwaInstalledAppRecord) => void;
   reloadInstalledPwaApps: () => Promise<void> | void;
   reloadInstalledExtensions: () => Promise<void> | void;
+  onAutoUpdateStateChange: (state: import("../../types/electron").AutoUpdateState) => void;
+  refreshAutoUpdateState: () => Promise<void> | void;
   onShortcut: (intent: ShortcutIntent) => void;
   openUrlInNewTab: (url: string) => void;
   sitePermissions: SitePermissionRule[];
@@ -153,6 +155,8 @@ export function useBrowserEffects({
   ingestInstalledPwaApp,
   reloadInstalledPwaApps,
   reloadInstalledExtensions,
+  onAutoUpdateStateChange,
+  refreshAutoUpdateState,
   onShortcut,
   openUrlInNewTab,
   sitePermissions,
@@ -216,6 +220,13 @@ export function useBrowserEffects({
   useEffect(() => {
     void reloadInstalledExtensions();
   }, [reloadInstalledExtensions]);
+
+  /* ===== M2.5 W-10 auto-update: subscribe state + fetch once on mount ===== */
+  useEffect(() => {
+    const off = window.astraShell?.autoUpdate?.onStateChange?.(onAutoUpdateStateChange);
+    void refreshAutoUpdateState?.();
+    return off;
+  }, [onAutoUpdateStateChange, refreshAutoUpdateState]);
 
   useEffect(() => {
     window.astraShell?.setProfilePartitions(getBrowserPartitions({ workspaces }));

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { AutoUpdateState } from "../../../../types/electron";
 
 import type {
   AutofillDatabase,
@@ -120,7 +121,12 @@ export interface M1PanelProps {
   onPrintActiveTab: (options?: Record<string, unknown>) => void | Promise<unknown>;
   onOpenFolder: (kind: "userData" | "profile") => void;
   onRestartBrowser: () => void;
-  autoUpdateStatus: string;
+  /** @deprecated 保留用于类型兼容；AboutPanel 现通过 SettingsPanel 注入 autoUpdateState。 */
+  autoUpdateStatus?: string;
+  autoUpdateState: AutoUpdateState | null;
+  onCheckForUpdates: () => unknown;
+  onDownloadUpdate: () => unknown;
+  onInstallUpdateAndRestart: () => unknown;
 
   /* ===== M2.1 Reset-and-cleanup ===== */
   onResetSettings: () => void;
@@ -264,7 +270,7 @@ export function renderM1Panels(
           onChange={p.onChangeSettings}
           onOpenFolder={p.onOpenFolder}
           onRestartBrowser={p.onRestartBrowser}
-          autoUpdateStatus={p.autoUpdateStatus}
+          autoUpdateStatus={p.autoUpdateStatus ?? "idle"}
         />
       );
     case "reset-and-cleanup":

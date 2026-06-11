@@ -79,5 +79,17 @@ contextBridge.exposeInMainWorld("astraShell", {
     uninstall: (id) => ipcRenderer.invoke("mv3:uninstall-extension", id),
     installFromFolder: (folderPath) => ipcRenderer.invoke("mv3:install-from-folder", folderPath),
     pickFolderAndInstall: () => ipcRenderer.invoke("mv3:pick-folder-for-install")
+  },
+  /* ===== M2.5 W-10 auto-update ===== */
+  autoUpdate: {
+    getState: () => ipcRenderer.invoke("auto-update:get-state"),
+    check: () => ipcRenderer.invoke("auto-update:check"),
+    download: () => ipcRenderer.invoke("auto-update:download"),
+    installAndRestart: () => ipcRenderer.invoke("auto-update:install-restart"),
+    onStateChange: (listener) => {
+      const wrapped = (_event, payload) => listener(payload);
+      ipcRenderer.on("auto-update:state", wrapped);
+      return () => ipcRenderer.removeListener("auto-update:state", wrapped);
+    }
   }
 });

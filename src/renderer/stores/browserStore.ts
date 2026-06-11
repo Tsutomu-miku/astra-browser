@@ -169,6 +169,7 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   sidebarWidth: initialUiState.sidebarWidth ?? SIDEBAR_DEFAULT_WIDTH,
   state: initialState,
   glance: null,
+  autoUpdateState: null,
   cachePageHtml: (tabId, html) => {
     const cache = get().pageHtmlCache;
     cache.set(tabId, html);
@@ -798,6 +799,15 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     }
     return result ?? { ok: false, reason: "no-ipc" };
   },
+  /* ===== M2.5 W-10 auto-update ===== */
+  setAutoUpdateState: (state) => set({ autoUpdateState: state }),
+  refreshAutoUpdateState: async () => {
+    const s = await window.astraShell?.autoUpdate?.getState?.();
+    if (s) set({ autoUpdateState: s });
+  },
+  checkForUpdates: () => window.astraShell?.autoUpdate?.check?.() ?? Promise.resolve({ ok: false, reason: "no-ipc" }),
+  downloadUpdate: () => window.astraShell?.autoUpdate?.download?.() ?? Promise.resolve({ ok: false, reason: "no-ipc" }),
+  installUpdateAndRestart: () => window.astraShell?.autoUpdate?.installAndRestart?.() ?? Promise.resolve(false),
   zoomIn: (webview) => update(set, (state) => {
     const after = stepActiveTabZoom(state, 1);
     // 同步写入 per-origin 以便下次访问恢复

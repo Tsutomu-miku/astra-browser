@@ -23,6 +23,7 @@ const pwaConfirmInstall = pwaInstall.confirmInstall;
 const pwaLaunch = pwaInstall.launchInstalledApp;
 const pwaList = pwaInstall.listInstalledApps;
 const pwaUninstall = pwaInstall.uninstallApp;
+const autoUpdate = require("./autoUpdaterService");
 
 function installIpcHandlers({
   downloadItems,
@@ -284,6 +285,12 @@ function installIpcHandlers({
   ipcMain.handle("pwa:list-installed", () => pwaList());
   ipcMain.handle("pwa:launch", (_event, origin) => pwaLaunch(origin));
   ipcMain.handle("pwa:uninstall", (_event, origin) => pwaUninstall(origin));
+
+  /* ===== M2.5 W-10 auto-update ===== */
+  ipcMain.handle("auto-update:get-state", () => autoUpdate.getState());
+  ipcMain.handle("auto-update:check", () => autoUpdate.checkForUpdates(false));
+  ipcMain.handle("auto-update:download", () => autoUpdate.downloadUpdate());
+  ipcMain.handle("auto-update:install-restart", () => autoUpdate.installAndRestart());
 }
 
 function getSessionsForClearing(partitions) {
