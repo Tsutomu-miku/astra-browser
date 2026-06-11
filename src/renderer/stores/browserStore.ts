@@ -172,6 +172,8 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   autoUpdateState: null,
   ownWindowId: null,
   windowRegistry: [],
+  autofillPrompt: null,
+  autofillBridgePath: null,
   cachePageHtml: (tabId, html) => {
     const cache = get().pageHtmlCache;
     cache.set(tabId, html);
@@ -869,6 +871,113 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
       spaceId,
       defaultActiveTabId: tabId
     }) ?? Promise.resolve({ ok: false, reason: "no-ipc" }),
+  /* ===== ADR-0005 / P-2 autofill ===== */
+  loadAutofillBridgePath: async () => {
+    const p = await window.astraShell?.autofill?.getBridgePath?.();
+    if (p) set({ autofillBridgePath: p });
+  },
+  showAutofillPopup: (event) => {
+    if (!event?.detail) return;
+    const { focusedBucket, fields } = event.detail;
+    const s = useBrowserStore.getState().state.settings.autofill;
+    const matchPool = focusedBucket === "creditcard" ? (s.paymentMethods ?? []) : (s.addresses ?? []);
+    /** 按 focusedBucket 生成 candidates：遍历所有已保存的地址/卡，
+     *  生成 {id,label,subtitle,values} 映射。values 的 key = FIELD_TYPES.type（见 autofillContentScripts）。 */
+    const matches: Array<{
+      id: string; label: string; subtitle?: string; values: Record<string, string>;
+    }> = matchPool.map((entry: any) => {
+      if (focusedBucket === "address") {
+        // AddressEntry → 映射到 FIELD_TYPES 定义的字段 key
+        const e = entry as AddressEntry;
+        const values: Record<string, string> = {};
+        values.addressName = e.recipient || "";
+        const split = splitFullName(e.recipient || "");
+        values.firstName = split.first;
+        values.lastName = split.last;
+        values.street = e.address1 || "";
+        values.street2 = e.address2 || "";
+        values.city = e.city || "";
+        values.state = e.region || "";
+        values.zip = e.postalCode || "";
+        values.country = e.country || "";
+        values.phone = e.phone || "";
+        values.email = e.email || "";
+        return {
+          id: e.id,
+          label: e.label || e.recipient || e.address1,
+          subtitle: [e.city, e.region, e.postalCode].filter(Boolean).join(", "),
+          values
+        };
+      }
+      // creditcard: 不暴露明文卡，仅给出 LastFour + 品牌 + 过期信息；真实填充值需要解密
+      // 这里 MVP 把 cardLastFour / expiry / holderName 映射（encryption 层在 P-3 中展开）。
+      const e = entry as PaymentMethodEntry;
+      const values: Record<string, string> = {
+        ccName: e.cardholderName || "",
+        ccNumber: e.cardLastFour || "",
+        ccExpMonth: String(e.expiryMonth ?? ""),
+        ccExpYear: String(e.expiryYear ?? ""),
+        ccExp: [
+          String(e.expiryMonth ?? "").padStart(2, "0"),
+          String(e.expiryYear ?? "").slice(-2)
+        ].filter(Boolean).join("/")
+      };
+      return {
+        id: e.id,
+        label: e.label || `${e.cardholderName || "Card"} ••${e.cardLastFour || ""}`,
+        subtitle: `••${e.cardLastFour || ""}${values.ccExp ? ` · ${values.ccExp}` : ""}`,
+        values
+      };
+    });
+    // 只保留：该 form 中至少存在一个 type 可以填（不展示完全不匹配的条目）
+    const presentTypes = new Set((fields || []).map((f) => f.type));
+    const filtered = matches.filter((m) =>
+      Object.entries(m.values).some(([k, v]) => presentTypes.has(k) && v));
+    set({
+      autofillPrompt: {
+        webContentsId: event.webContentsId,
+        detail: event.detail,
+        matches: filtered,
+        offerSaveAddress: focusedBucket === "address" && presentTypes.size > 0
+      }
+    });
+  },
+  hideAutofillPopup: (wcId) => {
+    const cur = useBrowserStore.getState().autofillPrompt;
+    if (!cur) return;
+    if (wcId != null && cur.webContentsId != null && wcId !== cur.webContentsId) return;
+    set({ autofillPrompt: null });
+  },
+  acceptAutofillMatch: async (matchId) => {
+    const cur = useBrowserStore.getState().autofillPrompt;
+    if (!cur || typeof cur.webContentsId !== "number") return;
+    const m = cur.matches.find((x) => x.id === matchId);
+    if (!m) return;
+    await window.astraShell?.autofill?.fillForm?.({
+      webContentsId: cur.webContentsId,
+      values: m.values
+    });
+    set({ autofillPrompt: null });
+  },
+  saveCurrentFormAsAddress: (partial) => {
+    const id = partial?.id || `addr-${Date.now().toString(36)}`;
+    const entry: AddressEntry = {
+      id,
+      label: partial?.label || `${partial?.recipient || ""} ${partial?.address1 || ""}`.trim() || `Address ${id.slice(-4)}`,
+      recipient: partial?.recipient || "",
+      address1: partial?.address1 || "",
+      address2: partial?.address2 || "",
+      city: partial?.city || "",
+      region: partial?.region || "",
+      postalCode: partial?.postalCode || "",
+      country: partial?.country || "",
+      phone: partial?.phone || "",
+      email: partial?.email || "",
+      createdAt: partial?.createdAt || Date.now()
+    };
+    update(set, (state) => upsertAddress(state, entry));
+    set({ autofillPrompt: null });
+  },
   zoomIn: (webview) => update(set, (state) => {
     const after = stepActiveTabZoom(state, 1);
     // 同步写入 per-origin 以便下次访问恢复
@@ -917,4 +1026,22 @@ function update(
   saveBrowserState(next);
   set({ state: next, addressValue: getActiveUrl(next) });
   return next;
+}
+
+/** P-2 地址自动填充：把 "张三" / "John Smith" 等全名拆成 first/last。
+ *  中文：last = 首字，first = 其余；英文：按空格切，最后 token 为 last。
+ */
+function splitFullName(name: string): { first: string; last: string } {
+  const s = (name || "").trim();
+  if (!s) return { first: "", last: "" };
+  // 包含 CJK 字符 → 中文模式
+  if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(s)) {
+    if (s.length === 1) return { first: "", last: s };
+    if (s.length === 2) return { first: s[1], last: s[0] };
+    // 三字及以上：单姓 + 双名。（复姓 P-3 处理，按单姓是主流启发式）
+    return { first: s.slice(1), last: s[0] };
+  }
+  const parts = s.split(/\s+/);
+  if (parts.length === 1) return { first: parts[0], last: "" };
+  return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1] };
 }

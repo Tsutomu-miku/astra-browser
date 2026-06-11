@@ -1,5 +1,6 @@
 import { forwardRef, useRef, type ForwardedRef } from "react";
 
+import { useBrowserStore } from "../../../stores/browserStore";
 import type { WebviewElement } from "../../../types/browser-ui";
 
 export const GlanceWebview = forwardRef<WebviewElement, {
@@ -7,6 +8,7 @@ export const GlanceWebview = forwardRef<WebviewElement, {
   url: string;
 }>(({ partition, url }, ref) => {
   const localRef = useRef<WebviewElement | null>(null);
+  const autofillBridgePath = useBrowserStore((s) => s.autofillBridgePath);
 
   return (
     <webview
@@ -19,6 +21,7 @@ export const GlanceWebview = forwardRef<WebviewElement, {
       className="glance-webview"
       src={url}
       partition={partition}
+      preload={autofillBridgePath || undefined}
     />
   );
 });

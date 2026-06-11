@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import type { TabDropPlacement, TabFolder, WorkspaceDropPlacement } from "../domain/actions";
 import type {
   AddressEntry,
@@ -18,6 +19,7 @@ import type {
 import type { WebviewAction, WebviewElement } from "../types/browser-ui";
 import type {
   AutoUpdateState,
+  AutofillFieldFocusEvent,
   PermissionRequestEvent,
   WindowRegistryWindow
 } from "../types/electron";
@@ -276,4 +278,29 @@ export interface BrowserStore {
     reason?: string;
     windowId?: number | null;
   }>;
+  /* ===== ADR-0005 / P-2 autofill ===== */
+  /** 浮动弹窗状态：收到 field-focus 时填充并展示，用户点击/切换/隐藏时清空。 */
+  autofillPrompt: (AutofillFieldFocusEvent & {
+    /** 匹配到的候选（地址 or 信用卡）。 */
+    matches: Array<{
+      id: string;
+      label: string;
+      subtitle?: string;
+      values: Record<string, string>;
+    }>;
+    /** 若为 true，末尾显示 "保存新地址" 按钮。 */
+    offerSaveAddress?: boolean;
+  }) | null;
+  /** autofill bridge preload 文件路径，用于 <webview preload 属性>。 */
+  autofillBridgePath: string | null;
+  /** 一次性在启动时从 main 拉取 bridge preload 路径（由 useBrowserEffects 调用）。 */
+  loadAutofillBridgePath: () => Promise<void>;
+  /** main 推送 field-focus → renderer 生成 matches → 打开 popup。 */
+  showAutofillPopup: (event: AutofillFieldFocusEvent) => void;
+  /** 收到 field-blur / 失焦 / 用户 esc 时关闭。 */
+  hideAutofillPopup: (webContentsId?: number | null) => void;
+  /** 用户选择某个候选项 → 触发 IPC fillForm。 */
+  acceptAutofillMatch: (matchId: string) => Promise<void>;
+  /** 把当前 form 的值保存为新地址（由用户在 popup 底部点击触发）。 */
+  saveCurrentFormAsAddress: (partial: Partial<AddressEntry>) => void;
 }

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 export type DownloadState = "progressing" | "completed" | "cancelled" | "interrupted" | string;
 
 export interface DownloadEvent {
@@ -152,6 +153,44 @@ export interface AstraShellApi {
   };
   autoUpdate: AutoUpdateApi;
   windowRegistry: WindowRegistryApi;
+  autofill: AutofillApi;
+}
+
+/* ===== ADR-0005 / P-2 Autofill ===== */
+export type AutofillBucket = "address" | "creditcard";
+
+export interface AutofillFieldMeta {
+  type: string;
+  bucket: AutofillBucket;
+  label: string;
+  selector: string;
+}
+
+export interface AutofillFieldFocusEvent {
+  webContentsId: number | null;
+  detail: {
+    focusedType: string;
+    focusedBucket: AutofillBucket;
+    focusedLabel: string;
+    host: string;
+    fields: AutofillFieldMeta[];
+  };
+}
+
+export interface AutofillFillRequest {
+  webContentsId: number;
+  values: Record<string, string>;
+}
+
+export interface AutofillApi {
+  getBridgePath: () => Promise<string | null>;
+  fillForm: (payload: AutofillFillRequest) => Promise<{ ok: boolean; reason?: string }>;
+  onFieldFocus: (
+    listener: (event: AutofillFieldFocusEvent) => void
+  ) => () => void;
+  onFieldBlur: (
+    listener: (event: { webContentsId: number | null }) => void
+  ) => () => void;
 }
 
 /**

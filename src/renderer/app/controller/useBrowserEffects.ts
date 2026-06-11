@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useEffect } from "react";
 
 import {
@@ -7,7 +8,12 @@ import {
   type SitePermissionRule,
   type Workspace
 } from "../../domain/browser";
-import type { MainProcessAction, PermissionRequestEvent, SavePasswordRequestEvent } from "../../types/electron";
+import type {
+  AutofillFieldFocusEvent,
+  MainProcessAction,
+  PermissionRequestEvent,
+  SavePasswordRequestEvent
+} from "../../types/electron";
 import { resolveShortcut, type ShortcutIntent } from "../../common/shortcuts/keyboardShortcuts";
 
 interface BrowserActions {
@@ -55,6 +61,10 @@ interface BrowserEffectsOptions {
   syncWindowRegistry: (
     snapshot: import("../../types/electron").WindowRegistryWindow[]
   ) => void;
+  /** P-2 autofill. */
+  loadAutofillBridgePath: () => Promise<void> | void;
+  showAutofillPopup: (event: AutofillFieldFocusEvent) => void;
+  hideAutofillPopup: (wcId?: number | null) => void;
   onShortcut: (intent: ShortcutIntent) => void;
   openUrlInNewTab: (url: string) => void;
   sitePermissions: SitePermissionRule[];
@@ -167,7 +177,10 @@ export function useBrowserEffects({
   openUrlInNewTab,
   sitePermissions,
   sleepIdleTabs,
-  workspaces
+  workspaces,
+  loadAutofillBridgePath,
+  showAutofillPopup,
+  hideAutofillPopup
 }: BrowserEffectsOptions) {
   useEffect(() => window.astraShell?.onDownloadEvent((download) => {
     ingestDownload(download);
@@ -252,6 +265,19 @@ export function useBrowserEffects({
       return off?.();
     };
   }, [setOwnWindowId, syncWindowRegistry]);
+
+  /* ===== P-2 地址/卡自动填充：bridge path + field-focus 订阅 ===== */
+  useEffect(() => {
+    void loadAutofillBridgePath?.();
+  }, [loadAutofillBridgePath]);
+  useEffect(() => {
+    const offFocus = window.astraShell?.autofill?.onFieldFocus?.((ev) => showAutofillPopup(ev));
+    const offBlur = window.astraShell?.autofill?.onFieldBlur?.((ev) => hideAutofillPopup(ev?.webContentsId));
+    return () => {
+      offFocus?.();
+      offBlur?.();
+    };
+  }, [showAutofillPopup, hideAutofillPopup]);
 
   useEffect(() => {
     window.astraShell?.setProfilePartitions(getBrowserPartitions({ workspaces }));

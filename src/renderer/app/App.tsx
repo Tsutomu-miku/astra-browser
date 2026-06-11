@@ -14,6 +14,7 @@ import { SafeBrowsingPrompt } from "../surfaces/permissions/SafeBrowsingPrompt";
 import { SavePasswordPrompt } from "../surfaces/permissions/SavePasswordPrompt";
 import { Sidebar } from "../surfaces/sidebar/Sidebar";
 import { Topbar } from "../surfaces/topbar/Topbar";
+import { AutofillPopup } from "../surfaces/components/AutofillPopup";
 import { WebviewGrid } from "../surfaces/webview/WebviewGrid";
 
 export function App() {
@@ -82,6 +83,7 @@ export function App() {
         />
       )}
       {controller.commandOpen && <CommandPalette controller={controller} />}
+      {controller.actions.autofillPrompt && <AutofillPopup controller={controller} />}
     </>
   );
 }

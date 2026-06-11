@@ -6,6 +6,7 @@ import {
   syncWebviewPreferences,
   type NavigationState
 } from "../../../platform/webviewLifecycle";
+import { useBrowserStore } from "../../../stores/browserStore";
 import type { WebviewElement } from "../../../types/browser-ui";
 
 export function BrowserWebview({
@@ -192,6 +193,8 @@ export function BrowserWebview({
     syncWebviewPreferences(webview, tab);
   }, [tab.isMuted, tab.zoomFactor]);
 
+  const autofillBridgePath = useBrowserStore((s) => s.autofillBridgePath);
+
   return (
     <webview
       ref={ref}
@@ -200,6 +203,7 @@ export function BrowserWebview({
       src={tab.url}
       partition={partition}
       aria-hidden={!isVisible}
+      preload={autofillBridgePath || undefined}
     />
   );
 }

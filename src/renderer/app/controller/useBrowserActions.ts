@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useMemo } from "react";
 
 import type { BrowserStore } from "../../stores/browserStoreTypes";
@@ -293,7 +294,14 @@ export function useBrowserActions({
     /* ===== ADR-0005 / W-1 multi-window registry ===== */
     switchActiveSpaceForWindow: store.switchActiveSpaceForWindow,
     setActiveTabForWindow: store.setActiveTabForWindow,
-    openTabInNewWindow: store.openTabInNewWindow
+    openTabInNewWindow: store.openTabInNewWindow,
+    /* ===== ADR-0005 / P-2 autofill ===== */
+    autofillBridgePath: store.autofillBridgePath,
+    autofillPrompt: store.autofillPrompt,
+    showAutofillPopup: store.showAutofillPopup,
+    hideAutofillPopup: store.hideAutofillPopup,
+    acceptAutofillMatch: store.acceptAutofillMatch,
+    saveCurrentFormAsAddress: store.saveCurrentFormAsAddress
   }), [activeWebview, focusAddressBar, peekCompactChrome, peekCompactSidebar, peekCompactToolbar, store, webviews]);
 }
 

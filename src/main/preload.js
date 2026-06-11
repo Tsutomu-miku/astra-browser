@@ -103,5 +103,20 @@ contextBridge.exposeInMainWorld("astraShell", {
       ipcRenderer.on("window-registry:sync", wrapped);
       return () => ipcRenderer.removeListener("window-registry:sync", wrapped);
     }
+  },
+  /* ===== ADR-0005 / P-2 autofill ===== */
+  autofill: {
+    getBridgePath: () => ipcRenderer.invoke("autofill:get-bridge-path"),
+    fillForm: (payload) => ipcRenderer.invoke("autofill:fill-form", payload),
+    onFieldFocus: (listener) => {
+      const wrapped = (_event, payload) => listener(payload);
+      ipcRenderer.on("autofill:field-focus", wrapped);
+      return () => ipcRenderer.removeListener("autofill:field-focus", wrapped);
+    },
+    onFieldBlur: (listener) => {
+      const wrapped = (_event, payload) => listener(payload);
+      ipcRenderer.on("autofill:field-blur", wrapped);
+      return () => ipcRenderer.removeListener("autofill:field-blur", wrapped);
+    }
   }
 });

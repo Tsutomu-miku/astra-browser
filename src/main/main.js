@@ -14,6 +14,7 @@ const { loadFlags } = require("./astraProtocol");
 const mv3Extensions = require("./mv3Extensions");
 const { initUpdater } = require("./autoUpdaterService");
 const WindowRegistry = require("./windowRegistry");
+const autofill = require("./autofillContentScripts");
 
 /* M2.5 E-10: register astra:// protocol (newtab + flags).
  *   - astra://app -> renderer SPA
@@ -200,6 +201,11 @@ function installSessionBridge(targetSession, partition = "default") {
   });
   /* M2.5 E-1/E-2：如果 mv3 开关启用，给新 session 注入 content scripts + DNR。 */
   mv3Extensions.attachSession(targetSession);
+  /* ===== ADR-0005 / P-2 自动填充 =====
+   * 注入 DOM-level autofill shim（field 识别 + postMessage 桥）。
+   * 与 mv3Extensions 类似，仅在 session 首次接入时调用一次（setPreloads 内部幂等）。
+   */
+  autofill.installAutofillShim(targetSession);
 }
 
 function broadcastPermissionRequest(payload) {
@@ -266,6 +272,11 @@ installPwaListeners({ sendToAll });
 
 /* M2.5 W-10 自动更新：electron-updater 初始化（仅 isPackaged 环境启用）。 */
 initUpdater({ sendToAll, allowPrerelease: false });
+
+/* ===== ADR-0005 / P-2 自动填充 IPC =====
+ * autofill IPC 需要 broadcastToRenderer fan-out（所有 host 窗口都会收到 field-focus）。
+ */
+autofill.installAutofillIpc({ broadcastToRenderer: sendToAll });
 
 /* M2.5 E-1/E-2 MV3 扩展兼容层（PoC，受 astra://flags 控制）。
  * 启用后在每个 session 上挂 content_scripts + DNR，并为有
