@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ADR-0008 / W-11: macOS 签名用 entitlements 模板。
+  hardenedRuntime = true 时必须提供；Electron 应用需声明的最小权限集合：
+    - com.apple.security.cs.allow-jit：Chromium V8 JIT 必须
+    - com.apple.security.cs.allow-unsigned-executable-memory：Electron renderer
+    - com.apple.security.cs.disable-library-validation：允许加载未签名的原生模块（如 Electron internal）
+    - com.apple.security.cs.allow-dyld-environment-variables：DYLD env 兼容
+    - com.apple.security.network.client + server：浏览器基本网络能力
+    - com.apple.security.files.user-selected.(read|write)：用户显式选择文件的读写
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.network.server</key>
+    <true/>
+    <key>com.apple.security.files.user-selected.read-only</key>
+    <true/>
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+  </dict>
+</plist>

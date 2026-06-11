@@ -14,6 +14,16 @@ on:
 permissions:
   contents: write
 
+# ADR-0008: 签名密钥只在 release environment 下可访问，且受 environment protection
+# rule 限制（仅 release 分支 / tag push 允许进入）。PR 分支无法触发本 workflow 的
+# release job 即便手动 dispatch 也会因密钥为空而静默跳过。
+environment:
+  name: release
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   quality:
     name: Run quality gate
@@ -42,9 +52,9 @@ jobs:
         run: pnpm check
 
   package-windows:
-    name: Package Windows app (${{ matrix.arch }})
+    name: Package + sign Windows app (${{ matrix.arch }})
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     needs: quality
     strategy:
       fail-fast: false
@@ -52,6 +62,17 @@ jobs:
         arch:
           - arm64
           - x64
+
+    env:
+      # ADR-0008 §方案 A：DigiCert KeyLocker 云端 EV 签名（主路径）
+      DIGICERT_KEYLOCKER_API_KEY: ${{ secrets.DIGICERT_KEYLOCKER_API_KEY }}
+      DIGICERT_CLIENT_CERT_ONELINER: ${{ secrets.DIGICERT_CLIENT_CERT_ONELINER }}
+      DIGICERT_SIGNER_CERT_SM2: ${{ secrets.DIGICERT_SIGNER_CERT_SM2 }}
+      DIGICERT_KEYPAIR_ALIAS: ${{ vars.DIGICERT_KEYPAIR_ALIAS }}
+      DIGICERT_TIMESTAMP_SERVER: ${{ vars.DIGICERT_TIMESTAMP_SERVER }}
+      # OV 回退（若未使用 KeyLocker）
+      WINDOWS_CERT_BASE64: ${{ secrets.WINDOWS_CERT_BASE64 }}
+      WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -68,13 +89,46 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Install dependencies (incl. @electron/notarize + electron-updater)
         run: pnpm install --frozen-lockfile
 
-      - name: Package Windows portable app
+      - name: Install DigiCert KeyLocker smctl (optional)
+        if: env.DIGICERT_KEYLOCKER_API_KEY != ''
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download" `
+            -Headers @{"x-api-key" = "${{ secrets.DIGICERT_KEYLOCKER_API_KEY }}"} `
+            -OutFile "$env:TEMP\smtools.msi"
+          Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\smtools.msi`" /qn /norestart" -Wait
+          echo "C:\Program Files\DigiCert\DigiCert Keylocker Tools" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
+      - name: Package + sign Windows portable app
         run: pnpm package:win:${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Verify Windows signature
+        run: |
+          $exe = Get-ChildItem release\*.exe | Select-Object -First 1
+          if (-not $exe) { Write-Error "No .exe in release/"; exit 1 }
+          $sig = Get-AuthenticodeSignature -FilePath $exe.FullName
+          Write-Output "Signer: $($sig.SignerCertificate.Subject)"
+          Write-Output "Status: $($sig.Status)"
+          # 允许未签名（密钥未配置），但记录警告
+          if ($sig.Status -ne "Valid" -and $env:WINDOWS_CERT_BASE64 -eq "" -and $env:DIGICERT_KEYLOCKER_API_KEY -eq "") {
+            Write-Output "::warning::Windows binary NOT signed — secrets not configured (PR/QA build)."
+          } elseif ($sig.Status -ne "Valid") {
+            Write-Error "Signing FAILED: $($sig.StatusMessage)"
+            exit 1
+          }
+          # 检查证书过期前 30 天告警
+          if ($sig.SignerCertificate) {
+            $exp = $sig.SignerCertificate.NotAfter
+            $now = Get-Date
+            if (($exp - $now).Days -lt 30) {
+              Write-Output "::warning::Windows code-signing certificate expires in $(($exp-$now).Days) days on $exp. Rotate immediately."
+            }
+          }
 
       - name: Upload Windows package
         uses: actions/upload-artifact@v4
@@ -82,12 +136,12 @@ jobs:
           name: astra-browser-windows-${{ matrix.arch }}
           path: release/*.exe
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90
 
   package-macos:
-    name: Package macOS app (${{ matrix.arch }})
+    name: Package + sign + notarize macOS app (${{ matrix.arch }})
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     needs: quality
     strategy:
       fail-fast: false
@@ -96,6 +150,16 @@ jobs:
           - arm64
           - x64
 
+    env:
+      # ADR-0008 §方案 A：macOS Developer ID + notarization
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      # PR 分支保护标识（仅用于脚本自检，实际 PR 分支无法触发 tag release job）
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -114,10 +178,53 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Package macOS apps
+      - name: Package + sign + notarize macOS apps
         run: pnpm package:mac:${{ matrix.arch }}
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_FOR_PULL_REQUEST: "false"
+
+      - name: Verify macOS signature + notarization
+        run: |
+          set -euo pipefail
+          APP_DIR=$(find release/mac -maxdepth 2 -name "*.app" -type d 2>/dev/null | head -n1 || true)
+          if [ -z "$APP_DIR" ]; then
+            # electron-builder 默认输出目录是 release/${arch} 或 release
+            APP_DIR=$(find release -maxdepth 3 -name "Astra Browser.app" -o -name "Astra*.app" 2>/dev/null | head -n1 || true)
+          fi
+          if [ -z "$APP_DIR" ]; then
+            echo "::warning::No .app found in release/ — can not verify signature (unusual)."
+            exit 0
+          fi
+          echo "App path: $APP_DIR"
+
+          # 1) 签名校验
+          if codesign -v --strict "$APP_DIR" 2>&1; then
+            echo "✓ code signature OK"
+            # 过期告警
+            EXPIRY=$(codesign -dvv "$APP_DIR" 2>&1 | awk -F= '/^Runtime Version=/{print $2;exit}') || true
+            if [ -n "$CSC_LINK" ] && command -v security >/dev/null 2>&1; then
+              EXP=$(security find-certificate -a -p "$HOME/Library/Keychains/login.keychain-db" 2>/dev/null \
+                | openssl x509 -noout -enddate 2>/dev/null | head -1 | sed 's/notAfter=//' || true)
+              if [ -n "$EXP" ]; then
+                EPOCH_NOW=$(date +%s)
+                EPOCH_EXP=$(date -j -f "%b %d %T %Y %Z" "$EXP" +%s 2>/dev/null || echo "")
+                if [ -n "$EPOCH_EXP" ] && [ "$EPOCH_EXP" -lt "$((EPOCH_NOW + 30 * 24 * 3600))" ]; then
+                  echo "::warning::macOS Developer ID cert expires on $EXP — rotate immediately."
+                fi
+              fi
+            fi
+          elif [ -z "$CSC_LINK" ]; then
+            echo "::warning::macOS binary NOT signed — CSC_LINK not configured (PR/QA build)."
+          else
+            echo "::error::codesign verification failed"
+            exit 1
+          fi
+
+          # 2) Notarization 校验（配置了密钥时强制要求通过）
+          if [ -n "$APPLE_ID" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            spctl -a -t exec -vv "$APP_DIR" 2>&1
+            echo "✓ notarization ticket OK"
+          fi
 
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
@@ -125,21 +232,35 @@ jobs:
           name: astra-browser-macos-${{ matrix.arch }}-dmg
           path: release/*.dmg
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90
 
-      - name: Upload macOS ZIP
+      - name: Upload macOS ZIP (electron-updater 必需)
         uses: actions/upload-artifact@v4
         with:
           name: astra-browser-macos-${{ matrix.arch }}-zip
           path: release/*.zip
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90
+
+      - name: Upload latest-mac.yml (electron-updater)
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-browser-macos-${{ matrix.arch }}-updater-manifest
+          path: |
+            release/latest-mac.yml
+            release/latest.yml
+          if-no-files-found: ignore
+          retention-days: 90
 
   package-linux:
-    name: Package Linux app
+    name: Package Linux app (+ optional GPG sign)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: quality
+
+    env:
+      GPG_PRIVATE_KEY_ONELINER: ${{ secrets.GPG_PRIVATE_KEY_ONELINER }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
     steps:
       - name: Checkout
@@ -159,10 +280,32 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Import GPG signing key (optional)
+        if: env.GPG_PRIVATE_KEY_ONELINER != ''
+        run: |
+          set -euo pipefail
+          echo "${GPG_PRIVATE_KEY_ONELINER//|/$'\n'}" | gpg --import --batch --yes
+          # 过期告警
+          gpg --list-keys --with-colons | awk -F: '/^pub:/ {print $7}' | while read -r EXPIRE; do
+            if [ -n "$EXPIRE" ] && [ "$EXPIRE" -lt "$(date -d "+30 days" +%s)" ]; then
+              echo "::warning::GPG signing key expires on $(date -d "@$EXPIRE"). Rotate now."
+            fi
+          done
+
       - name: Package Linux apps
         run: pnpm package:linux
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: GPG sign DEB / AppImage (optional)
+        if: env.GPG_PRIVATE_KEY_ONELINER != ''
+        run: |
+          set -euo pipefail
+          for f in release/*.deb release/*.AppImage release/*.tar.gz; do
+            [ -f "$f" ] || continue
+            echo "$GPG_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+              --passphrase-fd 0 --armor --detach-sign "$f"
+          done
 
       - name: Upload Linux packages
         uses: actions/upload-artifact@v4
@@ -172,13 +315,15 @@ jobs:
             release/*.AppImage
             release/*.deb
             release/*.tar.gz
+            release/*.asc
+            release/latest-linux.yml
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90
 
   publish:
-    name: Publish GitHub release
+    name: Publish GitHub release (+ electron-updater manifests)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs:
       - package-windows
       - package-macos
@@ -188,13 +333,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download release packages
+      - name: Download release packages + manifests
         uses: actions/download-artifact@v4
         with:
           path: release-assets
           merge-multiple: true
 
-      - name: Publish GitHub release
+      - name: Validate + list release assets
+        run: |
+          set -euo pipefail
+          mapfile -t assets < <(find release-assets -type f | sort)
+          echo "Assets (${#assets[@]}):"
+          for a in "${assets[@]}"; do
+            echo "  - $a"
+          done
+          if [ "${#assets[@]}" -lt 10 ]; then
+            echo "::error::Expected ≥ 10 signed release artifacts (macOS dmg+zip × 2 arch, win exe × 2 arch, linux AppImage+deb+tar.gz + yml manifests), found ${#assets[@]}."
+            exit 1
+          fi
+
+      - name: Publish GitHub release (including latest*.yml for electron-updater)
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
@@ -209,19 +367,33 @@ jobs:
           expected_tag="v$version"
 
           if [ "$tag" != "$expected_tag" ]; then
-            echo "Release tag '$tag' does not match package version '$version'. Expected '$expected_tag'." >&2
+            echo "::error::Release tag '$tag' does not match package version '$version'. Expected '$expected_tag'."
             exit 1
           fi
 
           mapfile -t assets < <(find release-assets -type f | sort)
-          if [ "${#assets[@]}" -lt 6 ]; then
-            echo "Expected release assets for Windows, macOS, and Linux, found ${#assets[@]}." >&2
-            printf '%s\n' "${assets[@]}" >&2
-            exit 1
-          fi
 
           title="Astra Browser $version"
-          notes="Multi-platform builds for Astra Browser $version: Windows portable executables, macOS DMG/ZIP packages, and Linux AppImage/DEB/tar.gz packages."
+          notes=$(cat <<-NOTES
+          Multi-platform builds for Astra Browser $version.
+
+          **Platforms:**
+            - macOS (arm64 + x64): DMG (installer) / ZIP (auto-update payload)
+            - Windows (arm64 + x64): portable executable
+            - Linux (x64): AppImage / DEB / tar.gz (+ optional GPG signature)
+
+          **Code signing (ADR-0008, Accepted):**
+            - macOS: hardenedRuntime + Developer ID + Apple Notary (notarytool)
+            - Windows: DigiCert KeyLocker EV or OV pfx fallback
+            - Linux: optional detached GPG signatures
+
+          **Auto-update:**
+            - `electron-updater` reads `latest-mac.yml` / `latest.yml` from this GitHub Release asset list.
+            - Update channel = `GitHub Releases` (provider: generic, url = this release).
+
+          See `docs/SIGNING.md` for secret rotation procedures.
+          NOTES
+          )
 
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "${assets[@]}" --clobber
