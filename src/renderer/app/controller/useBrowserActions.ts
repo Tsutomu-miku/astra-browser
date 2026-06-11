@@ -289,7 +289,11 @@ export function useBrowserActions({
     refreshAutoUpdateState: store.refreshAutoUpdateState,
     checkForUpdates: store.checkForUpdates,
     downloadUpdate: store.downloadUpdate,
-    installUpdateAndRestart: store.installUpdateAndRestart
+    installUpdateAndRestart: store.installUpdateAndRestart,
+    /* ===== ADR-0005 / W-1 multi-window registry ===== */
+    switchActiveSpaceForWindow: store.switchActiveSpaceForWindow,
+    setActiveTabForWindow: store.setActiveTabForWindow,
+    openTabInNewWindow: store.openTabInNewWindow
   }), [activeWebview, focusAddressBar, peekCompactChrome, peekCompactSidebar, peekCompactToolbar, store, webviews]);
 }
 

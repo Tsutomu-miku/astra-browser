@@ -91,5 +91,17 @@ contextBridge.exposeInMainWorld("astraShell", {
       ipcRenderer.on("auto-update:state", wrapped);
       return () => ipcRenderer.removeListener("auto-update:state", wrapped);
     }
+  },
+  /* ===== ADR-0005 / W-1 multi-window × Space registry ===== */
+  windowRegistry: {
+    get: () => ipcRenderer.invoke("window-registry:get"),
+    setActiveSpace: (payload) => ipcRenderer.invoke("window-registry:set-active-space", payload),
+    setFocus: (payload) => ipcRenderer.invoke("window-registry:set-focus", payload),
+    openNewWindow: (payload) => ipcRenderer.invoke("window-registry:open-new-window", payload),
+    onSync: (listener) => {
+      const wrapped = (_event, payload) => listener(payload);
+      ipcRenderer.on("window-registry:sync", wrapped);
+      return () => ipcRenderer.removeListener("window-registry:sync", wrapped);
+    }
   }
 });

@@ -151,6 +151,7 @@ export interface AstraShellApi {
     >;
   };
   autoUpdate: AutoUpdateApi;
+  windowRegistry: WindowRegistryApi;
 }
 
 /**
@@ -242,4 +243,46 @@ declare global {
   interface Window {
     astraShell?: AstraShellApi;
   }
+}
+
+/**
+ * ADR-0005 Accepted / W-1: 多窗口 × Space 同步类型。
+ */
+export interface WindowRegistrySpaceFocus {
+  activeTabId: string;
+  splitFocusTabId?: string | null;
+  glance?: { title: string; url: string } | null;
+  panel?: "history" | "downloads" | "settings" | "site" | null;
+  findOpen?: boolean;
+}
+
+export interface WindowRegistryWindow {
+  windowId: number;
+  bounds: { x: number; y: number; width: number; height: number };
+  isMaximized: boolean;
+  isFullScreen: boolean;
+  activeSpaceId: string;
+  spaceFocus: Record<string, WindowRegistrySpaceFocus>;
+}
+
+export interface WindowRegistryApi {
+  get: () => Promise<{
+    ownWindowId: number | null;
+    registry: WindowRegistryWindow[];
+  }>;
+  setActiveSpace: (payload: {
+    spaceId: string;
+    defaultActiveTabId?: string;
+  }) => Promise<{ ok: boolean; reason?: string }>;
+  setFocus: (payload: {
+    spaceId: string;
+    patch: Partial<WindowRegistrySpaceFocus>;
+  }) => Promise<{ ok: boolean; reason?: string }>;
+  openNewWindow: (payload: {
+    spaceId: string;
+    defaultActiveTabId?: string;
+  }) => Promise<{ ok: boolean; reason?: string; windowId?: number | null }>;
+  onSync: (
+    listener: (registry: WindowRegistryWindow[]) => void
+  ) => () => void;
 }

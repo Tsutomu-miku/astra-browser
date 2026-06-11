@@ -13,6 +13,7 @@ const { installPwaListeners } = require("./pwaInstall");
 const { loadFlags } = require("./astraProtocol");
 const mv3Extensions = require("./mv3Extensions");
 const { initUpdater } = require("./autoUpdaterService");
+const WindowRegistry = require("./windowRegistry");
 
 /* M2.5 E-10: register astra:// protocol (newtab + flags).
  *   - astra://app -> renderer SPA
@@ -47,23 +48,7 @@ function loadWindowStates() {
 }
 
 function saveWindowStates() {
-  const snapshot = [];
-  for (const win of windows) {
-    if (!win || win.isDestroyed()) continue;
-    try {
-      const bounds = win.getBounds();
-      snapshot.push({
-        x: bounds.x,
-        y: bounds.y,
-        width: bounds.width,
-        height: bounds.height,
-        isMaximized: win.isMaximized(),
-        isFullScreen: win.isFullScreen()
-      });
-    } catch {
-      /* ignore tearing */
-    }
-  }
+  const snapshot = WindowRegistry.serialize();
   try {
     fs.writeFileSync(windowStatePath(), JSON.stringify({ windows: snapshot }));
   } catch {
@@ -71,7 +56,7 @@ function saveWindowStates() {
   }
 }
 
-function createWindow(saved) {
+function createWindow(saved, opts) {
   const win = new BrowserWindow({
     x: saved?.isMaximized ? undefined : saved?.x,
     y: saved?.isMaximized ? undefined : saved?.y,
@@ -95,24 +80,34 @@ function createWindow(saved) {
   if (saved?.isFullScreen) win.setFullScreen(true);
   windows.add(win);
   installWindowDiagnostics(win);
+  /* ADR-0005 方案 A：把新窗口注册到 WindowRegistry。
+   * 默认 Space ID = 最后一个 saved 的 activeSpaceId 或传入的 defaultSpaceId，
+   * 找不到时回退到 workspace[0]（renderer 启动时会再次 setActiveSpace 修正）。
+   */
+  const defaultSpaceId = opts?.defaultSpaceId ?? saved?.activeSpaceId ?? "workspace-0";
+  WindowRegistry.registerWindow(win, {
+    defaultSpaceId,
+    restoredActiveSpaceId: saved?.activeSpaceId,
+    restoredSpaceFocus: saved?.spaceFocus
+  });
 
   win.on("closed", () => {
     windows.delete(win);
     saveWindowStates();
   });
-  win.on("resize", saveWindowStates);
-  win.on("move", saveWindowStates);
-  win.on("maximize", saveWindowStates);
-  win.on("unmaximize", saveWindowStates);
-  win.on("enter-full-screen", saveWindowStates);
-  win.on("leave-full-screen", saveWindowStates);
+  // saveWindowStates 只负责把 registry.serialize() 写盘（调用 WindowRegistry.serialize）
+  // bounds 事件由 WindowRegistry 内部 throttled persist 触发写盘。这里保留老的 closed 触发。
+  // 旧的 win.on("resize/move/maximize/...") 已被 WindowRegistry.registerWindow 接管
+  // schedulePersist()，避免双重节流。
 
   installSessionBridge(session.defaultSession, "default");
   if (DEV_SERVER_URL) {
-    win.loadURL(DEV_SERVER_URL);
+    win.loadURL(DEV_SERVER_URL + (opts?.defaultActiveTabId ? `#tab=${opts.defaultActiveTabId}` : ""));
   } else {
-    win.loadFile(path.join(__dirname, "../../dist/renderer/index.html"));
+    win.loadFile(path.join(__dirname, "../../dist/renderer/index.html"),
+      opts?.defaultActiveTabId ? { hash: `tab=${opts.defaultActiveTabId}` } : undefined);
   }
+  return win;
 }
 
 function installSessionBridge(targetSession, partition = "default") {
@@ -287,6 +282,14 @@ const { applyForceHttpsToSession } = require("./ipcHandlers");
 
 app.whenReady().then(() => {
   installApplicationMenu();
+  /* ADR-0005 / W-1: init window registry + persistence + IPC + createWindow factory */
+  WindowRegistry.setCreateWindowFn((opts) => createWindow(null, opts));
+  WindowRegistry.installIpc();
+  WindowRegistry.installPersistence((snapshot) => {
+    try {
+      fs.writeFileSync(windowStatePath(), JSON.stringify({ windows: snapshot }));
+    } catch { /* non-fatal */ }
+  });
   const saved = loadWindowStates();
   if (saved.length > 0) {
     saved.forEach((s) => createWindow(s));

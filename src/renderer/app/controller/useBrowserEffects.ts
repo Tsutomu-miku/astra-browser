@@ -51,6 +51,10 @@ interface BrowserEffectsOptions {
   reloadInstalledExtensions: () => Promise<void> | void;
   onAutoUpdateStateChange: (state: import("../../types/electron").AutoUpdateState) => void;
   refreshAutoUpdateState: () => Promise<void> | void;
+  setOwnWindowId: (id: number | null) => void;
+  syncWindowRegistry: (
+    snapshot: import("../../types/electron").WindowRegistryWindow[]
+  ) => void;
   onShortcut: (intent: ShortcutIntent) => void;
   openUrlInNewTab: (url: string) => void;
   sitePermissions: SitePermissionRule[];
@@ -157,6 +161,8 @@ export function useBrowserEffects({
   reloadInstalledExtensions,
   onAutoUpdateStateChange,
   refreshAutoUpdateState,
+  setOwnWindowId,
+  syncWindowRegistry,
   onShortcut,
   openUrlInNewTab,
   sitePermissions,
@@ -227,6 +233,25 @@ export function useBrowserEffects({
     void refreshAutoUpdateState?.();
     return off;
   }, [onAutoUpdateStateChange, refreshAutoUpdateState]);
+
+  /* ===== ADR-0005 / W-1: window registry sync on mount ===== */
+  useEffect(() => {
+    let disposed = false;
+    const off = window.astraShell?.windowRegistry?.onSync?.((snap) => {
+      if (!disposed) syncWindowRegistry(snap);
+    });
+    (async () => {
+      const res = await window.astraShell?.windowRegistry?.get?.();
+      if (!disposed && res) {
+        setOwnWindowId(res.ownWindowId);
+        syncWindowRegistry(res.registry);
+      }
+    })();
+    return () => {
+      disposed = true;
+      return off?.();
+    };
+  }, [setOwnWindowId, syncWindowRegistry]);
 
   useEffect(() => {
     window.astraShell?.setProfilePartitions(getBrowserPartitions({ workspaces }));

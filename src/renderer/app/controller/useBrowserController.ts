@@ -25,7 +25,21 @@ export function useBrowserController() {
     releaseCompactToolbar
   } = useCompactChromePeek(store.compactMode);
   const activeWorkspace = getActiveWorkspace(store.state);
-  const activeTab = getActiveTab(activeWorkspace);
+  /** ADR-0005: 同 Space 在不同窗口可有不同 activeTab；优先取本窗口 window-scoped 值，
+   *  找不到则回退到 canonical Space.activeTabId（与之前行为一致）。 */
+  const activeTabId = useMemo(() => {
+    const ownId = store.ownWindowId;
+    if (ownId != null) {
+      const entry = store.windowRegistry.find((w) => w.windowId === ownId);
+      const scoped = entry?.spaceFocus[activeWorkspace.id]?.activeTabId;
+      if (scoped && activeWorkspace.tabs.some((t) => t.id === scoped)) return scoped;
+    }
+    return activeWorkspace.activeTabId;
+  }, [store.ownWindowId, store.windowRegistry, activeWorkspace.id, activeWorkspace.activeTabId, activeWorkspace.tabs]);
+  const activeTab = useMemo(
+    () => activeWorkspace.tabs.find((t) => t.id === activeTabId) ?? getActiveTab(activeWorkspace),
+    [activeWorkspace, activeTabId]
+  );
   const activeWebview = webviews.current.get(activeTab.id);
   const registerWebview = useCallback((tabId: string, webview: WebviewElement) => {
     registerReadyWebview(webviews.current, tabId, webview);
@@ -138,6 +152,8 @@ export function useBrowserController() {
     reloadInstalledExtensions: store.reloadInstalledExtensions,
     onAutoUpdateStateChange: store.setAutoUpdateState,
     refreshAutoUpdateState: store.refreshAutoUpdateState,
+    setOwnWindowId: store.setOwnWindowId,
+    syncWindowRegistry: store.syncWindowRegistry,
     onShortcut: handleShortcut,
     openUrlInNewTab: (url) => store.openUrlInActiveWorkspace(url),
     sitePermissions: store.state.sitePermissions,

@@ -16,7 +16,11 @@ import type {
   Workspace
 } from "../domain/browser";
 import type { WebviewAction, WebviewElement } from "../types/browser-ui";
-import type { AutoUpdateState, PermissionRequestEvent } from "../types/electron";
+import type {
+  AutoUpdateState,
+  PermissionRequestEvent,
+  WindowRegistryWindow
+} from "../types/electron";
 
 export type Panel = "history" | "downloads" | "settings" | "site" | null;
 
@@ -256,4 +260,20 @@ export interface BrowserStore {
   checkForUpdates: () => Promise<{ ok: boolean; hasUpdate?: boolean; error?: string; reason?: string }>;
   downloadUpdate: () => Promise<{ ok: boolean; error?: string; reason?: string }>;
   installUpdateAndRestart: () => Promise<boolean>;
+  /* ===== ADR-0005 / W-1 multi-window × Space registry ===== */
+  ownWindowId: number | null;
+  windowRegistry: WindowRegistryWindow[];
+  setOwnWindowId: (id: number | null) => void;
+  syncWindowRegistry: (snapshot: WindowRegistryWindow[]) => void;
+  /** 切换当前窗口的 active Space；底层调用 switchSpace + setActiveSpace IPC */
+  switchActiveSpaceForWindow: (spaceId: string) => void;
+  /** 当前窗口激活某 Tab（同时通知 WindowRegistry 更新该窗口的该 Space activeTabId，
+   *  以便同 Space 在不同窗口有独立的 tab 选择状态） */
+  setActiveTabForWindow: (spaceId: string, tabId: string) => void;
+  /** 把当前 Tab 打开到新窗口（跨窗口 Tab 拖拽 MVP） */
+  openTabInNewWindow: (spaceId: string, tabId: string) => Promise<{
+    ok: boolean;
+    reason?: string;
+    windowId?: number | null;
+  }>;
 }

@@ -170,6 +170,8 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   state: initialState,
   glance: null,
   autoUpdateState: null,
+  ownWindowId: null,
+  windowRegistry: [],
   cachePageHtml: (tabId, html) => {
     const cache = get().pageHtmlCache;
     cache.set(tabId, html);
@@ -394,19 +396,37 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     update(set, (state) => restoreClosedTabToWorkspace(state, closedIndex, workspaceId)),
   restoreLastClosedTab: () => update(set, restoreLastClosedTab),
   runWebviewAction: (action, webview) => webview?.[action]?.(),
-  selectAdjacentTab: (direction) => update(set, (state) => selectAdjacentTab(state, direction)),
-  selectTab: (tabId) => update(set, (state) => {
-    const selected = selectTab(state, tabId);
+  selectAdjacentTab: (direction) => {
+    const selected = update(set, (state) => selectAdjacentTab(state, direction));
     const ws = selected.workspaces.find((x) => x.id === selected.activeWorkspaceId);
-    const active = ws?.tabs.find((t) => t.id === ws.activeTabId);
-    const overridden = active
-      ? getZoomForUrl(selected.settings.perOriginZoom, active.url)
-      : undefined;
-    if (!active || overridden === undefined) return selected;
-    // tab 切换时若有 per-origin 规则，先写 tab.zoomFactor，再同步给 webview
-    active.zoomFactor = overridden;
+    if (ws?.activeTabId) {
+      void window.astraShell?.windowRegistry?.setFocus?.({
+        spaceId: ws.id,
+        patch: { activeTabId: ws.activeTabId }
+      });
+    }
     return selected;
-  }),
+  },
+  selectTab: (tabId) => {
+    const selected = update(set, (state) => {
+      const sel = selectTab(state, tabId);
+      const ws = sel.workspaces.find((x) => x.id === sel.activeWorkspaceId);
+      const active = ws?.tabs.find((t) => t.id === ws.activeTabId);
+      const overridden = active
+        ? getZoomForUrl(sel.settings.perOriginZoom, active.url)
+        : undefined;
+      if (!active || overridden === undefined) return sel;
+      active.zoomFactor = overridden;
+      return sel;
+    });
+    const ws = selected.workspaces.find((x) => x.id === selected.activeWorkspaceId);
+    if (ws?.activeTabId) {
+      void window.astraShell?.windowRegistry?.setFocus?.({
+        spaceId: ws.id,
+        patch: { activeTabId: ws.activeTabId }
+      });
+    }
+  },
   sleepIdleTabs: () => update(set, sleepIdleTabs),
   sleepInactiveTabs: () => update(set, sleepInactiveTabs),
   sleepTabGroup: (groupId) => update(set, (state) => sleepTabGroup(state, groupId)),
@@ -441,7 +461,14 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   setSplitLayout: (splitLayout) => update(set, (state) => setWorkspaceSplitLayout(state, splitLayout)),
   setSitePermission: (profileId, origin, permission, decision) =>
     update(set, (state) => setSitePermission(state, { profileId, origin, permission, decision })),
-  switchWorkspace: (workspaceId) => update(set, (state) => switchWorkspace(state, workspaceId)),
+  switchWorkspace: (workspaceId) => {
+    const next = update(set, (state) => switchWorkspace(state, workspaceId));
+    void window.astraShell?.windowRegistry?.setActiveSpace?.({
+      spaceId: workspaceId,
+      defaultActiveTabId: next.workspaces.find((w) => w.id === workspaceId)?.activeTabId ?? undefined
+    });
+    return next;
+  },
   toggleActiveTabFavorite: () => update(set, toggleActiveTabFavorite),
   toggleActiveTabEssential: () => update(set, toggleActiveTabEssential),
   toggleActiveTabMuted: (webview) => update(set, (state) => syncMuted(toggleActiveTabMuted(state), webview)),
@@ -808,6 +835,40 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   checkForUpdates: () => window.astraShell?.autoUpdate?.check?.() ?? Promise.resolve({ ok: false, reason: "no-ipc" }),
   downloadUpdate: () => window.astraShell?.autoUpdate?.download?.() ?? Promise.resolve({ ok: false, reason: "no-ipc" }),
   installUpdateAndRestart: () => window.astraShell?.autoUpdate?.installAndRestart?.() ?? Promise.resolve(false),
+  /* ===== ADR-0005 / W-1 multi-window × Space registry ===== */
+  setOwnWindowId: (id) => set({ ownWindowId: id }),
+  syncWindowRegistry: (snapshot) => set({ windowRegistry: snapshot }),
+  switchActiveSpaceForWindow: async (spaceId) => {
+    // 1) 域层切换（global activeWorkspaceId 仍然更新，保持向后兼容）
+    const next = update(set, (state) => switchWorkspace(state, spaceId));
+    // 2) 告诉主进程：此窗口现在展示该 Space
+    const ws = next.workspaces.find((w) => w.id === spaceId);
+    await window.astraShell?.windowRegistry?.setActiveSpace?.({
+      spaceId,
+      defaultActiveTabId: ws?.activeTabId ?? undefined
+    });
+  },
+  setActiveTabForWindow: async (spaceId, tabId) => {
+    // 1) 域层：更新 canonical Space.activeTabId（所有窗口共享）
+    update(set, (state) => {
+      const idx = state.workspaces.findIndex((w) => w.id === spaceId);
+      if (idx === -1) return state;
+      const ws = { ...state.workspaces[idx], activeTabId: tabId };
+      const workspaces = [...state.workspaces];
+      workspaces[idx] = ws;
+      return { ...state, workspaces };
+    });
+    // 2) 告诉主进程：此窗口此 Space 的 focus tab = tabId
+    await window.astraShell?.windowRegistry?.setFocus?.({
+      spaceId,
+      patch: { activeTabId: tabId }
+    });
+  },
+  openTabInNewWindow: async (spaceId, tabId) =>
+    window.astraShell?.windowRegistry?.openNewWindow?.({
+      spaceId,
+      defaultActiveTabId: tabId
+    }) ?? Promise.resolve({ ok: false, reason: "no-ipc" }),
   zoomIn: (webview) => update(set, (state) => {
     const after = stepActiveTabZoom(state, 1);
     // 同步写入 per-origin 以便下次访问恢复
