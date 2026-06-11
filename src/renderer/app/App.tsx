@@ -15,6 +15,8 @@ import { SavePasswordPrompt } from "../surfaces/permissions/SavePasswordPrompt";
 import { Sidebar } from "../surfaces/sidebar/Sidebar";
 import { Topbar } from "../surfaces/topbar/Topbar";
 import { AutofillPopup } from "../surfaces/components/AutofillPopup";
+import { PaymentRequestPicker } from "../surfaces/components/PaymentRequestPicker";
+import { SaveCreditcardPrompt } from "../surfaces/components/SaveCreditcardPrompt";
 import { WebviewGrid } from "../surfaces/webview/WebviewGrid";
 
 export function App() {
@@ -84,6 +86,8 @@ export function App() {
       )}
       {controller.commandOpen && <CommandPalette controller={controller} />}
       {controller.actions.autofillPrompt && <AutofillPopup controller={controller} />}
+      {controller.actions.paymentRequestPrompt && <PaymentRequestPicker controller={controller} />}
+      {controller.actions.saveCreditcardPrompt && <SaveCreditcardPrompt controller={controller} />}
     </>
   );
 }

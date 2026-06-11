@@ -108,6 +108,7 @@ contextBridge.exposeInMainWorld("astraShell", {
   autofill: {
     getBridgePath: () => ipcRenderer.invoke("autofill:get-bridge-path"),
     fillForm: (payload) => ipcRenderer.invoke("autofill:fill-form", payload),
+    sendPaymentResponse: (payload) => ipcRenderer.invoke("autofill:payment-response", payload),
     onFieldFocus: (listener) => {
       const wrapped = (_event, payload) => listener(payload);
       ipcRenderer.on("autofill:field-focus", wrapped);
@@ -117,6 +118,16 @@ contextBridge.exposeInMainWorld("astraShell", {
       const wrapped = (_event, payload) => listener(payload);
       ipcRenderer.on("autofill:field-blur", wrapped);
       return () => ipcRenderer.removeListener("autofill:field-blur", wrapped);
+    },
+    onPaymentRequest: (listener) => {
+      const wrapped = (_event, payload) => listener(payload);
+      ipcRenderer.on("autofill:payment-request", wrapped);
+      return () => ipcRenderer.removeListener("autofill:payment-request", wrapped);
+    },
+    onSaveCreditcard: (listener) => {
+      const wrapped = (_event, payload) => listener(payload);
+      ipcRenderer.on("autofill:save-creditcard", wrapped);
+      return () => ipcRenderer.removeListener("autofill:save-creditcard", wrapped);
     }
   }
 });

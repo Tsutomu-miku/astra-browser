@@ -20,6 +20,8 @@ import type { WebviewAction, WebviewElement } from "../types/browser-ui";
 import type {
   AutoUpdateState,
   AutofillFieldFocusEvent,
+  AutofillPaymentRequestEvent,
+  AutofillSaveCreditcardEvent,
   PermissionRequestEvent,
   WindowRegistryWindow
 } from "../types/electron";
@@ -303,4 +305,42 @@ export interface BrowserStore {
   acceptAutofillMatch: (matchId: string) => Promise<void>;
   /** 把当前 form 的值保存为新地址（由用户在 popup 底部点击触发）。 */
   saveCurrentFormAsAddress: (partial: Partial<AddressEntry>) => void;
+  /* ===== ADR-0005 / P-3 PaymentRequest + 保存新卡 prompt ===== */
+  /** 激活时，站点触发 window.PaymentRequest.show → 弹出卡片选择器。 */
+  paymentRequestPrompt: (AutofillPaymentRequestEvent & {
+    candidateCards: Array<{
+      id: string;
+      label: string;
+      subtitle?: string;
+      cardholderName: string;
+      cardLastFour: string;
+      expiryMonth?: number;
+      expiryYear?: number;
+    }>;
+  }) | null;
+  /** 当用户提交含有 CC 的表单后激活的保存新卡 prompt。
+   *  注意：不保存明文；只在用户点 Save 时走 vault 加密。 */
+  saveCreditcardPrompt: AutofillSaveCreditcardEvent | null;
+  /** P-3: 订阅 payment-request 事件后 → 渲染侧打开卡片选择器。 */
+  showPaymentRequestPrompt: (event: AutofillPaymentRequestEvent) => void;
+  /** 用户在 PaymentRequest 选择卡片 → 解密卡 → 合成 response → IPC 回传。 */
+  acceptPaymentRequestCard: (matchId: string) => Promise<void>;
+  /** 用户在 PaymentRequest 取消 → 走原生 Payment Sheet。 */
+  rejectPaymentRequest: () => void;
+  /** P-3: 订阅 save-creditcard 事件后 → 打开保存 prompt。 */
+  showSaveCreditcardPrompt: (event: AutofillSaveCreditcardEvent) => void;
+  /** 用户确认保存 → 校验 (Luhn + expiry) + 加密 + upsert。 */
+  acceptSaveCreditcard: (opts: { label?: string }) => Promise<string | null>;
+  /** 用户点击不保存。 */
+  rejectSaveCreditcard: () => void;
+  /** 封装：把 raw card draft 转 PaymentMethodEntry（校验 + 加密）。
+   *  供 SettingsPanel + saveCreditcardPrompt 复用。失败返回 string error。 */
+  createPaymentMethodFromDraft: (draft: {
+    cardholderName: string;
+    pan: string;
+    csc?: string;
+    expiryMonth?: number;
+    expiryYear?: number;
+    label?: string;
+  }) => Promise<{ ok: true; entry: PaymentMethodEntry } | { ok: false; reason: string }>;
 }

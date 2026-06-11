@@ -232,6 +232,135 @@ function buildShimScript() {
         applyFill(els, d.values);
       }
     });
+
+    /* ========== PaymentRequest 拦截（P-3） ==========
+     *  仅对 methodData 中包含 "basic-card" 的请求做拦截：
+     *    1) 向渲染侧发 payment-request 事件（包含 supportedNetworks）
+     *    2) 等待 "astra-autofill:payment-response" 事件（返回 card response）
+     *       若结果为 cancel → 走原生 UI；若为 card → 返回合成 PaymentResponse
+     *
+     *  注：Electron 的 Chromium 目前对部分站点已支持原生 Payment Sheet；
+     *  这里只拦截 basic-card 保证不破坏 Secure Payment Confirmation 等其他方法。
+     */
+    try {
+      const NativePaymentRequest = window.PaymentRequest;
+      if (NativePaymentRequest && typeof NativePaymentRequest === "function") {
+        const isBasicCardSupported = (methodData) => {
+          if (!Array.isArray(methodData)) return false;
+          return methodData.some((m) => m && m.supportedMethods === "basic-card");
+        };
+        const buildResponse = (req, result) => {
+          const r = {
+            requestId: "",
+            methodName: "basic-card",
+            details: result,
+            shippingAddress: null,
+            shippingOption: null,
+            payerName: null,
+            payerEmail: null,
+            payerPhone: null,
+            complete: () => Promise.resolve(),
+            retry: () => Promise.resolve(),
+            toJSON: () => ({})
+          };
+          return r;
+        };
+        const waitForBridgeResponse = (corrId, timeoutMs) => new Promise((resolve) => {
+          let done = false;
+          const timer = setTimeout(() => {
+            if (done) return;
+            done = true;
+            resolve({ canceled: true, timeout: true });
+          }, timeoutMs);
+          const onResp = (ev) => {
+            if (done) return;
+            if (ev?.detail?.correlationId !== corrId) return;
+            done = true;
+            clearTimeout(timer);
+            window.removeEventListener("astra-autofill:payment-response", onResp);
+            resolve(ev.detail);
+          };
+          window.addEventListener("astra-autofill:payment-response", onResp);
+        });
+        window.PaymentRequest = class AstraPaymentRequest extends NativePaymentRequest {
+          constructor(methodData, details, options) {
+            super(methodData, details, options);
+            this.__astraBasicCard = isBasicCardSupported(methodData);
+            this.__astraMethods = methodData;
+            this.__astraDetails = details;
+          }
+          show(optionalDetailsPromise) {
+            if (!this.__astraBasicCard) {
+              return super.show(optionalDetailsPromise);
+            }
+            const correlationId = "pr-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+            // 通知渲染侧：弹出卡片选择器
+            window.dispatchEvent(new CustomEvent("astra-autofill:payment-request", {
+              detail: {
+                correlationId,
+                host: location.hostname,
+                methodData: this.__astraMethods,
+                total: this.__astraDetails?.total,
+                displayItems: this.__astraDetails?.displayItems
+              }
+            }));
+            return Promise.resolve(optionalDetailsPromise)
+              .then(() => waitForBridgeResponse(correlationId, 120_000))
+              .then((resp) => {
+                if (!resp || resp.canceled) {
+                  // 用户取消 → 走原生 Payment Sheet
+                  return super.show(optionalDetailsPromise);
+                }
+                // 使用用户选择的卡（已解密）合成 PaymentResponse
+                return buildResponse(this, resp.paymentResponse);
+              });
+          }
+        };
+        // 让 instanceof 检查也能通过
+        window.PaymentRequest.prototype = NativePaymentRequest.prototype;
+      }
+    } catch { /* 站点自己已经 monkey-patched → 忽略 */ }
+
+    /* ========== 保存新卡检测（表单提交） ==========
+     *  当检测到 submit 事件时的 form 中同时出现 ccNumber + ccExp + ccName，
+     *  触发 save-creditcard 事件，渲染侧根据是否重复再决定是否弹保存 prompt。
+     */
+    document.addEventListener("submit", (ev) => {
+      try {
+        const form = ev.target;
+        if (!form || form.tagName !== "FORM") return;
+        const inputs = form.querySelectorAll("input");
+        const detected = [];
+        for (const el of inputs) {
+          if (el.tagName !== "INPUT") continue;
+          const f = detectField(el);
+          if (!f || f.bucket !== "creditcard") continue;
+          detected.push({
+            type: f.type,
+            value: el.value || "",
+            label: f.label
+          });
+        }
+        if (detected.length < 2) return;
+        // 仅提取需要保存的字段，避免 cvv 明文在内存里留存过久
+        const numberField = detected.find((d) => d.type === "ccNumber");
+        const nameField = detected.find((d) => d.type === "ccName");
+        const expField = detected.find((d) =>
+          d.type === "ccExp" || d.type === "ccExpMonth" || d.type === "ccExpYear");
+        if (!numberField || !numberField.value) return;
+        window.dispatchEvent(new CustomEvent("astra-autofill:save-creditcard", {
+          detail: {
+            host: location.hostname,
+            cardholderName: nameField?.value || "",
+            number: numberField.value.replace(/\D/g, ""),
+            expiryRaw: expField?.value || "",
+            expiryMonth: detected.find((d) => d.type === "ccExpMonth")?.value || "",
+            expiryYear: detected.find((d) => d.type === "ccExpYear")?.value || "",
+            cvv: (detected.find((d) => d.type === "ccCsc")?.value || "").replace(/\D/g, "")
+          }
+        }));
+      } catch { /* ignore */ }
+    }, true);
   })();
 `;
 }
@@ -260,10 +389,34 @@ function buildBridgeScript() {
     window.addEventListener("astra-autofill:field-blur", () => {
       try { ipcRenderer.send("autofill:field-blur"); } catch {}
     });
+    // 主世界 → main：PaymentRequest（用户在站点点了「立即购买」触发 show）
+    window.addEventListener("astra-autofill:payment-request", (ev) => {
+      try {
+        const senderWcId = process.getELECTRON_RENDERER_PROCESS_ID ? null : null;
+        ipcRenderer.send("autofill:payment-request", {
+          webContentsId: senderWcId,
+          detail: ev.detail
+        });
+      } catch {}
+    });
+    // 主世界 → main：保存新卡（form.submit 时检测到 CC）
+    window.addEventListener("astra-autofill:save-creditcard", (ev) => {
+      try {
+        const senderWcId = process.getELECTRON_RENDERER_PROCESS_ID ? null : null;
+        ipcRenderer.send("autofill:save-creditcard", {
+          webContentsId: senderWcId,
+          detail: ev.detail
+        });
+      } catch {}
+    });
 
     // main 进程 → 主世界：执行填充
     ipcRenderer.on("autofill:fill-form", (_event, values) => {
       window.dispatchEvent(new CustomEvent("astra-autofill:fill-form", { detail: { values } }));
+    });
+    // main 进程 → 主世界：PaymentRequest 响应（用户选中卡片 or 取消）
+    ipcRenderer.on("autofill:payment-response", (_event, payload) => {
+      window.dispatchEvent(new CustomEvent("astra-autofill:payment-response", { detail: payload || {} }));
     });
   })();
 `;
@@ -324,6 +477,22 @@ module.exports = {
         return { ok: false, reason: err instanceof Error ? err.message : String(err) };
       }
     });
+    /**
+     * P-3 PaymentRequest 响应。renderer 把 {correlationId, canceled, paymentResponse}
+     * 发送给 webview，bridge 接收后 dispach astra-autofill:payment-response CustomEvent
+     * 给主世界 shim，shim 中的 show() Promise 将 resolve 该结果。
+     */
+    ipcMain.handle("autofill:payment-response", (_event, { webContentsId, response }) => {
+      if (typeof webContentsId !== "number") return { ok: false, reason: "missing-webContentsId" };
+      try {
+        const wc = webContents.fromId(webContentsId);
+        if (!wc || wc.isDestroyed()) return { ok: false, reason: "destroyed" };
+        wc.send("autofill:payment-response", response);
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, reason: err instanceof Error ? err.message : String(err) };
+      }
+    });
     // bridge 传来的 field-focus → 广播给 host 窗口 renderer（注意 sender 是 webview 的 webContents）
     ipcMain.on("autofill:field-focus", (event, payload) => {
       const senderWcId = event.sender?.id;
@@ -336,6 +505,20 @@ module.exports = {
       const senderWcId = event.sender?.id;
       broadcastToRenderer?.("autofill:field-blur", {
         webContentsId: typeof senderWcId === "number" ? senderWcId : null
+      });
+    });
+    ipcMain.on("autofill:payment-request", (event, payload) => {
+      const senderWcId = event.sender?.id;
+      broadcastToRenderer?.("autofill:payment-request", {
+        webContentsId: typeof senderWcId === "number" ? senderWcId : null,
+        ...(payload || {})
+      });
+    });
+    ipcMain.on("autofill:save-creditcard", (event, payload) => {
+      const senderWcId = event.sender?.id;
+      broadcastToRenderer?.("autofill:save-creditcard", {
+        webContentsId: typeof senderWcId === "number" ? senderWcId : null,
+        ...(payload || {})
       });
     });
   }

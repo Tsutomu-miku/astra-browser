@@ -62,6 +62,22 @@ export {
   type VaultMetadata
 } from "./passwordVault";
 export {
+  decryptCardDetails,
+  detectCardBrand,
+  encryptCardDetails,
+  expectedCscLength,
+  expectedPanLength,
+  formatCardNumber,
+  isValidExpiry,
+  isValidPan,
+  lastFourOf,
+  luhnCheck,
+  toBasicCardResponse,
+  type CardBrand,
+  type CardDetails,
+  type EncryptedCardPayload
+} from "./paymentCardUtils";
+export {
   importBookmarksFromHtml,
   type BookmarksImportBatch,
   type ImportedBookmarkFolder,

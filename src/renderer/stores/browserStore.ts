@@ -5,7 +5,7 @@
 // Splitting it into multiple slices would add indirection without clarifying
 // ownership, since all entries share the same structural shape and all route
 // through the single `update` helper at the bottom of the file.
-import { create } from "zustand";
+import { create, type StoreApi, type UseBoundStore } from "zustand";
 
 import { SIDEBAR_DEFAULT_WIDTH, clampSidebarWidth } from "../common/layout/sidebarSizing";
 import {
@@ -131,6 +131,15 @@ import {
   type TranslationSettings
 } from "../domain/browser";
 import {
+  decryptCardDetails,
+  detectCardBrand,
+  encryptCardDetails,
+  isValidExpiry,
+  isValidPan,
+  lastFourOf,
+  type EncryptedCardPayload
+} from "../domain/browser/paymentCardUtils";
+import {
   createPasswordEntry,
   decryptSecret,
   isVaultUnlocked,
@@ -174,6 +183,8 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   windowRegistry: [],
   autofillPrompt: null,
   autofillBridgePath: null,
+  paymentRequestPrompt: null,
+  saveCreditcardPrompt: null,
   cachePageHtml: (tabId, html) => {
     const cache = get().pageHtmlCache;
     cache.set(tabId, html);
@@ -879,7 +890,7 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
   showAutofillPopup: (event) => {
     if (!event?.detail) return;
     const { focusedBucket, fields } = event.detail;
-    const s = useBrowserStore.getState().state.settings.autofill;
+    const s = get().state.settings.autofill;
     const matchPool = focusedBucket === "creditcard" ? (s.paymentMethods ?? []) : (s.addresses ?? []);
     /** 按 focusedBucket 生成 candidates：遍历所有已保存的地址/卡，
      *  生成 {id,label,subtitle,values} 映射。values 的 key = FIELD_TYPES.type（见 autofillContentScripts）。 */
@@ -943,19 +954,52 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     });
   },
   hideAutofillPopup: (wcId) => {
-    const cur = useBrowserStore.getState().autofillPrompt;
+    const cur = get().autofillPrompt;
     if (!cur) return;
     if (wcId != null && cur.webContentsId != null && wcId !== cur.webContentsId) return;
     set({ autofillPrompt: null });
   },
   acceptAutofillMatch: async (matchId) => {
-    const cur = useBrowserStore.getState().autofillPrompt;
+    const cur = get().autofillPrompt;
     if (!cur || typeof cur.webContentsId !== "number") return;
     const m = cur.matches.find((x) => x.id === matchId);
     if (!m) return;
+    let values = m.values;
+    // CC 场景：真实 PAN + CSC 需要解密。填充前检查 vault；如果当前只有
+    // placeholder ccNumber=XXXX，尝试从 PaymentMethodEntry 重新解密。
+    if (cur.detail.focusedBucket === "creditcard") {
+      const savedEntry = (get().state.settings.autofill.paymentMethods ?? [])
+        .find((p) => p.id === m.id);
+      if (savedEntry?.encryptedCardDetails) {
+        try {
+          if (!isVaultUnlocked()) await unlockVault();
+          const decrypted = await decryptCardDetails(savedEntry.encryptedCardDetails);
+          if (decrypted) {
+            const mm = savedEntry.expiryMonth;
+            const yy = savedEntry.expiryYear;
+            values = {
+              ...values,
+              ccName: savedEntry.cardholderName,
+              ccNumber: decrypted.pan,
+              ccCsc: decrypted.csc ?? "",
+              ccExpMonth: mm != null ? String(mm) : "",
+              ccExpYear: yy != null ? String(yy) : "",
+              ccExp: [
+                mm != null ? String(mm).padStart(2, "0") : "",
+                yy != null ? String(yy).slice(-2) : ""
+              ].filter(Boolean).join("/"),
+              ccType: decrypted.brand
+            };
+          }
+        } catch {
+          /* 解密失败 → 回退到 match 里的占位值（LastFour），
+           * 保证不会崩，且用户可手动修正。 */
+        }
+      }
+    }
     await window.astraShell?.autofill?.fillForm?.({
       webContentsId: cur.webContentsId,
-      values: m.values
+      values
     });
     set({ autofillPrompt: null });
   },
@@ -977,6 +1021,164 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     };
     update(set, (state) => upsertAddress(state, entry));
     set({ autofillPrompt: null });
+  },
+  /* ===== ADR-0005 / P-3 PaymentRequest + 保存新卡 prompt ===== */
+  createPaymentMethodFromDraft: async (draft) => {
+    const holder = (draft.cardholderName || "").trim();
+    if (!holder) return { ok: false as const, reason: "请填写持卡人姓名。" };
+    const panCheck = isValidPan(draft.pan || "");
+    if (!panCheck.valid) {
+      return { ok: false as const, reason: "卡号无效：" + (panCheck.reason || "校验失败。") };
+    }
+    const mm = draft.expiryMonth;
+    const yy = draft.expiryYear;
+    if ((mm != null || yy != null) && !isValidExpiry(mm, yy)) {
+      return { ok: false as const, reason: "有效期无效（必须为未来月份，格式 MM / YYYY）。" };
+    }
+    try {
+      if (!isVaultUnlocked()) await unlockVault();
+      const brand = panCheck.brand;
+      const encrypted = await encryptCardDetails({
+        pan: (draft.pan || "").replace(/\D/g, ""),
+        csc: draft.csc || undefined,
+        brand
+      });
+      const lastFour = lastFourOf(draft.pan || "");
+      const entry: PaymentMethodEntry = {
+        id: `card-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+        label: (draft.label || "").trim() || `${holder} ••${lastFour}`,
+        cardholderName: holder,
+        cardLastFour: lastFour,
+        encryptedCardDetails: encrypted,
+        expiryMonth: mm,
+        expiryYear: yy,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      return { ok: true as const, entry };
+    } catch (err) {
+      return {
+        ok: false as const,
+        reason: err instanceof Error ? err.message : String(err)
+      };
+    }
+  },
+  showPaymentRequestPrompt: (event) => {
+    if (!event?.detail) return;
+    const saved = get().state.settings.autofill.paymentMethods ?? [];
+    const candidateCards = saved.map((p) => ({
+      id: p.id,
+      label: p.label || `${p.cardholderName || "Card"} ••${p.cardLastFour || ""}`,
+      subtitle: `••${p.cardLastFour || ""}${p.expiryMonth ? ` · ${String(p.expiryMonth).padStart(2, "0")}/${String(p.expiryYear ?? "").slice(-2)}` : ""}`,
+      cardholderName: p.cardholderName,
+      cardLastFour: p.cardLastFour,
+      expiryMonth: p.expiryMonth,
+      expiryYear: p.expiryYear
+    }));
+    set({
+      paymentRequestPrompt: {
+        webContentsId: event.webContentsId,
+        detail: event.detail,
+        candidateCards
+      }
+    });
+  },
+  acceptPaymentRequestCard: async (matchId) => {
+    const cur = get().paymentRequestPrompt;
+    if (!cur || typeof cur.webContentsId !== "number") return;
+    const saved = (get().state.settings.autofill.paymentMethods ?? [])
+      .find((p) => p.id === matchId);
+    let response: import("../types/electron").AutofillPaymentResponse = {
+      correlationId: cur.detail.correlationId,
+      canceled: true
+    };
+    if (saved) {
+      try {
+        if (!isVaultUnlocked()) await unlockVault();
+        const decrypted = saved.encryptedCardDetails
+          ? await decryptCardDetails(saved.encryptedCardDetails)
+          : null;
+        response = {
+          correlationId: cur.detail.correlationId,
+          canceled: false,
+          paymentResponse: {
+            cardholderName: saved.cardholderName,
+            cardNumber: decrypted?.pan || "",
+            expiryMonth: String(saved.expiryMonth ?? "").padStart(2, "0"),
+            expiryYear: String(saved.expiryYear ?? ""),
+            cardSecurityCode: decrypted?.csc || ""
+          }
+        };
+      } catch { /* canceled=true → 调用方会 fallback 原生 PR */ }
+    }
+    await window.astraShell?.autofill?.sendPaymentResponse?.({
+      webContentsId: cur.webContentsId,
+      response
+    });
+    set({ paymentRequestPrompt: null });
+  },
+  rejectPaymentRequest: () => {
+    const cur = get().paymentRequestPrompt;
+    if (!cur || typeof cur.webContentsId !== "number") {
+      set({ paymentRequestPrompt: null });
+      return;
+    }
+    const response: import("../types/electron").AutofillPaymentResponse = {
+      correlationId: cur.detail.correlationId,
+      canceled: true
+    };
+    void window.astraShell?.autofill?.sendPaymentResponse?.({
+      webContentsId: cur.webContentsId,
+      response
+    }).catch(() => null);
+    set({ paymentRequestPrompt: null });
+  },
+  showSaveCreditcardPrompt: (event) => {
+    if (!event?.detail?.number) return;
+    // 去重：同一 lastFour + cardholderName 的已保存卡，不重复 prompt
+    const saved = get().state.settings.autofill.paymentMethods ?? [];
+    const lastFour = lastFourOf(event.detail.number);
+    const holder = (event.detail.cardholderName || "").trim();
+    if (saved.some((p) =>
+      p.cardLastFour === lastFour &&
+      (holder === "" || p.cardholderName.toLowerCase() === holder.toLowerCase())
+    )) {
+      return;
+    }
+    set({ saveCreditcardPrompt: event });
+  },
+  acceptSaveCreditcard: async (opts = {}) => {
+    const cur = get().saveCreditcardPrompt;
+    if (!cur) return null;
+    const d = cur.detail;
+    // 解析过期日：优先级 expiryMonth/expiryYear 独立字段 > expiryRaw (MM/YY)
+    let mm: number | undefined;
+    let yy: number | undefined;
+    if (d.expiryMonth && d.expiryYear) {
+      mm = Number(d.expiryMonth) || undefined;
+      yy = yyRaw2Year(d.expiryYear);
+    } else if (d.expiryRaw) {
+      const m = d.expiryRaw.match(/(\d{1,2})\s*[/-]\s*(\d{2,4})/);
+      if (m) {
+        mm = Number(m[1]) || undefined;
+        yy = yyRaw2Year(m[2]);
+      }
+    }
+    const result = await get().createPaymentMethodFromDraft({
+      cardholderName: d.cardholderName,
+      pan: d.number,
+      csc: d.cvv || undefined,
+      expiryMonth: mm,
+      expiryYear: yy,
+      label: opts.label
+    });
+    if (!result.ok) return result.reason;
+    update(set, (state) => upsertPaymentMethod(state, result.entry));
+    set({ saveCreditcardPrompt: null });
+    return null;
+  },
+  rejectSaveCreditcard: () => {
+    set({ saveCreditcardPrompt: null });
   },
   zoomIn: (webview) => update(set, (state) => {
     const after = stepActiveTabZoom(state, 1);
@@ -1044,4 +1246,14 @@ function splitFullName(name: string): { first: string; last: string } {
   const parts = s.split(/\s+/);
   if (parts.length === 1) return { first: parts[0], last: "" };
   return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1] };
+}
+
+/** P-3: 统一 YY → YYYY（2 位补 20xx，4 位直接取），失败返回 undefined。 */
+function yyRaw2Year(raw: string | number | null | undefined): number | undefined {
+  if (raw == null || raw === "") return undefined;
+  const s = String(raw).replace(/\D/g, "");
+  if (s.length === 2) return 2000 + Number(s);
+  if (s.length === 4) return Number(s);
+  const n = Number(s);
+  return Number.isFinite(n) && n > 2000 ? n : undefined;
 }

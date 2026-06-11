@@ -301,7 +301,15 @@ export function useBrowserActions({
     showAutofillPopup: store.showAutofillPopup,
     hideAutofillPopup: store.hideAutofillPopup,
     acceptAutofillMatch: store.acceptAutofillMatch,
-    saveCurrentFormAsAddress: store.saveCurrentFormAsAddress
+    saveCurrentFormAsAddress: store.saveCurrentFormAsAddress,
+    /* ===== ADR-0005 / P-3 PaymentRequest + 保存新卡 ===== */
+    paymentRequestPrompt: store.paymentRequestPrompt,
+    saveCreditcardPrompt: store.saveCreditcardPrompt,
+    acceptPaymentRequestCard: store.acceptPaymentRequestCard,
+    rejectPaymentRequest: store.rejectPaymentRequest,
+    acceptSaveCreditcard: store.acceptSaveCreditcard,
+    rejectSaveCreditcard: store.rejectSaveCreditcard,
+    createPaymentMethodFromDraft: store.createPaymentMethodFromDraft,
   }), [activeWebview, focusAddressBar, peekCompactChrome, peekCompactSidebar, peekCompactToolbar, store, webviews]);
 }
 

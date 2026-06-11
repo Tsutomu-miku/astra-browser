@@ -65,6 +65,15 @@ interface BrowserEffectsOptions {
   loadAutofillBridgePath: () => Promise<void> | void;
   showAutofillPopup: (event: AutofillFieldFocusEvent) => void;
   hideAutofillPopup: (wcId?: number | null) => void;
+  /** P-3 PaymentRequest + save new card prompt. */
+  showPaymentRequestPrompt: (
+    event: import("../../types/electron").AutofillPaymentRequestEvent
+  ) => void;
+  rejectPaymentRequest: () => void;
+  showSaveCreditcardPrompt: (
+    event: import("../../types/electron").AutofillSaveCreditcardEvent
+  ) => void;
+  rejectSaveCreditcard: () => void;
   onShortcut: (intent: ShortcutIntent) => void;
   openUrlInNewTab: (url: string) => void;
   sitePermissions: SitePermissionRule[];
@@ -180,7 +189,11 @@ export function useBrowserEffects({
   workspaces,
   loadAutofillBridgePath,
   showAutofillPopup,
-  hideAutofillPopup
+  hideAutofillPopup,
+  showPaymentRequestPrompt,
+  rejectPaymentRequest,
+  showSaveCreditcardPrompt,
+  rejectSaveCreditcard
 }: BrowserEffectsOptions) {
   useEffect(() => window.astraShell?.onDownloadEvent((download) => {
     ingestDownload(download);
@@ -278,6 +291,27 @@ export function useBrowserEffects({
       offBlur?.();
     };
   }, [showAutofillPopup, hideAutofillPopup]);
+  /* ===== P-3 PaymentRequest + 保存新卡 prompt 订阅 ===== */
+  useEffect(() => {
+    const offPR = window.astraShell?.autofill?.onPaymentRequest?.((ev) =>
+      showPaymentRequestPrompt(ev)
+    );
+    const offSC = window.astraShell?.autofill?.onSaveCreditcard?.((ev) =>
+      showSaveCreditcardPrompt(ev)
+    );
+    // 用户切换 tab/窗口时，把已挂起的 prompt 关闭，避免留在错误的 webContentsId 上
+    return () => {
+      offPR?.();
+      offSC?.();
+      rejectPaymentRequest?.();
+      rejectSaveCreditcard?.();
+    };
+  }, [
+    showPaymentRequestPrompt,
+    rejectPaymentRequest,
+    showSaveCreditcardPrompt,
+    rejectSaveCreditcard
+  ]);
 
   useEffect(() => {
     window.astraShell?.setProfilePartitions(getBrowserPartitions({ workspaces }));

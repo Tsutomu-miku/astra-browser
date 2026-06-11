@@ -182,14 +182,65 @@ export interface AutofillFillRequest {
   values: Record<string, string>;
 }
 
+export interface AutofillPaymentRequestEvent {
+  webContentsId: number | null;
+  detail: {
+    correlationId: string;
+    host: string;
+    methodData: Array<{ supportedMethods: string; data?: unknown }>;
+    total?: { label: string; amount: { currency: string; value: string } };
+    displayItems?: Array<{ label: string; amount: { currency: string; value: string } }>;
+  };
+}
+
+export interface AutofillPaymentResponse {
+  correlationId: string;
+  canceled: boolean;
+  paymentResponse?: {
+    cardholderName: string;
+    cardNumber: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cardSecurityCode: string;
+    billingAddress?: unknown;
+  };
+}
+
+export interface AutofillPaymentResponseRequest {
+  webContentsId: number;
+  response: AutofillPaymentResponse;
+}
+
+export interface AutofillSaveCreditcardEvent {
+  webContentsId: number | null;
+  detail: {
+    host: string;
+    cardholderName: string;
+    number: string;
+    expiryRaw: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
+  };
+}
+
 export interface AutofillApi {
   getBridgePath: () => Promise<string | null>;
   fillForm: (payload: AutofillFillRequest) => Promise<{ ok: boolean; reason?: string }>;
+  sendPaymentResponse: (
+    payload: AutofillPaymentResponseRequest
+  ) => Promise<{ ok: boolean; reason?: string }>;
   onFieldFocus: (
     listener: (event: AutofillFieldFocusEvent) => void
   ) => () => void;
   onFieldBlur: (
     listener: (event: { webContentsId: number | null }) => void
+  ) => () => void;
+  onPaymentRequest: (
+    listener: (event: AutofillPaymentRequestEvent) => void
+  ) => () => void;
+  onSaveCreditcard: (
+    listener: (event: AutofillSaveCreditcardEvent) => void
   ) => () => void;
 }
 

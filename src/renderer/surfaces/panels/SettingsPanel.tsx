@@ -12,7 +12,7 @@ import type { BrowserController } from "../../app/controller/types";
 import { useMemoryUsage } from "../../app/controller/useMemoryUsage";
 import { useProfileStorageUsage } from "../../app/controller/useProfileStorageUsage";
 import { getMemorySaverState } from "../../common/memory/memorySaverState";
-import type { PasswordEntry } from "../../domain/browser";
+import type { PasswordEntry, PaymentMethodEntry } from "../../domain/browser";
 import {
   buildTranslateUrl,
   type ReaderSettings,
@@ -26,6 +26,7 @@ import type { M1PanelProps } from "./settings/components/M1PanelRenders";
 import { renderM1Panels } from "./settings/components/M1PanelRenders";
 import { createPasswordEntry } from "../../domain/browser/passwordVault";
 import { PasswordEditorDialog } from "./settings/components/autofill/PasswordEditorDialog";
+import { PaymentMethodEditorDialog } from "./settings/components/autofill/PaymentMethodEditorDialog";
 import { SettingsSectionNav } from "./settings/components/SettingsSectionNav";
 import { UpcomingSettingsSection } from "./settings/components/UpcomingSettingsSection";
 import {
@@ -52,6 +53,7 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
   const [bookmarksImportStatus, setBookmarksImportStatus] = useState<string | null>(null);
   const [passwordSearchQuery, setPasswordSearchQuery] = useState("");
   const [editingPassword, setEditingPassword] = useState<PasswordEntry | null>(null);
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<Partial<PaymentMethodEntry> | null>(null);
 
   const sectionById = useMemo(() => {
     const map = new Map<SettingsSectionId, (typeof SETTINGS_SECTIONS)[number]>();
@@ -184,15 +186,7 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
       createdAt: Date.now()
     }),
     onRemoveAddress: actions.removeAddress,
-    onAddPaymentMethod: () => actions.upsertPaymentMethod({
-      id: "",
-      label: "New card",
-      cardholderName: "Your Name",
-      cardLastFour: "0000",
-      encryptedCardDetails: "",
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    }),
+    onAddPaymentMethod: () => setEditingPaymentMethod({}),
     onRemovePaymentMethod: actions.removePaymentMethod,
 
     appearance: {
@@ -379,6 +373,19 @@ export function SettingsPanel({ controller }: { controller: BrowserController })
             setEditingPassword(null);
             return null;
           }}
+        />
+      )}
+      {editingPaymentMethod && (
+        <PaymentMethodEditorDialog
+          entry={editingPaymentMethod}
+          onClose={() => setEditingPaymentMethod(null)}
+          onSave={async (saved) => {
+            actions.upsertPaymentMethod(saved);
+            setEditingPaymentMethod(null);
+            return null;
+          }}
+          vaultUnlocked={Boolean(controller?.passwordVaultUnlocked)}
+          onRequestUnlock={() => actions.unlockPasswordVault()}
         />
       )}
     </aside>
