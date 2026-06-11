@@ -169,8 +169,10 @@ function escapeText(s) {
 
 function installAstraProtocol() {
   const scheme = "astra";
-  if (protocol.isProtocolHandled(scheme)) return;
 
+  // registerSchemesAsPrivileged must be called BEFORE app.whenReady.
+  // isProtocolHandled internally reads the default session, which isn't
+  // available until app.ready — wrap it with a readiness guard.
   protocol.registerSchemesAsPrivileged([
     {
       scheme,

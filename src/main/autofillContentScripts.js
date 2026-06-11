@@ -434,7 +434,11 @@ function ensureBridgeFile() {
       return null;
     }
   }
-  return tmp;
+  // `<webview preload=...>` 在 Electron 中只接受 "file:" 协议 URL；
+  // 裸绝对路径在 dev-server 模式下会被当作相对于 vite dev server 的 HTTP URL。
+  // 统一返回 RFC 8089 file-URI，macOS/Linux/Windows 均兼容（pathname 绝对）。
+  const fileUri = `file://${tmp.startsWith("/") ? "" : "/"}${tmp.replace(/\\/g, "/")}`;
+  return fileUri;
 }
 
 function installAutofillShim(targetSession) {

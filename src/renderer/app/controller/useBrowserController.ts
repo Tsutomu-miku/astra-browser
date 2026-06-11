@@ -78,8 +78,18 @@ export function useBrowserController() {
 
   useEffect(() => {
     const prev = previousTabIdRef.current;
-    const currentWebviewId = activeWebview?.getWebContentsId?.();
-    const currentId: number | undefined = typeof currentWebviewId === "number" ? currentWebviewId : undefined;
+    let currentId: number | undefined;
+    try {
+      // getWebContentsId() throws when the webview element isn't yet
+      // attached/dom-ready; wrapping in try/catch avoids a React crash
+      // ("The WebView must be attached to the DOM and the dom-ready event
+      // emitted before this method can be called.") bubbling up to unmount
+      // the whole shell on tab switch.
+      const currentWebviewId = activeWebview?.getWebContentsId?.();
+      currentId = typeof currentWebviewId === "number" ? currentWebviewId : undefined;
+    } catch {
+      currentId = undefined;
+    }
     if (prev.tabId !== undefined && prev.tabId !== activeTab.id) {
       void actions.syncMediaSessionOnTabSwitch?.({
         fromId: prev.webContentsId,

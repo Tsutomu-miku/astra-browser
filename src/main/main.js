@@ -15,6 +15,7 @@ const mv3Extensions = require("./mv3Extensions");
 const { initUpdater } = require("./autoUpdaterService");
 const WindowRegistry = require("./windowRegistry");
 const autofill = require("./autofillContentScripts");
+const { applyForceHttpsToSession, openGuestWindow } = require("./forceHttpsGuest");
 
 /* M2.5 E-10: register astra:// protocol (newtab + flags).
  *   - astra://app -> renderer SPA
@@ -289,7 +290,7 @@ mv3Extensions.bootstrap(app.getPath("userData"), loadFlags());
  *   renderer 通过 "sync-force-https" IPC 切换状态时 ipcHandlers 会再
  *   次对所有安装的 session 统一重新 apply。
  */
-const { applyForceHttpsToSession } = require("./ipcHandlers");
+/* (applyForceHttpsToSession 已在文件顶部从 "./forceHttpsGuest" 导入) */
 
 app.whenReady().then(() => {
   installApplicationMenu();
