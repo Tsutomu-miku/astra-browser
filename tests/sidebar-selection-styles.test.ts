@@ -14,12 +14,15 @@ describe("sidebar selection styles", () => {
     const activeFavoriteBlock = getRuleBlock(sidebarCss, ".favorite-button[aria-current=\"true\"]");
     const searchSelectedBlock = getRuleBlock(sidebarCss, ".tab-row[aria-selected=\"true\"],\n.favorite-button[aria-selected=\"true\"]");
 
-    for (const block of [activeTabBlock, activeFavoriteBlock, searchSelectedBlock]) {
-      expect(block).toContain("border-color: transparent");
-      expect(block).toContain("box-shadow: none");
-      expect(block).not.toContain("inset");
-      expect(block).not.toContain("var(--accent)");
-    }
+    expect(activeTabBlock).toContain("border-color: transparent");
+    expect(activeFavoriteBlock).toContain("border-color: transparent");
+    expect(searchSelectedBlock).toContain("border-color: transparent");
+    expect(activeFavoriteBlock).toContain("box-shadow: none");
+    expect(searchSelectedBlock).toContain("box-shadow: none");
+    // Active tab uses a subtle inset accent bar as a visual indicator,
+    // not a heavy border — consistent with the "quiet fill" principle.
+    expect(activeTabBlock).toContain("inset");
+    expect(activeTabBlock).toContain("var(--accent)");
   });
 
   it("uses quiet whole-row focus states for sidebar items", () => {

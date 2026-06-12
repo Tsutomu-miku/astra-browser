@@ -8,7 +8,7 @@ import {
   type SidebarSectionCollapsedState,
   type SidebarSectionId
 } from "../../../../common/sidebar/sidebarSections";
-import { type BrowserTab, type ClosedTab, type Favorite, type FaviconCache, type TabGroup } from "../../../../domain/browser";
+import { type BrowserTab, type ClosedTab, type Favorite, type FaviconCache, type SplitTab, type TabGroup } from "../../../../domain/browser";
 import type { BrowserController } from "../../../../app/controller/types";
 import {
   isSidebarUrlActive
@@ -20,6 +20,7 @@ import { FavoriteButton, TabRow } from "./SidebarItems";
 import { SidebarTabsSection } from "./SidebarTabsSection";
 import { TabGroupSection } from "./TabGroupSection";
 import { readSidebarGroupDragId } from "../../model/sidebarDragSources";
+import { SplitTabRow } from "./SplitTabRow";
 
 const SIDEBAR_ESSENTIALS_LIMIT = 8;
 
@@ -27,6 +28,7 @@ export function SidebarSections({
   actions,
   activeSearchTarget,
   activeTab,
+  activeSplitId,
   closedTabs,
   draggingClosedTabIndex = null,
   draggingEssentialId,
@@ -58,12 +60,14 @@ export function SidebarSections({
   setDraggingClosedTabIndex = () => undefined,
   setDraggingGroupId,
   setDraggingTabId,
-  splitTabIds,
+  splitTabs,
+  onSwapSplitPanes,
   workspaceTabs = []
 }: {
   actions: BrowserController["actions"];
   activeSearchTarget?: SidebarSearchTarget;
   activeTab: BrowserTab;
+  activeSplitId: string | null;
   closedTabs?: ClosedTab[];
   draggingClosedTabIndex?: number | null;
   draggingEssentialId: string | null;
@@ -95,7 +99,8 @@ export function SidebarSections({
   setDraggingClosedTabIndex?: (closedIndex: number | null) => void;
   setDraggingGroupId: (groupId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
-  splitTabIds: string[];
+  splitTabs: SplitTab[];
+  onSwapSplitPanes?: (splitId: string) => void;
   workspaceTabs?: BrowserTab[];
 }) {
   const [localCollapsedSections, setLocalCollapsedSections] = useState<SidebarSectionCollapsedState>(DEFAULT_SIDEBAR_SECTION_COLLAPSED);
@@ -147,11 +152,46 @@ export function SidebarSections({
     actions.reorderTabGroup(groupId, targetGroupId, getPointerDropPlacement(event.currentTarget, event, "vertical"));
     setDraggingGroupId(null);
   };
+
+  const findSplitForTab = (tabId: string): SplitTab | undefined => {
+    return splitTabs.find((s) => s.primaryTabId === tabId || s.secondaryTabId === tabId);
+  };
+
   const renderFavoriteItem = (
     entry: { kind: "tab"; tab: BrowserTab } | { kind: "group"; group: TabGroup; tabs: BrowserTab[] }
   ) => {
     if (entry.kind === "tab") {
       const tab = entry.tab;
+      // Hide secondary split tab from favorites
+      const split = findSplitForTab(tab.id);
+      if (split && split.secondaryTabId === tab.id) return null;
+
+      // If it's the primary of a split, render as SplitTabRow
+      if (split && split.primaryTabId === tab.id) {
+        const secondaryTab = workspaceTabs.find((t) => t.id === split.secondaryTabId);
+        if (!secondaryTab) return null;
+        return (
+          <SplitTabRow
+            key={`split-${split.id}`}
+            activeTabId={activeTab.id}
+            draggingTabId={draggingTabId}
+            faviconCache={faviconCache}
+            id={getSidebarSearchTargetElementId({ type: "favorite", id: tab.id, tabId: tab.id, title: tab.title, url: tab.url })}
+            isActive={activeSplitId === split.id}
+            isSearchSelected={favoriteSearchSelectedTabId === tab.id}
+            primaryTab={tab}
+            secondaryTab={secondaryTab}
+            onClose={actions.closeTab}
+            onContextMenu={onTabContextMenu}
+            onDrop={(event) => onFavoriteTabDrop?.(event, tab.id, "vertical")}
+            onPreview={actions.openGlance}
+            onSelect={() => actions.selectSplitTab?.(split.id)}
+            onSwapPanes={() => onSwapSplitPanes?.(split.id)}
+            setDraggingTabId={setDraggingTabId}
+          />
+        );
+      }
+
       return (
         <TabRow
           key={tab.id}
@@ -162,7 +202,7 @@ export function SidebarSections({
           isCrossFolderDrag={buildCrossFolderCheckFor(tab)}
           isSearchSelected={favoriteSearchSelectedTabId === tab.id}
           labelKind="favorite tab"
-          splitTabIds={splitTabIds}
+          splitTabIds={[]}
           tab={tab}
           onClose={actions.closeTab}
           onContextMenu={onTabContextMenu}
@@ -180,6 +220,7 @@ export function SidebarSections({
       <TabGroupSection
         key={entry.group.id}
         activeTab={activeTab}
+        activeSplitId={activeSplitId}
         draggingGroupId={draggingGroupId}
         draggingTabId={draggingTabId}
         faviconCache={faviconCache}
@@ -197,11 +238,13 @@ export function SidebarSections({
         onRenameTab={onRenameTab}
         onSelect={actions.selectTab}
         onSplit={actions.openTabInSplit}
+        onSwapSplitPanes={onSwapSplitPanes}
         onToggle={() => actions.toggleTabGroupCollapsed(entry.group.id)}
         searchSelectedTabId={favoriteSearchSelectedTabId}
         setDraggingGroupId={setDraggingGroupId}
         setDraggingTabId={setDraggingTabId}
-        splitTabIds={splitTabIds}
+        splitTabs={splitTabs}
+        workspaceTabs={workspaceTabs}
         tabs={entry.tabs}
       />
     );
@@ -273,18 +316,20 @@ export function SidebarSections({
         actions={actions}
         activeSearchTarget={activeSearchTarget}
         activeTab={activeTab}
+        activeSplitId={activeSplitId}
         draggingGroupId={draggingGroupId}
         draggingTabId={draggingTabId}
         filteredItems={filteredItems}
         faviconCache={faviconCache}
         isCrossFolderDrag={buildCrossFolderCheckFor}
-        splitTabIds={splitTabIds}
+        splitTabs={splitTabs}
         onTabContextMenu={onTabContextMenu}
         onTabDrop={onTabDrop}
         onTabGroupCreate={onTabGroupCreate}
         onTabGroupContextMenu={onTabGroupContextMenu}
         onTabsDrop={onTabsDrop}
         onRenameTab={onRenameTab}
+        onSwapSplitPanes={onSwapSplitPanes}
         setDraggingGroupId={setDraggingGroupId}
         setDraggingTabId={setDraggingTabId}
       />

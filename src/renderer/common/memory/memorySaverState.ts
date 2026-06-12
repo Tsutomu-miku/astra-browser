@@ -13,9 +13,9 @@ export interface MemorySaverState {
 
 export function getMemorySaverState(
   workspace: Workspace,
-  state: Pick<BrowserState, "splitMode" | "splitTabId" | "splitTabIds"> & Partial<Pick<BrowserState, "settings">>
+  state: Pick<BrowserState, "settings"> & Partial<Pick<BrowserState, "settings">>
 ): MemorySaverState {
-  const protectedTabIds = getMemorySaverProtectedTabIds(workspace, state);
+  const protectedTabIds = getMemorySaverProtectedTabIds(workspace);
   let protectedTabs = 0;
   let reclaimableTabs = 0;
   let sleepingTabs = 0;

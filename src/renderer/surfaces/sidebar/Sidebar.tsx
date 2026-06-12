@@ -216,6 +216,7 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             actions={actions}
             activeSearchTarget={activeSearchTarget}
             activeTab={activeTab}
+            activeSplitId={activeWorkspace.activeSplitId}
             collapsedSections={sidebarSectionCollapsed}
             draggingEssentialId={drop.draggingEssentialId}
             faviconCache={state.faviconCache}
@@ -231,7 +232,8 @@ export function Sidebar({ controller }: { controller: BrowserController }) {
             onFavoriteReorderDrop={drop.handleFavoriteReorderDrop}
             onFavoriteTabDrop={drop.handleFavoriteTabDrop}
             onTabGroupContextMenu={openTabGroupMenu}
-            splitTabIds={state.splitTabIds}
+            splitTabs={activeWorkspace.splitTabs}
+            onSwapSplitPanes={actions.swapSplitPanes}
             onQuickEntryContextMenu={openQuickEntryMenu}
             onRenameGroup={(groupId, name) => actions.updateTabGroup(groupId, { name })}
             onRenameTab={(tabId, customTitle) => actions.updateTab(tabId, { customTitle })}

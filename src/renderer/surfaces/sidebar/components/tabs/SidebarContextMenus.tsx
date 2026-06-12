@@ -37,7 +37,7 @@ export function SidebarContextMenus({
     ? tabGroupTabs.length
     : 0;
   const canSleepTabGroup = tabGroupMenuGroup
-    ? getGroupSleepableTabs(activeWorkspace, state, tabGroupMenuGroup.id).length > 0
+    ? getGroupSleepableTabs(activeWorkspace, tabGroupMenuGroup.id).length > 0
     : false;
   const openQuickEntry = (item: Favorite, kind: "essential" | "favorite") => {
     if (kind === "essential") {

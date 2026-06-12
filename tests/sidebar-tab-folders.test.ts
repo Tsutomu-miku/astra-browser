@@ -50,6 +50,8 @@ function createWorkspace(patch: Partial<Workspace>): Workspace {
   return {
     accent: "#7dd3fc",
     activeTabId: patch.tabs?.[0]?.id ?? null,
+    activeAncillaryTabId: null,
+    ancillaryTabIds: [],
     closedTabs: [],
     favoriteOrder: [],
     homepage: "https://start.example",
@@ -58,6 +60,10 @@ function createWorkspace(patch: Partial<Workspace>): Workspace {
     profileId: "profile",
     profileName: "Profile",
     splitLayout: "horizontal" as SplitLayout,
+    splitMode: false,
+    splitSide: "right",
+    splitTabs: [],
+    activeSplitId: null,
     tabGroups: [],
     tabs: [],
     ...patch

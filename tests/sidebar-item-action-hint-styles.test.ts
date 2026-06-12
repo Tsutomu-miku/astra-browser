@@ -73,8 +73,8 @@ describe("sidebar item action hint styles", () => {
     expect(rowBlock).toContain("display: flex");
     expect(rowBlock).toContain("padding-right: 4px");
     expect(rowBlock).not.toContain("grid-template-columns");
-    expect(buttonBlock).toContain("grid-template-columns: 24px minmax(0, 1fr)");
-    expect(buttonBlock).not.toContain("grid-template-columns: 24px minmax(0, 1fr) 38px");
+    expect(buttonBlock).toContain("grid-template-columns: 20px minmax(0, 1fr)");
+    expect(buttonBlock).not.toContain("grid-template-columns: 20px minmax(0, 1fr) 38px");
     // Generic rail lays controls out to the right; tab-row rail is absolute.
     expect(railBaseBlock).toContain("justify-content: flex-end");
     expect(tabRailBlock).toContain("position: absolute");

@@ -137,6 +137,7 @@ export interface BrowserStore {
   runWebviewAction: (action: WebviewAction, webview?: WebviewElement) => void;
   selectAdjacentTab: (direction: 1 | -1) => void;
   selectTab: (tabId: string) => void;
+  selectSplitTab: (splitId: string) => void;
   sleepIdleTabs: () => void;
   sleepInactiveTabs: () => void;
   sleepTabGroup: (groupId: string) => void;
@@ -172,6 +173,9 @@ export interface BrowserStore {
   toggleTabPinned: (tabId: string) => void;
   toggleSidebar: () => void;
   toggleSplitMode: () => void;
+  swapSplitPanes: (splitId?: string) => void;
+  toggleSplitPaneSide: () => void;
+  setSplitPaneSide: (side: "left" | "right") => void;
   ungroupActiveTab: () => void;
   ungroupTab: (tabId: string) => void;
   ungroupTabGroup: (groupId: string) => void;

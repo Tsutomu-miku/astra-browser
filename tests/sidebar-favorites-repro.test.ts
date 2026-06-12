@@ -68,7 +68,8 @@ describe("sidebar favorites same-url tab resolution", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
         workspaceTabs: [tabA, tabB, tabC]
       }));
     });

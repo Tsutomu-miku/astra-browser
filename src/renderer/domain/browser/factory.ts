@@ -133,16 +133,22 @@ export function createDefaultState(): BrowserState {
         homepage: DEFAULT_URL,
         profileId: "personal",
         profileName: "Personal",
+        splitLayout: DEFAULT_WORKSPACE_SPLIT_LAYOUT,
+        splitMode: false,
+        ancillaryTabIds: [],
+        activeAncillaryTabId: null,
+        splitSide: "right",
         closedTabs: [],
         favoriteOrder: [chromiumTab.id, mdnTab.id],
         tabGroups: [],
+        splitTabs: [],
+        activeSplitId: null,
         tabs: [
           createTab("New Tab", DEFAULT_URL),
           chromiumTab,
           mdnTab
         ],
-        activeTabId: null,
-        splitLayout: DEFAULT_WORKSPACE_SPLIT_LAYOUT
+        activeTabId: null
       },
       {
         id: "work",
@@ -151,15 +157,21 @@ export function createDefaultState(): BrowserState {
         homepage: "https://github.com",
         profileId: "work",
         profileName: "Work",
+        splitLayout: DEFAULT_WORKSPACE_SPLIT_LAYOUT,
+        splitMode: false,
+        ancillaryTabIds: [],
+        activeAncillaryTabId: null,
+        splitSide: "right",
         closedTabs: [],
         favoriteOrder: [githubTab.id],
         tabGroups: [],
+        splitTabs: [],
+        activeSplitId: null,
         tabs: [
           createTab("Docs", "https://www.chromium.org"),
           githubTab
         ],
-        activeTabId: null,
-        splitLayout: DEFAULT_WORKSPACE_SPLIT_LAYOUT
+        activeTabId: null
       }
     ]
   };

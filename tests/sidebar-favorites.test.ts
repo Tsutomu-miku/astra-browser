@@ -61,7 +61,9 @@ describe("sidebar favorites", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null,
+        workspaceTabs: [activeTab]
       }));
     });
 
@@ -116,7 +118,8 @@ describe("sidebar favorites", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
         workspaceTabs: [activeTab, docsTab]
       }));
     });
@@ -174,7 +177,8 @@ describe("sidebar favorites", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
         workspaceTabs: [activeTab, docsTab]
       }));
     });
@@ -231,7 +235,8 @@ describe("sidebar favorites", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
         workspaceTabs: [activeTab, docsTab]
       }));
     });
@@ -292,7 +297,8 @@ describe("sidebar favorites", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
         workspaceTabs: [activeTab, docsTab]
       }));
     });
@@ -349,20 +355,25 @@ describe("sidebar favorites", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [docsTab.id],
+        splitTabs: [{
+          id: "split-1",
+          primaryTabId: docsTab.id,
+          secondaryTabId: activeTab.id,
+          layout: "horizontal",
+          side: "right"
+        }],
+        activeSplitId: "split-1",
         workspaceTabs: [activeTab, docsTab]
       }));
     });
 
-    const favoriteButton = container.querySelector(".favorites .tab-button");
-    expect(favoriteButton?.getAttribute("aria-label")).toBe("Docs, favorite tab, Split, Muted");
-    expect(favoriteButton?.querySelector(".tab-title-stack")).not.toBeNull();
-    expect(favoriteButton?.querySelector(".tab-status-badge.is-split")).not.toBeNull();
-    expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")).not.toBeNull();
-    expect(favoriteButton?.querySelector(".tab-status-badge.is-split")?.hasAttribute("title")).toBe(false);
-    expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")?.hasAttribute("title")).toBe(false);
-    expect(favoriteButton?.querySelector(".tab-status-badge.is-split")?.textContent).toBe("");
-    expect(favoriteButton?.querySelector(".tab-status-badge.is-muted")?.textContent).toBe("");
+    // With entity model: primary tab in a split renders as SplitTabRow (merged row)
+    const splitButton = container.querySelector(".favorites .split-tab-button");
+    expect(splitButton).not.toBeNull();
+    expect(splitButton?.getAttribute("aria-label")).toContain("split view");
+    expect(container.querySelector(".favorites .split-tab-favicons")).not.toBeNull();
+    expect(container.querySelector(".favorites .split-tab-secondary-title")).not.toBeNull();
+    expect(container.querySelector(".favorites .split-tab-favicon-secondary")).not.toBeNull();
 
     act(() => root.unmount());
   });
@@ -411,7 +422,8 @@ describe("sidebar favorites", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId,
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
         workspaceTabs: [activeTab, docsTab]
       }));
     });

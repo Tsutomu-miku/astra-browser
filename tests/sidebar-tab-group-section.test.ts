@@ -499,9 +499,11 @@ function props(overrides: Partial<Parameters<typeof TabGroupSection>[0]> = {}): 
     onSelect: vi.fn(),
     onSplit: vi.fn(),
     onToggle: vi.fn(),
+    activeSplitId: null,
     setDraggingGroupId: vi.fn(),
     setDraggingTabId: vi.fn(),
-    splitTabIds: [],
+    splitTabs: [],
+    workspaceTabs: [activeTab],
     tabs: [activeTab],
     ...overrides
   };

@@ -85,7 +85,8 @@ describe("sidebar favorites with duplicate URLs across tabs", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
         workspaceTabs: [tabA, tabB, tabC]
       }));
     });

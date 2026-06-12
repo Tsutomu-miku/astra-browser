@@ -292,7 +292,9 @@ describe("sidebar drag placement", () => {
         searchSelectedTabId: undefined,
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
+        workspaceTabs: [tab],
         tabs: [tab]
       }));
     });
@@ -339,7 +341,9 @@ describe("sidebar drag placement", () => {
         searchSelectedTabId: undefined,
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
+        workspaceTabs: [tab],
         tabs: [tab]
       }));
     });
@@ -391,7 +395,8 @@ describe("sidebar drag placement", () => {
         onTabsDrop: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null
       }));
     });
 
@@ -430,7 +435,9 @@ describe("sidebar drag placement", () => {
         searchSelectedTabId: undefined,
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
+        workspaceTabs: [tab],
         tabs: [tab]
       }));
     });

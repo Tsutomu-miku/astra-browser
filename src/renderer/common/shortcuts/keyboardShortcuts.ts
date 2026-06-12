@@ -27,6 +27,7 @@ export type ShortcutIntent =
   | { type: "toggleFloatingToolbar" }
   | { type: "toggleSidebar" }
   | { type: "toggleSplit" }
+  | { type: "swapSplitPanes" }
   | { type: "toggleSplitGrid" }
   | { type: "toggleSplitHorizontal" }
   | { type: "toggleSplitVertical" }
@@ -176,6 +177,7 @@ export function resolveShortcut(event: ShortcutEventLike): ShortcutIntent | null
 
   const shortcuts: Record<string, ShortcutIntent> = {
     "\\": { type: "toggleSplit" },
+    "|": { type: "swapSplitPanes" },
     b: { type: "toggleSidebar" },
     f: { type: "openFind" },
     h: { type: "openHistory" },

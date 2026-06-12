@@ -93,6 +93,8 @@ export function useBrowserShortcuts({
       activateSplitLayout(store, "vertical");
     } else if (intent.type === "unsplitAll") {
       if (store.state.splitMode) store.toggleSplitMode();
+    } else if (intent.type === "swapSplitPanes") {
+      if (store.state.splitMode) store.swapSplitPanes();
     } else {
       shortcutActions[intent.type]?.();
     }

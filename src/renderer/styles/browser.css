@@ -960,3 +960,157 @@
 .permission-dismiss {
   align-self: flex-end;
 }
+
+/* ===== Arc-style split view ===== */
+
+.view-grid.is-split.split-side-right {
+  grid-template-columns: minmax(0, var(--split-primary-size, 50%)) 8px minmax(0, 1fr);
+}
+
+.view-grid.is-split.split-side-left {
+  grid-template-columns: minmax(0, 1fr) 8px minmax(0, var(--split-primary-size, 50%));
+}
+
+.view-grid.is-split.split-layout-vertical {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.view-grid.is-split.split-layout-vertical.split-side-right {
+  grid-template-rows: minmax(0, var(--split-primary-size, 50%)) 8px minmax(0, 1fr);
+}
+
+.view-grid.is-split.split-layout-vertical.split-side-left {
+  grid-template-rows: minmax(0, 1fr) 8px minmax(0, var(--split-primary-size, 50%));
+}
+
+/* When split is off, single pane fills everything */
+.view-grid:not(.is-split) .browser-pane.is-ancillary {
+  display: none;
+}
+
+.browser-pane.is-ancillary {
+  position: relative;
+}
+
+/* Ancillary pane header — Arc-style, always visible */
+.ancillary-pane-header {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 30px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--theme-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chrome-strong) 82%, transparent);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-floating);
+  opacity: 0.4;
+  transition: opacity 140ms ease;
+}
+
+.browser-pane.is-ancillary:hover .ancillary-pane-header,
+.browser-pane.is-ancillary:focus-within .ancillary-pane-header {
+  opacity: 1;
+}
+
+.ancillary-pane-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ancillary-pane-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.ancillary-pane-btn {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.ancillary-pane-btn:hover,
+.ancillary-pane-btn:focus-visible {
+  background: var(--theme-control-hover);
+  color: var(--text);
+  outline: none;
+}
+
+.ancillary-pane-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Edge drop zones — visible when dragging a tab over the browser area */
+.split-edge-drop-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 25%;
+  z-index: 12;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent-2, var(--accent)) 12%, transparent);
+  border: 2px solid color-mix(in srgb, var(--accent-2, var(--accent)) 50%, transparent);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.split-edge-drop-zone.is-left {
+  left: 0;
+  border-right: 0;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.split-edge-drop-zone.is-right {
+  right: 0;
+  border-left: 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.split-edge-drop-zone[data-drop-active="true"] {
+  opacity: 1;
+  background: color-mix(in srgb, var(--accent-2, var(--accent)) 20%, transparent);
+  border-color: var(--accent-2, var(--accent));
+}
+
+/* Reposition split indicator for edge-drag UX */
+.view-grid.is-split-drop-target.split-layout-horizontal[data-split-drop-zone="before"]::after {
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 3px;
+  background: var(--accent-2, var(--accent));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-2, var(--accent)) 72%, white), 0 0 36px color-mix(in srgb, var(--accent-2, var(--accent)) 42%, transparent);
+}
+
+.view-grid.is-split-drop-target.split-layout-horizontal[data-split-drop-zone="after"]::after {
+  right: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 3px;
+  background: var(--accent-2, var(--accent));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-2, var(--accent)) 72%, white), 0 0 36px color-mix(in srgb, var(--accent-2, var(--accent)) 42%, transparent);
+}

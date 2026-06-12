@@ -12,7 +12,6 @@ import {
 } from "../browser";
 import { getActiveWorkspace } from "../browser/selectors";
 import { pruneEmptyTabGroups } from "../tabs/groups";
-import { clearSplitView } from "../tabs/splitView";
 import { updateBrowserState } from "../browser/updateState";
 import { normalizeWorkspaceProfile } from "./profiles";
 
@@ -21,7 +20,6 @@ export type WorkspaceDropPlacement = "before" | "after";
 export function switchWorkspace(state: BrowserState, workspaceId: string): BrowserState {
   return updateBrowserState(state, (draft) => {
     draft.activeWorkspaceId = workspaceId;
-    clearSplitView(draft);
   });
 }
 
@@ -56,7 +54,6 @@ export function moveTabToNewWorkspace(state: BrowserState, tabId: string): Brows
     });
     draft.workspaces.push(workspace);
     draft.activeWorkspaceId = workspace.id;
-    clearSplitView(draft);
   });
 }
 
@@ -90,7 +87,6 @@ export function moveTabGroupToNewWorkspace(state: BrowserState, groupId: string)
     });
     draft.workspaces.push(workspace);
     draft.activeWorkspaceId = workspace.id;
-    clearSplitView(draft);
   });
 }
 
@@ -123,7 +119,6 @@ export function restoreClosedTabToNewWorkspace(state: BrowserState, closedIndex:
     });
     draft.workspaces.push(workspace);
     draft.activeWorkspaceId = workspace.id;
-    clearSplitView(draft);
   });
 }
 
@@ -154,7 +149,6 @@ export function moveWorkspaceFavoriteToNewWorkspace(state: BrowserState, tabId: 
     });
     draft.workspaces.push(workspace);
     draft.activeWorkspaceId = workspace.id;
-    clearSplitView(draft);
   });
 }
 
@@ -169,7 +163,6 @@ export function deleteWorkspace(state: BrowserState, workspaceId: string): Brows
     draft.workspaces.splice(index, 1);
     if (deletingActive) {
       draft.activeWorkspaceId = draft.workspaces[Math.max(0, index - 1)].id;
-      clearSplitView(draft);
     }
   });
 }
@@ -239,6 +232,12 @@ function createWorkspace(
     homepage: getHomepageUrl(state),
     ...normalizeWorkspaceProfile({ id, name }),
     splitLayout: "horizontal" as SplitLayout,
+    splitMode: false,
+    ancillaryTabIds: [],
+    activeAncillaryTabId: null,
+    splitSide: "right",
+    splitTabs: [],
+    activeSplitId: null,
     closedTabs: [],
     favoriteOrder: options.favoriteOrder?.filter((id) => tabs.some((t) => t.id === id)) ?? [],
     tabGroups: options.tabGroups ?? [],

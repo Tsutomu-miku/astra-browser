@@ -40,8 +40,12 @@ export {
   openUrlInSplit,
   removeTabFromSplit,
   reorderTab,
+  selectSplitTab,
   setWorkspaceSplitLayout,
+  swapSplitPanes,
   toggleSplitMode,
+  toggleSplitPaneSide,
+  setSplitPaneSide,
   type TabFolder
 } from "./layoutActions";
 export {

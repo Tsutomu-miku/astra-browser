@@ -124,6 +124,7 @@ export type {
   SearchEngineKey,
   SitePermissionRule,
   SplitLayout,
+  SplitTab,
   StartupBehavior,
   TabGroup,
   ThemeKey,

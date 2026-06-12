@@ -66,7 +66,9 @@ describe("sidebar focus navigation", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null,
+        workspaceTabs: [activeTab, favoriteTab]
       })));
     });
 
@@ -141,7 +143,9 @@ describe("sidebar focus navigation", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null,
+        workspaceTabs: [activeTab, pinnedTab, favoriteTab]
       })));
     });
 
@@ -211,7 +215,9 @@ describe("sidebar focus navigation", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null,
+        workspaceTabs: [activeTab, favoriteTab]
       }));
     });
 
@@ -269,7 +275,8 @@ describe("sidebar focus navigation", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
         workspaceTabs: [groupedTab]
       })));
     });
@@ -332,7 +339,9 @@ describe("sidebar focus navigation", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null,
+        workspaceTabs: [groupedTab]
       })));
     });
 

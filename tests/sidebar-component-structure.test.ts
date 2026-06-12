@@ -8,13 +8,10 @@ describe("sidebar component structure", () => {
   it("keeps cross-section sidebar menu chrome in the common component layer", () => {
     const commonMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuItem.tsx");
     const commonMenuSurfacePath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarMenuSurface.tsx");
-    const commonItemActionHintsPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarItemActionHints.tsx");
     const commonItemIconPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarItemIcon.tsx");
-    const commonModifierHintsPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarModifierActionHints.tsx");
     const commonSectionHeaderPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarSectionHeader.tsx");
     const commonTabStatusBadgesPath = join(root, "src/renderer/surfaces/sidebar/components/common/SidebarTabStatusBadges.tsx");
     const menuDismissalPath = join(root, "src/renderer/common/context-menu/menuDismissal.ts");
-    const oldTabsActionHintsPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItemActionHints.tsx");
     const oldTabsItemIconPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarItemIcon.tsx");
     const oldTabsMenuItemPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarMenuItem.tsx");
     const oldTabsStatusBadgesPath = join(root, "src/renderer/surfaces/sidebar/components/tabs/SidebarTabStatusBadges.tsx");
@@ -22,9 +19,7 @@ describe("sidebar component structure", () => {
     const stylesEntry = readFileSync(join(root, "src/renderer/styles.css"), "utf8");
     const commonMenuItem = readFileSync(commonMenuItemPath, "utf8");
     const commonMenuSurface = readFileSync(commonMenuSurfacePath, "utf8");
-    const commonItemActionHints = readFileSync(commonItemActionHintsPath, "utf8");
     const commonItemIcon = readFileSync(commonItemIconPath, "utf8");
-    const commonModifierHints = readFileSync(commonModifierHintsPath, "utf8");
     const commonSectionHeader = readFileSync(commonSectionHeaderPath, "utf8");
     const commonTabStatusBadges = readFileSync(commonTabStatusBadgesPath, "utf8");
     const menuDismissal = readFileSync(menuDismissalPath, "utf8");
@@ -60,13 +55,10 @@ describe("sidebar component structure", () => {
 
     expect(existsSync(commonMenuItemPath)).toBe(true);
     expect(existsSync(commonMenuSurfacePath)).toBe(true);
-    expect(existsSync(commonItemActionHintsPath)).toBe(true);
     expect(existsSync(commonItemIconPath)).toBe(true);
-    expect(existsSync(commonModifierHintsPath)).toBe(true);
     expect(existsSync(commonSectionHeaderPath)).toBe(true);
     expect(existsSync(commonTabStatusBadgesPath)).toBe(true);
     expect(existsSync(menuDismissalPath)).toBe(true);
-    expect(existsSync(oldTabsActionHintsPath)).toBe(false);
     expect(existsSync(oldTabsItemIconPath)).toBe(false);
     expect(existsSync(oldTabsMenuItemPath)).toBe(false);
     expect(existsSync(oldTabsStatusBadgesPath)).toBe(false);
@@ -78,13 +70,7 @@ describe("sidebar component structure", () => {
     expect(commonMenuSurface).toContain("handleMenuKeyboardNavigation");
     expect(commonMenuSurface).toContain('role="menu"');
     expect(commonMenuSurface).toContain("event.stopPropagation()");
-    expect(commonItemActionHints).toContain("SidebarModifierActionHints");
     expect(commonItemIcon).toContain("BrowserItemIcon");
-    expect(commonModifierHints).toContain("FiEye");
-    expect(commonModifierHints).toContain("FiColumns");
-    expect(commonModifierHints).toContain("getModifierActionHintsLabel");
-    expect(commonModifierHints).toContain("data-sidebar-modifier-hints");
-    expect(commonModifierHints).toContain("data-sidebar-modifier-hint");
     expect(commonSectionHeader).toContain("getDisclosureKeyboardToggleIntent");
     expect(commonSectionHeader).toContain("sidebar-section-header");
     expect(commonTabStatusBadges).toContain("data-sidebar-tab-status-badges");
@@ -119,7 +105,8 @@ describe("sidebar component structure", () => {
     expect(sidebarQuickEntryReorderDrop).toContain("readSidebarEssentialDragId");
     expect(sidebarQuickEntryReorderDrop).toContain("readSidebarFavoriteDragId");
     expect(sidebarQuickEntryReorderDrop).toContain("getPointerDropPlacement");
-    expect(sidebarItemFiles.some((file) => file.includes('from "../common/SidebarItemActionHints"'))).toBe(true);
+    // Action hints (preview/split icons) were removed — modifier-based activation only
+    expect(sidebarItemFiles.every((file) => !file.includes("SidebarItemActionHints"))).toBe(true);
     expect(sidebarItemFiles.some((file) => file.includes('from "../common/SidebarItemIcon"'))).toBe(true);
     expect(sidebarItemFiles.some((file) => file.includes("runSidebarItemPointerActivation"))).toBe(true);
     expect(sidebarItemFiles.some((file) => file.includes("acceptSidebarRowReorderDrag"))).toBe(true);
@@ -128,7 +115,9 @@ describe("sidebar component structure", () => {
       expect(source).not.toContain("updateDropPlacement");
       expect(source).not.toContain("clearDropPlacement");
       expect(source).not.toContain("event.altKey");
-      expect(source).not.toContain("event.shiftKey");
+      // event.shiftKey may appear in onDrop handlers for drag intent (split vs group) —
+      // that's a different interaction mode from click/keyboard activation hints.
+      expect(source).not.toMatch(/on(Click|KeyDown|KeyPress|KeyUp)[^}]*event\.shiftKey/);
       expect(source).not.toContain("export function SidebarSectionHeader");
     }
     expect(sidebarClosedTabButton).toContain("runSidebarItemPointerActivation");
@@ -147,7 +136,6 @@ describe("sidebar component structure", () => {
     expect(sidebarSections).toContain('from "../common/SidebarSectionHeader"');
     expect(sidebarSections).toContain('acceptSidebarTabFolderDrag(event, draggingTabId, "copy")');
     expect(sidebarSections).not.toContain("readSidebarTabDragEventId");
-    expect(sidebarSearchBox).toContain("SidebarModifierActionHints");
     expect(sidebarSearchBox).not.toContain("FiEye");
     expect(sidebarSearchBox).not.toContain("FiColumns");
     expect(workspaceMenuFiles.some((file) => file.includes("sidebar-more-menu"))).toBe(true);
@@ -182,7 +170,6 @@ describe("sidebar component structure", () => {
     expect(sidebarMenuCss).toContain(".sidebar-menu-surface");
     expect(sidebarMenuCss).toContain(".sidebar-menu-field");
     expect(sidebarMenuCss).toContain(".sidebar-menu-surface .sidebar-menu-swatch");
-    expect(readFileSync(join(root, "src/renderer/styles/sidebar-action-hints.css"), "utf8")).toContain('[data-sidebar-modifier-hint="true"]');
     expect(readFileSync(join(root, "src/renderer/styles/sidebar.css"), "utf8")).toContain('[data-sidebar-tab-status-badge="true"]');
     expect(tabContextMenuCss).not.toContain("box-shadow: 0 18px 48px");
     expect(workspaceCss).not.toContain("box-shadow: 0 18px 48px");

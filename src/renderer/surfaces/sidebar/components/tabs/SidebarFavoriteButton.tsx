@@ -14,7 +14,6 @@ import { runSidebarItemKeyboardActivation, runSidebarItemPointerActivation } fro
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { acceptSidebarRowReorderDrag, clearSidebarRowReorderDrop, resolveSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
 import { isCloseTabKey } from "../../model/sidebarTabKeyboard";
-import { SidebarItemActionHints } from "../common/SidebarItemActionHints";
 import { SidebarItemIcon } from "../common/SidebarItemIcon";
 import { SidebarTabStatusBadges } from "../common/SidebarTabStatusBadges";
 
@@ -200,7 +199,6 @@ export function FavoriteButton({
       ) : (
         <span className="favorite-title">{favorite.title}</span>
       )}
-      <SidebarItemActionHints />
     </button>
   );
 }

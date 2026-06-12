@@ -121,6 +121,22 @@ export interface TabGroup {
   isCollapsed: boolean;
 }
 
+/**
+ * Arc-style split tab — two tabs displayed side-by-side as a single sidebar entry.
+ * The split tab itself appears in the sidebar as one row; the two child tabs
+ * still exist in `workspace.tabs` but are hidden from the sidebar tab list.
+ */
+export interface SplitTab {
+  id: string;
+  /** Tab shown in the primary pane (the "main" one) */
+  primaryTabId: string;
+  /** Tab shown in the secondary/ancillary pane */
+  secondaryTabId: string;
+  layout: SplitLayout;
+  /** Which side the secondary pane appears on */
+  side: "left" | "right";
+}
+
 export interface HistoryEntry {
   id: string;
   title: string;
@@ -282,6 +298,18 @@ export interface Workspace {
   profileId: string;
   profileName: string;
   splitLayout: SplitLayout;
+  /** Whether a split (secondary) pane is open alongside the primary tab. */
+  splitMode: boolean;
+  /** Tab IDs currently in the secondary/ancillary split pane (most-recent first). */
+  ancillaryTabIds: string[];
+  /** The tab currently displayed in the secondary split pane. */
+  activeAncillaryTabId: string | null;
+  /** Which side the split pane appears on. */
+  splitSide: "left" | "right";
+  /** Split tab entities — Arc-style merged tab entries (each = 2 sub-tabs). */
+  splitTabs: SplitTab[];
+  /** ID of the currently active split tab (null = viewing a single regular tab). */
+  activeSplitId: string | null;
   closedTabs: ClosedTab[];
   favoriteOrder: string[];
   tabGroups: TabGroup[];

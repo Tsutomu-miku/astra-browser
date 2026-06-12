@@ -22,8 +22,6 @@ export function SidebarTabStatusBadges({
 
 function TabStatusIcon({ badge }: { badge: TabStatusBadge }) {
   switch (badge.id) {
-    case "split":
-      return <FiColumns />;
     case "camera":
       return <FiCamera />;
     case "microphone":
@@ -32,6 +30,8 @@ function TabStatusIcon({ badge }: { badge: TabStatusBadge }) {
       return <FiVolume2 />;
     case "muted":
       return <FiVolumeX />;
+    case "split":
+      return <FiColumns />;
     case "unread":
       return <FiRadio />;
   }

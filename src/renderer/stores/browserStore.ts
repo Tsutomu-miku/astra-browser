@@ -69,6 +69,7 @@ import {
   restoreLastClosedTab,
   selectAdjacentTab,
   selectTab,
+  selectSplitTab,
   setActiveTabZoom,
   setIncognitoMode,
   setPerOriginZoom,
@@ -90,6 +91,9 @@ import {
   toggleTabMuted,
   toggleTabPinned,
   toggleSplitMode,
+  swapSplitPanes,
+  toggleSplitPaneSide,
+  setSplitPaneSide,
   touchPasswordUsed,
   ungroupActiveTab,
   ungroupTab,
@@ -440,6 +444,9 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
       });
     }
   },
+  selectSplitTab: (splitId) => {
+    update(set, (state) => selectSplitTab(state, splitId));
+  },
   sleepIdleTabs: () => update(set, sleepIdleTabs),
   sleepInactiveTabs: () => update(set, sleepInactiveTabs),
   sleepTabGroup: (groupId) => update(set, (state) => sleepTabGroup(state, groupId)),
@@ -511,6 +518,9 @@ export const useBrowserStore = create<BrowserStore>((set, get) => ({
     ? { floatingSidebarOpen: !state.floatingSidebarOpen, sidebarCollapsed: true }
     : { sidebarCollapsed: !state.sidebarCollapsed }),
   toggleSplitMode: () => update(set, toggleSplitMode),
+  swapSplitPanes: (splitId) => update(set, (state) => swapSplitPanes(state, splitId)),
+  toggleSplitPaneSide: () => update(set, toggleSplitPaneSide),
+  setSplitPaneSide: (side: "left" | "right") => update(set, (state) => setSplitPaneSide(state, side)),
   setIncognito: (mode) => update(set, (state) => setIncognitoMode(state, mode)),
   setPerOriginZoom: (origin, zoom) => update(set, (state) => setPerOriginZoom(state, origin, zoom)),
   /* ===== Autofill actions ===== */

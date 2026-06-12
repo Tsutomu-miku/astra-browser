@@ -51,7 +51,7 @@ function getSleepTabFocusFallback(tabs: BrowserTab[], tabId: string): BrowserTab
 export function sleepTabGroup(state: BrowserState, groupId: string): BrowserState {
   const workspace = state.workspaces.find((candidate) => candidate.tabGroups.some((group) => group.id === groupId));
   const sleepableTabIds = workspace
-    ? getGroupSleepableTabs(workspace, state, groupId).map((tab) => tab.id)
+    ? getGroupSleepableTabs(workspace, groupId).map((tab) => tab.id)
     : [];
 
   if (sleepableTabIds.length === 0) return state;
@@ -71,7 +71,7 @@ export function sleepTabGroup(state: BrowserState, groupId: string): BrowserStat
 
 export function sleepInactiveTabs(state: BrowserState): BrowserState {
   const workspace = getActiveWorkspace(state);
-  const sleepableTabIds = getMemoryReleasableTabs(workspace, state).map((tab) => tab.id);
+  const sleepableTabIds = getMemoryReleasableTabs(workspace).map((tab) => tab.id);
 
   if (sleepableTabIds.length === 0) return state;
 
@@ -92,7 +92,7 @@ export function sleepIdleTabs(state: BrowserState, now = Date.now()): BrowserSta
 
   const workspace = getActiveWorkspace(state);
   const cutoff = now - state.settings.memorySaverIdleMinutes * 60_000;
-  const sleepableTabIds = getMemoryReleasableTabs(workspace, state)
+  const sleepableTabIds = getMemoryReleasableTabs(workspace)
     .filter((tab) => tab.lastActiveAt <= cutoff)
     .map((tab) => tab.id);
 

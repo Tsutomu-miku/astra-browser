@@ -192,6 +192,10 @@ export function useBrowserActions({
       store.selectTab(tabId);
       peekCompactChrome();
     },
+    selectSplitTab: (splitId: string) => {
+      store.selectSplitTab(splitId);
+      peekCompactChrome();
+    },
     sleepInactiveTabs: store.sleepInactiveTabs,
     sleepTabGroup: store.sleepTabGroup,
     sleepTab: store.sleepTab,
@@ -232,6 +236,9 @@ export function useBrowserActions({
     toggleTabPinned: store.toggleTabPinned,
     toggleSidebar: store.toggleSidebar,
     toggleSplitMode: store.toggleSplitMode,
+    swapSplitPanes: store.swapSplitPanes,
+    toggleSplitPaneSide: store.toggleSplitPaneSide,
+    setSplitPaneSide: store.setSplitPaneSide,
     ungroupActiveTab: store.ungroupActiveTab,
     ungroupTab: store.ungroupTab,
     ungroupTabGroup: store.ungroupTabGroup,

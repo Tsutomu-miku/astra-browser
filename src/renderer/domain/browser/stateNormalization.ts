@@ -21,7 +21,7 @@ import {
   normalizeExtensions,
   normalizeProfiles
 } from "../permissions/settingsActions";
-import { getSplitTabIds, pruneSplitTabIds } from "../tabs/splitView";
+import { getSplitTabIds, migrateSplitsToEntityModel, pruneSplitTabs } from "../tabs/splitView";
 import { normalizeTabGroups } from "../tabs/groups";
 import { normalizeWorkspaceProfile } from "../workspaces/profiles";
 import { normalizeZoomFactor, DEFAULT_ZOOM_FACTOR } from "./zoom";
@@ -155,14 +155,52 @@ export function normalizeState(candidateState: PartialBrowserState | null | unde
   if (!state.workspaces.some((workspace) => workspace.id === state.activeWorkspaceId)) {
     state.activeWorkspaceId = state.workspaces[0].id;
   }
-  state.splitMode = Boolean(state.splitMode);
-  state.splitTabIds = getSplitTabIds({
-    splitMode: state.splitMode,
-    splitTabId: state.splitTabId,
-    splitTabIds: Array.isArray(state.splitTabIds) ? state.splitTabIds : []
-  });
+
+  // Normalize split state on each workspace (defaults + migration from legacy state-level fields)
+  const activeWs = state.workspaces.find((ws) => ws.id === state.activeWorkspaceId) ?? state.workspaces[0];
+  for (const workspace of state.workspaces) {
+    workspace.splitMode = Boolean(workspace.splitMode);
+    workspace.ancillaryTabIds = Array.isArray(workspace.ancillaryTabIds) ? workspace.ancillaryTabIds.filter(Boolean) : [];
+    workspace.activeAncillaryTabId = workspace.activeAncillaryTabId ?? null;
+    workspace.splitSide = workspace.splitSide === "left" ? "left" : "right";
+    workspace.splitLayout = isSplitLayout(workspace.splitLayout) ? workspace.splitLayout : "horizontal";
+    workspace.splitTabs = Array.isArray(workspace.splitTabs) ? workspace.splitTabs.filter(Boolean) : [];
+    workspace.activeSplitId = workspace.activeSplitId ?? null;
+    // Migrate from old ancillaryTabIds model → splitTabs entity model
+    migrateSplitsToEntityModel(workspace);
+    // Clean up stale split references
+    pruneSplitTabs(workspace);
+  }
+
+  // Migration: legacy state-level split fields → active workspace
+  // Only migrate simple 2-tab splits (not grid mode with multiple tabs)
+  if (state.splitMode && activeWs && !activeWs.splitMode) {
+    const legacyIds = Array.isArray(state.splitTabIds) ? state.splitTabIds.filter(Boolean) : [];
+    const legacyTabId = state.splitTabId ?? null;
+    const ids = legacyIds.length > 0 ? legacyIds : (legacyTabId ? [legacyTabId] : []);
+    if (ids.length === 1 && activeWs.activeTabId) {
+      const secondaryId = ids.find((id) => id !== activeWs.activeTabId);
+      if (secondaryId && activeWs.tabs.some((t) => t.id === secondaryId)) {
+        const split = {
+          id: createId(),
+          primaryTabId: activeWs.activeTabId,
+          secondaryTabId: secondaryId,
+          layout: activeWs.splitLayout || "horizontal",
+          side: activeWs.splitSide || "right"
+        };
+        activeWs.splitTabs.push(split);
+        activeWs.activeSplitId = split.id;
+        activeWs.splitMode = true;
+        activeWs.ancillaryTabIds = [secondaryId];
+        activeWs.activeAncillaryTabId = secondaryId;
+      }
+    }
+  }
+
+  // Keep legacy state-level fields in sync for backward compat
+  state.splitMode = activeWs?.splitMode ?? false;
+  state.splitTabIds = getSplitTabIds(state);
   state.splitTabId = state.splitTabIds[0] ?? null;
-  pruneSplitTabIds(state, state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) ?? state.workspaces[0]);
   return state;
 }
 

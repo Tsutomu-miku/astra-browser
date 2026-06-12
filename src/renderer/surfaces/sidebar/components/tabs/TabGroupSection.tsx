@@ -3,7 +3,7 @@ import { FiFolder } from "react-icons/fi";
 
 import { getDisclosureKeyboardToggleIntent } from "../../../../common/disclosure/disclosureKeyboard";
 import { clearDropTargetActive, type DropAxis } from "../../../../common/drag-drop/dropPlacement";
-import type { BrowserTab, FaviconCache, TabGroup } from "../../../../domain/browser";
+import type { BrowserTab, FaviconCache, SplitTab, TabGroup } from "../../../../domain/browser";
 import { SIDEBAR_DRAG_DATA } from "../../model/sidebarDragSources";
 import { openSidebarKeyboardContextMenu } from "../../model/sidebarKeyboardContextMenu";
 import { clearSidebarRowReorderDrop } from "../../model/sidebarRowReorderDrop";
@@ -11,9 +11,11 @@ import { acceptSidebarTabGroupHeaderDrag, resolveSidebarTabGroupHeaderDrop } fro
 import { getSidebarSearchTargetElementId } from "../../sidebarFiltering";
 import { SidebarItemIcon } from "../common/SidebarItemIcon";
 import { TabRow } from "./SidebarItems";
+import { SplitTabRow } from "./SplitTabRow";
 
 export function TabGroupSection({
   activeTab,
+  activeSplitId,
   draggingGroupId,
   draggingTabId,
   faviconCache,
@@ -31,14 +33,17 @@ export function TabGroupSection({
   onRenameTab,
   onSelect,
   onSplit,
+  onSwapSplitPanes,
   onToggle,
   searchSelectedTabId,
   setDraggingGroupId,
   setDraggingTabId,
-  splitTabIds,
+  splitTabs,
+  workspaceTabs,
   tabs
 }: {
   activeTab: BrowserTab;
+  activeSplitId: string | null;
   draggingGroupId: string | null;
   draggingTabId: string | null;
   faviconCache?: FaviconCache;
@@ -56,11 +61,13 @@ export function TabGroupSection({
   onRenameTab?: (tabId: string, customTitle: string | undefined) => void;
   onSelect: (tabId: string) => void;
   onSplit: (tabId: string) => void;
+  onSwapSplitPanes?: (splitId: string) => void;
   onToggle: () => void;
   searchSelectedTabId?: string;
   setDraggingGroupId: (groupId: string | null) => void;
   setDraggingTabId: (tabId: string | null) => void;
-  splitTabIds: string[];
+  splitTabs: SplitTab[];
+  workspaceTabs: BrowserTab[];
   tabs: BrowserTab[];
 }) {
   const hasActiveTab = tabs.some((tab) => tab.id === activeTab.id);
@@ -97,6 +104,63 @@ export function TabGroupSection({
     event.preventDefault();
     event.stopPropagation();
     onToggle();
+  };
+
+  const findSplitForTab = (tabId: string): SplitTab | undefined => {
+    return splitTabs.find((s) => s.primaryTabId === tabId || s.secondaryTabId === tabId);
+  };
+
+  const renderTabOrSplit = (tab: BrowserTab) => {
+    const split = findSplitForTab(tab.id);
+    if (split && split.secondaryTabId === tab.id) {
+      return null; // secondary tab rendered as part of primary's SplitTabRow
+    }
+    if (split && split.primaryTabId === tab.id) {
+      const secondaryTab = workspaceTabs.find((t) => t.id === split.secondaryTabId);
+      if (!secondaryTab) return null;
+      return (
+        <SplitTabRow
+          key={`split-${split.id}`}
+          activeTabId={activeTab.id}
+          draggingTabId={draggingTabId}
+          faviconCache={faviconCache}
+          id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
+          isActive={activeSplitId === split.id}
+          isSearchSelected={searchSelectedTabId === tab.id}
+          primaryTab={tab}
+          secondaryTab={secondaryTab}
+          onClose={onClose}
+          onContextMenu={onContextMenu}
+          onDrop={onDrop}
+          onPreview={onPreview}
+          onSelect={() => onSelect(split.primaryTabId)}
+          onSwapPanes={() => onSwapSplitPanes?.(split.id)}
+          setDraggingTabId={setDraggingTabId}
+        />
+      );
+    }
+    return (
+      <TabRow
+        key={tab.id}
+        activeTabId={activeTab.id}
+        draggingTabId={draggingTabId}
+        faviconCache={faviconCache}
+        id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
+        isCrossFolderDrag={isCrossFolderDrag?.(tab)}
+        isSearchSelected={searchSelectedTabId === tab.id}
+        splitTabIds={[]}
+        tab={tab}
+        onClose={onClose}
+        onContextMenu={onContextMenu}
+        onDrop={onDrop}
+        onGroupTab={onGroupTab}
+        onPreview={onPreview}
+        onRenameTab={onRenameTab}
+        onSelect={onSelect}
+        onSplit={onSplit}
+        setDraggingTabId={setDraggingTabId}
+      />
+    );
   };
 
   return (
@@ -221,28 +285,7 @@ export function TabGroupSection({
         </span>
         <span className="tab-group-count">{tabs.length}</span>
       </div>
-      {(!group.isCollapsed || hasActiveTab) && tabs.map((tab) => (
-        <TabRow
-          key={tab.id}
-          activeTabId={activeTab.id}
-          draggingTabId={draggingTabId}
-          faviconCache={faviconCache}
-          id={getSidebarSearchTargetElementId({ type: "tab", id: tab.id, title: tab.title || tab.url, url: tab.url })}
-          isCrossFolderDrag={isCrossFolderDrag?.(tab)}
-          isSearchSelected={searchSelectedTabId === tab.id}
-          splitTabIds={splitTabIds}
-          tab={tab}
-          onClose={onClose}
-          onContextMenu={onContextMenu}
-          onDrop={onDrop}
-          onGroupTab={onGroupTab}
-          onPreview={onPreview}
-          onRenameTab={onRenameTab}
-          onSelect={onSelect}
-          onSplit={onSplit}
-          setDraggingTabId={setDraggingTabId}
-        />
-      ))}
+      {(!group.isCollapsed || hasActiveTab) && tabs.map(renderTabOrSplit)}
       {group.isCollapsed && !hasActiveTab && tabs.length > 0 && (
         <div className="tab-group-collapsed-preview" aria-hidden="true">
           {tabs.slice(0, 4).map((tab, index) => (

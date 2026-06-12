@@ -14,7 +14,7 @@ const sidebarCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar.
 const sidebarActionHintsCss = readFileSync(join(__dirname, "../src/renderer/styles/sidebar-action-hints.css"), "utf8");
 
 describe("sidebar item action hints", () => {
-  it("renders preview and split hints for tab rows", () => {
+  it("does not render preview and split hint icons (keyboard/modifier-only activation)", () => {
     const tab = createTab("Docs", "https://docs.example");
     const html = renderToStaticMarkup(createElement(TabRow, {
       activeTabId: tab.id,
@@ -30,10 +30,9 @@ describe("sidebar item action hints", () => {
       tab
     }));
 
-    expect(html).toContain('class="sidebar-item-action-hints"');
-    expect(html).toContain('aria-hidden="true"');
-    expect(html).toContain('data-action-hint="preview"');
-    expect(html).toContain('data-action-hint="split"');
+    expect(html).not.toContain('class="sidebar-item-action-hints"');
+    expect(html).not.toContain('data-action-hint="preview"');
+    expect(html).not.toContain('data-action-hint="split"');
     expect(html).toContain('class="tab-row-actions"');
     expect(html).toContain('aria-label="Docs, active, tab"');
     expect(html).toContain('aria-label="Close Docs"');
@@ -305,23 +304,16 @@ describe("sidebar item action hints", () => {
     act(() => root.unmount());
   });
 
-  it("uses in-flow action hints so hover labels do not cover tab titles", () => {
-    // Tab rows use flex + an absolute-positioned action rail at the right
-    // edge. At rest, the rail is zero-width (no layout cost) and the title
-    // fills the full row width; hover/focus expands the rail to 56px while
-    // reserving matching right padding so text doesn't get covered.
+  it("uses in-flow close button so hover labels do not cover tab titles", () => {
+    // Tab rows use flex + an absolute-positioned actions rail at the right
+    // edge with just the close button. No preview/split hint icons.
     expect(sidebarCss).toContain(".tab-row > .tab-row-actions {\n  position: absolute");
-    expect(sidebarCss).toContain("grid-template-columns: 24px minmax(0, 1fr)");
-    expect(sidebarCss).toContain("grid-template-columns: 22px minmax(0, 1fr) 38px");
-    expect(sidebarActionHintsCss).toContain("width: 38px");
-    expect(sidebarActionHintsCss).toContain("min-width: 38px");
-    expect(sidebarActionHintsCss).not.toContain("max-width");
-    expect(sidebarActionHintsCss).toContain("width: 16px");
-    expect(sidebarActionHintsCss).not.toContain("kbd");
-    expect(sidebarActionHintsCss).not.toContain("right: 6px");
+    expect(sidebarCss).toContain("grid-template-columns: 20px minmax(0, 1fr)");
+    expect(sidebarCss).not.toContain('data-action-hint="preview"');
+    expect(sidebarCss).not.toContain('data-action-hint="split"');
   });
 
-  it("renders preview and split hints for favorite rows", () => {
+  it("does not render preview and split hints for favorite rows (keyboard activation only)", () => {
     const favorite = createFavorite("Docs", "https://docs.example");
     const html = renderToStaticMarkup(createElement(FavoriteButton, {
       draggingQuickEntryId: "other-favorite",
@@ -335,10 +327,9 @@ describe("sidebar item action hints", () => {
       onPreview: vi.fn()
     }));
 
-    expect(html).toContain('class="sidebar-item-action-hints"');
-    expect(html).toContain('aria-hidden="true"');
-    expect(html).toContain('data-action-hint="preview"');
-    expect(html).toContain('data-action-hint="split"');
+    expect(html).not.toContain('class="sidebar-item-action-hints"');
+    expect(html).not.toContain('data-action-hint="preview"');
+    expect(html).not.toContain('data-action-hint="split"');
     expect(html).toContain('aria-label="Docs, Favorite, current page, selected search result, drop target"');
     expect(html).not.toContain('title="https://docs.example"');
     expect(html).not.toContain("<kbd");

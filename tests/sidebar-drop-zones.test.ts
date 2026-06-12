@@ -49,7 +49,8 @@ describe("sidebar section drop zones", () => {
       setDraggingFavoriteId: vi.fn(),
       setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
-      splitTabIds: []
+      splitTabs: [],
+      activeSplitId: null
     }));
 
     expect(html).not.toContain("Drop to");
@@ -101,7 +102,8 @@ describe("sidebar section drop zones", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null
       }));
     });
 
@@ -159,7 +161,8 @@ describe("sidebar section drop zones", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null
       }));
     });
 
@@ -221,7 +224,8 @@ describe("sidebar section drop zones", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null
       }));
     });
 
@@ -278,7 +282,8 @@ describe("sidebar section drop zones", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: [],
+        splitTabs: [],
+        activeSplitId: null,
         workspaceTabs: [tab]
       }));
     });
@@ -344,7 +349,8 @@ describe("sidebar section drop zones", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null
       }));
     });
 
@@ -399,7 +405,8 @@ describe("sidebar section drop zones", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null
       }));
     });
 
@@ -454,7 +461,8 @@ describe("sidebar section drop zones", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null
       }));
     });
 
@@ -510,7 +518,8 @@ describe("sidebar section drop zones", () => {
         setDraggingFavoriteId: vi.fn(),
         setDraggingGroupId: vi.fn(),
         setDraggingTabId: vi.fn(),
-        splitTabIds: []
+        splitTabs: [],
+        activeSplitId: null
       }));
     });
 
@@ -560,7 +569,8 @@ describe("sidebar section drop zones", () => {
       setDraggingFavoriteId: vi.fn(),
       setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
-      splitTabIds: []
+      splitTabs: [],
+      activeSplitId: null
     }));
 
     expect(html).not.toContain("New group");
@@ -606,7 +616,8 @@ describe("sidebar section drop zones", () => {
       setDraggingFavoriteId: vi.fn(),
       setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
-      splitTabIds: []
+      splitTabs: [],
+      activeSplitId: null
     }));
 
     expect(html).not.toContain("Ungroup tab");
@@ -649,7 +660,8 @@ describe("sidebar section drop zones", () => {
       setDraggingFavoriteId: vi.fn(),
       setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
-      splitTabIds: []
+      splitTabs: [],
+      activeSplitId: null
     }));
 
     expect(html).toContain('draggable="true"');
@@ -693,7 +705,8 @@ describe("sidebar section drop zones", () => {
       setDraggingFavoriteId: vi.fn(),
       setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
-      splitTabIds: []
+      splitTabs: [],
+      activeSplitId: null
     }));
 
     expect(html).toContain('draggable="true"');
@@ -738,7 +751,8 @@ describe("sidebar section drop zones", () => {
       setDraggingFavoriteId: vi.fn(),
       setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
-      splitTabIds: []
+      splitTabs: [],
+      activeSplitId: null
     }));
 
     expect(html).toContain('class="tab-group-header"');
@@ -784,7 +798,9 @@ describe("sidebar section drop zones", () => {
       setDraggingFavoriteId: vi.fn(),
       setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
-      splitTabIds: []
+      splitTabs: [],
+      activeSplitId: null,
+      workspaceTabs: [activeTab, pinned, favorite]
     };
 
     act(() => {
@@ -855,7 +871,9 @@ describe("sidebar section drop zones", () => {
       setDraggingFavoriteId: vi.fn(),
       setDraggingGroupId: vi.fn(),
       setDraggingTabId: vi.fn(),
-      splitTabIds: []
+      splitTabs: [],
+      activeSplitId: null,
+      workspaceTabs: [activeTab, firstFavorite, secondFavorite]
     };
 
     act(() => {
