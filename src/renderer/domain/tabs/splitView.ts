@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Legacy Electron prototype migration reference; direct Chromium work must not expand this file. */
 import type { BrowserState, SplitLayout, SplitTab, Workspace } from "../browser/types";
 import { createId } from "../browser/factory";
 import { getActiveWorkspace } from "../browser/selectors";

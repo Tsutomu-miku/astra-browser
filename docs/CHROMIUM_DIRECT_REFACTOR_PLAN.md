@@ -45,6 +45,8 @@ chromium/src/
 - 不在平台 UI 里保存 tab/workspace 真相源。
 - 不用 CMake 构建浏览器主体；direct Chromium 使用 GN/Ninja。
 
+更多边界见 `AGENTS.md` 和 `docs/ENGINEERING_STANDARDS.md`。任何后续实现若需要突破这些边界，先补 ADR，不要直接写代码。
+
 ## Astra 应该拥有的最小产品层
 
 ### 1. Workspace service

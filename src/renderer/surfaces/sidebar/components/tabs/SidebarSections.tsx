@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Legacy Electron prototype migration reference; direct Chromium work must not expand this file. */
 import { useCallback, useState, type DragEvent, type MouseEvent } from "react";
 
 import type { DropAxis } from "../../../../common/drag-drop/dropPlacement";

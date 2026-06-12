@@ -1,0 +1,414 @@
+# Roadmap And Progress
+
+## Purpose
+
+This document turns the broad "Arc/Zen-like Chromium browser" goal into prioritized, reviewable requirements. It also records current progress and product invariants that must not be guessed from implementation details.
+
+README stays short. `docs/REQUIREMENTS.md` remains the full product requirement list. This file is the working roadmap for priority, sequencing, and acceptance criteria.
+
+## Review Findings
+
+The recent Favorites issue exposed a requirements gap:
+
+- "Favorite" was not explicitly defined as a tab-like sidebar folder, so implementation treated it like a bookmark/quick entry.
+- Acceptance criteria described what click should not do, but not what object identity it should preserve.
+- Drag-and-drop was specified as a broad behavior, but not split into drag source, drag payload, drop target, visual feedback, and state mutation requirements.
+- The project had many implemented features, but no priority map showing which ones are core browser semantics versus polish.
+
+Going forward, product requirements that touch tabs must specify:
+
+- The backing data identity: tab id, URL entry, workspace id, group id, or closed-tab index.
+- The default click behavior.
+- Modifier behavior for preview and split.
+- Drag source and drop target behavior.
+- Whether the action creates, selects, moves, mutates, or restores a tab.
+- Regression tests that prove the distinction.
+
+## Product Invariants
+
+- A tab is the primary browsing object in a Space. Selecting a tab must preserve its Chromium page state whenever possible.
+- A Space owns local tabs, pinned tabs, tab groups, and Space-local Favorites.
+- Favorites are a tab-like Space section, not just bookmarks. A Favorite item should preserve a relationship to a real tab when it came from a tab.
+- Clicking a Favorite should select its matching tab. It must not replace the current tab's URL.
+- If a legacy or imported Favorite has no matching tab, opening it may create or recover a tab, but still must not mutate the current active tab's URL.
+- Essentials are global quick entries. They remain separate from Space-local Favorites until the product explicitly upgrades them to tab-backed global objects.
+- Pinned, Favorites, groups, and regular tabs are sidebar folders for browsing objects. Drag-and-drop moves or classifies tabs between these folders.
+- URL equality is only a fallback for legacy data. New tab-originated Favorites should carry tab identity.
+- Command palette, sidebar, start page, shortcuts, and context menus must share the same product semantics for the same object.
+
+## Priority Levels
+
+- P0: Core browser semantics. Wrong behavior here makes the browser feel broken or data-unsafe.
+- P1: Experience completeness. Important for daily use, but the app remains understandable without it.
+- P2: Expansion and long-term platform work.
+
+## Execution Policy
+
+Work should move by priority bands, not by whichever small bug is easiest to isolate.
+
+1. Finish P0 requirements until the browser's core object model, drag/drop semantics, memory safety, persistence, and packaging are reliable enough for daily dogfooding.
+2. Then focus P1 requirements in large experience batches: Arc/Zen sidebar polish, iconography, interaction states, Split/Glance workflows, command/omnibox parity, and daily-use settings/history/downloads.
+3. Defer P2 work until the active P0/P1 batch has no known blocking gaps. P2 items should be fixed in batches, not as one-off distractions.
+
+When a P0/P1 implementation reveals architecture that cannot support the target behavior cleanly, prefer a contained refactor over stacking compatibility branches.
+
+## Current Execution Batches
+
+### Milestone Bands 0–4 (maps to `docs/PRD.md` §5)
+
+These longer bands align the 4 execution batches with the gap inventory and risk
+schedule in PRD.md. Scope inside each band is non-normative — see PRD.md §5 for
+acceptance and PRD.md §4.3 for the 20-item "daily driver" threshold.
+
+| Band | Window | Maps to batch | Core delivery |
+| --- | --- | --- | --- |
+| M0 | Weeks 0–3 | Batch 1 tail + infra | P0 no-regressions, Playwright Electron scaffolding, 3 risk PoCs (MV3 compat, password-store, Safe Browsing) each with `docs/adr/NNN-*.md` |
+| M1 | Weeks 4–9 | Batch 2 finish | Sidebar/omnibox/Split/Glance Arc-parity; PRD §4.3 20-item daily-driver checklist ≥ 18/20 green |
+| M2 | Weeks 10–17 | Batch 3 + P0 extensions | Settings/permissions/history/downloads MVP; Chrome Web Store MV3 install baseline; local encrypted password store; Safe Browsing real-time lookup |
+| M3 | Weeks 18–31 | Batch 4 P1 expansion | DevTools parity, accounts/sync, multiple windows, native install/notarization/signing, full Playwright smoke matrix |
+| M4 | 2027+ | Batch 4 long tail | AI suite (notes/Easel/Boost/Summarize), multi-device sync, advanced history, mobile, Chromium-native embedding if required |
+
+### Milestones 0–4 与 PRD §5.x 映射表
+
+> 与 `docs/PRD.md` §5 时间分带一一对应。PRD 是 Why & Scope，本文件是执行板（含任务级细分）。
+
+| PRD §5 分带 | 时间窗口 | 对应本 ROADMAP | 核心交付（对应当 PRD §4.3 临界点） |
+| --- | --- | --- | --- |
+| **M0 — 稳定化收尾** | 当前 → 2026-06-30 | Batch 1（P0 稳定化）+ M0 附加项 | 设置页 16 区块导航骨架、页面缩放 + 站点记忆、F12/Ctrl+Shift+I 统一 DevTools 入口、无痕模式开关、Playwright Electron 测试脚手架 |
+| **M1 — 日驱底线 Batch A** | 2026-07-01 → 2026-08-15 | Batch 2（P1 Arc 体验）+ Batch 5（新增） | 密码库 UI + 集成、设置页 8 个主面板可交互、权限系统 UI（5 种 MVP）、下载中心 MVP、完整历史视图、书签导入、页面级翻译、阅读模式、PDF 表单填写、多窗口 + 会话恢复 MVP |
+| **M2 — 日驱底线 Batch B** | 2026-08-16 → 2026-10-15 | Batch 3（P1 日驱完整性）+ Batch 6（新增） | 无痕 + 访客模式完整、强制 HTTPS + Safe Browsing API、危险下载阻断、站点级缩放例外、DevTools 全入口覆盖、CWS MV3 扩展兼容 Top 20、全局媒体控件 + PiP、PWA 安装、打印 UI + 另存 PDF、自动更新 + 签名 + Notarization |
+| **M3 — 差异化 Arc 风格** | 2026-10-16 → 2027-02-10（春节） | Batch 4（P2 扩展）前半 | 四窗 Split + Group 分屏、Peek 可交互预览、Tab 关联笔记、Boost 可视化隐藏元素、AI 页面/PDF 总结、Tab Stashes、完整主题系统、后台权限实时告警、多路 PiP、节能模式 + 资源中心、astra://flags、多窗口 × Space 语义 |
+| **M4 — 平台 / 生态** | 2027 春节之后 | Batch 4（P2 扩展）后半 | 跨设备同步、Passkey、Journey 语义历史、AI 套件全量、Easel 协作白板、Little Arc、Profile/企业 Teams 管理、Kids/VPN、移动端 |
+
+### Batch 1: P0 Stabilization
+
+Status: **mostly complete** (M0 delivered).
+
+- P0-2 Tab identity and cross-surface Favorite semantics.
+- P0-3 Sidebar drag-and-drop semantics and Electron manual QA.
+- P0-6 Memory safety baseline, especially webview sleep/wake lifecycle and protected tabs.
+- P0-5 Packaging baseline, including per-arch macOS/Windows artifacts and Linux metadata.
+- **M0 delivered (2026-06-10):** Settings page 16-section navigation skeleton, per-origin zoom (U-7), unified F12/Ctrl+Shift+I DevTools entry (E-4 MVP), incognito mode switch (K-12 MVP), Playwright Electron integration test scaffolding (`tests-e2e/`), 3 risk PoC ADRs (0001-0003), DevTools coverage ADR (0004, Accepted).
+
+Exit criteria:
+
+- Full automated suite and production build pass.
+- Manual Electron QA covers tab reorder, folder moves, Space/New Space drops, Split drops, sleep/wake, and package artifact smoke checks.
+- No known P0 behavior requires a user workaround.
+
+### Batch 2: P1 Arc/Zen Experience
+
+Status: **in progress** (M1 partially delivered).
+
+- Sidebar visual hierarchy: spacing, density, section rhythm, quiet active state, restrained typography, configurable chrome accent, collapsed state, and recently closed placement.
+- Iconography: real site favicons for tabs where available, consistent symbolic icons for actions and status, clear favicon fallbacks, no placeholder-looking controls in primary chrome.
+- Interaction states: hover, pressed, focus-visible, drag, split-target, sleeping, muted, active, search-selected, and disabled states must feel deliberate, quiet, and not cover row titles.
+- Compact chrome: floating sidebar/topbar reveal, pin/unpin controls, address field behavior, and content-first layout.
+- Split and Glance: visible affordances, no duplicate tab-backed splits, predictable pane focus, and polished controls.
+- Command palette, omnibox, sidebar search, and start page: same object semantics and modifier hints.
+- **M1 delivered (2026-06-10):** Password vault backend (PBKDF2+AES-GCM), bookmarks HTML import UI, reader mode MVP, translation MVP, 21/21 settings sections interactive (profiles/extensions/print/system/reset panels), permission UI test, downloads cancel IPC, translate+reader topbar, PDFium forms, multi-window state restore.
+
+Exit criteria:
+
+- Sidebar can be scanned and operated without native tooltips, overlapping hints, or ambiguous icons.
+- Keyboard and pointer interactions expose the same primary, preview, and split actions.
+- Targeted visual/state tests cover the main sidebar controls and row variants.
+
+### Batch 3: P1 Daily Browser Completeness
+
+Status: **in progress** (M2.1–M2.5 partially delivered).
+
+- Settings, permissions, history, downloads, find, zoom, and browsing data flows.
+- Profile-scoped permission/storage clarity.
+- Command palette coverage for daily browser operations.
+- **M2.1 delivered (2026-06-10):** 21/21 settings sections interactive + profiles/extensions + print/system/reset panels.
+- **M2.2 delivered (2026-06-10):** Force HTTPS (K-1) + Guest mode (K-12) + menu entries.
+- **M2.3 delivered (2026-06-10):** Safe Browsing MVP (K-6/D-3) offline + remote + danger downloads.
+- **M2.5 delivered (2026-06-10):** DevTools coverage ADR (E-4, Accepted) + astra://flags MVP (E-10).
+
+### Batch 4: P2 Expansion
+
+Status: deferred.
+
+- Native Chromium integration, extensions, sync, advanced history, browser automation APIs, plugin/theme ecosystem, and mobile support.
+
+## P0 Requirements
+
+### P0-1 Browser Shell And Persistence
+
+- Provide a Chromium-backed Electron browser shell.
+- Keep app, preload, renderer, domain, store, and surface boundaries clear.
+- Persist normalized browser state locally.
+- Restore a valid session with at least one Space and one tab.
+- Keep active Space webviews mounted across ordinary tab switching.
+Progress: mostly implemented. M0 delivered per-origin zoom (U-7) with site-level memory, unified F12/Ctrl+Shift+I DevTools entry (E-4 MVP), and astra://flags experimental switches (E-10). M1 delivered multi-window state restore (W-1/W-2 MVP).
+
+- `pnpm check` passes.
+- Starting the app shows a usable browser shell.
+- Switching tabs preserves page state unless the tab is explicitly sleeping.
+
+### P0-2 Tab Identity And Sidebar Semantics
+
+- Regular tabs, pinned tabs, grouped tabs, and Favorites must preserve tab identity.
+- Clicking a regular tab, pinned tab, grouped tab, or Favorite selects the corresponding tab.
+- Clicking a Favorite must not navigate or replace the currently active tab.
+- Adding a tab to Favorites records the tab relationship.
+- Removing a Favorite does not close the tab unless a separate close action is used.
+
+Progress: partially implemented. Favorite items carry optional `tabId`, opening paths select matching tabs first, and tab-backed Favorites now render through the shared sidebar tab row path with tab actions, tab split behavior, tab status badges, tab close cleanup, tab drag payloads, and tab accessibility labels while staying in the Favorites folder. Tab-backed Favorites no longer use or synthesize a separate Favorite drag payload; moving them across folders or Spaces follows the normal tab move path and preserves their Favorites folder membership when appropriate. URL-only legacy Favorites no longer borrow matching tabs for sidebar rendering, folder ownership, or sidebar search metadata, but click/open behavior can still select an existing same-URL tab instead of replacing the active page. Sidebar, Start page, omnibox, command palette, keyboard number shortcuts, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity. Full cross-surface QA is still needed.
+
+Small requirements:
+
+- P0-2.1 Add `tabId` to tab-originated Favorites.
+- P0-2.2 Sidebar Favorite click selects tab.
+- P0-2.3 Start page Favorite click selects tab.
+- P0-2.4 Command palette Favorite run selects tab.
+- P0-2.5 Context-menu Open for Favorites selects tab.
+- P0-2.6 Legacy Favorites without `tabId` use URL fallback without replacing active tab.
+- P0-2.7 Tab-backed Favorites use tab context-menu and close shortcuts; legacy URL Favorites keep quick-entry behavior.
+- P0-2.8 Tab-backed Favorites expose tab status and accessible labels while remaining in the Favorites folder.
+- P0-2.9 Tab-backed Favorites open split view by tab identity; legacy URL Favorites open split view by URL.
+- P0-2.10 Closing a tab-backed Favorite removes it from the Favorites folder; legacy URL Favorites survive matching tab closes.
+- P0-2.11 Tab-backed Favorites render through the shared sidebar tab row path instead of a separate quick-entry row implementation.
+- P0-2.12 Tab-backed Favorites reorder as normal tab rows inside the Favorites folder; URL-only legacy Favorites stay on the quick-entry fallback path.
+- P0-2.13 Sidebar folder ownership and search metadata use explicit tab-backed identity, while legacy URL fallback is reserved for open/select behavior.
+
+### P0-3 Sidebar Drag And Drop
+
+- Dragging tab rows must work reliably from the visible row, not a hidden or fragile nested target.
+- Dragging tabs must support reordering among regular tabs.
+- Dragging tabs into Favorites must classify the tab as a Favorite without losing tab identity.
+- Dragging tabs into Pinned must pin the tab.
+- Dragging pinned tabs back to Tabs must unpin them.
+- Dragging tabs to groups, Spaces, New Space, and split targets must use consistent payload recovery.
+- Dragging tabs should not show explicit target-region overlays; destinations accept drops directly, while reordering shows local insertion position only.
+
+Progress: partially implemented. Native drag payloads, insertion indicators, quiet tab-drag destinations, empty folder-header drops, whole-row tab drag sources, and a shared tab-folder move action now cover Tabs, Pinned, groups, and Favorites. The domain folder move action owns moving tabs into Favorites and moving Favorite-backed tabs back out to Tabs, Pinned, or groups, so the UI no longer manually removes Favorites before moving tabs. Sidebar folder drops for Tabs, Pinned, Favorites, and groups now avoid accent-heavy target containers; quick-entry and tab-group reordering feedback is limited to local before/after insertion lines. Tabs folder drops now accept the same real tab payload path as other sidebar folders, and tab-backed Favorites use that same tab payload when reordering or moving across Spaces. Space rail buttons, New Space, and Split still expose cross-surface drop-target state for tab drags instead of only accepting the drop silently, but Space rail drop targets now use a quiet neutral fill and insertion line instead of accent-heavy target outlines. Pinned tab rows and tab group headers now ignore unrelated payloads instead of swallowing them as tab drops, and tab group reorder recovers from native group payloads when React drag state has not synced yet. Drag source resolution is centralized in `sidebarDragSources` so Space, New Space, Split, tab folders, groups, Essentials, and legacy Favorites read native payloads through one model instead of duplicating `text/*` keys. Space and New Space drops now derive a single drop intent before dispatching, so legacy Favorite moves are no longer a separate wrapper path around tab/group/closed-tab handling. URL-only legacy Favorites remain a quick-entry fallback and Space/New Space legacy favorite drops recover from native payloads when React drag state has not synced yet. Real Electron manual QA is still required.
+
+Small requirements:
+
+- P0-3.1 Visible tab row is the drag source.
+- P0-3.2 Tab row stays the tab item drop target; the inner button is not a competing native drag source.
+- P0-3.3 Drag payload is recoverable from native `DataTransfer` when React state is missing, including tab rows, pinned tabs, tab groups, Favorites, and Essentials.
+- P0-3.4 Drop on Favorites adds tab-backed Favorite.
+- P0-3.5 Drop on existing Favorite area is accepted.
+- P0-3.6 Reorder regular tabs by before/after placement.
+- P0-3.7 Reorder pinned tabs by horizontal placement.
+- P0-3.8 Drag state clears after drop, cancel, or native drag end.
+- P0-3.9 Dragging tabs does not render separate target-region sections or New Group/Ungroup target buttons.
+- P0-3.10 Dragging a Favorite-backed tab into Tabs, Pinned, or a group removes it from the Favorites folder.
+- P0-3.11 Tabs, Pinned, Favorites, and tab groups share one folder move path instead of separate pin/unpin/favorite-removal/drop-intent branches.
+- P0-3.12 Empty Tabs, Pinned, and Favorites folders stay visible as ordinary headers and accept tab drops without special target UI.
+- P0-3.13 Tabs folder drops accept the same real tab payloads as other sidebar folders; regular tab ordering remains row-level before/after placement.
+- P0-3.14 Space and New Space Favorite drops accept native Favorite payloads even when React drag state is missing.
+- P0-3.15 Sidebar folder drops for Tabs, Pinned, and Favorites are handled as the same tab-folder operation; quick-entry drag code must not synthesize tab payloads for Favorites.
+- P0-3.16 Space rail buttons and New Space expose drop-target state for tab drags as well as groups, closed tabs, and legacy Favorites.
+- P0-3.17 Sidebar drop targets read tab, group, Essential, Favorite, closed-tab, and workspace payload identities through a shared source model rather than hard-coded `DataTransfer` keys in components.
+- P0-3.18 Space and New Space drops derive a shared intent before dispatch so tab, group, closed-tab, workspace, and legacy Favorite moves are not split across competing component branches.
+
+### P0-4 Spaces And Profiles
+
+- Spaces must switch reliably.
+- Spaces must be reorderable.
+- Tabs, groups, closed tabs, and Favorites must move across Spaces with explicit actions.
+- Each Space must use a stable Chromium profile partition.
+Progress: mostly implemented. M2.2 added Guest mode (K-12 MVP) with separate in-memory partition and menu entries. M2.1 added profile selection and extension management to settings panels.
+
+- macOS, Windows, and Linux package scripts must produce distributable artifacts.
+- macOS x64 and arm64 artifacts must be generated separately, not as a universal package by default.
+- Windows x64 and arm64 artifacts must be generated separately, not from one mixed-architecture builder invocation.
+- GitHub Release publishing must be controlled by CI release workflow, not local package scripts requiring `GH_TOKEN`.
+- Linux package metadata must include maintainer or author email.
+
+Progress: mostly implemented. macOS and Windows now expose per-architecture local package scripts and CI release matrices, with all-architecture commands invoking x64 and arm64 builds separately.
+
+### P0-6 Memory Safety Baseline
+
+- Active tabs, pinned tabs, and split-view tabs must be protected from bulk sleep.
+- Sleeping tabs must unload webviews and wake on selection.
+- Store and webview lifecycle code must not call webview methods before readiness.
+
+Progress: partially implemented. Memory Saver sleep protection is now centralized in a shared tab sleep policy used by domain actions, settings/sidebar summaries, and tab-group context-menu availability. Manual inactive sleep, automatic idle sleep, and group sleep all use the same releasable-tab definition, and no-op sleep requests now preserve the existing state object when every candidate is protected or already sleeping. Sleeping a tab now clears loading and back/forward affordances before its webview is released, and tab selection, adjacent selection, split opening, split focus, split fill, and split-mode creation all use one wake path that refreshes tab activity when a sleeping tab is brought back.
+
+Small requirements:
+
+- P0-6.1 Active, pinned, and split-view tabs share one protected-tab policy for Memory Saver.
+- P0-6.2 Manual inactive sleep and automatic idle sleep use the same releasable-tab policy.
+- P0-6.3 Tab-group sleep uses the same releasable-tab policy and remains a no-op when all group tabs are protected.
+- P0-6.4 Settings/sidebar Memory Saver counts are derived from the same policy as the sleep actions.
+- P0-6.5 Sleeping a tab clears loading and navigation affordances before the webview is released.
+- P0-6.6 Sleeping tabs wake on tab selection and split opening.
+- P0-6.7 Webview lifecycle calls are gated by readiness and Electron manual QA.
+
+## P1 Requirements
+
+### P1-1 Arc/Zen Sidebar Experience
+
+- Sidebar sections should visually align with Arc-style hierarchy: Essentials, Pinned, Favorites, groups, regular tabs, recently closed, with restrained font weights.
+- Sidebar iconography should use real site favicons for tabs where available, consistent symbolic action/status icons, clear favicon fallbacks, and restrained primary chrome controls.
+- Hover affordances must not cover row titles.
+- Hover, pressed, focus-visible, active, selected, drag, drop-target, sleeping, muted, split, and disabled states must be visually distinct and quiet, without border-heavy active rows.
+- Section collapse, search reveal, and drag reveal must feel predictable.
+- Keyboard focus navigation must work across sections and context menus.
+
+Progress: partially implemented. Row action hints reserve stable inline space, pinned tab hints reveal inside the icon tile, status indicators, list controls, Space rail controls, sidebar chrome controls, and sidebar menu swatches avoid native title tooltips, hover/focus no longer overlays or squeezes row titles, and close controls reveal on keyboard focus without using absolute overlays or adding invisible Tab stops. Collapsed sidebar sections now stay collapsed during tab, Essential, and Favorite drags; search filtering is the only automatic section reveal path. Sidebar section collapse state is now persisted in UI storage, so Essentials, Pinned, Favorites, Tabs, and Recently Closed keep the user's chosen folder shape across app reloads without polluting browser session state. Current tab folders now render before Recently Closed so the sidebar scans as Essentials, Pinned, Favorites, Tabs, then recovery. Section headers now use natural casing with lighter title treatment, and section counts render as quiet text instead of badge-like pills so folder headers read more like Arc/Zen navigation groups; expanded section counts now stay visually quiet until the header is hovered or focused, while collapsed folders keep their counts visible. Tab group headers now follow the same folder treatment by using the color dot as the visible group signal, removing the always-visible native color input, keeping group titles as read-only sidebar text, and fading expanded group counts until hover, focus, or collapse. Long sidebar folders auto-scroll near the top and bottom edges while dragging tabs, quick entries, groups, or recently closed rows, keyboard focus navigation scrolls the newly focused row into view, and non-search tab selection now scrolls the current sidebar item into view without moving keyboard focus. Empty sidebar search Escape now restores focus to the current visible sidebar item, or the first visible sidebar item when no current item is rendered, so keyboard users can leave search without losing list context. Sidebar search now reports a quiet total result count or no-match state with `aria-live` instead of leaving a blank-looking panel, and the no-match copy is generic because search covers Essentials, Pinned, Favorites, groups, and tabs. Sidebar context-menu keyboard navigation also keeps newly focused menu actions visible. Tab-backed Favorites now search by their current backing tab title and URL in addition to Favorite metadata. Sidebar search and compact address suggestions now expose modifier actions as icon-only glyphs with accessible labels instead of visible keycap text. Tab group keyboard context menus open from the group toggle while the menu name field keeps text-editing navigation keys. Essential context-menu Open now navigates the active tab instead of selecting or creating a tab. Tab rows, pinned tabs, recently closed tabs, and New Tab quick-entry tiles now share a common icon renderer with Electron page favicons, site-origin favicon cache reuse, and internal-page, local-file, web, unknown-page, loading, and sleeping fallbacks. Active, selected, pressed, focus-visible, tab group hover, and Space rail drop-target states now use neutral fills and restrained text weight instead of accent-tinted borders, heavy type, browser default outlines, or multi-layer inset shadows, with ordinary tab, group, and quick-entry rows using pointer-style navigation affordances while the grabbing cursor is reserved for actual active drags across tabs, quick entries, groups, Spaces, pinned tabs, and recently closed rows, and the global chrome background reduced to a quieter neutral palette. Space rail tab counts now stay visually quiet until a Space is active, focused, hovered, or acting as a drop target, while the full count remains in the accessible label. The Space rail now keeps only the active Space in the normal Tab order while Arrow/Home/End navigation still reaches every Space and rail control. Space and tab-group color pickers now use neutral input focus, inner selected marks, and no color-tinted halo so accent choice does not leak into unrelated chrome states. Tabs, Favorites, Essentials, Pinned, Space rail, tab group, and footer split drag feedback now use local neutral insertion/drop states without accent glow. Sidebar typography now caps at 500 weight, and Essentials, resize handles, New Space hover, Workspace menu focus, split status (only through the shared inline glyph), loading status, and internal-page icon states use neutral fills/lines by default so hierarchy relies more on spacing, color, and quiet state fills. Row-level split/muted status and preview/split action hints now render as borderless inline glyphs beside the title while preserving stable in-flow space and full accessible labels, and tab rows now keep preview/split hints plus the close affordance inside one fixed right-side action rail so hover controls do not compete with the title area. Recently Closed rows now use single-line titles with an icon-only restore affordance instead of visible URL text or a visible "Restore" label, while preserving URL actions in the context menu and accessible restore labels plus hover/focus preview/split hints. Sidebar tab, quick-entry, recently-closed, group, and Space context menus now share quiet menu surface behavior, icon-menu item rows, separators, form fields, and color swatches from the sidebar common component/style layer with stable leading glyph columns and native-tooltip-free labels, and sidebar menus now share the same edge-aware anchored positioning helper as other browser menus. The sidebar Memory Saver footer now keeps a stable ready-count label instead of rendering an extra asleep label that duplicates icon/status state, and the footer controls now render as a low-noise icon strip with neutral Memory Saver and split layout states instead of accent-heavy pills. Global settings now expose a chrome accent mode so the default UI can stay neutral while users can opt into matching the current Space accent, and the New Tab surface now follows the same chrome accent mode instead of always using the Space color.
+
+Latest P1-1 note: sidebar menu surface chrome now lives in the shared sidebar menu stylesheet, menu focus/keyboard/context-menu event behavior now lives in a shared sidebar menu surface component, menu dismissal listeners now live in a shared context-menu hook, sidebar modifier hints now share one preview/split glyph renderer plus shared base glyph styles, tab status badges and item favicon rendering now live in the sidebar common component/style path, cross-section folder headers plus row action hints now live in the sidebar common component layer, row pointer activation now uses the same primary/preview/split action model as keyboard activation, row reorder drag feedback now uses one shared sidebar helper across tab rows, quick entries, pinned tabs, tab group headers, and Space rail buttons, footer Split drop acceptance/resolve now lives in one shared split drop target helper, Essentials tab-drop acceptance uses the same tab-folder helper as Pinned, Favorites, and Tabs, tab group headers resolve group reorder, current-group no-op drops, and tab-to-group folder drops through one shared header drop model, New Space dragover acceptance now uses the shared workspace drop target helper while actual drops still use the same workspace intent resolver, and Essential/Favorite final reorder drops now resolve through a shared quick-entry reorder model. Tab, quick-entry, group, closed-tab, Space, and anchored menus use the same floating surface, viewport clipping, overflow behavior, Escape/click/blur/scroll dismissal, keyboard navigation, and click isolation while keeping only width differences in section CSS.
+
+Small requirements:
+
+- P1-1.1 Sidebar section rhythm, density, and typography align with Arc/Zen-style vertical browsing.
+- P1-1.2 Primary sidebar and footer icons are consistent, discoverable, and do not rely on text labels inside cramped controls.
+- P1-1.3 Real site favicons and fallback icons distinguish tabs, pinned tabs, Essentials, Favorites, groups, recently closed rows, and internal pages.
+- P1-1.4 Row action hints reserve space and never obscure title text.
+- P1-1.5 Active, search-selected, split, muted, sleeping, hover, focus, pressed, disabled, dragging, and drop-target states are visually distinct without border-heavy active rows.
+- P1-1.6 Collapsed and compact sidebar reveal behavior is predictable and content-first.
+- P1-1.7 Sidebar visual QA includes desktop and narrow widths for text fitting and icon clarity.
+- P1-1.8 Chrome accent defaults to neutral and can optionally follow the active Space accent.
+- P1-1.9 Sidebar section collapse state persists across reloads as UI state, while search filtering still reveals matching contents.
+- P1-1.10 Pinned tab and Space rail hover states stay visually stable with neutral fills rather than lifted tile motion.
+- P1-1.11 Space rail tab counts use quiet text treatment instead of badge-like pills.
+- P1-1.12 Sidebar section drop labels use the same quiet text treatment as section counts.
+- P1-1.13 Sidebar row action hints fade in from stable positions without hover slide motion.
+- P1-1.14 Split and muted status indicators render as plain glyphs without badge container styling.
+- P1-1.15 Memory Saver footer uses a quiet transparent row by default instead of pill styling.
+- P1-1.16 Favorites and Recently Closed rows use the same transparent default row treatment as Tabs, and drag feedback avoids scale or slide motion.
+- P1-1.17 Sidebar folder counts and tab group headers fade state changes from stable positions without slide or scale motion.
+- P1-1.18 Sidebar search and compact address inputs stay transparent by default, use quiet focus fills, and avoid reserving clear-control space when the clear action is absent.
+- P1-1.19 Loading and sleeping favicon states render as plain corner glyphs instead of badge containers.
+- P1-1.20 Sidebar search clear controls and compact address suggestion popovers use local quiet chrome instead of global raised button or heavy floating shadow treatment.
+- P1-1.21 Space rail tab counts fade from stable positions and Space buttons do not reserve unused transform motion.
+- P1-1.22 New Space and Space menu fields use transparent default chrome with natural-cased labels and quiet focus fills.
+- P1-1.23 Sidebar no-match empty states render as quiet transparent rows instead of loose paragraph copy.
+- P1-1.24 Tab group context menu fields and color swatches use the same quiet transparent input and non-pill swatch treatment as Space menus.
+- P1-1.25 Sidebar header uses scoped quiet title styles, natural-cased Space labeling, and transparent New Tab chrome.
+- P1-1.26 Sidebar tab, quick-entry, recently-closed, and group context menu actions use the same quiet icon menu item structure.
+- P1-1.27 Space context menu actions use the same quiet icon menu item structure as other sidebar menus.
+- P1-1.28 Sidebar menus share an edge-aware anchored positioning helper with consistent viewport gaps and scroll offsets.
+- P1-1.29 Cross-section sidebar menu chrome lives in `components/common` instead of depending on a specific sidebar section subtree.
+- P1-1.30 Sidebar menu item, separator, disabled, and danger styles live in shared sidebar menu CSS instead of being duplicated per section.
+- P1-1.31 Space and tab-group menu fields and color swatches use shared sidebar menu classes and CSS rather than section-specific implementations.
+- P1-1.32 Sidebar menu surface chrome, viewport clipping, scroll behavior, and quiet floating treatment are shared across tab, quick-entry, group, closed-tab, and Space menus.
+- P1-1.33 Sidebar menu focus setup, keyboard navigation, context-menu suppression, and menu-internal click isolation live in a shared sidebar menu surface component instead of being repeated per menu.
+- P1-1.34 Sidebar menu dismissal behavior for Escape, outside click, blur, scroll, and focus restoration is shared between sidebar menus and anchored browser menus.
+- P1-1.35 Sidebar row, search, and compact address modifier hints share one preview/split glyph renderer so Alt preview and Shift split affordances stay visually and semantically aligned.
+- P1-1.36 Sidebar modifier hint base glyph size, icon size, and preview/split color semantics live in shared action-hint CSS instead of being duplicated by row, search, or compact address selectors.
+- P1-1.37 Tab row, tab-backed Favorite, and pinned tab status badges share one sidebar common component and shared base glyph CSS while preserving compact pinned sizing.
+- P1-1.38 Sidebar folder headers and row action hints live in the sidebar common component layer so Essentials, Pinned, Favorites, Tabs, and Recently Closed no longer depend on tab-section internals for shared Arc-style primitives.
+- P1-1.39 Sidebar item favicon rendering lives in the sidebar common component layer so Tabs, Pinned, Favorites, Essentials, and Recently Closed use one icon primitive instead of importing from tab-section internals.
+- P1-1.40 Tab rows, tab-backed Favorites, URL Favorites, pinned tabs, and recently closed rows use one sidebar item activation model for pointer and keyboard primary, Glance preview, and Split actions, with Alt winning over Shift consistently.
+- P1-1.41 Tab rows, pinned tabs, Essentials, and URL Favorites share one row reorder helper for drag acceptance, insertion-line placement, and drop cleanup instead of branching placement behavior inside each component.
+- P1-1.42 Tab group headers use the shared row reorder helper for group drag insertion lines and cleanup while still accepting tab drops into the group without target-area overlays.
+- P1-1.43 Space rail buttons use the shared row reorder helper for Space insertion-line placement and cleanup while preserving the existing cross-Space drop intent handling for tabs, groups, closed tabs, and Favorites.
+- P1-1.44 New Space dragover acceptance uses the shared workspace drop-intent resolver, so payload-backed tab, group, Favorite, and closed-tab drags are recognized before React drag state syncs.
+- P1-1.45 Footer Split drop dragover and drop resolution use the shared split drop target helper, so tab, tab-backed Favorite, URL Favorite, Essential, and recently closed sources are interpreted outside the footer component.
+- P1-1.46 Essentials, Pinned, Favorites, and Tabs accept tab folder drops through the same helper, with Essentials preserving copy semantics without duplicating payload reads in the component.
+- P1-1.47 Tab group headers resolve group reorder, same-group cleanup, and tab-to-group folder moves through a shared header drop model instead of reading drag payloads in the component.
+- P1-1.48 New Space dragover acceptance uses the shared workspace drop target helper, so payload-backed tab, group, Favorite, and closed-tab sources are accepted without component-local prevent/dropEffect branches.
+- P1-1.49 Essential and Favorite final reorder drops resolve dragged id, placement, preventDefault, and propagation through the shared quick-entry reorder model instead of hook-local payload reads.
+
+### P1-2 Split View And Glance
+
+- Split view supports horizontal, vertical, and grid layouts.
+- Tabs, tab-backed Favorites, Essentials, history, and recently closed rows can be sent to split view without duplicating existing tab-backed pages.
+- Glance previews can open, split, close, navigate, reload, and copy URL.
+
+Progress: partially implemented. Sidebar, Start page, omnibox, command palette, and sidebar quick-entry fallback split paths now keep tab-backed Favorites on tab identity while URL-only entries still use URL split.
+
+### P1-3 Command Palette And Omnibox
+
+- Command palette, omnibox, sidebar search, and start search share object semantics.
+- Open-tab entries select tabs.
+- Favorite entries select matching tabs.
+- Essentials navigate current tab unless later changed to tab-backed Essentials.
+- History entries open a tab or preview/split based on modifier.
+
+Progress: partially implemented. Omnibox Favorite suggestions now use current backing-tab title and URL when a Favorite is tab-backed, matching sidebar search object semantics while still selecting the tab identity. Topbar address suggestions now match compact sidebar address suggestions by using glyph-only modifier hints, no native hover tooltips, and a neutral selected state instead of accent stripes or keycap-style labels. Address suggestions now rank title/host acronym matches and inline-complete title prefixes when the URL itself does not start with the typed query, so compact browser lookups like `ghi` can surface "GitHub Issues" without forcing URL-only matching. Accepted inline completions now keep their backing suggestion identity through submit, so accepting a title completion and pressing Enter opens/selects the intended browser object instead of searching the completed title text. Omnibox modifiers now match command palette, sidebar search, start tiles, and sidebar rows: Alt previews in Glance, Shift opens in Split, and Alt wins when both modifiers are held.
+
+### P1-4 Settings, Permissions, History, Downloads
+
+- Settings should manage global and Space-scoped browser data.
+- Site permissions must be profile-scoped.
+- History, downloads, find, and zoom must cover daily browser workflows.
+
+Progress: partially implemented. M2.1 delivered 21/21 settings sections interactive (profiles/extensions/print/system/reset panels). M2.2 delivered force HTTPS (K-1) and Guest mode (K-12) with menu entries. M2.3 delivered Safe Browsing MVP (K-6/D-3) with offline hash DB + remote lookup + danger download blocking. Downloads IPC cancel handler implemented. History domain module exists. Per-origin zoom (U-7) implemented with site-level memory. Permission UI test skeleton exists. Full download center UI, unified permission dialog system, and history view UI remain pending.
+
+- Requirements must include priority, object identity, default action, modifiers, drag behavior, and tests for new browser interactions.
+- Every user-facing feature should update docs and add regression tests.
+- Manual QA scenarios should exist for Electron-only behavior such as drag-and-drop and packaging.
+
+Progress: started. PRD.md (Rev. 2026-06-10) provides full feature inventory and 5-phase roadmap. 8 ADRs planned (4 drafted: 0001-0004, 4 skeletons: 0005-0008). Playwright Electron integration test scaffolding delivered with 3 M0 smoke tests (app, zoom, devtools entry). REQUIREMENTS.md provides full functional requirements. PROJECT_SPEC.md and ARCHITECTURE.md define engineering blueprint and runtime architecture.
+
+- Native Chromium UI integration or lower-level Chromium embedding if Electron becomes limiting.
+- Extension marketplace compatibility.
+- Account sync.
+- Cross-device profile sync.
+- Advanced tab history across windows.
+- Browser automation/export APIs.
+- Plugin or theme ecosystem.
+- Mobile support.
+
+## Current Progress Summary
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Electron Chromium shell | Mostly done | Electron shell, preload bridge, renderer surfaces exist. |
+| Spaces | Mostly done | Creation, switching, reordering, profiles, settings are present. |
+| Regular tabs | Mostly done | Lifecycle, selection, closing, duplication, sleeping, webviews are present. |
+| Favorites as tabs | Partial | `tabId` exists, opening semantics are fixed, and Favorite-backed tabs are excluded from other sidebar tab folders. |
+| Drag-and-drop | Partial | Workspace drag works; tab drag uses a native payload from the whole visible tab row; Favorite-backed drags can move back into tab folders; needs manual Electron QA. |
+| Pinned tabs | Partial | Pin/unpin and drag behavior exist; should be reviewed with Favorite-as-tab model. |
+| Tab groups | Partial | Grouping, context menus, drag targets exist; needs integrated DnD QA. |
+| Essentials | Partial | Global quick entries exist; semantics intentionally remain URL-entry based for now. |
+| Split and Glance | Partial | Core interactions exist; tab-backed Favorites use tab identity across sidebar, Start, omnibox, and command palette split paths; needs integrated QA. |
+| Command palette | Partial | Broad command coverage exists; object semantics need continued alignment. |
+| Memory management | Partial | Sleeping and Memory Saver exist; lifecycle QA should continue. |
+| **Settings** | **Mostly done** | **21/21 sections interactive (M2.1), profiles/extensions/print/system/reset panels delivered.** |
+| **Security & Privacy** | **Partial** | **Force HTTPS (K-1) + Guest mode (K-12) delivered (M2.2); Safe Browsing MVP (K-6/D-3) offline+remote+danger downloads delivered (M2.3).** |
+| **Password vault** | **Partial** | **Backend PBKDF2+AES-GCM exists; UI and full integration pending.** |
+| **DevTools** | **Partial** | **Unified F12/Ctrl+Shift+I entry (E-4 MVP) + coverage ADR (0004 Accepted) + astra://flags MVP (E-10) delivered (M2.5).** |
+| **Translation & Reader mode** | **Partial** | **Translation MVP + reader mode MVP + topbar integration delivered (M1).** |
+| **PDF forms** | **Partial** | **PDFium forms delivered (M1).** |
+| **Multi-window & session restore** | **Partial** | **Multi-window state restore delivered (M1); full cross-window Space sync pending.** |
+| **Bookmarks import** | **Partial** | **HTML import UI delivered (M1); full cross-browser import pending.** |
+| **Downloads** | **Partial** | **IPC cancel handler delivered; full download center UI pending.** |
+| **Permissions** | **Partial** | **UI test skeleton exists; full permission dialog system pending.** |
+| **Playwright e2e tests** | **Started** | **Scaffolding + 3 M0 smoke tests delivered (app, zoom, devtools entry).** |
+| Packaging | Mostly done | Multi-platform scripts and release workflow exist; artifact size should keep being monitored. |
+| Documentation | Partial | Requirements were broad; this roadmap is the new prioritization baseline; 8 ADRs planned (4 drafted, 4 skeletons). |
+
+## Requirement Split Template
+
+Use this shape for large user requests:
+
+```text
+ID:
+Priority:
+Object identity:
+Default action:
+Modifier actions:
+Drag source:
+Drop targets:
+State mutation:
+Visual feedback:
+Accessibility:
+Tests:
+Manual QA:
+```
+
+Example:
+
+```text
+ID: P0-2.2 Sidebar Favorite click selects tab
+Priority: P0
+Object identity: Favorite.tabId, with URL fallback for legacy data
+Default action: selectTab(tabId)
+Modifier actions: Alt opens Glance, Shift opens split
+Drag source: Favorite row for Favorite reordering or moving between Spaces
+Drop targets: Favorites list, Space buttons, New Space, Split
+State mutation: no tab URL mutation on default click
+Visual feedback: current page state when active tab matches Favorite
+Accessibility: label includes Favorite and current page state
+Tests: component test, command/start/context menu parity tests
+Manual QA: click Favorite while another tab is active and confirm active tab id changes rather than URL replacement
+```

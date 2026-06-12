@@ -15,7 +15,9 @@ const requiredFiles = [
   "src/renderer/app/App.tsx",
   "src/renderer/domain/browser/index.ts",
   "src/renderer/styles.css",
-  "docs/PROJECT_SPEC.md"
+  "docs/CHROMIUM_DIRECT_REFACTOR_PLAN.md",
+  "docs/ENGINEERING_STANDARDS.md",
+  "docs/adr/0009-direct-chromium-architecture.md"
 ];
 const missing = requiredFiles.filter((file) => {
   try {

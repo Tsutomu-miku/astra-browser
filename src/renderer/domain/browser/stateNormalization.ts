@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Legacy Electron prototype migration reference; direct Chromium work must not expand this file. */
 import { DEFAULT_URL, SEARCH_ENGINES } from "./constants";
 import { createDefaultState, createId, createTab, getNextWorkspaceAccent } from "./factory";
 import type {

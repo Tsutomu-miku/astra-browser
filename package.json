@@ -25,6 +25,7 @@
     "package:win:arm64": "pnpm clean:release && pnpm build && electron-builder --win portable --arm64 --publish never && pnpm clean:package-output",
     "package:win:x64": "pnpm clean:release && pnpm build && electron-builder --win portable --x64 --publish never && pnpm clean:package-output",
     "package:win:all": "pnpm clean:release && pnpm build && electron-builder --win portable --x64 --publish never && electron-builder --win portable --arm64 --publish never && pnpm clean:package-output",
+    "check:architecture": "node scripts/check-architecture.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . && node scripts/check-sources.mjs",
     "test": "vitest run",

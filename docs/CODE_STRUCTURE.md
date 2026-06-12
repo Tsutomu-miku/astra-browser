@@ -1,93 +1,85 @@
 # Code Structure
 
-> Superseded target: new browser framework work should land under
-> `chromium/astra/` and follow `docs/CHROMIUM_DIRECT_REFACTOR_PLAN.md`. The
-> `src/` structure below documents the legacy Electron prototype and migration
-> reference.
-
-This map is the working guide for where new code should live.
+## Active Directories
 
 ```text
-src/main
-  Electron host process, Chromium sessions, IPC handlers, native shell integrations
-  diagnostics.js   DevTools shortcuts and renderer failure diagnostics
-  ipcHandlers.js   Native IPC contracts for profile data, downloads, permissions,
-                   diagnostics, and shell file actions
-  main.js          Window lifecycle, webContents policy, and Chromium session bridge
+chromium/
+  README.md
+    Explains how the overlay maps into a Chromium checkout.
 
-src/renderer/common
-  Cross-surface interaction models and reusable renderer helpers
-  navigation/    Shared list navigation math and navigation control state
-  omnibox/       Address/start-page suggestion and submit rules
-  shortcuts/     Keyboard parsing and shared shortcut target ordering
+  astra/
+    BUILD.gn
+      Single entry for Astra direct Chromium build targets.
 
-src/renderer/app
-  React application composition and stateful renderer orchestration
-  App.tsx        Browser shell layout and surface mounting
-  controller/    Thin browser controller composition plus focused hooks for address
-                 focus, action facades, shortcut routing, commands, omnibox,
-                 compact chrome behavior, and Electron event subscriptions
+    app/
+      Startup and patch helpers:
+      astra_browser_main_extra_parts.*
+      astra_content_browser_client.*
+      astra_main_delegate.*
 
-src/renderer/domain
-  Pure browser product rules. Keep the root as a small public API surface.
-  actions.ts          Store-facing aggregate for browser, tab, Space, data, and
-                      permission mutations
-  browser/            Public browser model entry plus state shape, migrations,
-                      navigation, selectors, URL identity, formatting, zoom,
-                      and immutable update helpers
-  browsing/           History, downloads, and navigation mutations
-  permissions/        Site permission rules and settings mutations
-  tabs/               Public tab action entry plus lifecycle, grouping, split view,
-                      selection, layout, cleanup, and tab utilities
-  workspaces/         Space/workspace actions and Chromium partition/profile mapping
+    browser/
+      Product semantics that Chromium does not own:
+      astra_workspace_service.*
+      astra_tab_features.*
+      astra_command_delegate.*
 
-src/renderer/platform
-  Renderer-side adapters for APIs outside pure product rules
-  persistence/   localStorage state persistence and import/export backup helpers
+    ui/views/
+      Chromium Views UI additions:
+      astra_browser_view.*
+      sidebar/astra_sidebar_view.*
 
-src/renderer/common
-  Cross-surface renderer interaction and layout helpers
-  layout/        Shared UI sizing/clamping rules used by store state and surfaces
+    patches/
+      Patch-point notes. Prefer small text notes here over sprawling source
+      forks.
 
-src/renderer/stores
-  Zustand state container and typed action facade
-  browserStore.ts       Runtime state implementation and side effects
-  browserStoreTypes.ts  Store contract, UI state enums, and action signatures
+docs/
+  Active direct Chromium docs, ADRs, standards, and roadmap.
 
-src/renderer/surfaces
-  React UI grouped by product surface
-  command/       Command palette component and command model
-  glance/        Temporary preview panel
-  panels/        Settings, history, downloads, and site info drawers
-  sidebar/       Spaces, tabs, Essentials, search, and tab context menu
-    components/chrome      Sidebar shell controls, footer, address, and search box
-    components/tabs        Tab lists, groups, status rows, and tab context menu
-    components/workspaces  Vertical Space strip and Space management menu
-    model                  Sidebar-only state derivation and menu/search rules
-  start/         React-rendered internal new-tab/start page
-  topbar/        Main navigation and address controls
-  webview/       Chromium webview grid, lifecycle, and split-pane UI
+docs/legacy/electron-prototype/
+  Historical prototype docs only.
 
-src/renderer/styles
-  CSS split by surface and shared layout primitives
+scripts/
+  chromium-bootstrap.sh
+  build-chromium.sh
+  check-architecture.mjs
 
-tests
-  Unit tests for domain, common models, surface models, and platform helpers
+src/
+  Legacy Electron prototype. No new direct Chromium architecture here.
 ```
 
 ## Placement Rules
 
-- Put reusable UI interaction logic in `common` when at least two surfaces use it.
-- Put app-level React orchestration in `app/controller`.
-- Keep `useBrowserController` as a composition layer; move action facades, shortcut
-  routing, DOM focus, and side-effect subscriptions into focused controller hooks.
-- Put one-surface rules in that surface's `model` folder.
-- Put React subcomponents in that surface's `components` folder. When a surface grows,
-  split components by visual/behavioral area instead of keeping every component flat.
-- Put domain implementation in a business subfolder (`domain/tabs`, `domain/workspaces`,
-  `domain/permissions`, etc.) instead of adding new prefixed files at `domain/` root.
-- Import cross-domain browser primitives from `domain/browser` in UI code; import
-  store-facing mutations from `domain/actions`. Use narrower subfolder paths only
-  for local domain implementation or focused tests.
-- Put localStorage, Electron webview lifecycle, and other runtime adapters under `platform`.
-- Keep browser state transitions and invariants in `domain`.
+- Put Chromium startup hooks in `chromium/astra/app`.
+- Put Profile-keyed product metadata in `chromium/astra/browser`.
+- Put per-tab product metadata on `content::WebContentsUserData`.
+- Put UI widgets in `chromium/astra/ui/views`.
+- Put Chromium source patch notes in `chromium/astra/patches`.
+- Put durable decisions in `docs/adr`.
+- Put agent-facing constraints in `AGENTS.md` and
+  `docs/ENGINEERING_STANDARDS.md`.
+
+## Naming Rules
+
+- Prefix Astra C++ classes with `Astra`.
+- Prefix files with `astra_`.
+- Use Chromium naming and ownership conventions in C++.
+- Use Chromium TODO style: `TODO(astra): ...`.
+- Never use TODOs as vague placeholders. Name the Chromium component or patch
+  point that should own the future work.
+
+## File Size Rules
+
+- Keep Astra overlay files small enough to review in one sitting.
+- Split by Chromium ownership boundary, not by arbitrary helper extraction.
+- If a file starts mirroring a Chromium subsystem, stop and route to the
+  Chromium subsystem instead.
+
+## Review Checklist
+
+Before merging a change, answer:
+
+- Does this reuse Chromium's existing service instead of replacing it?
+- Is the state truth source in Chromium or in an Astra product metadata object?
+- Is UI code only rendering or delegating commands?
+- Is the Chromium patch point minimal?
+- Can another agent identify the owner directory from the file path alone?
