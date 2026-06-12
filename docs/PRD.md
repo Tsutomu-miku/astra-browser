@@ -1,11 +1,11 @@
 # Product Requirement Document — Astra Browser
 
-> Rev. 2026-06-10. 对照 Arc Browser（含 Arc 2.0 / Arc Max）与 Google Chrome 稳定版（131—135）全部公开桌面功能后完成的一次大规模产品与差距校准。
-> 核心结论：当前 Astra 距离"日常可驱动（daily-driver）浏览器"至少还有 **6–9 个月的 P0/P1 工作量**，主要差距集中在 **Webview 可靠性、历史/下载/设置/权限、密码自动填充、安全浏览、DevTools 原生集成、资源监控、扩展兼容、窗口会话管理、PWA、翻译/PDF 阅读模式** 等浏览器底线能力。
+> Rev. 2026-06-12. 架构决策：从 Electron 迁移到 **Chromium 原生 CEF 架构**，彻底摆脱 Electron 的进程模型限制、扩展兼容瓶颈、内存开销与安全边界问题。
+> 核心结论：当前 Astra 距离"日常可驱动（daily-driver）浏览器"至少还有 **6–9 个月的 P0/P1 工作量**，主要差距集中在 **CEF 集成、密码自动填充、安全浏览、扩展兼容、窗口会话管理、PWA、翻译/阅读模式** 等浏览器底线能力。
 
 ## 1. Product Intent（产品定位）
 
-Astra 是一款面向 **重度知识工作者（开发者、创作者、研究者、运营）** 的桌面浏览器，借鉴 Arc Browser 的 **垂直空间化组织（Spaces + 垂直侧边栏 + Split View + 预览）** 哲学，同时补齐 Chrome 级别的 **日常驱动底线能力（密码/历史/下载/设置/权限/安全/扩展/DevTools/PDF/翻译/阅读模式）**。
+Astra 是一款面向 **重度知识工作者（开发者、创作者、研究者、运营）** 的桌面浏览器，借鉴 Arc Browser 的 **垂直空间化组织（Spaces + 垂直侧边栏 + Split View + 预览）** 哲学，基于 **Chromium 原生 CEF 架构** 构建，同时补齐 Chrome 级别的 **日常驱动底线能力（密码/历史/下载/设置/权限/安全/扩展/DevTools/PDF/翻译/阅读模式）**。
 
 **不做：** 移动端优先、社交化浏览器、广告流量变现、隐私币经济模型、跨端全家桶式账号体系（早期阶段）。
 
@@ -13,9 +13,61 @@ Astra 是一款面向 **重度知识工作者（开发者、创作者、研究�
 
 1.  **对象语义统一（Object Identity First）：** 同一个 Tab/Favorite/Group，无论是在侧边栏、命令栏、开始页、上下文菜单还是历史中，行为必须一致。
 2.  **Chrome 底线不打折：** 默认情况下，Chrome 稳定版中一个普通用户能做的日常操作，Astra 也必须能做。Arc 风格的差异化只能 **叠加** 在 Chrome 底线之上，不能替代。
-3.  **Electron 限制透明化：** Electron Webview 的限制必须在产品层明确表达（例如 DevTools 走原生入口、扩展走受限兼容、自动休眠需要更激进策略），而不是让用户猜。
+3.  **Chromium 原生能力优先：** 优先使用 Chromium 原生能力（Password Manager、Safe Browsing、DevTools Protocol、Extensions、PDF Viewer），而不是在 UI 层重新造轮子。
 4.  **安全与隐私默认不妥协：** HTTPS、权限弹窗、下载安全扫描、第三方 Cookie 隔离、一次性权限、后台摄像头/麦克风告警，不做"后续版本再加"。
 5.  **键盘优先 / 鼠标可用：** 所有 Chrome 原生键盘行为（快捷键、焦点、上下文菜单键）必须兼容，Arc 风格的命令栏在这之上叠加效率入口。
+6.  **单进程模型精简内存：** 利用 CEF 的灵活进程配置，在保证稳定性的前提下尽可能降低内存占用（相比 Electron 减少 30%+）。
+
+---
+
+## 1.1 架构决策：Electron → Chromium CEF
+
+### 1.1.1 为什么离开 Electron
+
+| 问题 | 影响 | 严重度 |
+| --- | --- | --- |
+| Electron webview 基于 `<webview>` tag，本质是 offscreen BrowserView，进程模型受限 | 内存开销大、扩展 API 不兼容、DevTools 一致性差 | P0 |
+| Node.js 主进程 + Chromium renderer 的双运行时模型 | 安全边界复杂、IPC 性能损耗、密码存储需要额外 native 模块 | P0 |
+| Chrome Web Store 扩展（MV3）几乎无法原生兼容 | 需要自建兼容层，工程量 ≈ 3 个 Milestone | P0 |
+| Password Manager / Safe Browsing 等 Chromium 核心组件未暴露 | 需要自实现或通过原生模块接入，风险高 | P0 |
+| Electron 版本追 Chromium 滞后 4–8 周 | 安全补丁延迟、新特性无法及时跟进 | P1 |
+| 打包体积大（150MB+） | 用户下载成本高 | P2 |
+
+### 1.1.2 CEF 架构优势
+
+- **原生 Chromium**: 直接使用 Chromium 源码，Password Manager / Safe Browsing / Extensions / DevTools Protocol 全部原生可用
+- **进程模型灵活**: 可配置单进程/多进程，按需优化内存
+- **C++ 原生层 + JS UI 层**: 原生层负责浏览器核心能力，React UI 层负责 Arc 风格交互，职责清晰
+- **直接接入 Chrome Web Store**: Chromium 原生扩展系统支持 MV3
+- **更小的打包体积**: 相比 Electron 减少约 30%
+
+### 1.1.3 架构分层
+
+```
+┌─────────────────────────────────────────┐
+│  UI Layer (React / TypeScript)          │  侧边栏 / 顶栏 / 命令面板 / 分屏 / 预览
+│  src/ui/                                │  纯渲染 + 状态管理（Zustand）
+├─────────────────────────────────────────┤
+│  Browser Core (C++ / CEF)               │  Tab / Window / Navigation / Extensions
+│  src/browser/                           │  Password Manager / Safe Browsing / Downloads
+│                                         │  DevTools / Permissions / Profiles
+├─────────────────────────────────────────┤
+│  Chromium CEF (vendor/)                 │  libcef + 资源 + 本地化
+└─────────────────────────────────────────┘
+```
+
+### 1.1.4 JS ↔ Native 通信机制
+
+- **UI → Native**: CEF V8 扩展（`window.astra`）暴露浏览器 API
+- **Native → UI**: CEF 消息路由器（CefMessageRouter）异步事件
+- **同步模式**: 状态变更由 Native 侧 push，UI 侧订阅更新（类似 Flux 单向数据流）
+
+### 1.1.5 迁移策略
+
+**Phase 0 — 脚手架**：CEF 工程搭建 + React UI 嵌入 + 基础 Tab 开关
+**Phase 1 — 核心功能移植**：Spaces / Split View / 侧边栏 / 命令栏 / 拖拽
+**Phase 2 — Chromium 能力接入**：密码 / 下载 / 权限 / 历史 / 设置页 / DevTools
+**Phase 3 — 扩展与高级功能**：Chrome 扩展 / 翻译 / 阅读模式 / PWA / 多窗口
 
 ## 2. User Profile & Typical Workflows
 
@@ -86,8 +138,8 @@ Astra 是一款面向 **重度知识工作者（开发者、创作者、研究�
 
 | # | 能力 | 来源 | 日驱阈值 | Astra 现状 | 优先级 |
 | --- | --- | --- | --- | --- | --- |
-| S-1 | 二窗 Split View（左右/上下，可拖拽比例） | Arc+Chrome | M（知识工作者 Y） | 有 | P1 |
-| S-2 | 三/四窗 Split（2025 Arc 标准） | Arc 2.0 | N | 无 | P2 |
+| S-1 | 二窗 Split View（左右/上下，可拖拽比例）—— 独立实体模型 | Arc+Chrome | M（知识工作者 Y） | **已完成（P0）** — SplitTab 一等实体，侧边栏单行展示，独立 active 状态 | P1 已完成 |
+| S-2 | 三/四窗 Split（2025 Arc 标准） | Arc 2.0 | N | 无 — 可基于实体模型扩展 | P2 |
 | S-3 | 按 Tab Group 一键分屏（2–4 个标签平铺） | Arc | M | 无 | P2 |
 | S-4 | Glance / Peek 预览（Alt+hover：查看链接，不打断上下文） | Arc | M（Arc 风格刚需 Y） | 有（Glance 已实现） | P1 |
 | S-5 | Peek 可交互（填表、播放媒体、跳转链接） | Arc 2.0 | M | 待评估 Glance 是否支持 | P1 |
@@ -291,48 +343,51 @@ Astra 是一款面向 **重度知识工作者（开发者、创作者、研究�
 
 ### 4.2 能力成熟度评分（0–10，10=Chrome 稳定版）
 
-| 维度 | 评分 | 备注 |
-| --- | --- | --- |
-| Shell + 持久化 + Spaces | 6 | 已有壳，但跨窗口/会话恢复/Profile 缺失 |
-| Tab 生命周期（开关切重休分） | 7 | 核心稳定，auto-discard 策略需更激进（Electron） |
-| 侧边栏 UI + 拖拽语义 | 8.5 | 近期 PR 已打磨到位，缺手动 QA |
-| Split View + Glance 预览 | 5 | 基础分屏已有，缺三/四窗、可交互 Peek |
-| 命令栏 / 地址栏 / 搜索 | 5 | 缺搜索建议、站内搜索、地址栏动作按钮 |
-| 密码 / 自动填充 | 0 | **最大缺口之一** |
-| 权限 / 安全浏览 / 隐私 | 1 | 仅能弹窗占位，**最大缺口之一** |
-| 设置页 | 0.5 | **最大缺口之一** |
-| 历史 / 下载 / 书签 UI | 3 | 有 domain 层，UI 远不完备 |
-| 扩展（CWS）兼容 | 0 | **最大缺口之一** |
-| DevTools 入口 | 4 | Electron 原生能用，缺统一入口/文档/QA |
-| 媒体 / 无障碍 / 主题 | 3 | 有 Space 配色，缺缩放、PiP、读屏 QA |
-| 翻译 / PDF / 阅读模式 | 0.5 | **最大缺口之一** |
-| 多窗口 + PWA + 会话恢复 | 2 | Electron 可做，未接 UI |
-| 打包/签名/自动更新 | 5 | 有 release 流程，需 notarization/EV 签 |
-| AI 套件（可选卖点） | 0 | 后续差异化 |
+**注：** 以下评分基于 **Electron 版本现状**。迁移到 CEF 后，密码/权限/扩展/DevTools 等 Chromium 原生能力的成熟度将大幅提升（+3～+5 分），但 Shell/工程化成熟度会暂时下降。
+
+| 维度 | Electron 现状 | CEF 迁移后预计 | 备注 |
+| --- | --- | --- | --- |
+| Shell + 持久化 + Spaces | 6 | 4→7 | CEF 迁移后短期降，长期原生能力升 |
+| Tab 生命周期（开关切重休分） | 7 | 7→8 | 核心逻辑可复用；CEF 原生更稳定 |
+| 侧边栏 UI + 拖拽语义 | 8.5 | 8.5 | UI 层迁移可复用，Split View 实体模型已完成 |
+| Split View + Glance 预览 | 6.5 | 7 | **Split View 独立实体模型已完成**（S-1）；缺三/四窗、可交互 Peek |
+| 命令栏 / 地址栏 / 搜索 | 5 | 5 | 缺搜索建议、站内搜索、地址栏动作按钮 |
+| 密码 / 自动填充 | 0.5 | 7→8 | CEF 可直接接入 Chromium Password Manager |
+| 权限 / 安全浏览 / 隐私 | 1 | 7→8 | CEF 原生权限系统 + Safe Browsing |
+| 设置页 | 0.5 | 3→5 | 需重新构建 UI，但 Chromium 原生能力可用 |
+| 历史 / 下载 / 书签 UI | 3 | 6→7 | CEF 原生历史/下载服务，只需 UI 层适配 |
+| 扩展（CWS）兼容 | 0 | 5→7 | CEF 需集成 Chromium extensions 模块 |
+| DevTools 入口 | 4 | 8→9 | CEF 原生 DevTools Protocol，一致性远好于 Electron |
+| 媒体 / 无障碍 / 主题 | 3 | 5→6 | CEF 原生媒体/无障碍更好 |
+| 翻译 / PDF / 阅读模式 | 0.5 | 6→7 | Chromium 内置翻译 + PDF Viewer 原生可用 |
+| 多窗口 + PWA + 会话恢复 | 2 | 5→6 | CEF 原生多窗口 + PWA 安装 |
+| 打包/签名/自动更新 | 5 | 3→5 | CEF 打包更复杂，但长期可控 |
+| AI 套件（可选卖点） | 0 | 0 | 后续差异化 |
+| 内存占用（相对 Electron） | — | +30% 优化 | CEF 单运行时 + 灵活进程模型 |
 
 ### 4.3 "切回 Chrome 的临界点"反推优先级（最重要的 20 项）
 
 以下 **20 项完成度达到可用级别，Astra 才能让种子用户"作为默认浏览器坚持一周以上"**：
 
-1.  **密码保存 + 填充 + 搜索 + 编辑**（P-1）
+1.  **密码保存 + 填充 + 搜索 + 编辑**（P-1）— CEF 原生可用
 2.  **设置页骨架 + 站点设置总控 + 自动填充入口**（3.14 + K-5）
-3.  **统一权限系统 UI（摄像头/麦克风/定位/剪贴板/通知/联系人）**（K-2）
-4.  **无痕模式 + 访客模式（两种语义独立）**（K-12）
-5.  **增强型安全浏览（默认）+ HTTPS 强制 + 错误拦截页**（K-1/K-6）
-6.  **下载中心 UI（进度/暂停/取消/打开/打开所在位置）**（D-1）
-7.  **危险下载阻断 + Safe Browsing API 接入**（D-3）
-8.  **完整历史视图（搜索/按站点/批量删除/Journeys 至少 MVP）**（D-5/D-6）
+3.  **统一权限系统 UI（摄像头/麦克风/定位/剪贴板/通知/联系人）**（K-2）— CEF 原生可用
+4.  **无痕模式 + 访客模式（两种语义独立）**（K-12）— CEF 原生可用
+5.  **增强型安全浏览（默认）+ HTTPS 强制 + 错误拦截页**（K-1/K-6）— CEF 原生可用
+6.  **下载中心 UI（进度/暂停/取消/打开/打开所在位置）**（D-1）— CEF 原生可用
+7.  **危险下载阻断 + Safe Browsing 接入**（D-3）— CEF 原生可用
+8.  **完整历史视图（搜索/按站点/批量删除/Journeys 至少 MVP）**（D-5/D-6）— CEF 原生可用
 9.  **书签导入（Chrome/Edge/HTML）**（D-10）
-10. **页面级翻译（Google Translate / Chromium 翻译模块二选一）**（V-12）
+10. **页面级翻译（Chromium 内置翻译）**（V-12）— CEF 原生可用
 11. **阅读模式 MVP（去广告 + 字号字体主题）**（V-3）
-12. **PDF 表单填写 MVP**（V-8）
+12. **PDF 表单填写 MVP**（V-8）— CEF 原生可用
 13. **站点级缩放（记忆）+ 页面缩放入口**（U-7）
-14. **F12 / Ctrl+Shift+I 原生 DevTools 统一入口（所有 Tab/Split/Glance 可用）**（E-4）
-15. **Chrome Web Store 扩展兼容 MVP**（E-1/E-2）—— 这条工作量最大，但用户要求极高
-16. **全局媒体控件 + 画中画**（U-1/U-2）
+14. **F12 / Ctrl+Shift+I 原生 DevTools 统一入口**（E-4）— CEF 原生可用
+15. **Chrome Web Store 扩展兼容 MVP**（E-1/E-2）— 工程量最大
+16. **全局媒体控件 + 画中画**（U-1/U-2）— CEF 原生可用
 17. **多窗口 + 拖 Tab 跨窗口 + 完整会话恢复（崩溃/重启）**（W-1/W-2）
-18. **PWA 安装**（W-3）
-19. **打印 UI + 另存为 PDF 入口**（W-7）
+18. **PWA 安装**（W-3）— CEF 原生可用
+19. **打印 UI + 另存为 PDF 入口**（W-7）— CEF 原生可用
 20. **macOS Notarization + Windows EV 签名 + 自动更新**（W-10/W-11）
 
 ---
@@ -341,98 +396,143 @@ Astra 是一款面向 **重度知识工作者（开发者、创作者、研究�
 
 > 与 `docs/ROADMAP.md` 的 P0/P1/P2 保持一致，并扩展到更细的时间分带。ROADMAP 是执行板（包含任务级细分），PRD 是时间分带（Why & Scope）。
 
-### 5.1 时间分带
+### 5.1 架构迁移总览
 
-#### Milestone 0 — 稳定化收尾（当前 → 6 月底，≈ 3 周）
+**Phase 0 — CEF 脚手架**（当前分支：`chromium-native`）：建立 CEF + React UI 集成，验证技术可行性。
 
-**目标：** P0 语义 100% 覆盖，侧边栏/拖拽/分屏/预览 **Electron 手工 QA 全通过**，当前架构不再出"切回 Chrome 修 bug"的基础问题。
+**Phase 1 — 核心功能移植**：将 Electron 版本的 UI / Domain 逻辑迁移到 CEF 架构。
+
+**Phase 2 — Chromium 能力接入**：密码 / 下载 / 权限 / 历史 / 设置 / DevTools 等 Chrome 底线能力。
+
+**Phase 3 — 差异化功能完善**：扩展 / 翻译 / 阅读模式 / PWA / 多窗口。
+
+### 5.2 时间分带
+
+#### Milestone 0 — CEF 脚手架（当前 → 7 月底，≈ 6 周）
+
+**目标：** CEF 工程搭建完成，React UI 嵌入 CefBrowserHost，基础 Tab 开关可用，侧边栏 MVP 跑通。
 
 交付：
--   Batch 1（ROADMAP § 5）全部通过，含 Electron 手工 QA 脚本（在 `docs/`）
--   本 PR 已合入的：Group drop、guide line、body shell 宽度、flex+absolute rail、favicon 瓦片透明度、hover 行不再双层叠色
--   新增：设置页骨架（3.14 16 区块导航 + 跳转入口，不要求全实现）
--   新增：页面缩放（U-7 MVP）+ 站点级记忆
--   新增：F12 / Ctrl+Shift+I 统一 DevTools 入口（E-4 MVP）
--   新增：无痕模式开关入口（K-12 MVP，partition in-memory）
+- CEF 工程脚手架（CMake + 依赖管理）
+- React UI 嵌入 CefBrowserHost（窗口模式）
+- JS ↔ Native 通信机制（V8 扩展 + 消息路由器）
+- 基础 Tab：新建 / 关闭 / 切换 / 导航
+- 侧边栏 MVP：Spaces 切换 + Tab 列表 + 地址栏导航
+- 状态管理：Native 为真相源，UI 层订阅更新
+- 构建系统：macOS arm64/x64 + Windows x64
+- 测试框架：CEF 集成测试 + Vitest 单元测试
 
-#### Milestone 1 — 日驱底线 Batch A（7 月 → 8 月中，≈ 6 周）
+#### Milestone 1 — 核心功能移植（7 月底 → 9 月中，≈ 6 周）
+
+**目标：** Arc 风格核心交互全部移植到 CEF 架构，Electron 版本可废弃。
+
+交付：
+- 完整侧边栏：Essentials / Pinned / Favorites / Groups / Tabs / Recently Closed
+- Split View 独立实体模型（S-1，已在 Electron 版验证，迁移）
+- 拖拽语义：重排 / 进 Favorite / 进 Pinned / 进 Group / 跨 Space / 到 Split
+- Tab 组：命名 / 配色 / 折叠 / 展开 / 整体关闭 / 整体休眠
+- Glance 预览（S-4）
+- 命令栏（Command Bar）：搜索 / 跳转 / 执行动作
+- 开始页（astra://newtab）
+- Tab 自动休眠 / 内存节省（T-6）
+- 站点级缩放记忆（U-7 MVP）
+- F12 / Ctrl+Shift+I DevTools（E-4，CEF 原生）
+- 无痕模式（K-12，CEF 原生 off-the-record）
+
+#### Milestone 2 — 日驱底线 Batch A（9 月中 → 11 月中，≈ 8 周）
 
 **目标：** 把"最大缺口四项"中的 2.5 项做到可用：密码、权限、设置页、翻译/阅读模式/下载 MVP。
 
 交付（对照 §4.3 临界点 1–20）：
--   1 P-1 密码库（Electron password manager 集成 + UI）
--   2 设置页（自动填充/权限/外观/搜索/默认/启动/站点设置 8 个主面板可交互）
--   3 K-2 权限系统 UI 接入（摄像头/麦克风/定位/通知/剪贴板 5 种 MVP）
--   6 D-1 下载中心 MVP UI
--   8 D-5 完整历史视图 MVP
--   9 D-10 书签导入 MVP
--   10 V-12 页面级翻译 MVP
--   11 V-3 阅读模式 MVP
--   12 V-8 PDF 表单填写 MVP（Electron 原生 PDF 能看，需接入文本输入与签名）
--   17 W-1/W-2 多窗口 + 会话恢复 MVP
+- 1 P-1 密码库（Chromium Password Manager 原生接入 + UI）
+- 2 设置页（自动填充/权限/外观/搜索/默认/启动/站点设置 8 个主面板可交互）
+- 3 K-2 权限系统 UI 接入（摄像头/麦克风/定位/通知/剪贴板 5 种 MVP）
+- 6 D-1 下载中心 MVP UI（Chromium 原生下载系统接入）
+- 8 D-5 完整历史视图 MVP（Chromium 历史服务接入）
+- 9 D-10 书签导入 MVP（Chrome/Edge/HTML）
+- 10 V-12 页面级翻译 MVP（Chromium 内置翻译）
+- 11 V-3 阅读模式 MVP
+- 12 V-8 PDF 表单填写 MVP（Chromium 原生 PDF Viewer）
+- 17 W-1/W-2 多窗口 + 会话恢复 MVP
 
-#### Milestone 2 — 日驱底线 Batch B（8 月中 → 10 月中，≈ 8 周）
+#### Milestone 3 — 日驱底线 Batch B（11 月中 → 2027 春节，≈ 12 周）
 
 **目标：** 临界点 20 项全部达到"可用"（非完美）；Astra 能稳定坚持为默认浏览器，开发者用户日常工作不切 Chrome。
 
 交付：
--   4 K-12 无痕 + 访客模式完整（含清理语义 + 快捷方式）
--   5 K-1/K-6 HTTPS 强制 + Safe Browsing API 接入
--   7 D-3 危险下载阻断（Safe Browsing）
--   13 U-7 站点级缩放完善（例外列表）
--   14 E-4 DevTools 完善（Split/Glance/Peek 各入口全覆盖，文档化）
--   15 E-1/E-2 Chrome Web Store 兼容 MVP（uBlock、Tampermonkey 等 Top 20 扩展验证通过）
--   16 U-1/U-2 全局媒体控件 + PiP
--   18 W-3 PWA 安装 MVP
--   19 W-7 打印 UI + 另存 PDF
--   20 W-10/W-11 自动更新 + macOS Notarization + Windows EV
+- 4 K-12 无痕 + 访客模式完整
+- 5 K-1/K-6 HTTPS 强制 + Safe Browsing 接入
+- 7 D-3 危险下载阻断（Safe Browsing）
+- 13 U-7 站点级缩放完善
+- 14 E-4 DevTools 完善
+- 15 E-1/E-2 Chrome Web Store 兼容 MVP（Top 20 扩展验证）
+- 16 U-1/U-2 全局媒体控件 + PiP
+- 18 W-3 PWA 安装 MVP
+- 19 W-7 打印 UI + 另存 PDF
+- 20 W-10/W-11 自动更新 + macOS Notarization + Windows EV
 
-#### Milestone 3 — 差异化 Arc 风格功能（10 月中 → 2027 春节，≈ 14 周）
+#### Milestone 4 — 差异化 Arc 风格功能（2027 春节之后）
 
 **目标：** 用户选 Astra 而不是 Chrome 的"非底线理由"。
 
 交付（从 P1/P2 池按 ROI 挑）：
--   S-1→S-3 四窗 Split + 按 Group 分屏
--   S-4/S-5 Peek 可交互预览
--   B-1 Tab 关联笔记（侧边打开）
--   B-3 Boost 可视化隐藏元素 / 改色 MVP
--   A-1 页面 / 长文 / PDF 总结（接第三方 API）
--   A-2 页面级翻译整合到 AI（替代 V-12 的 Google API 直连）
--   T-18 Tab Stashes（手动 + 自动藏匿）
--   U-12/U-13 完整主题系统（亮/暗随系统 + Space 色独立 + 全局色板）
--   K-11 后台权限实时告警（差异化）
--   U-3 多路 PiP
--   W-14 节能模式 + ATC 资源中心（T-7 单 Tab RAM/CPU 面板）
--   E-10 Flags 实验开关
--   T-9 多窗口 × Space 语义整合
+- S-2/S-3 多窗 Split + 按 Group 分屏
+- S-5 Peek 可交互预览
+- B-1 Tab 关联笔记
+- B-3 Boost 可视化隐藏元素 / 改色 MVP
+- A-1 页面 / 长文 / PDF 总结
+- T-18 Tab Stashes
+- U-12/U-13 完整主题系统
+- K-11 后台权限实时告警
+- U-3 多路 PiP
+- W-14 节能模式 + 资源中心
+- E-10 Flags 实验开关
+- T-9 多窗口 × Space 语义整合
 
-#### Milestone 4 — 平台 / 生态（2027 春节之后）
+#### Milestone 5 — 平台 / 生态
 
 交付：
--   跨设备同步（C-2~C-5）
--   Passkey（P-6）
--   Journey 语义历史（D-6/D-7）
--   AI 套件（A-3→A-8）
--   Easel 协作白板（B-2）
--   Little Arc（S-7/S-8）
--   Profile/企业 Teams 管理（C-1/C-8）
--   Kids / VPN（C-6/C-7）
--   移动端（iPhone / iPadOS / Android，若业务决定）
+- 跨设备同步
+- Passkey
+- Journey 语义历史
+- AI 套件
+- Easel 协作白板
+- Little Arc
+- Profile/企业 Teams 管理
+- Kids / VPN
+- 移动端
 
 ---
 
 ## 6. 工程 / 架构风险 Top 10（必须显式管理）
 
-1.  **Electron Webview 性能与内存模型**：Chromium 原生多进程架构下，一个 Tab ≈ 一个 renderer 进程；Electron BrowserView/Webview 的进程模型会更吃内存，导致 Sleep/Freeze 策略必须比 Chrome 激进 2×。
-2.  **扩展兼容（E-1）**：Manifest V3 的 Service Worker、Declarative Net Request、Storage、Side Panel 这些 API 在 Electron 里没有原生，需要自建兼容层，**工程量可能等价于 3 个其他 Milestone 之和**，应在 Milestone 1 做 4 周 PoC，跑不通就把 E-1 降为 P2 并明确告知用户"不保证 uBlock/Tampermonkey 兼容"。
-3.  **密码库（P-1）**：Chromium Password Manager 是一个巨大的 C++ 组件，Electron 未暴露 API；要么调用 `keytar` + 自写填充（风险高，兼容性差），要么嵌入 Chromium password store（工程大），**Milestone 1 前 2 周必须完成方案选定**。
-4.  **Safe Browsing API（K-6/D-3）**：Google 的 API 有费用/配额/合规条款，需评估接入或自建风险 URL 数据库方案。
-5.  **翻译（V-12）**：Chromium 内置翻译组件受 API Key 限制，需评估用 Google Translate API（成本）vs 自建 Argos/Marian（质量）。
-6.  **DevTools 一致性（E-4）**：Electron webview 打开的 `webContents.openDevTools()` 与 Chromium 原生会有细微差异（特别是 service worker、background page、扩展），需系统 QA 清单。
-7.  **多窗口 × Space 状态同步（W-1/W-2）**：当前 Space 状态为单窗口单实例模型，多窗口需引入 Window ID + Space↔Window 映射，会影响几乎所有 domain action，**Milestone 1 应尽早拆出设计评审**。
-8.  **代码签名 & 公证（W-11）**：macOS notarization 和 Windows EV 签名的 CI 集成非常脆（Apple 审核/时间戳/证书过期），需要独立工程周，不应留到 Milestone 2 最后。
-9.  **无障碍（U-6）**：Electron/React 组合对屏幕阅读器基本兼容，但若不做系统性 ARIA 审计，会在 Milestone 1 出现大量 tab 顺序、aria-label、role 的零散 bug，**建议在 Milestone 0 起每两周一次 NVDA/VoiceOver 走查**。
-10. **测试基础设施**：目前 100% 测试在 DOM 层（Vitest/jsdom），未覆盖 Electron 集成场景（drag-and-drop、webview lifecycle、权限 IPC、下载 IPC、多窗口），Milestone 1 末必须引入 Playwright/Codecept + Electron 集成测试，否则回归爆炸。
+1.  **CEF 集成复杂度**：Chromium Embedded Framework 虽然提供了完整的 Chromium 能力，但 C++ 原生开发调试成本高于 Electron Node.js。CEF 的生命周期管理（CefClient / CefBrowser / CefRenderProcessHandler）需要深入理解 Chromium 多进程架构。
+2.  **UI 层与 Native 层状态同步**：React UI 状态（Zustand）与 Chromium 原生状态（CefBrowser / CefFrame）是两个状态源，如何保证一致性是核心架构挑战。采用 Native 为唯一真相源，UI 层只读订阅模式。
+3.  **扩展兼容（E-1）**：CEF 默认不包含 Chrome 扩展系统，需要自己集成 Chromium extensions 子模块。工程量大但价值高，需要评估直接用 Chromium 原生 extensions 模块 vs 自建兼容层。
+4.  **密码库（P-1）**：Chromium Password Manager 是 C++ 核心组件，CEF 可直接接入。但需要处理密钥链集成（macOS Keychain / Windows DPAPI）和加密方案设计。
+5.  **Safe Browsing API（K-6/D-3）**：Google 的 API 有费用/配额/合规条款，需评估接入或自建风险 URL 数据库方案。CEF 可直接使用 Chromium 内置 Safe Browsing 模块。
+6.  **DevTools 一致性（E-4）**：CEF 原生支持 DevTools Protocol，比 Electron webview 更接近 Chrome 原生体验。需要验证扩展 DevTools、Service Worker 调试等高级功能。
+7.  **多窗口 × Space 状态同步（W-1/W-2）**：单进程模型下多窗口状态同步需要 IPC 设计。需设计 Space↔Window 映射，会影响几乎所有 domain action。
+8.  **代码签名 & 公证（W-11）**：macOS notarization 和 Windows EV 签名的 CI 集成非常脆（Apple 审核/时间戳/证书过期），需要独立工程周。
+9.  **无障碍（U-6）**：CEF + React 组合对屏幕阅读器基本兼容，但若不做系统性 ARIA 审计，会出现大量 tab 顺序、aria-label、role 的零散 bug。
+10. **测试基础设施**：需要建立 CEF 集成测试（CEF Test Framework + Playwright/CDP），覆盖 Tab 生命周期、拖拽、跨窗口、权限、下载、翻译、DevTools、会话恢复。
+
+---
+
+### 6.1 Chromium CEF vs Electron 对比决策记录（ADR-0009）
+
+| 维度 | Electron | Chromium CEF | 决策 |
+| --- | --- | --- | --- |
+| 开发效率 | 高（Node.js 生态） | 中（C++ 原生） | CEF — 长期收益大于短期成本 |
+| 内存占用 | 高（双运行时） | 中-低（单运行时 + 灵活进程模型） | CEF — 浏览器核心竞争力 |
+| 扩展兼容 | 差（需自建兼容层） | 好（可接入 Chromium extensions） | CEF — P0 级需求 |
+| 密码/安全浏览 | 差（需自实现） | 好（原生组件可用） | CEF — 底线能力 |
+| 打包体积 | 大（150MB+） | 中（100MB 左右） | CEF — 优化空间大 |
+| DevTools | 可用但不一致 | 原生一致 | CEF — 开发者用户重要 |
+| 多平台支持 | 好 | 好 | 持平 |
+| 生态/文档 | 丰富 | 较少但够用 | Electron 略优 |
+
+**决策结论：** 迁移到 Chromium CEF 架构。虽然短期开发成本上升，但浏览器核心竞争力（扩展、密码、安全浏览、内存）均为 P0 级需求，Electron 架构无法满足。
 
 ---
 
