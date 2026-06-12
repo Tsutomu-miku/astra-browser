@@ -8,12 +8,11 @@ release/
 *.log
 .claude/
 
-# Native build (CEF)
+# Direct Chromium checkout/build outputs
 /build/*
 !/build/entitlements.mac.inherit.plist
 !/build/entitlements.mac.plist
-build/native/
-third_party/cef/
-third_party/*.tar.bz2
-third_party/*.tar.gz
-cmake-build-*/
+/chromium/src/
+/chromium/out/
+/third_party/
+/build/chromium/

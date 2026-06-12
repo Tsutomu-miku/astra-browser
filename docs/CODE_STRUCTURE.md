@@ -1,5 +1,10 @@
 # Code Structure
 
+> Superseded target: new browser framework work should land under
+> `chromium/astra/` and follow `docs/CHROMIUM_DIRECT_REFACTOR_PLAN.md`. The
+> `src/` structure below documents the legacy Electron prototype and migration
+> reference.
+
 This map is the working guide for where new code should live.
 
 ```text

@@ -1,7 +1,7 @@
 # Product Requirement Document — Astra Browser
 
-> Rev. 2026-06-12. 架构决策：从 Electron 迁移到 **Chromium 原生 CEF 架构**，彻底摆脱 Electron 的进程模型限制、扩展兼容瓶颈、内存开销与安全边界问题。
-> 核心结论：当前 Astra 距离"日常可驱动（daily-driver）浏览器"至少还有 **6–9 个月的 P0/P1 工作量**，主要差距集中在 **CEF 集成、密码自动填充、安全浏览、扩展兼容、窗口会话管理、PWA、翻译/阅读模式** 等浏览器底线能力。
+> Rev. 2026-06-12. 架构决策已由 ADR-0009 更新为 **direct Chromium**：不基于 Electron，也不基于 CEF；Astra 作为 Chromium/Chrome framework 上的产品层实现。
+> 本文后续仍保留部分 Electron/CEF 历史评估文字，迁移执行以 `docs/CHROMIUM_DIRECT_REFACTOR_PLAN.md` 和 `docs/adr/0009-direct-chromium-architecture.md` 为准。
 
 ## 1. Product Intent（产品定位）
 

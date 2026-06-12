@@ -1,0 +1,35 @@
+# Astra product layer for direct Chromium builds.
+
+import("//build/config/chrome_build.gni")
+
+source_set("astra_browser") {
+  sources = [
+    "app/astra_browser_main_extra_parts.cc",
+    "app/astra_browser_main_extra_parts.h",
+    "app/astra_content_browser_client.cc",
+    "app/astra_content_browser_client.h",
+    "app/astra_main_delegate.cc",
+    "app/astra_main_delegate.h",
+    "browser/astra_command_delegate.cc",
+    "browser/astra_command_delegate.h",
+    "browser/astra_tab_features.cc",
+    "browser/astra_tab_features.h",
+    "browser/astra_workspace_service.cc",
+    "browser/astra_workspace_service.h",
+    "ui/views/astra_browser_view.cc",
+    "ui/views/astra_browser_view.h",
+    "ui/views/sidebar/astra_sidebar_view.cc",
+    "ui/views/sidebar/astra_sidebar_view.h",
+  ]
+
+  deps = [
+    "//base",
+    "//chrome/browser",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/views",
+    "//components/keyed_service/core",
+    "//content/public/browser",
+    "//ui/base",
+    "//ui/views",
+  ]
+}

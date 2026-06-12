@@ -1,5 +1,10 @@
 # Architecture
 
+> Superseded target: the active architecture direction is now direct Chromium,
+> documented in `docs/CHROMIUM_DIRECT_REFACTOR_PLAN.md` and
+> `docs/adr/0009-direct-chromium-architecture.md`. The Electron architecture
+> below is retained as the legacy prototype map until migration is complete.
+
 The project is split around runtime boundaries rather than feature folders.
 
 ## Main Process
