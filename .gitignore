@@ -7,3 +7,13 @@ release/
 .DS_Store
 *.log
 .claude/
+
+# Native build (CEF)
+/build/*
+!/build/entitlements.mac.inherit.plist
+!/build/entitlements.mac.plist
+build/native/
+third_party/cef/
+third_party/*.tar.bz2
+third_party/*.tar.gz
+cmake-build-*/
