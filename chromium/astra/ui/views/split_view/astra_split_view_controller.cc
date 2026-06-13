@@ -1499,6 +1499,21 @@ bool AstraSplitViewController::HandleKeyboardShortcut(const ui::KeyEvent& event)
 
   bool is_control = event.IsControlDown() || event.IsCommandDown();
   bool is_shift = event.IsShiftDown();
+  bool is_alt = event.IsAltDown();
+
+  // -- F-key shortcuts (no modifier required) -----------------------------
+
+  if (event.key_code() == ui::VKEY_F6) {
+    // F6: Cycle focus between panes (standard browser focus cycle).
+    if (is_shift) {
+      CycleFocusPreviousPane();
+    } else {
+      CycleFocusNextPane();
+    }
+    return true;
+  }
+
+  // -- Modifier-required shortcuts ----------------------------------------
 
   if (!is_control) {
     return false;
@@ -1515,9 +1530,51 @@ bool AstraSplitViewController::HandleKeyboardShortcut(const ui::KeyEvent& event)
       }
       return true;
 
+    case ui::VKEY_BACK:
+    case ui::VKEY_OEM_5:  // Backslash '\' key (US keyboard)
+      // Ctrl+\ or Ctrl+|: Toggle split view / swap panes.
+      if (is_shift) {
+        // Ctrl+Shift+\ (Ctrl+|): Swap panes.
+        SwapPanes();
+      } else {
+        // Ctrl+\: Toggle split view.
+        ToggleSplitView();
+      }
+      return true;
+
     case ui::VKEY_D:
       // Ctrl+D: Swap panes.
       SwapPanes();
+      return true;
+
+    case ui::VKEY_M:
+      // Ctrl+M: Maximize/restore focused pane.
+      if (model_.IsPaneMaximized()) {
+        model_.RestoreFromMaximized();
+        if (split_view_) {
+          split_view_->Unmaximize();
+        }
+      } else {
+        model_.MaximizePane(model_.focused_pane());
+        if (split_view_) {
+          bool is_primary =
+              model_.focused_pane() == AstraSplitPaneId::kPane0;
+          split_view_->MaximizePane(is_primary);
+        }
+      }
+      return true;
+
+    case ui::VKEY_G:
+      // Ctrl+G: Toggle orientation (horizontal/vertical).
+      ToggleOrientation();
+      return true;
+
+    case ui::VKEY_E:
+      // Ctrl+E: Equalize panes (reset to 50/50).
+      model_.SetEqualRatios();
+      if (split_view_) {
+        split_view_->SetRatio(0.5, /*animate=*/true);
+      }
       return true;
 
     case ui::VKEY_1:
@@ -1568,6 +1625,20 @@ bool AstraSplitViewController::HandleKeyboardShortcut(const ui::KeyEvent& event)
       }
       return true;
 
+    case ui::VKEY_OEM_PLUS:
+    case ui::VKEY_ADD:
+      // Ctrl++: Grow focused pane (resize).
+      // TODO(astra): Implement resize by keyboard step.
+      //   The step size should be configurable via settings.
+      ResizePrimaryPane(/*delta=*/20);
+      return true;
+
+    case ui::VKEY_OEM_MINUS:
+    case ui::VKEY_SUBTRACT:
+      // Ctrl+-: Shrink focused pane (resize).
+      ResizePrimaryPane(/*delta=*/-20);
+      return true;
+
     case ui::VKEY_W:
       // Ctrl+W: Close focused pane.
       if (model_.focused_pane() == AstraSplitPaneId::kPane0) {
@@ -1577,8 +1648,52 @@ bool AstraSplitViewController::HandleKeyboardShortcut(const ui::KeyEvent& event)
       }
       return true;
 
+    case ui::VKEY_ZERO:
+    case ui::VKEY_NUMPAD0:
+      // Ctrl+0: Reset split ratio to default (equal).
+      SetSplitRatio(0.5);
+      return true;
+
+    case ui::VKEY_H:
+      // Ctrl+H: Toggle pane headers.
+      model_.SetShowPaneHeaders(!model_.show_pane_headers());
+      if (split_view_) {
+        split_view_->SetShowPaneHeaders(model_.show_pane_headers());
+      }
+      return true;
+
+    case ui::VKEY_L:
+      // Ctrl+L: Cycle to next layout mode.
+      CycleNextLayoutMode();
+      return true;
+
     default:
       break;
+  }
+
+  // -- Alt+Ctrl shortcuts -------------------------------------------------
+
+  if (is_alt && is_control) {
+    switch (event.key_code()) {
+      case ui::VKEY_LEFT:
+        // Alt+Ctrl+Left: Shift divider left.
+        ResizePrimaryPane(-20);
+        return true;
+      case ui::VKEY_RIGHT:
+        // Alt+Ctrl+Right: Shift divider right.
+        ResizePrimaryPane(20);
+        return true;
+      case ui::VKEY_UP:
+        // Alt+Ctrl+Up: Shift divider up (vertical split).
+        ResizePrimaryPane(-20);
+        return true;
+      case ui::VKEY_DOWN:
+        // Alt+Ctrl+Down: Shift divider down (vertical split).
+        ResizePrimaryPane(20);
+        return true;
+      default:
+        break;
+    }
   }
 
   return false;
@@ -1649,6 +1764,235 @@ bool AstraSplitViewController::StartSplitFromDrag(
   //   This is a placeholder for the feature.
 
   // For now, just indicate that the drag is accepted.
+  return true;
+}
+
+// =========================================================================
+// Workspace sync
+// =========================================================================
+
+void AstraSplitViewController::SaveSplitStateForWorkspace(
+    const std::string& workspace_id) {
+  if (workspace_id.empty()) {
+    return;
+  }
+
+  // Save the current model state.
+  std::string state = model_.SerializeToString();
+  workspace_states_[workspace_id] = state;
+
+  // Also update the model's workspace association.
+  model_.SetWorkspaceId(workspace_id);
+
+  // TODO(astra): Persist to PrefService for cross-session storage.
+  //   Chromium owner: PrefService (components/prefs/pref_service.h)
+  //   The state should be stored as a dictionary pref keyed by workspace ID.
+}
+
+bool AstraSplitViewController::RestoreSplitStateForWorkspace(
+    const std::string& workspace_id) {
+  if (workspace_id.empty()) {
+    return false;
+  }
+
+  auto it = workspace_states_.find(workspace_id);
+  if (it == workspace_states_.end()) {
+    return false;
+  }
+
+  // Deserialize the saved state into the model.
+  bool success = model_.DeserializeFromString(it->second);
+  if (!success) {
+    return false;
+  }
+
+  // Update the model's workspace association.
+  model_.SetWorkspaceId(workspace_id);
+
+  // If split view is active, update the view to reflect the restored state.
+  if (is_active_ && split_view_) {
+    split_view_->SetLayoutMode(model_.layout_mode());
+    // TODO(astra): Restore divider positions and other state.
+    //   For now, we just update the layout mode.
+    //   Full restore should also restore ratios and focused pane, headers, etc.
+  }
+
+  return true;
+}
+
+void AstraSplitViewController::ClearWorkspaceState(
+    const std::string& workspace_id) {
+  workspace_states_.erase(workspace_id);
+}
+
+bool AstraSplitViewController::HasWorkspaceState(
+    const std::string& workspace_id) const {
+  return workspace_states_.find(workspace_id) != workspace_states_.end();
+}
+
+// =========================================================================
+// Focus cycling
+// =========================================================================
+
+void AstraSplitViewController::CycleFocusNextPane() {
+  if (!is_active_) {
+    return;
+  }
+
+  model_.FocusNextPane();
+
+  // Sync the focused pane in the view.
+  if (split_view_) {
+    AstraSplitPane pane = (model_.focused_pane() == AstraSplitPaneId::kPane0)
+                             ? AstraSplitPane::kPrimary
+                             : AstraSplitPane::kSecondary;
+    split_view_->SetFocusedPane(pane);
+  }
+
+  // TODO(astra): Actually focus the WebContents in the newly focused pane.
+  //   Chromium owner: content::WebContents::Focus()
+  //   and views::View::RequestFocus()
+}
+
+void AstraSplitViewController::CycleFocusPreviousPane() {
+  if (!is_active_) {
+    return;
+  }
+
+  model_.FocusPreviousPane();
+
+  if (split_view_) {
+    AstraSplitPane pane = (model_.focused_pane() == AstraSplitPaneId::kPane0)
+                             ? AstraSplitPane::kPrimary
+                             : AstraSplitPane::kSecondary;
+    split_view_->SetFocusedPane(pane);
+  }
+}
+
+AstraSplitPaneId AstraSplitViewController::CycleFocus() {
+  CycleFocusNextPane();
+  return model_.focused_pane();
+}
+
+// =========================================================================
+// History / back-forward per pane
+// =========================================================================
+
+void AstraSplitViewController::GoBackInFocusedPane() {
+  if (!is_active_) {
+    return;
+  }
+  GoBackInPane(model_.focused_pane());
+}
+
+void AstraSplitViewController::GoForwardInFocusedPane() {
+  if (!is_active_) {
+    return;
+  }
+  GoForwardInPane(model_.focused_pane());
+}
+
+void AstraSplitViewController::ReloadFocusedPane() {
+  if (!is_active_) {
+    return;
+  }
+  ReloadPane(model_.focused_pane());
+}
+
+void AstraSplitViewController::GoBackInPane(AstraSplitPaneId pane_id) {
+  if (!is_active_ || !model_.IsValidPaneId(pane_id)) {
+    return;
+  }
+
+  // TODO(astra): Navigate back in the specified pane's WebContents.
+  //   Chromium owner: content::NavigationController::GoBack()
+  //   (content/public/browser/navigation_controller.h)
+  //
+  //   We need to get the WebContents for the pane and call:
+  //     web_contents->GetController().GoBack();
+  //
+  //   For now, this is a no-op placeholder.
+  //   Chromium subsystem: NavigationController per WebContents.
+  DLOG(INFO) << "GoBack in pane " << static_cast<int>(pane_id);
+}
+
+void AstraSplitViewController::GoForwardInPane(AstraSplitPaneId pane_id) {
+  if (!is_active_ || !model_.IsValidPaneId(pane_id)) {
+    return;
+  }
+
+  // TODO(astra): Navigate forward in the specified pane's WebContents.
+  //   Chromium owner: content::NavigationController::GoForward()
+  DLOG(INFO) << "GoForward in pane " << static_cast<int>(pane_id);
+}
+
+void AstraSplitViewController::ReloadPane(AstraSplitPaneId pane_id) {
+  if (!is_active_ || !model_.IsValidPaneId(pane_id)) {
+    return;
+  }
+
+  // TODO(astra): Reload the specified pane's WebContents.
+  //   Chromium owner: content::WebContents::GetController().Reload()
+  DLOG(INFO) << "Reload pane " << static_cast<int>(pane_id);
+}
+
+// =========================================================================
+// Tab-to-split / split-to-tab conversion
+// =========================================================================
+
+bool AstraSplitViewController::ConvertTabToSplit(content::WebContents* web_contents,
+                                               AstraSplitPaneId target_pane) {
+  if (!web_contents || !model_.IsValidPaneId(target_pane)) {
+    return false;
+  }
+
+  // If split view is not active, activate it first.
+  if (!is_active_) {
+    // TODO(astra): Find a suitable partner tab and activate split view.
+    //   For now, we just activate with defaults.
+    ActivateSplitView();
+  }
+
+  // Replace the target pane's contents with the new tab.
+  int pane_index = static_cast<int>(target_pane);
+  if (pane_index == 0) {
+    ReplacePrimaryTab(web_contents);
+  } else if (pane_index == 1) {
+    ReplaceSecondaryTab(web_contents);
+  }
+
+  // Notify the model of the conversion.
+  model_.NotifyTabToSplitConverted(target_pane);
+
+  return true;
+}
+
+bool AstraSplitViewController::ConvertSplitToTab(AstraSplitPaneId pane_id) {
+  if (!is_active_ || !model_.IsValidPaneId(pane_id)) {
+    return false;
+  }
+
+  // Notify the model of the conversion.
+  model_.NotifySplitToTabConverted(pane_id);
+
+  // TODO(astra): For 2-pane mode, converting one pane to a tab means deactivating
+  //   split view and keeping the remaining tab as the active tab.
+  //   For multi-pane mode, we'd need to rebalance the layout.
+  //
+  //   Chromium owner: TabStripModel for tab management.
+  //   Patch point: No patch needed — TabStripModel is public API.
+
+  int pane_count = model_.GetPaneCount();
+  if (pane_count <= 2) {
+    // 2-pane mode — closing one pane deactivates split view.
+    // The other pane becomes the single active tab.
+    DeactivateSplitView();
+  } else {
+    // Multi-pane mode — close the pane and rebalance.
+    // TODO(astra): Implement multi-pane close and rebalance.
+    model_.ClosePane(pane_id);
+  }
+
   return true;
 }
 

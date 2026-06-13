@@ -4,6 +4,7 @@
 
 #include "base/no_destructor.h"
 #include "base/ranges/algorithm.h"
+#include "base/unguessable_token.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -93,6 +94,10 @@ void AstraFocusModeService::ExitFocusMode() {
   }
 
   base::TimeDelta total_session_duration = actual_duration;
+
+  // Save the session to history before clearing state.
+  bool completed_naturally = session_ended_naturally_;
+  AddCompletedSessionToHistory(completed_naturally);
 
   is_focus_mode_active_ = false;
   is_paused_ = false;
@@ -335,6 +340,49 @@ void AstraFocusModeService::ResetStats() {
   }
 }
 
+// -- Session history ---------------------------------------------------------
+
+const std::vector<AstraFocusSession>&
+AstraFocusModeService::GetSessionHistory() const {
+  return session_history_;
+}
+
+AstraFocusStats AstraFocusModeService::GetFocusStats() const {
+  return CalculateWeeklyStats(session_history_);
+}
+
+bool AstraFocusModeService::AddSessionNote(const std::string& session_id,
+                                           const std::string& note) {
+  for (auto& session : session_history_) {
+    if (session.id == session_id) {
+      session.note = note;
+      // TODO(astra): Persist session notes via PrefService.
+      //   Chromium component: PrefService / ListPref.
+      //   Chromium owner: PrefService (components/prefs/pref_service.h)
+      return true;
+    }
+  }
+  return false;
+}
+
+void AstraFocusModeService::ClearSessionHistory() {
+  session_history_.clear();
+
+  for (auto& observer : observers_) {
+    observer.OnSessionHistoryCleared();
+  }
+}
+
+void AstraFocusModeService::set_max_history_entries(size_t max) {
+  max_history_entries_ = max;
+  // Trim history if it exceeds the new limit.
+  if (session_history_.size() > max_history_entries_) {
+    session_history_.erase(
+        session_history_.begin(),
+        session_history_.begin() + (session_history_.size() - max_history_entries_));
+  }
+}
+
 // -- Whitelist (allowed sites) -----------------------------------------------
 
 void AstraFocusModeService::AddWhitelistedSite(const std::string& url_pattern) {
@@ -392,11 +440,16 @@ bool AstraFocusModeService::TriggerDistractionWarning(const std::string& url) {
 
   // Check if site is actually blocked (not whitelisted and is in blocklist).
   if (IsSiteWhitelisted(url)) {
+    // Whitelist was actively used to allow a site that would otherwise
+    // have triggered a distraction warning.
+    current_session_whitelist_used_ = true;
     return false;
   }
   if (!IsSiteBlocked(url)) {
     return false;
   }
+
+  current_session_distraction_count_++;
 
   for (auto& observer : observers_) {
     observer.OnDistractionWarning(url);
@@ -798,6 +851,11 @@ void AstraFocusModeService::RecordCompletedWorkSession(
     base::TimeDelta duration) {
   total_focus_time_ += duration;
   total_sessions_completed_++;
+
+  // Also accumulate per-session stats for the current session.
+  current_session_focus_time_ += duration;
+  current_session_work_count_++;
+
   SaveStatsToPrefs();
 
   for (auto& observer : observers_) {
@@ -807,10 +865,48 @@ void AstraFocusModeService::RecordCompletedWorkSession(
 
 void AstraFocusModeService::RecordCompletedCycle() {
   total_cycles_completed_++;
+  current_session_cycles_++;
   SaveStatsToPrefs();
 
   for (auto& observer : observers_) {
     observer.OnStatsUpdated();
+  }
+}
+
+void AstraFocusModeService::AddCompletedSessionToHistory(bool is_completed) {
+  if (current_session_id_.empty()) {
+    return;
+  }
+
+  AstraFocusSession session;
+  session.id = current_session_id_;
+  session.start_time = current_session_start_time_;
+  session.end_time = base::Time::Now();
+  session.duration = current_session_focus_time_;
+  session.phase_work_count = current_session_work_count_;
+  session.total_cycles = current_session_cycles_;
+  session.is_pomodoro = pomodoro_mode_active_;
+  session.is_completed = is_completed;
+  session.distraction_count = current_session_distraction_count_;
+  session.whitelist_used = current_session_whitelist_used_;
+  // note is empty by default.
+
+  session_history_.push_back(std::move(session));
+
+  // Trim history to max_history_entries_ (keep most recent).
+  if (session_history_.size() > max_history_entries_) {
+    session_history_.erase(
+        session_history_.begin(),
+        session_history_.begin() + (session_history_.size() - max_history_entries_));
+  }
+
+  // TODO(astra): Persist session history to PrefService for survival
+  //   across browser restarts.
+  //   Chromium component: PrefService / ListPref.
+  //   Chromium owner: PrefService (components/prefs/pref_service.h)
+
+  for (auto& observer : observers_) {
+    observer.OnSessionAddedToHistory();
   }
 }
 
@@ -845,6 +941,18 @@ void AstraFocusModeService::StartPhase(AstraFocusPhase phase,
   phase_start_time_ = base::Time::Now();
   phase_duration_ = duration;
 
+  // Initialize per-session tracking when starting a brand new session.
+  if (!was_active) {
+    current_session_id_ = base::UnguessableToken::Create().ToString();
+    current_session_start_time_ = phase_start_time_;
+    current_session_focus_time_ = base::TimeDelta();
+    current_session_work_count_ = 0;
+    current_session_cycles_ = 0;
+    current_session_distraction_count_ = 0;
+    current_session_whitelist_used_ = false;
+    session_ended_naturally_ = false;
+  }
+
   // Start the tick timer if not already running.
   if (!tick_timer_.IsRunning()) {
     tick_timer_.Start(FROM_HERE, kTickInterval, this,
@@ -868,6 +976,7 @@ void AstraFocusModeService::StartPhase(AstraFocusPhase phase,
 void AstraFocusModeService::AdvanceToNextPhase() {
   if (!pomodoro_mode_active_) {
     // Not in pomodoro mode — just exit focus mode when phase ends.
+    session_ended_naturally_ = true;
     ExitFocusMode();
     return;
   }

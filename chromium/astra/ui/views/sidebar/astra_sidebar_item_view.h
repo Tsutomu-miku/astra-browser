@@ -95,6 +95,23 @@ class AstraSidebarItemContextMenuDelegate {
 //   Chromium owner: ui/resources/vector_icons/
 class AstraSidebarItemView : public views::View {
  public:
+  // Item type — determines visual styling and behavior.
+  // Each item type has slightly different presentation (icon, spacing,
+  // hover behavior, etc.). The type is a presentation hint, not product state.
+  enum class Type {
+    kTab,        // Regular tab item
+    kPinnedTab,  // Pinned tab item
+    kFavorite,   // Favorite item
+    kWorkspace,  // Workspace item
+    kBookmark,   // Bookmark item
+    kHistory,    // History item
+    kDownload,   // Download item
+    kExtension,  // Extension item
+    kNote,       // Note item
+    kPassword,   // Password item
+    kCustom,     // Custom/generic item
+  };
+
   // Audio indicator state for sidebar tab items.
   // Mirrors the audio states shown by Chromium's TabRenderer.
   // The sidebar projects WebContents audio state; it never stores audio truth.
@@ -123,9 +140,18 @@ class AstraSidebarItemView : public views::View {
   };
 
   AstraSidebarItemView();
+  explicit AstraSidebarItemView(const std::u16string& title,
+                                Type type = Type::kCustom);
   AstraSidebarItemView(const AstraSidebarItemView&) = delete;
   AstraSidebarItemView& operator=(const AstraSidebarItemView&) = delete;
   ~AstraSidebarItemView() override;
+
+  // -- Type ----------------------------------------------------------------
+
+  // Get the item type (determines visual styling).
+  Type type() const { return type_; }
+  // Set the item type (updates visual styling).
+  void SetType(Type type);
 
   // -- Title ---------------------------------------------------------------
 
@@ -133,6 +159,8 @@ class AstraSidebarItemView : public views::View {
   virtual void SetTitle(const std::u16string& title);
   // Get the current title text.
   std::u16string GetTitle() const;
+  // Alias for GetTitle (backward compatibility).
+  std::u16string GetText() const { return GetTitle(); }
 
   // -- Tooltip -------------------------------------------------------------
 
@@ -178,9 +206,17 @@ class AstraSidebarItemView : public views::View {
   void SetDragEnabled(bool enabled);
   bool IsDragEnabled() const { return drag_enabled_; }
 
+  // Alias for SetDragEnabled/IsDragEnabled (backward compatibility).
+  void SetDraggable(bool draggable) { SetDragEnabled(draggable); }
+  bool IsDraggable() const { return IsDragEnabled(); }
+
   // Set whether this item is currently the drop target.
   void SetDropTarget(bool is_target);
   bool IsDropTarget() const { return is_drop_target_; }
+
+  // Set whether a drag handle is shown on the item.
+  void SetShowDragHandle(bool show);
+  bool GetShowDragHandle() const { return show_drag_handle_; }
 
   // Set the drag delegate. Not owned by this view.
   void set_drag_delegate(AstraSidebarItemDragDelegate* delegate) {
@@ -253,6 +289,25 @@ class AstraSidebarItemView : public views::View {
   // Get the chevron image view.
   views::ImageView* chevron_view() { return chevron_view_; }
 
+  // -- Compact mode --------------------------------------------------------
+
+  // Set whether the item is displayed in compact mode (icon-only).
+  // In compact mode, labels and secondary text are hidden and only the
+  // icon is shown.
+  void SetCompactMode(bool compact);
+  bool IsCompactMode() const { return is_compact_; }
+
+  // -- Tooltip preview -----------------------------------------------------
+
+  // Set a detailed tooltip with title and subtitle.
+  // The detailed tooltip is shown on hover with a short delay.
+  void SetDetailedTooltip(const std::u16string& title,
+                          const std::u16string& subtitle = std::u16string());
+
+  // Set whether a rich tooltip preview is shown on hover.
+  void SetShowTooltipPreview(bool show);
+  bool GetShowTooltipPreview() const { return show_tooltip_preview_; }
+
   // -- Audio indicator (tab items) -----------------------------------------
 
   // Set the audio state of the tab this item represents.
@@ -269,6 +324,14 @@ class AstraSidebarItemView : public views::View {
   using AudioToggleCallback = base::RepeatingClosure;
   void set_audio_toggle_callback(AudioToggleCallback callback) {
     audio_toggle_callback_ = std::move(callback);
+  }
+
+  // -- Primary click callback ----------------------------------------------
+
+  // Set the callback invoked when the item is clicked (primary action).
+  using ClickCallback = base::RepeatingClosure;
+  void SetCallback(ClickCallback callback) {
+    click_callback_ = std::move(callback);
   }
 
   // -- Suspended state (tab items) -----------------------------------------
@@ -358,6 +421,7 @@ class AstraSidebarItemView : public views::View {
 
   // Child views (owned by the view hierarchy).
   raw_ptr<views::ImageView> icon_view_ = nullptr;       // Leading icon
+  raw_ptr<views::ImageView> drag_handle_view_ = nullptr;  // Drag handle
   raw_ptr<views::View> text_container_ = nullptr;        // Title + secondary
   raw_ptr<views::Label> title_label_ = nullptr;          // Primary text
   raw_ptr<views::Label> secondary_label_ = nullptr;      // Subtitle text
@@ -377,11 +441,20 @@ class AstraSidebarItemView : public views::View {
   bool is_drop_target_ = false;
   bool chevron_visible_ = false;
   bool chevron_rotated_ = false;
+  bool show_drag_handle_ = false;
+  bool is_compact_ = false;
+  bool show_tooltip_preview_ = true;
+
+  // Item type (for visual styling).
+  Type type_ = Type::kCustom;
 
   // Audio / suspended state (tab items).
   AudioState audio_state_ = AudioState::kNone;
   AudioToggleCallback audio_toggle_callback_;
   SuspendedState suspended_state_ = SuspendedState::kNone;
+
+  // Primary click callback.
+  ClickCallback click_callback_;
 
   // Drag state.
   raw_ptr<AstraSidebarItemDragDelegate> drag_delegate_ = nullptr;

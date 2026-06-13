@@ -127,6 +127,18 @@ class AstraCommandPaletteItemView : public views::View {
   void ShowRecentBadge(bool show);
   bool show_recent_badge() const { return show_recent_badge_; }
 
+  // Show or hide the pinned / favorite indicator badge.
+  void ShowPinnedBadge(bool show);
+  bool show_pinned_badge() const { return show_pinned_badge_; }
+
+  // Show or hide the number hint badge (1-9 quick select).
+  void ShowNumberHint(bool show);
+  bool show_number_hint() const { return show_number_hint_; }
+
+  // Set the number hint value (1-9).  Only shown if number hint is visible.
+  void SetNumberHint(int number);
+  int number_hint() const { return number_hint_; }
+
   // -- Legacy API (kept for backward compatibility) ----------------------
 
   // Update the display data (used when refreshing results).
@@ -186,6 +198,9 @@ class AstraCommandPaletteItemView : public views::View {
   raw_ptr<views::Label> type_badge_label_ = nullptr;
   raw_ptr<views::View> recent_badge_container_ = nullptr;
   raw_ptr<views::Label> recent_badge_label_ = nullptr;
+  raw_ptr<views::View> pinned_badge_container_ = nullptr;
+  raw_ptr<views::Label> pinned_badge_label_ = nullptr;
+  raw_ptr<views::Label> number_hint_label_ = nullptr;
 
   // The current command data being displayed.
   AstraCommandItem command_;
@@ -201,6 +216,11 @@ class AstraCommandPaletteItemView : public views::View {
   bool show_description_ = true;
   bool show_category_badge_ = true;
   bool show_recent_badge_ = false;
+  bool show_pinned_badge_ = false;
+  bool show_number_hint_ = false;
+
+  // Number hint value (1-9, 0 = not set).
+  int number_hint_ = 0;
 
   // Match ranges for search highlighting.
   std::vector<gfx::Range> match_ranges_;

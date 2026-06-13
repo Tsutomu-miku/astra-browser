@@ -1130,6 +1130,7 @@ AstraSidebarLayoutData AstraSidebarModel::ExportLayout() const {
   layout.show_labels = show_section_labels();
   layout.animation_enabled = animation_enabled();
   layout.auto_hide_on_tab_click = auto_hide_on_tab_click();
+  layout.auto_hide_mode = auto_hide_mode();
   layout.show_tab_count_badges = show_tab_count_badges();
   layout.show_workspace_badge = show_workspace_badge();
   layout.remember_last_section = remember_last_section();
@@ -1213,6 +1214,12 @@ bool AstraSidebarModel::ImportLayout(const AstraSidebarLayoutData& layout) {
   // Apply auto hide on tab click.
   if (layout.auto_hide_on_tab_click != auto_hide_on_tab_click()) {
     SetAutoHideOnTabClick(layout.auto_hide_on_tab_click);
+    changed = true;
+  }
+
+  // Apply auto-hide mode.
+  if (layout.auto_hide_mode != auto_hide_mode()) {
+    SetAutoHideMode(layout.auto_hide_mode);
     changed = true;
   }
 

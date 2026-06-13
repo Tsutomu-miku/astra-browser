@@ -169,6 +169,18 @@ void AstraCommandPaletteBubble::SelectLast() {
   }
 }
 
+void AstraCommandPaletteBubble::SelectPageUp() {
+  if (palette_view_) {
+    palette_view_->SelectPageUp();
+  }
+}
+
+void AstraCommandPaletteBubble::SelectPageDown() {
+  if (palette_view_) {
+    palette_view_->SelectPageDown();
+  }
+}
+
 int AstraCommandPaletteBubble::GetSelectedIndex() const {
   if (palette_view_) {
     return palette_view_->GetSelectedIndex();
@@ -212,6 +224,43 @@ void AstraCommandPaletteBubble::CloseOnDeactivate(bool close) {
 }
 
 // =========================================================================
+// Anchor positioning
+// =========================================================================
+
+void AstraCommandPaletteBubble::Reposition() {
+  if (!GetWidget() || !anchor_view()) {
+    return;
+  }
+  SizeToContents();
+  GetBubbleFrameView()->OnAnchorBoundsChanged();
+}
+
+void AstraCommandPaletteBubble::SetAnchorVerticalOffset(int offset) {
+  if (anchor_vertical_offset_ == offset) {
+    return;
+  }
+  anchor_vertical_offset_ = offset;
+  // TODO(astra): Apply the offset to the bubble position.
+  // Chromium's BubbleDialogDelegateView uses set_arrow() and anchor_view()
+  // to compute position.  To add a vertical offset, we would need to
+  // override GetBubbleBounds() or use SetAnchorRect with an adjusted rect.
+  // Patch point: views::BubbleDialogDelegateView::GetBubbleBounds().
+  Reposition();
+}
+
+// =========================================================================
+// Focus management
+// =========================================================================
+
+bool AstraCommandPaletteBubble::ContainsFocus() const {
+  if (!GetWidget()) {
+    return false;
+  }
+  return GetWidget()->IsActive() && GetFocusManager() &&
+         GetFocusManager()->GetFocusedView();
+}
+
+// =========================================================================
 // BubbleDialogDelegateView overrides
 // =========================================================================
 
@@ -236,6 +285,13 @@ void AstraCommandPaletteBubble::Init() {
 
 void AstraCommandPaletteBubble::OnWidgetDestroying(views::Widget* widget) {
   views::BubbleDialogDelegateView::OnWidgetDestroying(widget);
+
+  // Return focus to the anchor view when the bubble closes, if requested.
+  // This follows the Chromium bubble pattern where focus returns to the
+  // view that spawned the bubble.
+  if (return_focus_on_close_ && anchor_view()) {
+    anchor_view()->RequestFocus();
+  }
   // The widget is being destroyed — the delegate will be notified by the
   // destructor (which runs after this call since the bubble is owned by
   // the widget).
@@ -262,9 +318,10 @@ gfx::Size AstraCommandPaletteBubble::CalculatePreferredSize(
   return size;
 }
 
-// =========================================================================
-// Focus management
-// =========================================================================
+void AstraCommandPaletteBubble::OnThemeChanged() {
+  views::BubbleDialogDelegateView::OnThemeChanged();
+  UpdateBubbleTheme();
+}
 
 void AstraCommandPaletteBubble::RequestSearchFocus() {
   if (palette_view_) {
@@ -316,8 +373,26 @@ void AstraCommandPaletteBubble::OnCommandPaletteClose() {
 // =========================================================================
 
 void AstraCommandPaletteBubble::UpdateBubbleTheme() {
-  // TODO(astra): Implement theme updates for the bubble frame.
-  // See the comment block above for details.
+  // Apply Astra color scheme to the bubble frame and border.
+  const auto* color_provider = GetColorProvider();
+  if (!color_provider) {
+    return;
+  }
+
+  // Set the bubble background color.
+  set_color(color_provider->GetColor(kColorAstraCommandPaletteBackground));
+
+  // Update the bubble border if available.
+  // BubbleBorder colors are managed by NativeTheme by default, but we
+  // can override the background via set_color() which affects both the
+  // content area and the border fill.
+  //
+  // TODO(astra): Customize the bubble border shadow color and radius.
+  // Chromium's BubbleBorder uses fixed shadow parameters.  To customize
+  // shadows, we would need to subclass BubbleBorder or use a custom
+  // BubbleFrameView.
+  //   Patch point: ui/views/bubble/bubble_border.h
+  //   Patch point: ui/views/bubble/bubble_frame_view.h
 }
 
 // =========================================================================

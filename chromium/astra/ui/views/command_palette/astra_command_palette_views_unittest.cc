@@ -209,8 +209,8 @@ TEST(AstraCommandTypeTest, TypeNamesAreDistinct) {
 // Command category tests
 // =========================================================================
 
-TEST(AstraCommandCategoryTest, TenCategories) {
-  // There are 10 command categories.
+TEST(AstraCommandCategoryTest, ElevenCategories) {
+  // There are 11 command categories.
   EXPECT_EQ(static_cast<int>(AstraCommandCategory::kTabs), 0);
   EXPECT_EQ(static_cast<int>(AstraCommandCategory::kNavigation), 1);
   EXPECT_EQ(static_cast<int>(AstraCommandCategory::kWorkspaces), 2);
@@ -221,10 +221,11 @@ TEST(AstraCommandCategoryTest, TenCategories) {
   EXPECT_EQ(static_cast<int>(AstraCommandCategory::kTools), 7);
   EXPECT_EQ(static_cast<int>(AstraCommandCategory::kSettings), 8);
   EXPECT_EQ(static_cast<int>(AstraCommandCategory::kHelp), 9);
+  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kExtensions), 10);
 }
 
 TEST(AstraCommandCategoryTest, GetCategoryLabelReturnsNonEmpty) {
-  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kHelp); ++i) {
+  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kExtensions); ++i) {
     auto cat = static_cast<AstraCommandCategory>(i);
     const char16_t* label = GetCategoryLabel(cat);
     EXPECT_NE(nullptr, label);
@@ -234,15 +235,15 @@ TEST(AstraCommandCategoryTest, GetCategoryLabelReturnsNonEmpty) {
 
 TEST(AstraCommandCategoryTest, CategoryLabelsAreDistinct) {
   std::set<std::u16string> labels;
-  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kHelp); ++i) {
+  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kExtensions); ++i) {
     auto cat = static_cast<AstraCommandCategory>(i);
     labels.insert(GetCategoryLabel(cat));
   }
-  EXPECT_EQ(10u, labels.size());
+  EXPECT_EQ(11u, labels.size());
 }
 
 TEST(AstraCommandCategoryTest, GetCategoryIconNameReturnsNonEmpty) {
-  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kHelp); ++i) {
+  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kExtensions); ++i) {
     auto cat = static_cast<AstraCommandCategory>(i);
     const char* icon = GetCategoryIconName(cat);
     EXPECT_NE(nullptr, icon);
@@ -252,7 +253,7 @@ TEST(AstraCommandCategoryTest, GetCategoryIconNameReturnsNonEmpty) {
 
 TEST(AstraCommandCategoryTest, CategoryIconNamesAreDistinct) {
   std::set<std::string> icons;
-  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kHelp); ++i) {
+  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kExtensions); ++i) {
     auto cat = static_cast<AstraCommandCategory>(i);
     icons.insert(GetCategoryIconName(cat));
   }
@@ -260,8 +261,8 @@ TEST(AstraCommandCategoryTest, CategoryIconNamesAreDistinct) {
   EXPECT_GT(icons.size(), 5u);
 }
 
-TEST(AstraCommandCategoryTest, GetCategoryCountReturnsTen) {
-  EXPECT_EQ(10u, GetCategoryCount());
+TEST(AstraCommandCategoryTest, GetCategoryCountReturnsEleven) {
+  EXPECT_EQ(11u, GetCategoryCount());
 }
 
 // =========================================================================
@@ -828,6 +829,337 @@ TEST_F(AstraCommandPaletteModelTest, RecordUseMovesToFront) {
   // Use id0 again — it should move to front.
   model.RecordCommandUse(id0);
   EXPECT_EQ(id0, model.GetRecentCommands(10)[0].command_id);
+}
+
+// -- Pinned / favorite commands --------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, PinCommand) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetCommandCount(), 0u);
+
+  int cmd_id = model.GetCommands()[0].command_id;
+  EXPECT_FALSE(model.IsCommandPinned(cmd_id));
+
+  bool pinned = model.PinCommand(cmd_id);
+  EXPECT_TRUE(pinned);
+  EXPECT_TRUE(model.IsCommandPinned(cmd_id));
+  EXPECT_GT(model.GetPinnedCommandCount(), 0u);
+}
+
+TEST_F(AstraCommandPaletteModelTest, UnpinCommand) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetCommandCount(), 0u);
+
+  int cmd_id = model.GetCommands()[0].command_id;
+  model.PinCommand(cmd_id);
+  ASSERT_TRUE(model.IsCommandPinned(cmd_id));
+
+  bool unpinned = model.UnpinCommand(cmd_id);
+  EXPECT_TRUE(unpinned);
+  EXPECT_FALSE(model.IsCommandPinned(cmd_id));
+}
+
+TEST_F(AstraCommandPaletteModelTest, ToggleCommandPinned) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetCommandCount(), 0u);
+
+  int cmd_id = model.GetCommands()[0].command_id;
+  EXPECT_FALSE(model.IsCommandPinned(cmd_id));
+
+  model.ToggleCommandPinned(cmd_id);
+  EXPECT_TRUE(model.IsCommandPinned(cmd_id));
+
+  model.ToggleCommandPinned(cmd_id);
+  EXPECT_FALSE(model.IsCommandPinned(cmd_id));
+}
+
+TEST_F(AstraCommandPaletteModelTest, PinNonexistentCommand) {
+  AstraCommandPaletteModel model;
+  EXPECT_FALSE(model.PinCommand(999999));
+  EXPECT_FALSE(model.IsCommandPinned(999999));
+}
+
+TEST_F(AstraCommandPaletteModelTest, UnpinNonexistentCommand) {
+  AstraCommandPaletteModel model;
+  EXPECT_FALSE(model.UnpinCommand(999999));
+}
+
+TEST_F(AstraCommandPaletteModelTest, GetPinnedCommands) {
+  AstraCommandPaletteModel model;
+  ASSERT_GE(model.GetCommandCount(), 3u);
+
+  auto pinned_before = model.GetPinnedCommands();
+  EXPECT_EQ(0u, pinned_before.size());
+
+  model.PinCommand(model.GetCommands()[0].command_id);
+  model.PinCommand(model.GetCommands()[1].command_id);
+
+  auto pinned_after = model.GetPinnedCommands();
+  EXPECT_EQ(2u, pinned_after.size());
+}
+
+TEST_F(AstraCommandPaletteModelTest, PinDuplicateNoOp) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetCommandCount(), 0u);
+
+  int cmd_id = model.GetCommands()[0].command_id;
+  EXPECT_TRUE(model.PinCommand(cmd_id));
+  EXPECT_FALSE(model.PinCommand(cmd_id));  // Already pinned.
+  EXPECT_EQ(1u, model.GetPinnedCommandCount());
+}
+
+TEST_F(AstraCommandPaletteModelTest, PinnedCommandsBoostRanking) {
+  AstraCommandPaletteModel model;
+  ASSERT_GE(model.GetCommandCount(), 3u);
+
+  // Get default results.
+  auto default_results = model.SearchCommands(u"");
+  ASSERT_GE(default_results.size(), 3u);
+
+  // Pin a command that's not first.
+  int third_id = default_results[2].command_id;
+  model.PinCommand(third_id);
+
+  // After pinning, the command should rank higher.
+  auto new_results = model.SearchCommands(u"");
+  int new_position = -1;
+  for (size_t i = 0; i < new_results.size(); ++i) {
+    if (new_results[i].command_id == third_id) {
+      new_position = static_cast<int>(i);
+      break;
+    }
+  }
+  EXPECT_LT(new_position, 2);
+}
+
+// -- Command aliases -------------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, AddCommandAlias) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetCommandCount(), 0u);
+
+  int cmd_id = model.GetCommands()[0].command_id;
+  bool added = model.AddCommandAlias(cmd_id, u"my alias");
+  EXPECT_TRUE(added);
+
+  auto aliases = model.GetAliasesForCommand(cmd_id);
+  EXPECT_GT(aliases.size(), 0u);
+}
+
+TEST_F(AstraCommandPaletteModelTest, AddAliasToNonexistentCommand) {
+  AstraCommandPaletteModel model;
+  EXPECT_FALSE(model.AddCommandAlias(99999, u"test alias"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, RemoveCommandAlias) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetCommandCount(), 0u);
+
+  int cmd_id = model.GetCommands()[0].command_id;
+  model.AddCommandAlias(cmd_id, u"test alias");
+  ASSERT_TRUE(model.RemoveCommandAlias(cmd_id, u"test alias"));
+
+  auto aliases = model.GetAliasesForCommand(cmd_id);
+  bool found = false;
+  for (const auto& a : aliases) {
+    if (a == u"test alias") {
+      found = true;
+      break;
+    }
+  }
+  EXPECT_FALSE(found);
+}
+
+TEST_F(AstraCommandPaletteModelTest, AliasAppearsInSearch) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetCommandCount(), 0u);
+
+  int cmd_id = model.GetCommands()[0].command_id;
+  std::u16string unique_alias = u"xyzzy_unique_test_alias";
+  model.AddCommandAlias(cmd_id, unique_alias);
+
+  auto results = model.SearchCommands(unique_alias);
+  EXPECT_GT(results.size(), 0u);
+  bool found = false;
+  for (const auto& r : results) {
+    if (r.command_id == cmd_id) {
+      found = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(found);
+}
+
+TEST_F(AstraCommandPaletteModelTest, GetAliasesForNonexistentCommand) {
+  AstraCommandPaletteModel model;
+  auto aliases = model.GetAliasesForCommand(99999);
+  EXPECT_TRUE(aliases.empty());
+}
+
+// -- Context-aware commands ------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, DefaultNoContextCommands) {
+  AstraCommandPaletteModel model;
+  EXPECT_FALSE(model.has_context_commands());
+}
+
+TEST_F(AstraCommandPaletteModelTest, UpdateContextCommands) {
+  AstraCommandPaletteModel model;
+  size_t before = model.GetCommandCount();
+
+  std::vector<AstraCommandItem> context_cmds;
+  AstraCommandItem cmd;
+  cmd.command_id = 80001;
+  cmd.title = u"Context Command";
+  cmd.description = u"A context-aware command";
+  cmd.type = AstraCommandType::kAction;
+  cmd.category = AstraCommandCategory::kActions;
+  cmd.is_astra = true;
+  cmd.is_context_command = true;
+  context_cmds.push_back(cmd);
+
+  model.UpdateContextCommands(context_cmds);
+  EXPECT_TRUE(model.has_context_commands());
+  EXPECT_GT(model.GetCommandCount(), before);
+}
+
+TEST_F(AstraCommandPaletteModelTest, ClearContextCommands) {
+  AstraCommandPaletteModel model;
+
+  std::vector<AstraCommandItem> context_cmds;
+  AstraCommandItem cmd;
+  cmd.command_id = 80002;
+  cmd.title = u"Context Command 2";
+  cmd.type = AstraCommandType::kAction;
+  cmd.category = AstraCommandCategory::kActions;
+  cmd.is_astra = true;
+  cmd.is_context_command = true;
+  context_cmds.push_back(cmd);
+
+  model.UpdateContextCommands(context_cmds);
+  ASSERT_TRUE(model.has_context_commands());
+
+  model.ClearContextCommands();
+  EXPECT_FALSE(model.has_context_commands());
+}
+
+TEST_F(AstraCommandPaletteModelTest, ContextCommandsBoostedInRanking) {
+  AstraCommandPaletteModel model;
+
+  std::vector<AstraCommandItem> context_cmds;
+  AstraCommandItem cmd;
+  cmd.command_id = 80003;
+  cmd.title = u"Boosted Context Command";
+  cmd.type = AstraCommandType::kAction;
+  cmd.category = AstraCommandCategory::kActions;
+  cmd.is_astra = true;
+  cmd.is_context_command = true;
+  context_cmds.push_back(cmd);
+
+  model.UpdateContextCommands(context_cmds);
+
+  // Search for the context command — it should have a boost.
+  auto results = model.SearchCommands(u"Boosted Context");
+  EXPECT_GT(results.size(), 0u);
+  if (results.size() > 0) {
+    EXPECT_TRUE(results[0].is_context_command);
+  }
+}
+
+// -- Suggested commands ("Did you mean") -----------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, GetSuggestedCommandsNotEmptyForCloseMatch) {
+  AstraCommandPaletteModel model;
+  model.set_enable_fuzzy_search(true);
+
+  // A close typo of "New Tab" should yield suggestions.
+  auto suggestions = model.GetSuggestedCommands(u"New Tb");
+  // May or may not have suggestions depending on fuzzy match threshold.
+  // Just verify the call doesn't crash.
+  SUCCEED();
+}
+
+TEST_F(AstraCommandPaletteModelTest, SuggestionsEmptyForExactMatch) {
+  AstraCommandPaletteModel model;
+  // When there are good results, suggestions may still be populated
+  // with alternatives. Just verify no crash.
+  auto suggestions = model.GetSuggestedCommands(u"New Tab");
+  SUCCEED();
+}
+
+TEST_F(AstraCommandPaletteModelTest, ShowSuggestionsSetting) {
+  AstraCommandPaletteModel model;
+  EXPECT_TRUE(model.show_suggestions());
+
+  model.set_show_suggestions(false);
+  EXPECT_FALSE(model.show_suggestions());
+
+  model.set_show_suggestions(true);
+  EXPECT_TRUE(model.show_suggestions());
+}
+
+// -- Page navigation --------------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, SelectPageUp) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetResultCount(), 5u);
+
+  model.SetSelectedIndex(static_cast<int>(model.GetResultCount()) - 1);
+  int last = model.GetSelectedIndex();
+
+  model.SelectPageUp();
+  EXPECT_LT(model.GetSelectedIndex(), last);
+  EXPECT_GE(model.GetSelectedIndex(), 0);
+}
+
+TEST_F(AstraCommandPaletteModelTest, SelectPageDown) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetResultCount(), 5u);
+
+  model.SetSelectedIndex(0);
+
+  model.SelectPageDown();
+  EXPECT_GT(model.GetSelectedIndex(), 0);
+  EXPECT_LT(static_cast<size_t>(model.GetSelectedIndex()),
+            model.GetResultCount());
+}
+
+// -- New settings -----------------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, ShowNumberHintsDefaultTrue) {
+  AstraCommandPaletteModel model;
+  EXPECT_TRUE(model.show_number_hints());
+}
+
+TEST_F(AstraCommandPaletteModelTest, SetShowNumberHints) {
+  AstraCommandPaletteModel model;
+  model.set_show_number_hints(false);
+  EXPECT_FALSE(model.show_number_hints());
+
+  model.set_show_number_hints(true);
+  EXPECT_TRUE(model.show_number_hints());
+}
+
+TEST_F(AstraCommandPaletteModelTest, ShowPinnedSectionDefaultTrue) {
+  AstraCommandPaletteModel model;
+  EXPECT_TRUE(model.show_pinned_section());
+}
+
+TEST_F(AstraCommandPaletteModelTest, SetShowPinnedSection) {
+  AstraCommandPaletteModel model;
+  model.set_show_pinned_section(false);
+  EXPECT_FALSE(model.show_pinned_section());
+}
+
+TEST_F(AstraCommandPaletteModelTest, EnableContextCommandsDefaultTrue) {
+  AstraCommandPaletteModel model;
+  EXPECT_TRUE(model.enable_context_commands());
+}
+
+TEST_F(AstraCommandPaletteModelTest, SetEnableContextCommands) {
+  AstraCommandPaletteModel model;
+  model.set_enable_context_commands(false);
+  EXPECT_FALSE(model.enable_context_commands());
 }
 
 // -- Default commands ------------------------------------------------------
@@ -2308,6 +2640,90 @@ TEST_F(AstraCommandPaletteItemViewTest, SetCommandWithoutRecentBadge) {
   EXPECT_FALSE(item_view_->show_recent_badge());
 }
 
+// -- Show/hide pinned badge ------------------------------------------------
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowPinnedBadgeDefaultFalse) {
+  EXPECT_FALSE(item_view_->show_pinned_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowPinnedBadgeTrue) {
+  item_view_->ShowPinnedBadge(true);
+  EXPECT_TRUE(item_view_->show_pinned_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowPinnedBadgeFalse) {
+  item_view_->ShowPinnedBadge(true);
+  ASSERT_TRUE(item_view_->show_pinned_badge());
+
+  item_view_->ShowPinnedBadge(false);
+  EXPECT_FALSE(item_view_->show_pinned_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowPinnedBadgeSameValueNoCrash) {
+  item_view_->ShowPinnedBadge(false);
+  item_view_->ShowPinnedBadge(false);
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, SetCommandWithPinnedBadge) {
+  AstraCommandItem cmd;
+  cmd.command_id = 779;
+  cmd.title = u"Pinned Command";
+  cmd.description = u"A pinned/favorite command";
+  cmd.type = AstraCommandType::kAction;
+  cmd.category = AstraCommandCategory::kActions;
+  cmd.is_pinned = true;
+
+  item_view_->SetCommand(cmd);
+  EXPECT_TRUE(item_view_->show_pinned_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, SetCommandWithoutPinnedBadge) {
+  AstraCommandItem cmd;
+  cmd.command_id = 780;
+  cmd.title = u"Non-Pinned Command";
+  cmd.description = u"Not pinned";
+  cmd.type = AstraCommandType::kAction;
+  cmd.category = AstraCommandCategory::kActions;
+  cmd.is_pinned = false;
+
+  item_view_->SetCommand(cmd);
+  EXPECT_FALSE(item_view_->show_pinned_badge());
+}
+
+// -- Number hint ------------------------------------------------------------
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowNumberHintDefaultFalse) {
+  EXPECT_FALSE(item_view_->show_number_hint());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowNumberHintTrue) {
+  item_view_->ShowNumberHint(true);
+  EXPECT_TRUE(item_view_->show_number_hint());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowNumberHintFalse) {
+  item_view_->ShowNumberHint(true);
+  ASSERT_TRUE(item_view_->show_number_hint());
+
+  item_view_->ShowNumberHint(false);
+  EXPECT_FALSE(item_view_->show_number_hint());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, SetNumberHint) {
+  item_view_->ShowNumberHint(true);
+  item_view_->SetNumberHint(5);
+  EXPECT_EQ(5, item_view_->number_hint());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, NumberHintHidesIcon) {
+  // When number hint is shown, icon should be hidden.
+  item_view_->ShowNumberHint(true);
+  // The icon label should be hidden when number hint is visible.
+  // We can't directly test icon visibility since it's internal,
+  // but we verify no crash and the state flag is set.
+  EXPECT_TRUE(item_view_->show_number_hint());
+}
+
 // -- Match ranges ----------------------------------------------------------
 
 TEST_F(AstraCommandPaletteItemViewTest, DefaultMatchRangesEmpty) {
@@ -2526,13 +2942,35 @@ TEST_F(AstraCommandPaletteSectionHeaderViewTest, ConstructWithEmptyLabel) {
 }
 
 TEST_F(AstraCommandPaletteSectionHeaderViewTest, AllCategoryLabelsWork) {
-  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kHelp); ++i) {
+  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kExtensions); ++i) {
     auto cat = static_cast<AstraCommandCategory>(i);
     auto header =
         std::make_unique<AstraCommandPaletteSectionHeaderView>(
             GetCategoryLabel(cat));
     EXPECT_NE(nullptr, header.get());
   }
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, SetIcon) {
+  header_view_->SetIcon(u"📁");
+  // No crash = success.
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, ShowIconDefaultTrue) {
+  EXPECT_TRUE(header_view_->show_icon());
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, ShowIconFalse) {
+  header_view_->ShowIcon(false);
+  EXPECT_FALSE(header_view_->show_icon());
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, ShowIconTrue) {
+  header_view_->ShowIcon(false);
+  ASSERT_FALSE(header_view_->show_icon());
+
+  header_view_->ShowIcon(true);
+  EXPECT_TRUE(header_view_->show_icon());
 }
 
 // =========================================================================

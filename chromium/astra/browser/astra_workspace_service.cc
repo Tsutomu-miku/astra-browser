@@ -445,6 +445,77 @@ AstraWorkspaceService::GetHibernatedWorkspaces() const {
   return result;
 }
 
+// -- Templates ---------------------------------------------------------------
+
+std::string AstraWorkspaceService::CreateWorkspaceFromTemplate(
+    const std::string& template_id) {
+  // Look up the template.
+  const AstraWorkspaceTemplate* temp = FindTemplate(template_id);
+  if (!temp) {
+    return std::string();
+  }
+
+  // Build a new workspace from template metadata.
+  AstraWorkspace ws;
+
+  // Generate a unique workspace id based on the template id.
+  // TODO(astra): Use base::GenerateGUID() for proper unique IDs.
+  // See the note in CloneWorkspace for the same pattern.
+  static int template_counter = 0;
+  ws.id = temp->id + "-" + base::NumberToString(++template_counter);
+
+  // Ensure uniqueness against existing workspaces.
+  if (GetWorkspace(ws.id)) {
+    ws.id += "-" + base::NumberToString(base::Time::Now().ToTimeT());
+  }
+
+  ws.name = temp->name;
+  ws.accent_color = temp->color;
+  ws.description = temp->description;
+  ws.created_time = base::Time::Now();
+  ws.last_used_time = base::Time::Now();
+  ws.is_default = false;
+  ws.is_hibernated = false;
+  if (!temp->icon.empty()) {
+    ws.icon = temp->icon;
+  }
+
+  // Place at the end of the list (order_index will be auto-assigned
+  // by AddWorkspace if it's 0).
+  ws.order_index = 0;
+
+  // Use AddWorkspace to add it to the list and fire OnWorkspaceAdded.
+  AddWorkspace(std::move(ws));
+
+  // Look up the newly added workspace to pass to the template-specific
+  // observer notification.
+  const AstraWorkspace* new_ws = GetWorkspace(ws.id);
+  DCHECK(new_ws);
+
+  // Fire the template-specific observer notification. UI layers that
+  // handle tab creation should listen for this and open the template's
+  // default tabs via AstraWorkspaceWindowManager.
+  //
+  // TODO(astra): Consider opening default tabs directly here via
+  // AstraWorkspaceWindowManager, rather than requiring UI to observe.
+  // Chromium owner: Browser + TabStripModel for tab creation.
+  // Patch point: AstraWorkspaceWindowManager::AddTabsForWorkspace.
+  for (auto& observer : observers_) {
+    observer.OnWorkspaceCreatedFromTemplate(*new_ws, template_id);
+  }
+
+  return ws.id;
+}
+
+std::vector<AstraWorkspaceTemplate>
+AstraWorkspaceService::GetAvailableTemplates() const {
+  // Currently returns built-in templates only.
+  // TODO(astra): Merge with user-created templates from PrefService.
+  // Chromium owner: PrefService (user template persistence).
+  // Patch point: add user template prefs to astra_prefs.h.
+  return GetBuiltInTemplates();
+}
+
 // -- Navigation helpers ------------------------------------------------------
 
 size_t AstraWorkspaceService::GetWorkspaceIndex(const std::string& id) const {

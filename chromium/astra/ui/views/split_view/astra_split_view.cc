@@ -814,6 +814,14 @@ void AstraSplitLayoutToggleButton::SetLayoutMode(AstraSplitLayoutMode mode) {
       SetAccessibleName(u"Next layout mode");
       SetTooltipText(u"Next layout mode");
       break;
+    case AstraSplitLayoutMode::kPictureInPicture:
+      SetAccessibleName(u"Picture in picture mode");
+      SetTooltipText(u"Picture in picture mode");
+      break;
+    case AstraSplitLayoutMode::kTabShift:
+      SetAccessibleName(u"Tab shift mode");
+      SetTooltipText(u"Tab shift mode");
+      break;
   }
 }
 
@@ -836,7 +844,9 @@ void AstraSplitLayoutToggleButton::PaintButtonContents(gfx::Canvas* canvas) {
   switch (layout_mode_) {
     case AstraSplitLayoutMode::kTwoPaneHorizontal:
     case AstraSplitLayoutMode::kThreePaneHorizontal:
-    case AstraSplitLayoutMode::kGridThreeByTwo: {
+    case AstraSplitLayoutMode::kGridThreeByTwo:
+    case AstraSplitLayoutMode::kPictureInPicture:
+    case AstraSplitLayoutMode::kTabShift: {
       // Two rectangles side by side (horizontal split indicator).
       int half = icon_size / 2;
       // Left pane.
@@ -1731,6 +1741,8 @@ void AstraSplitView::SetLayoutMode(AstraSplitLayoutMode mode) {
     case AstraSplitLayoutMode::kThreePaneHorizontal:
     case AstraSplitLayoutMode::kGridTwoByTwo:
     case AstraSplitLayoutMode::kGridThreeByTwo:
+    case AstraSplitLayoutMode::kPictureInPicture:
+    case AstraSplitLayoutMode::kTabShift:
       SetOrientation(SplitViewOrientation::kHorizontal);
       break;
     case AstraSplitLayoutMode::kTwoPaneVertical:
@@ -1796,6 +1808,12 @@ void AstraSplitView::CycleNextLayoutMode() {
       next = AstraSplitLayoutMode::kGridThreeByTwo;
       break;
     case AstraSplitLayoutMode::kGridThreeByTwo:
+      next = AstraSplitLayoutMode::kPictureInPicture;
+      break;
+    case AstraSplitLayoutMode::kPictureInPicture:
+      next = AstraSplitLayoutMode::kTabShift;
+      break;
+    case AstraSplitLayoutMode::kTabShift:
       next = AstraSplitLayoutMode::kTwoPaneHorizontal;
       break;
   }
@@ -1807,7 +1825,7 @@ void AstraSplitView::CyclePreviousLayoutMode() {
   AstraSplitLayoutMode prev;
   switch (layout_mode_) {
     case AstraSplitLayoutMode::kTwoPaneHorizontal:
-      prev = AstraSplitLayoutMode::kGridThreeByTwo;
+      prev = AstraSplitLayoutMode::kTabShift;
       break;
     case AstraSplitLayoutMode::kTwoPaneVertical:
       prev = AstraSplitLayoutMode::kTwoPaneHorizontal;
@@ -1823,6 +1841,12 @@ void AstraSplitView::CyclePreviousLayoutMode() {
       break;
     case AstraSplitLayoutMode::kGridThreeByTwo:
       prev = AstraSplitLayoutMode::kGridTwoByTwo;
+      break;
+    case AstraSplitLayoutMode::kPictureInPicture:
+      prev = AstraSplitLayoutMode::kGridThreeByTwo;
+      break;
+    case AstraSplitLayoutMode::kTabShift:
+      prev = AstraSplitLayoutMode::kPictureInPicture;
       break;
   }
   SetLayoutMode(prev);
@@ -2363,6 +2387,12 @@ std::u16string AstraSplitView::GetAccessibleName() const {
       break;
     case AstraSplitLayoutMode::kGridThreeByTwo:
       name = u"Grid split view, three by two";
+      break;
+    case AstraSplitLayoutMode::kPictureInPicture:
+      name = u"Picture-in-picture split view";
+      break;
+    case AstraSplitLayoutMode::kTabShift:
+      name = u"Tab shift split view";
       break;
   }
   return name;

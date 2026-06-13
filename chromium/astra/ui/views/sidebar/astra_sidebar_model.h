@@ -129,6 +129,9 @@ struct AstraSidebarLayoutData {
   // Whether auto-hide on tab click is enabled.
   bool auto_hide_on_tab_click = false;
 
+  // Auto-hide mode (disabled, click_outside, hover_leave, tab_click).
+  AstraSidebarAutoHideMode auto_hide_mode = AstraSidebarAutoHideMode::kDisabled;
+
   // Whether tab count badges are shown.
   bool show_tab_count_badges = true;
 

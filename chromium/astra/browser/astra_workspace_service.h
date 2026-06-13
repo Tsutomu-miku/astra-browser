@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "astra/browser/astra_workspace_template.h"
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
@@ -86,6 +87,13 @@ class AstraWorkspaceServiceObserver : public base::CheckedObserver {
   // Called after a workspace has been cloned (duplicated).
   // |new_workspace| is the newly created workspace.
   virtual void OnWorkspaceCloned(const AstraWorkspace& new_workspace) {}
+
+  // Called after a workspace has been created from a template.
+  // |new_workspace| is the newly created workspace.
+  // |template_id| identifies the template that was used.
+  virtual void OnWorkspaceCreatedFromTemplate(
+      const AstraWorkspace& new_workspace,
+      const std::string& template_id) {}
 
  protected:
   ~AstraWorkspaceServiceObserver() override = default;
@@ -221,6 +229,31 @@ class AstraWorkspaceService final : public KeyedService {
 
   // Returns all hibernated workspaces.
   std::vector<AstraWorkspace> GetHibernatedWorkspaces() const;
+
+  // -- Templates -----------------------------------------------------------
+
+  // Creates a new workspace from the given template.
+  //
+  // The new workspace inherits the template's name, accent color, icon,
+  // and description. Default tabs from the template are NOT created by
+  // this method — workspace metadata only. UI layers (e.g. sidebar,
+  // workspace switcher) should observe OnWorkspaceCreatedFromTemplate
+  // and open the template's default tabs via AstraWorkspaceWindowManager.
+  //
+  // Returns the id of the new workspace, or an empty string if the
+  // template was not found.
+  //
+  // Chromium owner: TabStripModel / Browser (tab creation).
+  // We create metadata only — tab creation is delegated to Chromium's
+  // browser and tab infrastructure triggered by the UI layer.
+  std::string CreateWorkspaceFromTemplate(const std::string& template_id);
+
+  // Returns all available workspace templates.
+  //
+  // Currently returns built-in templates only.
+  // TODO(astra): Combine built-in templates with user-created templates
+  // from PrefService. Chromium patch point: astra_prefs.h + PrefService.
+  std::vector<AstraWorkspaceTemplate> GetAvailableTemplates() const;
 
   // -- Navigation helpers -------------------------------------------------
 

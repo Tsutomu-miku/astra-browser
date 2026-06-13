@@ -485,6 +485,105 @@ void AstraSidebarView::ToggleExtensionsPanel() {
   extensions_section_->ToggleExpanded();
 }
 
+// Toggle the passwords panel (show/hide the passwords section).
+void AstraSidebarView::TogglePasswordsPanel() {
+  if (!passwords_section_) {
+    return;
+  }
+
+  // Toggle the expanded/collapsed state of the passwords section.
+  passwords_section_->ToggleExpanded();
+}
+
+// Toggle the notes panel (show/hide the notes section).
+void AstraSidebarView::ToggleNotesPanel() {
+  if (!notes_section_) {
+    return;
+  }
+
+  // Toggle the expanded/collapsed state of the notes section.
+  notes_section_->ToggleExpanded();
+}
+
+// =========================================================================
+// Auto-hide
+// =========================================================================
+
+void AstraSidebarView::StartAutoHideTimer() {
+  // TODO(astra): Implement auto-hide timer with base::OneShotTimer.
+  //   When the timer fires, hide the sidebar if auto-hide mode is enabled.
+  //   Chromium pattern: base::OneShotTimer (base/timer/one_shot_timer.h)
+  //
+  //   The delay should be configurable, e.g. 300ms by default.
+  //   If the mouse re-enters the sidebar before the timer fires,
+  //   the hide should be cancelled.
+  if (!model() || !model()->is_visible()) {
+    return;
+  }
+
+  auto mode = model()->auto_hide_mode();
+  if (mode == AstraSidebarAutoHideMode::kOnHoverLeave ||
+      mode == AstraSidebarAutoHideMode::kOnClickOutside) {
+    auto_hide_active_ = true;
+    // TODO(astra): Start the actual hide timer.
+    // For now, we just set the state flag.
+  }
+}
+
+void AstraSidebarView::CancelAutoHideTimer() {
+  auto_hide_active_ = false;
+  // TODO(astra): Stop the auto-hide timer if it's running.
+}
+
+// =========================================================================
+// Keyboard navigation
+// =========================================================================
+
+bool AstraSidebarView::NavigateSection(int direction) {
+  if (!model()) {
+    return false;
+  }
+
+  auto visible = model()->GetVisibleSections();
+  if (visible.empty()) {
+    return false;
+  }
+
+  if (selected_section_index_ < 0 ||
+      selected_section_index_ >= static_cast<int>(visible.size())) {
+    // Start at the first visible section.
+    selected_section_index_ = 0;
+  } else {
+    // Move to next/previous with wrap-around.
+    selected_section_index_ =
+        (selected_section_index_ + direction +
+         static_cast<int>(visible.size())) %
+        static_cast<int>(visible.size());
+  }
+
+  if (selected_section_index_ >= 0 &&
+      selected_section_index_ < static_cast<int>(visible.size())) {
+    model()->SetActiveSection(visible[selected_section_index_].id);
+    return true;
+  }
+  return false;
+}
+
+bool AstraSidebarView::ActivateSelectedSection() {
+  if (selected_section_index_ < 0 || !model()) {
+    return false;
+  }
+  // The active section is already tracked by the model.
+  // Activating it means expanding it or performing its primary action.
+  auto active_section = model()->active_section_id();
+  if (!active_section.empty()) {
+    // Toggle expanded state of the active section.
+    model()->ToggleSectionCollapsed(active_section);
+    return true;
+  }
+  return false;
+}
+
 // =========================================================================
 // Tab strip observation
 // =========================================================================
@@ -1093,6 +1192,100 @@ void AstraSidebarView::OnItemHoverMoved(AstraSidebarItemView* item,
   // The peek controller may use this to update the anchor position or
   // to detect when the mouse is moving toward the preview bubble.
   peek_controller_->OnHoverMoved(mouse_location);
+}
+
+// =========================================================================
+// Mouse events (auto-hide + drag)
+// =========================================================================
+
+void AstraSidebarView::OnMouseEntered(const ui::MouseEvent& event) {
+  // When mouse enters the sidebar in auto-hide mode, show the sidebar
+  // if it's currently hidden (peek-on-hover behavior).
+  if (model() && !model()->is_visible() &&
+      model()->auto_hide_mode() == AstraSidebarAutoHideMode::kOnHoverLeave) {
+    model()->SetVisible(true);
+  }
+  CancelAutoHideTimer();
+  views::View::OnMouseEntered(event);
+}
+
+void AstraSidebarView::OnMouseExited(const ui::MouseEvent& event) {
+  // When mouse leaves the sidebar in auto-hide mode, start the hide timer.
+  if (model() && model()->is_visible() &&
+      (model()->auto_hide_mode() == AstraSidebarAutoHideMode::kOnHoverLeave ||
+       model()->auto_hide_mode() == AstraSidebarAutoHideMode::kOnClickOutside)) {
+    StartAutoHideTimer();
+  }
+  views::View::OnMouseExited(event);
+}
+
+bool AstraSidebarView::OnKeyPressed(const ui::KeyEvent& event) {
+  // Handle keyboard navigation at the sidebar level.
+  if (!GetVisible()) {
+    return views::View::OnKeyPressed(event);
+  }
+
+  switch (event.key_code()) {
+    case ui::VKEY_UP:
+      if (NavigateSection(-1)) {
+        return true;
+      }
+      break;
+    case ui::VKEY_DOWN:
+      if (NavigateSection(1)) {
+        return true;
+      }
+      break;
+    case ui::VKEY_RETURN:
+    case ui::VKEY_SPACE:
+      if (ActivateSelectedSection()) {
+        return true;
+      }
+      break;
+    case ui::VKEY_HOME:
+      if (model() && !model()->GetVisibleSections().empty()) {
+        selected_section_index_ = 0;
+        model()->SetActiveSection(
+            model()->GetVisibleSections()[0].id);
+        return true;
+      }
+      break;
+    case ui::VKEY_END:
+      if (model()) {
+        auto visible = model()->GetVisibleSections();
+        if (!visible.empty()) {
+          selected_section_index_ =
+              static_cast<int>(visible.size()) - 1;
+          model()->SetActiveSection(visible.back().id);
+          return true;
+        }
+      }
+      break;
+    case ui::VKEY_ESCAPE:
+      // Escape: close/collapse the sidebar in auto-hide mode.
+      if (model() && model()->is_visible() &&
+          model()->auto_hide_mode() != AstraSidebarAutoHideMode::kDisabled) {
+        model()->SetVisible(false);
+        return true;
+      }
+      break;
+    default:
+      // Check for number key shortcuts (1-9) to jump to sections.
+      if (event.key_code() >= ui::VKEY_1 &&
+          event.key_code() <= ui::VKEY_9) {
+        int section_index = event.key_code() - ui::VKEY_1;
+        if (model()) {
+          auto visible = model()->GetVisibleSections();
+          if (section_index < static_cast<int>(visible.size())) {
+            model()->SetActiveSection(visible[section_index].id);
+            return true;
+          }
+        }
+      }
+      break;
+  }
+
+  return views::View::OnKeyPressed(event);
 }
 
 // =========================================================================
@@ -1755,6 +1948,46 @@ void AstraSidebarView::OnSidebarSettingsChanged() {
   // Any presentation setting changed — refresh visual appearance.
   // This covers compact mode, show icons, show labels, etc.
   OnThemeChanged();
+  InvalidateLayout();
+}
+
+void AstraSidebarView::OnCompactModeChanged(bool compact) {
+  // Compact mode toggled — update item views to show/hide labels.
+  // TODO(astra): Iterate through all section item views and update their
+  //   compact mode state. For now, rely on OnSidebarSettingsChanged.
+  InvalidateLayout();
+}
+
+void AstraSidebarView::OnAutoHideModeChanged(AstraSidebarAutoHideMode mode) {
+  // Auto-hide mode changed — update sidebar behavior.
+  if (mode == AstraSidebarAutoHideMode::kDisabled) {
+    CancelAutoHideTimer();
+    if (model() && !model()->is_visible()) {
+      model()->SetVisible(true);
+    }
+  }
+  InvalidateLayout();
+}
+
+void AstraSidebarView::OnWidthPresetChanged(AstraSidebarWidthPreset preset) {
+  // Width preset changed — the actual width update is already handled
+  // by OnSidebarWidthChanged. This is just an additional notification
+  // for views that care about the preset classification.
+  InvalidateLayout();
+}
+
+void AstraSidebarView::OnSectionBadgeChanged(const std::string& section_id) {
+  // A section's badge changed — update the corresponding section view.
+  // TODO(astra): Map section_id to section view and update the badge.
+  //   For now, just invalidate layout.
+  InvalidateLayout();
+}
+
+void AstraSidebarView::OnSectionAddButtonChanged(const std::string& section_id,
+                                                  bool visible) {
+  // A section's add button visibility changed.
+  // TODO(astra): Map section_id to section view and update the add button.
+  //   For now, just invalidate layout.
   InvalidateLayout();
 }
 

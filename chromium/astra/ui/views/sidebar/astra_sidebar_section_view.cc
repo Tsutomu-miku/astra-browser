@@ -982,4 +982,49 @@ void AstraSidebarSectionView::OnThemeChanged() {
   }
 }
 
+// =========================================================================
+// views::View overrides — keyboard
+// =========================================================================
+
+bool AstraSidebarSectionView::OnKeyPressed(const ui::KeyEvent& event) {
+  if (!GetVisible() || !is_expanded_) {
+    return views::View::OnKeyPressed(event);
+  }
+
+  switch (event.key_code()) {
+    case ui::VKEY_UP:
+      if (SelectPreviousItem()) {
+        return true;
+      }
+      break;
+    case ui::VKEY_DOWN:
+      if (SelectNextItem()) {
+        return true;
+      }
+      break;
+    case ui::VKEY_RETURN:
+    case ui::VKEY_SPACE:
+      if (ActivateSelectedItem()) {
+        return true;
+      }
+      break;
+    case ui::VKEY_HOME:
+      if (GetItemCountTyped() > 0) {
+        SetSelectedItemIndex(0);
+        return true;
+      }
+      break;
+    case ui::VKEY_END:
+      if (GetItemCountTyped() > 0) {
+        SetSelectedItemIndex(static_cast<int>(GetItemCountTyped()) - 1);
+        return true;
+      }
+      break;
+    default:
+      break;
+  }
+
+  return views::View::OnKeyPressed(event);
+}
+
 }  // namespace astra

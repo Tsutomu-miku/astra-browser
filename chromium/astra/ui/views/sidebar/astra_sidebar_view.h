@@ -162,6 +162,28 @@ class AstraSidebarView final : public views::View,
   // Patch point: Triggered by a toolbar button or keyboard shortcut.
   void ToggleNotesPanel();
 
+  // -- Auto-hide -----------------------------------------------------------
+
+  // Whether the sidebar is currently in auto-hide mode.
+  bool auto_hide_active() const { return auto_hide_active_; }
+
+  // Trigger auto-hide hide (fade out the sidebar).
+  // Called when the mouse leaves the sidebar area in auto-hide mode.
+  void StartAutoHideTimer();
+
+  // Cancel the auto-hide timer (e.g., when mouse re-enters).
+  void CancelAutoHideTimer();
+
+  // -- Keyboard navigation --------------------------------------------------
+
+  // Navigate to the next section (down) or previous section (up).
+  // Returns true if the navigation was handled.
+  bool NavigateSection(int direction);
+
+  // Activate the currently selected section.
+  // Returns true if handled.
+  bool ActivateSelectedSection();
+
   // -- Model / controller integration -------------------------------------
 
   // Get the controller associated with this sidebar view.
@@ -190,6 +212,12 @@ class AstraSidebarView final : public views::View,
   void OnSidebarWidthChanged(int width) override;
   void OnSidebarPositionChanged(AstraSidebarPosition position) override;
   void OnSidebarSettingsChanged() override;
+  void OnCompactModeChanged(bool compact) override;
+  void OnAutoHideModeChanged(AstraSidebarAutoHideMode mode) override;
+  void OnWidthPresetChanged(AstraSidebarWidthPreset preset) override;
+  void OnSectionBadgeChanged(const std::string& section_id) override;
+  void OnSectionAddButtonChanged(const std::string& section_id,
+                                 bool visible) override;
 
   // -- Tab strip observation ---------------------------------------------
 
@@ -276,9 +304,12 @@ class AstraSidebarView final : public views::View,
   gfx::Size CalculatePreferredSize(
       const views::SizeBounds& available_size) const override;
   void OnThemeChanged() override;
+  void OnMouseEntered(const ui::MouseEvent& event) override;
+  void OnMouseExited(const ui::MouseEvent& event) override;
   bool OnMouseDragged(const ui::MouseEvent& event) override;
   void OnMouseReleased(const ui::MouseEvent& event) override;
   void OnMouseCaptureLost() override;
+  bool OnKeyPressed(const ui::KeyEvent& event) override;
 
   // -- AstraSidebarItemDragDelegate --------------------------------------
 
@@ -551,6 +582,28 @@ class AstraSidebarView final : public views::View,
   // Offset of the mouse pointer within the dragged item (in the item's
   // local coordinates). Used to position the ghost correctly.
   gfx::Point drag_offset_;
+
+  // -- Auto-hide state ----------------------------------------------------
+
+  // Whether auto-hide is currently active (sidebar is overlay mode).
+  bool auto_hide_active_ = false;
+
+  // Timer for auto-hide delay.
+  // TODO(astra): Use base::OneShotTimer for the auto-hide delay.
+  //   Chromium pattern: base::OneShotTimer (base/timer/one_shot_timer.h)
+  // auto_hide_timer_
+
+  // -- Keyboard navigation state ------------------------------------------
+
+  // Index of the currently selected section in the visible sections list.
+  // Used for keyboard navigation between sections. -1 means no selection.
+  int selected_section_index_ = -1;
+
+  // -- "Add new" button ---------------------------------------------------
+
+  // Bottom "add new item" button (shown at the bottom of the sidebar).
+  // raw_ptr<views::ImageButton> add_new_button_ = nullptr;
+  // TODO(astra): Add a bottom action bar with add/create buttons.
 };
 
 }  // namespace astra

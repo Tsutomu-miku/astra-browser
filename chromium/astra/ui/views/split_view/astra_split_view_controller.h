@@ -1,6 +1,8 @@
 #ifndef ASTRA_UI_VIEWS_SPLIT_VIEW_ASTRA_SPLIT_VIEW_CONTROLLER_H_
 #define ASTRA_UI_VIEWS_SPLIT_VIEW_ASTRA_SPLIT_VIEW_CONTROLLER_H_
 
+#include <map>
+
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 #include "astra/browser/astra_tab_features.h"

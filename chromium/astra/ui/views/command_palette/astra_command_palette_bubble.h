@@ -127,6 +127,12 @@ class AstraCommandPaletteBubble : public views::BubbleDialogDelegateView,
   // Selects the last item.
   void SelectLast();
 
+  // Moves selection up by one page.
+  void SelectPageUp();
+
+  // Moves selection down by one page.
+  void SelectPageDown();
+
   // Returns the index of the currently selected item.
   int GetSelectedIndex() const;
 
@@ -157,9 +163,32 @@ class AstraCommandPaletteBubble : public views::BubbleDialogDelegateView,
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
   gfx::Size CalculatePreferredSize(
       const views::SizeBounds& available_size) const override;
+  void OnThemeChanged() override;
 
   // Gives focus to the search field inside the palette.
   void RequestSearchFocus();
+
+  // -- Anchor positioning ------------------------------------------------
+
+  // Repositions the bubble relative to its anchor view.
+  // Called when the anchor moves (e.g. toolbar resize).
+  void Reposition();
+
+  // Sets the vertical offset from the anchor (in pixels).
+  // Positive values move the bubble down, negative move it up.
+  void SetAnchorVerticalOffset(int offset);
+
+  // -- Focus management --------------------------------------------------
+
+  // Returns true if the bubble or any of its children has focus.
+  bool ContainsFocus() const;
+
+  // Sets whether focus should be returned to the anchor view when the
+  // bubble closes.  Default is true.
+  void set_return_focus_on_close(bool return_focus) {
+    return_focus_on_close_ = return_focus;
+  }
+  bool return_focus_on_close() const { return return_focus_on_close_; }
 
   // -- AstraCommandPaletteView::Delegate ----------------------------------
 
@@ -189,6 +218,12 @@ class AstraCommandPaletteBubble : public views::BubbleDialogDelegateView,
   // Bubble sizing.
   int max_height_ = kBubbleMaxHeight;
   bool close_on_deactivate_ = true;
+
+  // Anchor positioning.
+  int anchor_vertical_offset_ = 0;
+
+  // Focus management.
+  bool return_focus_on_close_ = true;
 
   // Bubble sizing constants.
   static constexpr int kBubbleWidth = 560;

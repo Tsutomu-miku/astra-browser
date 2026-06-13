@@ -11,6 +11,8 @@
 #include "chrome/browser/profiles/profile_keyed_service_factory.h"
 #include "components/keyed_service/core/keyed_service.h"
 
+#include "astra/browser/astra_focus_session.h"
+
 class PrefRegistrySimple;
 class Profile;
 
@@ -88,6 +90,12 @@ class AstraFocusModeServiceObserver : public base::CheckedObserver {
 
   // Called when auto-start settings change.
   virtual void OnAutoStartSettingsChanged() {}
+
+  // Called when a completed session is added to history.
+  virtual void OnSessionAddedToHistory() {}
+
+  // Called when session history is cleared.
+  virtual void OnSessionHistoryCleared() {}
 
  protected:
   ~AstraFocusModeServiceObserver() override = default;
@@ -196,6 +204,30 @@ class AstraFocusModeService final : public KeyedService {
 
   // Resets all cumulative session statistics to zero.
   void ResetStats();
+
+  // -- Session history ------------------------------------------------------
+
+  // Returns the full session history (most recent sessions first).
+  // TODO(astra): Wire session history to PrefService for persistence across
+  //   browser restarts.  Chromium component: PrefService / ListPref.
+  //   Chromium owner: PrefService (components/prefs/pref_service.h)
+  const std::vector<AstraFocusSession>& GetSessionHistory() const;
+
+  // Computes and returns aggregate focus stats from session history.
+  // Includes both all-time and weekly stats.
+  AstraFocusStats GetFocusStats() const;
+
+  // Adds or updates a user note on a session.  Returns true if the session
+  // was found and the note was set.
+  bool AddSessionNote(const std::string& session_id, const std::string& note);
+
+  // Clears all session history.  Does not affect cumulative stats.
+  void ClearSessionHistory();
+
+  // Maximum number of sessions kept in history.  When the limit is reached,
+  // oldest sessions are dropped.  Default: 100.
+  size_t max_history_entries() const { return max_history_entries_; }
+  void set_max_history_entries(size_t max);
 
   // -- Distraction blocklist ---------------------------------------------
 
@@ -358,6 +390,10 @@ class AstraFocusModeService final : public KeyedService {
   // Records a completed full pomodoro cycle to stats.
   void RecordCompletedCycle();
 
+  // Creates a session record from the current session state and adds it
+  // to session history.  Called when a focus session ends.
+  void AddCompletedSessionToHistory(bool is_completed);
+
   // Helper: checks if a URL matches a pattern using the same logic as
   // IsSiteBlocked and IsSiteWhitelisted.
   bool PatternMatchesUrl(const std::string& pattern,
@@ -389,6 +425,17 @@ class AstraFocusModeService final : public KeyedService {
   base::TimeDelta phase_duration_;
   bool is_paused_ = false;
   base::TimeDelta paused_remaining_;
+
+  // Per-session tracking — accumulated across all phases of the current
+  // focus session.  Reset when a new session begins.
+  std::string current_session_id_;
+  base::Time current_session_start_time_;
+  base::TimeDelta current_session_focus_time_;
+  int current_session_work_count_ = 0;
+  int current_session_cycles_ = 0;
+  int current_session_distraction_count_ = 0;
+  bool current_session_whitelist_used_ = false;
+  bool session_ended_naturally_ = false;
 
   // -- Pomodoro state ----------------------------------------------------
 
@@ -431,6 +478,11 @@ class AstraFocusModeService final : public KeyedService {
   std::string auto_start_time_ = "09:00";
   std::string auto_end_time_ = "17:00";
   std::vector<int> auto_start_days_;
+
+  // -- Session history ----------------------------------------------------
+
+  std::vector<AstraFocusSession> session_history_;
+  size_t max_history_entries_ = 100;
 };
 
 // =========================================================================

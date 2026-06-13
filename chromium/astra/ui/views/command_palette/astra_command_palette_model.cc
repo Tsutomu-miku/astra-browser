@@ -1135,6 +1135,14 @@ double AstraCommandPaletteModel::ComputeRelevanceScore(
     if (item.is_recent) {
       base_score += 500.0;
     }
+    // Pinned commands get a significant boost so they appear at the top.
+    if (item.is_pinned) {
+      base_score += 800.0;
+    }
+    // Context commands get a boost in the empty state too.
+    if (item.is_context_command) {
+      base_score += 250.0;
+    }
     // Apply category weight as a multiplier on the base.
     double cat_weight = GetCategoryWeightInternal(item.category);
     base_score *= (1.0 + cat_weight);
@@ -1184,6 +1192,29 @@ double AstraCommandPaletteModel::ComputeRelevanceScore(
     score = 25.0;
   }
 
+  // Alias matching — check if query matches any alias.
+  if (score < 0 && !item.aliases.empty()) {
+    for (const auto& alias : item.aliases) {
+      std::u16string alias_lower = base::ToLowerASCII(alias);
+      if (alias_lower == query_lower) {
+        score = 400.0;  // Exact alias match — high relevance.
+        break;
+      }
+      if (base::StartsWith(alias_lower, query_lower)) {
+        score = 250.0;  // Prefix alias match.
+        break;
+      }
+      if (alias_lower.find(query_lower) != std::u16string::npos) {
+        score = 150.0;  // Substring alias match.
+        break;
+      }
+      if (enable_fuzzy_search_ && FuzzyMatch(query, alias)) {
+        score = 35.0;  // Fuzzy alias match.
+        break;
+      }
+    }
+  }
+
   // Search in command IDs if enabled.
   if (search_in_command_ids_ && score < 0) {
     std::u16string id_str = base::NumberToString16(item.command_id);
@@ -1216,6 +1247,16 @@ double AstraCommandPaletteModel::ComputeRelevanceScore(
   // Apply recent command boost.
   if (item.is_recent) {
     score += 300.0;
+  }
+
+  // Apply pinned / favorite command boost.
+  if (item.is_pinned) {
+    score += 200.0;
+  }
+
+  // Apply context command boost (small boost so context commands surface).
+  if (item.is_context_command) {
+    score += 150.0;
   }
 
   // Apply usage count boost.
@@ -1286,6 +1327,73 @@ void AstraCommandPaletteModel::BuildCommandIndex() {
                                       recently_used_ids_.end());
   for (auto& cmd : commands_) {
     cmd.is_recent = (recent_set.count(cmd.command_id) > 0);
+  }
+
+  // Apply pinned / favorite status.
+  ApplyPinnedStatus();
+
+  // Apply default aliases to common commands.
+  // TODO(astra): Consider loading aliases from user preferences for
+  // customizable command discovery.
+  // Chromium owner: UserSettings — aliases could be stored in PrefService.
+  for (auto& cmd : commands_) {
+    if (cmd.command_id == IDC_NEW_TAB) {
+      cmd.aliases = {u"open tab", u"create tab", u"new page", u"add tab"};
+    } else if (cmd.command_id == IDC_CLOSE_TAB) {
+      cmd.aliases = {u"kill tab", u"delete tab", u"remove tab", u"close page"};
+    } else if (cmd.command_id == IDC_RELOAD) {
+      cmd.aliases = {u"refresh", u"reload page", u"refresh page", u"hard refresh"};
+    } else if (cmd.command_id == IDC_BACK) {
+      cmd.aliases = {u"go back", u"previous page", u"navigate back"};
+    } else if (cmd.command_id == IDC_FORWARD) {
+      cmd.aliases = {u"go forward", u"next page", u"navigate forward"};
+    } else if (cmd.command_id == IDC_FIND) {
+      cmd.aliases = {u"search page", u"find on page", u"search in page", u"find text"};
+    } else if (cmd.command_id == IDC_ZOOM_PLUS) {
+      cmd.aliases = {u"zoom in", u"increase zoom", u"magnify", u"bigger"};
+    } else if (cmd.command_id == IDC_ZOOM_MINUS) {
+      cmd.aliases = {u"zoom out", u"decrease zoom", u"smaller"};
+    } else if (cmd.command_id == IDC_FULLSCREEN) {
+      cmd.aliases = {u"full screen", u"enter fullscreen", u"exit fullscreen", u"fs"};
+    } else if (cmd.command_id == IDC_DEV_TOOLS) {
+      cmd.aliases = {u"dev tools", u"developer", u"inspector", u"web inspector"};
+    } else if (cmd.command_id == IDC_SHOW_HISTORY) {
+      cmd.aliases = {u"browsing history", u"page history", u"recent history"};
+    } else if (cmd.command_id == IDC_BOOKMARK_PAGE) {
+      cmd.aliases = {u"add bookmark", u"favorite", u"star", u"save page"};
+    } else if (cmd.command_id == IDC_SHOW_DOWNLOADS) {
+      cmd.aliases = {u"downloads page", u"downloaded files", u"my downloads"};
+    } else if (cmd.command_id == IDC_OPTIONS) {
+      cmd.aliases = {u"preferences", u"options", u"settings page", u"browser settings"};
+    } else if (cmd.command_id == IDC_NEW_WINDOW) {
+      cmd.aliases = {u"new browser", u"open window", u"new browser window"};
+    } else if (cmd.command_id == IDC_SELECT_NEXT_TAB) {
+      cmd.aliases = {u"next tab", u"tab right", u"switch tab", u"cycle tab"};
+    } else if (cmd.command_id == IDC_SELECT_PREVIOUS_TAB) {
+      cmd.aliases = {u"prev tab", u"tab left", u"previous tab", u"tab cycle back"};
+    } else if (cmd.command_id == kAstraCommandToggleSidebar) {
+      cmd.aliases = {u"side bar", u"toggle side bar", u"show sidebar", u"hide sidebar"};
+    } else if (cmd.command_id == kAstraCommandNewWorkspace) {
+      cmd.aliases = {u"create workspace", u"new work space", u"add workspace"};
+    } else if (cmd.command_id == kAstraCommandToggleSplitView) {
+      cmd.aliases = {u"split screen", u"split view", u"side by side", u"dual view"};
+    } else if (cmd.command_id == IDC_PRINT) {
+      cmd.aliases = {u"print page", u"print document", u"printer"};
+    } else if (cmd.command_id == IDC_SAVE_PAGE) {
+      cmd.aliases = {u"save", u"download page", u"save as"};
+    } else if (cmd.command_id == IDC_CLEAR_BROWSING_DATA) {
+      cmd.aliases = {u"clear cache", u"clear cookies", u"clear history", u"delete browsing data"};
+    } else if (cmd.command_id == kAstraCommandOpenCommandPalette) {
+      cmd.aliases = {u"command palette", u"quick commands", u"cmd palette", u"command menu"};
+    } else if (cmd.command_id == IDC_FOCUS_LOCATION) {
+      cmd.aliases = {u"address bar", u"location bar", u"omnibox", u"focus url"};
+    } else if (cmd.command_id == IDC_HOME) {
+      cmd.aliases = {u"home page", u"go home", u"homepage"};
+    } else if (cmd.command_id == IDC_RESTORE_TAB) {
+      cmd.aliases = {u"reopen tab", u"undo close tab", u"restore closed tab"};
+    } else if (cmd.command_id == kAstraCommandToggleFocusMode) {
+      cmd.aliases = {u"focus", u"focus mode", u"concentrate", u"distraction free"};
+    }
   }
 }
 
@@ -1447,6 +1555,9 @@ void AstraCommandPaletteModel::UpdateResults() {
              selected_index_ >= static_cast<int>(results_.size())) {
     selected_index_ = 0;
   }
+
+  // Compute suggestions.
+  UpdateSuggestions();
 }
 
 void AstraCommandPaletteModel::BuildResultGroups() {
@@ -2012,6 +2123,137 @@ bool AstraCommandPaletteModel::RemoveCommand(int command_id) {
 }
 
 // =========================================================================
+// Context-aware commands
+// =========================================================================
+//
+// Context-aware commands are dynamic commands that appear based on the
+// current context (e.g. what page is loaded, what tab is active).
+// They get a ranking boost when the context matches.
+//
+// Chromium subsystem: Tab-specific commands would be sourced from TabHelpers / WebContents helpers.
+// Patch point: chrome/browser/ui/tabs/tab_strip_model.h — observe tab
+// activation changes to update context commands.
+// =========================================================================
+
+void AstraCommandPaletteModel::UpdateContextCommands(
+    const std::vector<AstraCommandItem>& context_commands) {
+  // ClearContextCommands();
+
+  if (!enable_context_commands_) {
+    return;
+  }
+
+  context_commands_ = context_commands;
+  has_context_commands_ = !context_commands_.empty();
+
+  for (auto& cmd : context_commands_) {
+    cmd.is_context_command = true;
+    commands_.push_back(cmd);
+  }
+
+  UpdateResults();
+
+  // Notify new-style observers.
+  for (auto& observer : observers_) {
+    observer.OnContextCommandsChanged(this);
+    observer.OnCommandListChanged(this);
+    observer.OnSearchResultsChanged(this);
+  }
+
+  // Notify legacy observers.
+  for (auto& observer : legacy_observers_) {
+    observer.OnContextCommandsChanged();
+    observer.OnModelChanged();
+  }
+}
+
+void AstraCommandPaletteModel::ClearContextCommands() {
+  if (context_commands_.empty() && !has_context_commands_) {
+    return;
+  }
+
+  // Remove all context commands from the main index.
+  std::vector<AstraCommandItem> new_commands;
+  new_commands.reserve(commands_.size());
+  for (auto& cmd : commands_) {
+    if (!cmd.is_context_command) {
+      new_commands.push_back(std::move(cmd));
+    }
+  }
+  commands_ = std::move(new_commands);
+
+  context_commands_.clear();
+  has_context_commands_ = false;
+
+  UpdateResults();
+
+  // Notify new-style observers.
+  for (auto& observer : observers_) {
+    observer.OnContextCommandsChanged(this);
+    observer.OnCommandListChanged(this);
+    observer.OnSearchResultsChanged(this);
+  }
+
+  // Notify legacy observers.
+  for (auto& observer : legacy_observers_) {
+    observer.OnContextCommandsChanged();
+    observer.OnModelChanged();
+  }
+}
+
+// =========================================================================
+// Command aliases
+// =========================================================================
+
+bool AstraCommandPaletteModel::AddCommandAlias(
+    int command_id, const std::u16string& alias) {
+  int idx = FindCommandIndex(command_id);
+  if (idx < 0) {
+    return false;
+  }
+
+  // Check for duplicate alias.
+  for (const auto& a : commands_[idx].aliases) {
+    if (base::EqualsCaseInsensitiveASCII(a, alias)) {
+      return false;
+    }
+  }
+
+  commands_[idx].aliases.push_back(alias);
+
+  // UpdateResults();
+
+  return true;
+}
+
+std::vector<std::u16string>
+AstraCommandPaletteModel::GetAliasesForCommand(int command_id) const {
+  int idx = FindCommandIndex(command_id);
+  if (idx < 0) {
+    return {};
+  }
+  return commands_[idx].aliases;
+}
+
+bool AstraCommandPaletteModel::RemoveCommandAlias(
+    int command_id, const std::u16string& alias) {
+  int idx = FindCommandIndex(command_id);
+  if (idx < 0) {
+    return false;
+  }
+
+  auto& aliases = commands_[idx].aliases;
+  for (auto it = aliases.begin(); it != aliases.end(); ++it) {
+    if (base::EqualsCaseInsensitiveASCII(*it, alias)) {
+      aliases.erase(it);
+      UpdateResults();
+      return true;
+    }
+  }
+  return false;
+}
+
+// =========================================================================
 // Ranking
 // =========================================================================
 
@@ -2100,6 +2342,33 @@ void AstraCommandPaletteModel::SelectPrevGroup() {
   if (first_in_group >= 0) {
     SetSelectedIndex(first_in_group);
   }
+}
+
+void AstraCommandPaletteModel::SelectPageUp() {
+  if (results_.empty()) {
+    return;
+  }
+
+  int page = static_cast<int>(page_size_);
+  int new_index = selected_index_ - page;
+  if (new_index < 0) {
+    new_index = 0;
+  }
+  SetSelectedIndex(new_index);
+}
+
+void AstraCommandPaletteModel::SelectPageDown() {
+  if (results_.empty()) {
+    return;
+  }
+
+  int page = static_cast<int>(page_size_);
+  int new_index = selected_index_ + page;
+  int last_index = static_cast<int>(results_.size()) - 1;
+  if (new_index > last_index) {
+    new_index = last_index;
+  }
+  SetSelectedIndex(new_index);
 }
 
 // =========================================================================
@@ -2447,6 +2716,61 @@ void AstraCommandPaletteModel::set_auto_execute_single_result(
     bool auto_execute) {
   auto_execute_single_result_ = auto_execute;
   // No immediate effect — affects SetQuery behavior.
+}
+
+// =========================================================================
+// New presentation settings
+// =========================================================================
+
+void AstraCommandPaletteModel::set_show_number_hints(bool show) {
+  if (show_number_hints_ == show) {
+    return;
+  }
+  show_number_hints_ = show;
+
+  // Notify new-style observers.
+  for (auto& observer : observers_) {
+    observer.OnCommandListChanged(this);
+  }
+
+  // Notify legacy observers.
+  for (auto& observer : legacy_observers_) {
+    observer.OnModelChanged();
+  }
+}
+
+void AstraCommandPaletteModel::set_show_pinned_section(bool show) {
+  if (show_pinned_section_ == show) {
+    return;
+  }
+  show_pinned_section_ = show;
+  UpdateResults();
+
+  // Notify new-style observers.
+  for (auto& observer : observers_) {
+    observer.OnSearchResultsChanged(this);
+  }
+
+  // Notify legacy observers.
+  for (auto& observer : legacy_observers_) {
+    observer.OnModelChanged();
+  }
+}
+
+void AstraCommandPaletteModel::set_enable_context_commands(bool enable) {
+  if (enable_context_commands_ == enable) {
+    return;
+  }
+  enable_context_commands_ = enable;
+
+  if (!enable) {
+    ClearContextCommands();
+  }
+}
+
+void AstraCommandPaletteModel::set_show_suggestions(bool show) {
+  show_suggestions_ = show;
+  // No immediate rebuild needed — affects suggestion computation.
 }
 
 // =========================================================================

@@ -175,6 +175,16 @@ class AstraCommandPaletteView
   // Selects the last item in the list.
   void SelectLast();
 
+  // Moves selection up by one page.
+  void SelectPageUp();
+
+  // Moves selection down by one page.
+  void SelectPageDown();
+
+  // Executes the command at the given numeric position (1-9 quick select).
+  // Returns true if the position was valid and a command was executed.
+  bool ExecuteCommandAtPosition(int position);
+
   // -- Execution ---------------------------------------------------------
 
   // Executes the currently selected command.

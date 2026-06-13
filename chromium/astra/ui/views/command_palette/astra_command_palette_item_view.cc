@@ -199,6 +199,38 @@ void AstraCommandPaletteItemView::BuildLayout() {
       gfx::Font::Weight::NORMAL));
   recent_badge_container_->SetVisible(false);  // Hidden by default.
 
+  // Pinned / favorite badge (star icon indicator for pinned commands).
+  pinned_badge_container_ = bottom_row->AddChildView(std::make_unique<views::View>());
+  pinned_badge_container_->SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kHorizontal,
+      gfx::Insets::VH(0, kTypeBadgeLeftMargin), 0));
+  static_cast<views::BoxLayout*>(pinned_badge_container_->GetLayoutManager())
+      ->set_main_axis_alignment(
+          views::BoxLayout::MainAxisAlignment::kCenter);
+  static_cast<views::BoxLayout*>(pinned_badge_container_->GetLayoutManager())
+      ->set_cross_axis_alignment(
+          views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  pinned_badge_label_ = pinned_badge_container_->AddChildView(
+      std::make_unique<views::Label>(u"★"));
+  pinned_badge_label_->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  pinned_badge_label_->SetAutoColorReadabilityEnabled(false);
+  pinned_badge_label_->SetFontList(views::Label::GetDefaultFontList().Derive(
+      kTypeBadgeFontSizeDelta, gfx::Font::FontStyle::NORMAL,
+      gfx::Font::Weight::BOLD));
+  pinned_badge_container_->SetVisible(false);  // Hidden by default.
+
+  // Number hint label (quick-select indicator, 1-9).
+  // Shown on the left side next to the icon when number hints are enabled.
+  number_hint_label_ = icon_container_->AddChildView(
+      std::make_unique<views::Label>(std::u16string()));
+  number_hint_label_->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  number_hint_label_->SetAutoColorReadabilityEnabled(false);
+  number_hint_label_->SetFontList(views::Label::GetDefaultFontList().Derive(
+      kTypeBadgeFontSizeDelta, gfx::Font::FontStyle::NORMAL,
+      gfx::Font::Weight::BOLD));
+  number_hint_label_->SetVisible(false);  // Hidden by default.
+
   // Set initial accessibility info.
   SetAccessibleName(command_.title);
   SetAccessibleDescription(command_.description);
@@ -213,6 +245,7 @@ void AstraCommandPaletteItemView::SetCommand(const AstraCommandItem& command) {
   UpdateTextContent();
   ApplyMatchHighlighting();
   ShowRecentBadge(command.is_recent);
+  ShowPinnedBadge(command.is_pinned);
   SetAccessibleName(command_.title);
   SetAccessibleDescription(command_.description);
 }
@@ -302,6 +335,46 @@ void AstraCommandPaletteItemView::ShowRecentBadge(bool show) {
   show_recent_badge_ = show;
   recent_badge_container_->SetVisible(show);
   InvalidateLayout();
+}
+
+// =========================================================================
+// Pinned / favorite badge
+// =========================================================================
+
+void AstraCommandPaletteItemView::ShowPinnedBadge(bool show) {
+  if (show_pinned_badge_ == show) {
+    return;
+  }
+  show_pinned_badge_ = show;
+  pinned_badge_container_->SetVisible(show);
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Number hint (1-9 quick select)
+// =========================================================================
+//
+// The number hint replaces the icon when shown.  When visible, the
+// icon label is hidden and the number hint label is shown instead,
+// both centered within the icon container area.
+// =========================================================================
+
+void AstraCommandPaletteItemView::ShowNumberHint(bool show) {
+  if (show_number_hint_ == show) {
+    return;
+  }
+  show_number_hint_ = show;
+  number_hint_label_->SetVisible(show);
+  icon_label_->SetVisible(!show);
+  InvalidateLayout();
+}
+
+void AstraCommandPaletteItemView::SetNumberHint(int number) {
+  if (number_hint_ == number) {
+    return;
+  }
+  number_hint_ = number;
+  number_hint_label_->SetText(base::NumberToString16(number));
 }
 
 // =========================================================================
@@ -436,6 +509,15 @@ void AstraCommandPaletteItemView::UpdateTextColors() {
 
   // Recent badge uses a subtle accent-like color.
   recent_badge_label_->SetEnabledColor(
+      color_provider->GetColor(kColorAstraCommandPaletteShortcutText));
+
+  // Pinned badge uses a yellow/gold color (star indicator).
+  // TODO(astra): Add a dedicated pinned badge color to Astra color IDs.
+  pinned_badge_label_->SetEnabledColor(
+      color_provider->GetColor(kColorAstraCommandPaletteText));
+
+  // Number hint uses the same color as shortcut text.
+  number_hint_label_->SetEnabledColor(
       color_provider->GetColor(kColorAstraCommandPaletteShortcutText));
 }
 

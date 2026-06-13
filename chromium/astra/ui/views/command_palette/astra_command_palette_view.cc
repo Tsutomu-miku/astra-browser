@@ -6,6 +6,7 @@
 
 #include "base/strings/string_util.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_command_controller.h"
 #include "ui/color/color_provider.h"
@@ -213,6 +214,32 @@ void AstraCommandPaletteView::SelectLast() {
   }
 }
 
+void AstraCommandPaletteView::SelectPageUp() {
+  if (model_) {
+    model_->SelectPageUp();
+    ScrollSelectedIntoView();
+  }
+}
+
+void AstraCommandPaletteView::SelectPageDown() {
+  if (model_) {
+    model_->SelectPageDown();
+    ScrollSelectedIntoView();
+  }
+}
+
+bool AstraCommandPaletteView::ExecuteCommandAtPosition(int position) {
+  if (!model_ || position < 1 || position > 9) {
+    return false;
+  }
+  int index = position - 1;
+  if (index >= static_cast<int>(model_->GetResultCount())) {
+    return false;
+  }
+  model_->ExecuteCommand(index);
+  return true;
+}
+
 // =========================================================================
 // Execution
 // =========================================================================
@@ -385,13 +412,13 @@ void AstraCommandPaletteView::RebuildResultsList() {
     empty_state_view_->SetLayoutManager(
         std::make_unique<views::BoxLayout>(
             views::BoxLayout::Orientation::kVertical,
-            gfx::Insets::VH(40, 16), 0));
+            gfx::Insets::VH(24, 16), 12));
     static_cast<views::BoxLayout*>(empty_state_view_->GetLayoutManager())
         ->set_main_axis_alignment(
             views::BoxLayout::MainAxisAlignment::kCenter);
     static_cast<views::BoxLayout*>(empty_state_view_->GetLayoutManager())
         ->set_cross_axis_alignment(
-            views::BoxLayout::CrossAxisAlignment::kCenter);
+            views::BoxLayout::CrossAxisAlignment::kStretch);
     empty_state_view_->SetPaintToLayer();
     empty_state_view_->layer()->SetFillsBoundsOpaquely(false);
 
@@ -420,6 +447,34 @@ void AstraCommandPaletteView::RebuildResultsList() {
     sub_label->SetFontList(views::Label::GetDefaultFontList().Derive(
         -1, gfx::Font::FontStyle::NORMAL, gfx::Font::Weight::NORMAL));
 
+    // "Did you mean" suggestions — shown when there are close matches.
+    if (model_->show_suggestions() && !model_->query().empty()) {
+      auto suggestions = model_->GetSuggestedCommands(model_->query());
+      if (!suggestions.empty()) {
+        // Section header for suggestions.
+        auto* suggestion_header = empty_state_view_->AddChildView(
+            std::make_unique<views::Label>(u"Did you mean:"));
+        suggestion_header->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+        suggestion_header->SetAutoColorReadabilityEnabled(false);
+        suggestion_header->SetFontList(
+            views::Label::GetDefaultFontList().Derive(
+                -1, gfx::Font::FontStyle::NORMAL, gfx::Font::Weight::BOLD));
+
+        // Suggestion items.
+        for (size_t i = 0; i < suggestions.size() && i < 3; ++i) {
+          auto* suggestion_item = empty_state_view_->AddChildView(
+              std::make_unique<views::Label>(
+                  u"  • " + suggestions[i].title));
+          suggestion_item->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+          suggestion_item->SetAutoColorReadabilityEnabled(false);
+          suggestion_item->SetFontList(
+              views::Label::GetDefaultFontList().Derive(
+                  -1, gfx::Font::FontStyle::NORMAL,
+                  gfx::Font::Weight::NORMAL));
+        }
+      }
+    }
+
     UpdateEmptyStateColors();
 
     InvalidateLayout();
@@ -429,9 +484,16 @@ void AstraCommandPaletteView::RebuildResultsList() {
   // Build the results list with category section headers.
   for (const auto& group : groups) {
     // Add a section header for this category.
-    results_container_->AddChildView(
+    auto* header = results_container_->AddChildView(
         std::make_unique<AstraCommandPaletteSectionHeaderView>(
             GetCategoryLabel(group.category)));
+
+    // Set category icon on the section header.
+    std::string icon_name = GetCategoryIconName(group.category);
+    if (!icon_name.empty()) {
+      header->SetIcon(base::UTF8ToUTF16(
+          icon_name.substr(0, 1)));
+    }
 
     // Add all command items in this group.
     for (const auto& item : group.items) {
@@ -441,6 +503,15 @@ void AstraCommandPaletteView::RebuildResultsList() {
       // Apply presentation settings from the model.
       item_view->ShowDescription(model_->show_descriptions());
       item_view->ShowShortcut(model_->show_shortcuts());
+
+      // Show number hints (1-9) if enabled and within range.
+      int item_index_for_hint = static_cast<int>(item_views_.size()) + 1;
+      if (model_->show_number_hints() && item_index_for_hint <= 9) {
+        item_view->ShowNumberHint(true);
+        item_view->SetNumberHint(item_index_for_hint);
+      } else {
+        item_view->ShowNumberHint(false);
+      }
 
       // Compute match ranges for highlighting.
       if (!model_->query().empty()) {
@@ -505,10 +576,23 @@ void AstraCommandPaletteView::UpdateStatusBar() {
     }
   }
 
-  // Add navigation hint.
+  // Add navigation hints.
   if (count > 0) {
     status_text += u" · ↑↓ navigate";
+
+    // Show number hint shortcut if number hints are enabled.
+    if (model_->show_number_hints() && count > 0) {
+      status_text += u" · ⌥1-9 quick select";
+    }
   }
+
+  // Always show Enter to execute hint when there are results.
+  if (count > 0) {
+    status_text += u" · ↵ execute";
+  }
+
+  // Show Escape hint.
+  status_text += u" · Esc close";
 
   status_bar_label_->SetText(status_text);
 }
@@ -546,6 +630,7 @@ void AstraCommandPaletteView::BuildCategoryChips() {
       AstraCommandCategory::kWorkspaces,
       AstraCommandCategory::kView,
       AstraCommandCategory::kTools,
+      AstraCommandCategory::kExtensions,
       AstraCommandCategory::kSettings,
       AstraCommandCategory::kHelp,
   };
@@ -743,18 +828,42 @@ void AstraCommandPaletteView::BuildQuickActionsPanel() {
 
 void AstraCommandPaletteView::UpdateEmptyStateColors() {
   const auto* color_provider = GetColorProvider();
-  if (!color_provider || !empty_state_label_) {
+  if (!color_provider || !empty_state_view_) {
     return;
   }
-  empty_state_label_->SetEnabledColor(
-      color_provider->GetColor(kColorAstraCommandPaletteText));
+  if (empty_state_label_) {
+    empty_state_label_->SetEnabledColor(
+        color_provider->GetColor(kColorAstraCommandPaletteText));
+  }
 
-  // Also update the sub-label if present (second child of empty_state_view_).
-  if (empty_state_view_ && empty_state_view_->children().size() >= 3) {
-    auto* sub_label = static_cast<views::Label*>(
-        empty_state_view_->children()[2]);
-    sub_label->SetEnabledColor(
-        color_provider->GetColor(kColorAstraCommandPaletteDescriptionText));
+  // Color all text children of the empty state view.
+  SkColor primary_color =
+      color_provider->GetColor(kColorAstraCommandPaletteText);
+  SkColor secondary_color =
+      color_provider->GetColor(kColorAstraCommandPaletteDescriptionText);
+
+  const auto& children = empty_state_view_->children();
+  for (size_t i = 0; i < children.size(); ++i) {
+    auto* child = children[i];
+    if (child->GetClassName() != views::Label::kViewClassName) {
+      continue;
+    }
+    auto* label = static_cast<views::Label*>(child);
+    // Skip the main title label (index 1 = empty_state_label_).
+    if (label == empty_state_label_) {
+      continue;
+    }
+    // Icon (index 0) uses primary, sub-label (index 2) uses secondary,
+    // suggestion header (index 3) uses primary/bold,
+    // suggestion items (index 4+) use secondary.
+    if (i == 0) {
+      label->SetEnabledColor(primary_color);
+    } else if (i == 2) {
+      label->SetEnabledColor(secondary_color);
+    } else {
+      // Suggestion-related labels use secondary color.
+      label->SetEnabledColor(secondary_color);
+    }
   }
 }
 
@@ -904,6 +1013,14 @@ bool AstraCommandPaletteView::OnKeyPressed(const ui::KeyEvent& event) {
       SelectLast();
       return true;
 
+    case ui::VKEY_PRIOR:
+      SelectPageUp();
+      return true;
+
+    case ui::VKEY_NEXT:
+      SelectPageDown();
+      return true;
+
     default:
       return false;
   }
@@ -1045,6 +1162,19 @@ bool AstraCommandPaletteView::HandleKeyEvent(views::Textfield* sender,
     }
   }
 
+  // Alt/Option + number = quick select (execute command at position 1-9).
+  if (key_event.IsAltDown() && !key_event.IsControlDown() &&
+      !key_event.IsCommandDown()) {
+    if (key_event.key_code() >= ui::VKEY_1 &&
+        key_event.key_code() <= ui::VKEY_9) {
+      int position = key_event.key_code() - ui::VKEY_1 + 1;
+      if (model_ && position <= static_cast<int>(model_->GetResultCount())) {
+        model_->ExecuteCommand(position - 1);
+        return true;
+      }
+    }
+  }
+
   switch (key_event.key_code()) {
     case ui::VKEY_UP:
       SelectPrevious();
@@ -1088,6 +1218,14 @@ bool AstraCommandPaletteView::HandleKeyEvent(views::Textfield* sender,
         return true;
       }
       return false;
+
+    case ui::VKEY_PRIOR:
+      SelectPageUp();
+      return true;
+
+    case ui::VKEY_NEXT:
+      SelectPageDown();
+      return true;
 
     default:
       // Let the textfield process the key normally.

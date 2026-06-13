@@ -70,6 +70,15 @@ class AstraSidebarController : public AstraSidebarModelObserver {
   // Set the sidebar position (left or right).
   void SetSidebarPosition(AstraSidebarPosition position);
 
+  // Set the sidebar width preset (narrow/normal/wide).
+  void SetSidebarWidthPreset(AstraSidebarWidthPreset preset);
+
+  // Cycle through width presets (narrow -> normal -> wide -> narrow).
+  void CycleWidthPreset();
+
+  // Set the auto-hide mode for the sidebar.
+  void SetAutoHideMode(AstraSidebarAutoHideMode mode);
+
   // -- Section control -----------------------------------------------------
 
   // Switch to the section with the given ID.
@@ -87,6 +96,16 @@ class AstraSidebarController : public AstraSidebarModelObserver {
 
   // Toggle a section's visibility.
   bool ToggleSectionVisibility(const std::string& section_id);
+
+  // Cycle through the section's collapsed/expanded state.
+  // Equivalent to ToggleSectionCollapsed but with a clearer name.
+  bool ToggleSectionExpanded(const std::string& section_id);
+
+  // Set a section's badge count.
+  bool SetSectionBadgeCount(const std::string& section_id, int count);
+
+  // Clear a section's badge.
+  bool ClearSectionBadge(const std::string& section_id);
 
   // -- View binding --------------------------------------------------------
 
@@ -129,6 +148,12 @@ class AstraSidebarController : public AstraSidebarModelObserver {
   void OnSidebarWidthChanged(int width) override;
   void OnSidebarPositionChanged(AstraSidebarPosition position) override;
   void OnSidebarSettingsChanged() override;
+  void OnCompactModeChanged(bool compact) override;
+  void OnAutoHideModeChanged(AstraSidebarAutoHideMode mode) override;
+  void OnWidthPresetChanged(AstraSidebarWidthPreset preset) override;
+  void OnSectionBadgeChanged(const std::string& section_id) override;
+  void OnSectionAddButtonChanged(const std::string& section_id,
+                                 bool visible) override;
 
  private:
   // Find the index of the active section within the visible sections list.

@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "base/memory/raw_ptr.h"
 #include "ui/views/view.h"
 
 namespace views {
@@ -17,15 +18,18 @@ namespace astra {
 //
 // A lightweight section header view that appears between groups of
 // command results in the command palette.  Shows a category label
-// (e.g. "Tabs", "Workspaces") with a subtle horizontal divider line.
+// (e.g. "Tabs", "Workspaces") with an optional icon and a subtle
+// horizontal divider line.
 //
 // Layout:
 //   +---------------------------------------------------------------+
-//   |  Category Name                                                |
+//   |  [ICON]  Category Name                                        |
 //   +---------------------------------------------------------------+
 //
-// TODO(astra): Consider adding a small category icon next to the label
-// for faster visual scanning.  Chromium component: ui/views/controls/image_view.h
+// TODO(astra): Replace text-based icon with a proper vector icon using
+// gfx::VectorIcon and views::ImageView.
+//   Chromium component: ui/gfx/vector_icon_types.h
+//   Patch point: //chrome/app/theme vector icons
 // =========================================================================
 
 class AstraCommandPaletteSectionHeaderView : public views::View {
@@ -41,6 +45,14 @@ class AstraCommandPaletteSectionHeaderView : public views::View {
   // Update the section header label text.
   void SetLabel(const std::u16string& label);
 
+  // Set the icon text (short string displayed next to the label).
+  // Pass empty string to hide the icon.
+  void SetIcon(const std::u16string& icon_text);
+
+  // Show or hide the icon.
+  void ShowIcon(bool show);
+  bool show_icon() const { return show_icon_; }
+
   // -- views::View --------------------------------------------------------
 
   void OnThemeChanged() override;
@@ -48,9 +60,23 @@ class AstraCommandPaletteSectionHeaderView : public views::View {
       const views::SizeBounds& available_size) const override;
 
  private:
+  // Build the child views and layout.
+  void BuildLayout();
+
+  // Update text colors from the color provider.
+  void UpdateTextColors();
+
   // Child views (owned by the view hierarchy).
+  raw_ptr<views::View> icon_container_ = nullptr;
+  raw_ptr<views::Label> icon_label_ = nullptr;
   raw_ptr<views::Label> label_ = nullptr;
   raw_ptr<views::View> divider_ = nullptr;
+
+  // Whether the icon is visible.
+  bool show_icon_ = true;
+
+  // The current icon text.
+  std::u16string icon_text_;
 };
 
 }  // namespace astra

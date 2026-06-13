@@ -116,10 +116,6 @@ class AstraReadingListItemView : public views::View {
   raw_ptr<views::Label> date_label_ = nullptr;
   raw_ptr<views::ImageButton> favorite_button_ = nullptr;
   raw_ptr<views::ImageButton> more_button_ = nullptr;
-
-  static constexpr int kListItemHeight = 120;
-  static constexpr int kGridItemWidth = 280;
-  static constexpr int kGridItemHeight = 200;
 };
 
 // A sidebar filter item view (for filter options like All, Unread, Favorites).

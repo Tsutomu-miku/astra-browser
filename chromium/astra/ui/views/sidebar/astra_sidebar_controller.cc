@@ -80,6 +80,25 @@ void AstraSidebarController::SetSidebarPosition(AstraSidebarPosition position) {
   }
 }
 
+void AstraSidebarController::SetSidebarWidthPreset(
+    AstraSidebarWidthPreset preset) {
+  if (model_) {
+    model_->SetWidthPreset(preset);
+  }
+}
+
+void AstraSidebarController::CycleWidthPreset() {
+  if (model_) {
+    model_->CycleWidthPreset();
+  }
+}
+
+void AstraSidebarController::SetAutoHideMode(AstraSidebarAutoHideMode mode) {
+  if (model_) {
+    model_->SetAutoHideMode(mode);
+  }
+}
+
 // -- Section control -------------------------------------------------------
 
 bool AstraSidebarController::ActivateSection(const std::string& section_id) {
@@ -153,6 +172,29 @@ bool AstraSidebarController::ToggleSectionVisibility(
     return false;
   }
   return model_->ToggleSectionVisible(section_id);
+}
+
+bool AstraSidebarController::ToggleSectionExpanded(
+    const std::string& section_id) {
+  if (!model_) {
+    return false;
+  }
+  return model_->ToggleSectionCollapsed(section_id);
+}
+
+bool AstraSidebarController::SetSectionBadgeCount(
+    const std::string& section_id, int count) {
+  if (!model_) {
+    return false;
+  }
+  return model_->SetSectionBadgeCount(section_id, count);
+}
+
+bool AstraSidebarController::ClearSectionBadge(const std::string& section_id) {
+  if (!model_) {
+    return false;
+  }
+  return model_->ClearSectionBadge(section_id);
 }
 
 // -- View binding ----------------------------------------------------------
@@ -247,6 +289,27 @@ void AstraSidebarController::OnSidebarPositionChanged(
 
 void AstraSidebarController::OnSidebarSettingsChanged() {
   // Any presentation setting changed — view should refresh its appearance.
+}
+
+void AstraSidebarController::OnCompactModeChanged(bool compact) {
+  // Compact mode changed — view handles its own layout update.
+}
+
+void AstraSidebarController::OnAutoHideModeChanged(AstraSidebarAutoHideMode mode) {
+  // Auto-hide mode changed — view handles its own behavior update.
+}
+
+void AstraSidebarController::OnWidthPresetChanged(AstraSidebarWidthPreset preset) {
+  // Width preset changed — view handles its own size update.
+}
+
+void AstraSidebarController::OnSectionBadgeChanged(const std::string& section_id) {
+  // Section badge changed — view handles its own update.
+}
+
+void AstraSidebarController::OnSectionAddButtonChanged(const std::string& section_id,
+                                                      bool visible) {
+  // Section add button visibility changed — view handles its own update.
 }
 
 // -- Private helpers -------------------------------------------------------

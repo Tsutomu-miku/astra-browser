@@ -28,6 +28,7 @@ constexpr int kSidebarItemHorizontalPadding = 12;
 constexpr int kSidebarItemVerticalPadding = 4;
 constexpr int kSidebarItemIconSpacing = 8;
 constexpr int kSidebarItemIconSize = 16;
+constexpr int kSidebarItemDragHandleSize = 10;
 constexpr int kSidebarItemCornerRadius = 6;
 constexpr int kSidebarItemTrailingSpacing = 6;
 constexpr int kSidebarBadgeMinWidth = 16;
@@ -74,10 +75,37 @@ AstraSidebarItemView::AstraSidebarItemView() {
   BuildLayout();
 }
 
+AstraSidebarItemView::AstraSidebarItemView(const std::u16string& title,
+                                           Type type)
+    : type_(type) {
+  SetPaintToLayer();
+  layer()->SetFillsBoundsOpaquely(false);
+  layer()->SetRoundedCornerRadius(
+      gfx::RoundedCornersF(kSidebarItemCornerRadius));
+
+  SetFocusBehavior(FocusBehavior::ALWAYS);
+
+  BuildLayout();
+  SetTitle(title);
+}
+
 AstraSidebarItemView::~AstraSidebarItemView() = default;
 
+// =========================================================================
+// Type
+// =========================================================================
+
+void AstraSidebarItemView::SetType(Type type) {
+  if (type_ == type) {
+    return;
+  }
+  type_ = type;
+  UpdateVisuals();
+  InvalidateLayout();
+}
+
 void AstraSidebarItemView::BuildLayout() {
-  // Main horizontal layout: [icon] [text_container] [trailing_container]
+  // Main horizontal layout: [drag_handle] [icon] [text_container] [trailing_container]
   auto* layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::Orientation::kHorizontal,
       gfx::Insets::VH(kSidebarItemVerticalPadding,
@@ -85,6 +113,14 @@ void AstraSidebarItemView::BuildLayout() {
       kSidebarItemIconSpacing));
   layout->set_cross_axis_alignment(
       views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  // Drag handle (initially hidden).
+  drag_handle_view_ = AddChildView(std::make_unique<views::ImageView>());
+  drag_handle_view_->SetPreferredSize(
+      gfx::Size(kSidebarItemDragHandleSize, kSidebarItemDragHandleSize));
+  drag_handle_view_->SetCanProcessEventsWithinSubtree(false);
+  drag_handle_view_->SetVisible(false);
+  drag_handle_view_->SetAccessibleName(u"Drag to reorder");
 
   // Leading icon.
   icon_view_ = AddChildView(std::make_unique<views::ImageView>());
@@ -274,6 +310,21 @@ void AstraSidebarItemView::SetDropTarget(bool is_target) {
 }
 
 // =========================================================================
+// Drag handle
+// =========================================================================
+
+void AstraSidebarItemView::SetShowDragHandle(bool show) {
+  if (show_drag_handle_ == show) {
+    return;
+  }
+  show_drag_handle_ = show;
+  if (drag_handle_view_) {
+    drag_handle_view_->SetVisible(show);
+  }
+  InvalidateLayout();
+}
+
+// =========================================================================
 // Leading icon
 // =========================================================================
 
@@ -384,6 +435,62 @@ void AstraSidebarItemView::SetChevronRotated(bool rotated) {
     // Placeholder: update visual state.
     chevron_view_->SchedulePaint();
   }
+}
+
+// =========================================================================
+// Compact mode
+// =========================================================================
+
+void AstraSidebarItemView::SetCompactMode(bool compact) {
+  if (is_compact_ == compact) {
+    return;
+  }
+  is_compact_ = compact;
+
+  // In compact mode, hide text elements and show only the icon.
+  if (text_container_) {
+    text_container_->SetVisible(!compact);
+  }
+  if (trailing_container_) {
+    // In compact mode, hide most trailing elements except badges.
+    // Badges can still be shown as small overlays.
+    if (chevron_view_) {
+      chevron_view_->SetVisible(chevron_visible_ && !compact);
+    }
+  }
+  if (secondary_label_) {
+    secondary_label_->SetVisible(!compact);
+  }
+  if (drag_handle_view_) {
+    drag_handle_view_->SetVisible(show_drag_handle_ && !compact);
+  }
+
+  UpdateVisuals();
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Tooltip preview
+// =========================================================================
+
+void AstraSidebarItemView::SetDetailedTooltip(const std::u16string& title,
+                                              const std::u16string& subtitle) {
+  // Build a detailed tooltip with title and optional subtitle.
+  std::u16string tooltip_text = title;
+  if (!subtitle.empty()) {
+    tooltip_text += u"\n" + subtitle;
+  }
+  SetTooltip(tooltip_text);
+}
+
+void AstraSidebarItemView::SetShowTooltipPreview(bool show) {
+  show_tooltip_preview_ = show;
+  // TODO(astra): When tooltip preview is enabled, show a rich preview
+  //   bubble on hover (similar to tab hover cards). When disabled, show
+  //   a standard tooltip only. The rich preview would include the full
+  //   title, URL, favicon, and action buttons.
+  //   Chromium pattern: TabHoverCardController
+  //   (chrome/browser/ui/tabs/tab_hover_card_controller.h)
 }
 
 // =========================================================================
@@ -689,6 +796,10 @@ bool AstraSidebarItemView::OnKeyPressed(const ui::KeyEvent& event) {
 void AstraSidebarItemView::OnItemClicked() {
   // Base class has no default click action.
   // Subclasses should override to handle clicks.
+  // If a click callback is set, invoke it.
+  if (click_callback_) {
+    click_callback_.Run();
+  }
 }
 
 void AstraSidebarItemView::ShowContextMenu(const gfx::Point& screen_point) {
