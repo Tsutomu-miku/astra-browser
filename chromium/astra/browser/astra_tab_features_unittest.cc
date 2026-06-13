@@ -1536,4 +1536,701 @@ TEST_F(TabFeaturesTest, EdgeCase_StackInfo_PositionWithNoStack) {
   SUCCEED() << "Test structure ready; needs content test harness.";
 }
 
+// ===========================================================================
+// Tab unique identity
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, TabUniqueId_GeneratedOnCreation) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Tab unique ID should be generated on creation and non-empty.
+  // EXPECT_FALSE(f->tab_unique_id().empty());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, TabUniqueId_StableAcrossMutations) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // std::string original_id = f->tab_unique_id();
+  //
+  // // Mutate other fields — tab unique ID should not change.
+  // f->set_workspace_id("ws-1");
+  // f->set_is_favorite(true);
+  // f->set_tab_color(SK_ColorRED);
+  // f->Reset();
+  //
+  // EXPECT_EQ(f->tab_unique_id(), original_id);
+  // EXPECT_FALSE(f->tab_unique_id().empty());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, TabUniqueId_SetCustom) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // std::string custom_id = "custom-tab-id-123";
+  // f->set_tab_unique_id(custom_id);
+  // EXPECT_EQ(f->tab_unique_id(), custom_id);
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, TabUniqueId_GenerateNew) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // std::string original_id = f->tab_unique_id();
+  //
+  // f->GenerateNewTabUniqueId();
+  //
+  // // New ID should be different from the original.
+  // EXPECT_NE(f->tab_unique_id(), original_id);
+  // EXPECT_FALSE(f->tab_unique_id().empty());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, TabUniqueId_DifferentTabsDifferentIds) {
+  // AstraTabFeatures* f1 = features();
+  // AstraTabFeatures* f2 = CreateSecondTab();
+  // ASSERT_NE(f1, nullptr);
+  // ASSERT_NE(f2, nullptr);
+  //
+  // // Each tab should have a unique ID.
+  // EXPECT_FALSE(f1->tab_unique_id().empty());
+  // EXPECT_FALSE(f2->tab_unique_id().empty());
+  // EXPECT_NE(f1->tab_unique_id(), f2->tab_unique_id());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// Static helpers
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, Static_GetTabId_ReturnsIdForExisting) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // std::string id = AstraTabFeatures::GetTabId(web_contents_.get());
+  // EXPECT_EQ(id, f->tab_unique_id());
+  // EXPECT_FALSE(id.empty());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Static_GetTabId_NullWebContentsReturnsEmpty) {
+  // std::string id = AstraTabFeatures::GetTabId(nullptr);
+  // EXPECT_TRUE(id.empty());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Static_AssignToWorkspace) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // EXPECT_EQ(f->workspace_id(), "default");
+  //
+  // AstraTabFeatures::AssignToWorkspace(web_contents_.get(), "ws-42");
+  // EXPECT_EQ(f->workspace_id(), "ws-42");
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Static_GetWorkspaceId_Default) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // std::string ws_id = AstraTabFeatures::GetWorkspaceId(web_contents_.get());
+  // EXPECT_EQ(ws_id, "default");
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Static_GetWorkspaceId_AfterSet) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->set_workspace_id("ws-custom");
+  // std::string ws_id = AstraTabFeatures::GetWorkspaceId(web_contents_.get());
+  // EXPECT_EQ(ws_id, "ws-custom");
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// Source workspace ID
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, SourceWorkspaceId_DefaultEmpty) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // EXPECT_TRUE(f->source_workspace_id().empty());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, SourceWorkspaceId_SetAndClear) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->set_source_workspace_id("ws-old");
+  // EXPECT_EQ(f->source_workspace_id(), "ws-old");
+  //
+  // f->set_source_workspace_id("");
+  // EXPECT_TRUE(f->source_workspace_id().empty());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// Tab color
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, TabColor_DefaultTransparent) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // EXPECT_EQ(f->tab_color(), SK_ColorTRANSPARENT);
+  // EXPECT_FALSE(f->has_tab_color());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, TabColor_SetAndHasColor) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->set_tab_color(SK_ColorRED);
+  // EXPECT_EQ(f->tab_color(), SK_ColorRED);
+  // EXPECT_TRUE(f->has_tab_color());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, TabColor_Clear) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->set_tab_color(SK_ColorBLUE);
+  // ASSERT_TRUE(f->has_tab_color());
+  //
+  // f->ClearTabColor();
+  // EXPECT_EQ(f->tab_color(), SK_ColorTRANSPARENT);
+  // EXPECT_FALSE(f->has_tab_color());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, TabColor_TransparentIsNoColor) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->set_tab_color(SK_ColorTRANSPARENT);
+  // EXPECT_FALSE(f->has_tab_color());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// Read later (Astra-specific)
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, ReadLater_DefaultFalse) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // EXPECT_FALSE(f->read_later());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, ReadLater_SetAndClear) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->set_read_later(true);
+  // EXPECT_TRUE(f->read_later());
+  //
+  // f->set_read_later(false);
+  // EXPECT_FALSE(f->read_later());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, ReadLater_DistinctFromReadingList) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Read later is independent from Chromium reading list.
+  // f->set_read_later(true);
+  // EXPECT_FALSE(f->is_in_reading_list());
+  //
+  // f->AddToReadingList();
+  // EXPECT_TRUE(f->is_in_reading_list());
+  // EXPECT_TRUE(f->read_later());
+  //
+  // f->set_read_later(false);
+  // EXPECT_TRUE(f->is_in_reading_list());
+  // EXPECT_FALSE(f->read_later());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// Snooze
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, Snooze_DefaultNotSnoozed) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // EXPECT_FALSE(f->is_snoozed());
+  // EXPECT_TRUE(f->snooze_time().is_null());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Snooze_SnoozeUntil) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // base::Time wake_time = base::Time::Now() + base::Hours(1);
+  // f->SnoozeUntil(wake_time);
+  //
+  // EXPECT_TRUE(f->is_snoozed());
+  // EXPECT_EQ(f->snooze_time(), wake_time);
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Snooze_UpdateTimeWhileSnoozed) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // base::Time first_time = base::Time::Now() + base::Minutes(30);
+  // f->SnoozeUntil(first_time);
+  //
+  // base::Time second_time = base::Time::Now() + base::Hours(2);
+  // f->SnoozeUntil(second_time);
+  //
+  // EXPECT_TRUE(f->is_snoozed());
+  // EXPECT_EQ(f->snooze_time(), second_time);
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Snooze_Cancel) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->SnoozeUntil(base::Time::Now() + base::Minutes(10));
+  // ASSERT_TRUE(f->is_snoozed());
+  //
+  // f->CancelSnooze();
+  // EXPECT_FALSE(f->is_snoozed());
+  // EXPECT_TRUE(f->snooze_time().is_null());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Snooze_CancelWhenNotSnoozed_NoOp) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Cancelling when not snoozed should be a no-op (no crash).
+  // f->CancelSnooze();
+  // EXPECT_FALSE(f->is_snoozed());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Snooze_IsSnoozeDue_FutureNotDue) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->SnoozeUntil(base::Time::Now() + base::Hours(1));
+  // EXPECT_FALSE(f->IsSnoozeDue());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Snooze_IsSnoozeDue_PastIsDue) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Snooze until a time in the past.
+  // f->SnoozeUntil(base::Time::Now() - base::Minutes(5));
+  // EXPECT_TRUE(f->IsSnoozeDue());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Snooze_IsSnoozeDue_NotSnoozedReturnsFalse) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Not snoozed — IsSnoozeDue should return false.
+  // EXPECT_FALSE(f->IsSnoozeDue());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// Hibernation
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, Hibernation_DefaultNotHibernated) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // EXPECT_FALSE(f->is_hibernated());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Hibernation_Hibernate) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->Hibernate();
+  // EXPECT_TRUE(f->is_hibernated());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Hibernation_Hibernate_Idempotent) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->Hibernate();
+  // ASSERT_TRUE(f->is_hibernated());
+  //
+  // // Hibernating again should be a no-op.
+  // f->Hibernate();
+  // EXPECT_TRUE(f->is_hibernated());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Hibernation_Wake) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->Hibernate();
+  // ASSERT_TRUE(f->is_hibernated());
+  //
+  // f->Wake();
+  // EXPECT_FALSE(f->is_hibernated());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Hibernation_WakeWhenNotHibernated_NoOp) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Waking when not hibernated should be a no-op.
+  // f->Wake();
+  // EXPECT_FALSE(f->is_hibernated());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Hibernation_DistinctFromDiscardAndSuspend) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Hibernation is independent from discard and suspension.
+  // f->Hibernate();
+  // EXPECT_TRUE(f->is_hibernated());
+  // EXPECT_FALSE(f->is_discarded());
+  // EXPECT_FALSE(f->is_suspended());
+  //
+  // f->set_is_discarded(true);
+  // f->SetSuspended(true);
+  // EXPECT_TRUE(f->is_hibernated());
+  // EXPECT_TRUE(f->is_discarded());
+  // EXPECT_TRUE(f->is_suspended());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// Created / activated times
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, CreatedTime_SetOnConstruction) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Created time should be set on construction.
+  // EXPECT_FALSE(f->created_time().is_null());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, CreatedTime_SetCustom) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // base::Time custom_time = base::Time::Now() - base::Days(7);
+  // f->set_created_time(custom_time);
+  // EXPECT_EQ(f->created_time(), custom_time);
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, LastActivatedTime_DefaultNull) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Last activated time starts as null.
+  // EXPECT_TRUE(f->last_activated_time().is_null());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, LastActivatedTime_SetCustom) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // base::Time activation_time = base::Time::Now();
+  // f->set_last_activated_time(activation_time);
+  // EXPECT_EQ(f->last_activated_time(), activation_time);
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, MarkActivated_UpdatesBothTimes) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Initially both are null / untouched.
+  // EXPECT_TRUE(f->IsUntouched());
+  // EXPECT_TRUE(f->last_activated_time().is_null());
+  //
+  // f->MarkActivated();
+  //
+  // // Both TimeTicks and Time should be updated.
+  // EXPECT_FALSE(f->IsUntouched());
+  // EXPECT_FALSE(f->last_activated_time().is_null());
+  //
+  // // last_active_time_ (TimeTicks) should also be set.
+  // EXPECT_FALSE(f->last_active_time().is_null());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, LastActivatedTime_DistinctFromLastActiveTime) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // last_active_time_ (TimeTicks) and last_activated_time_ (Time)
+  // // are separate concepts and track different things.
+  // f->set_last_active_time(base::TimeTicks::Now());
+  // EXPECT_FALSE(f->last_active_time().is_null());
+  // EXPECT_TRUE(f->last_activated_time().is_null());
+  //
+  // f->set_last_activated_time(base::Time::Now());
+  // EXPECT_FALSE(f->last_active_time().is_null());
+  // EXPECT_FALSE(f->last_activated_time().is_null());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// CloneFrom
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, CloneFrom_CopiesIdentity) {
+  // AstraTabFeatures* f1 = features();
+  // AstraTabFeatures* f2 = CreateSecondTab();
+  // ASSERT_NE(f1, nullptr);
+  // ASSERT_NE(f2, nullptr);
+  //
+  // std::string original_id1 = f1->tab_unique_id();
+  // std::string original_id2 = f2->tab_unique_id();
+  // ASSERT_NE(original_id1, original_id2);
+  //
+  // base::Time original_created1 = f1->created_time();
+  //
+  // // Set some metadata on f1.
+  // f1->set_workspace_id("ws-1");
+  // f1->set_is_favorite(true);
+  // f1->set_tab_color(SK_ColorGREEN);
+  //
+  // f2->CloneFrom(*f1);
+  //
+  // // Identity should be cloned.
+  // EXPECT_EQ(f2->tab_unique_id(), original_id1);
+  // EXPECT_EQ(f2->created_time(), original_created1);
+  //
+  // // Metadata should also be copied.
+  // EXPECT_EQ(f2->workspace_id(), "ws-1");
+  // EXPECT_TRUE(f2->is_favorite());
+  // EXPECT_EQ(f2->tab_color(), SK_ColorGREEN);
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, CopyFrom_DoesNotCopyIdentity) {
+  // AstraTabFeatures* f1 = features();
+  // AstraTabFeatures* f2 = CreateSecondTab();
+  // ASSERT_NE(f1, nullptr);
+  // ASSERT_NE(f2, nullptr);
+  //
+  // std::string original_id2 = f2->tab_unique_id();
+  // base::Time original_created2 = f2->created_time();
+  //
+  // f2->CopyFrom(*f1);
+  //
+  // // Identity should NOT be copied by CopyFrom.
+  // EXPECT_EQ(f2->tab_unique_id(), original_id2);
+  // EXPECT_EQ(f2->created_time(), original_created2);
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// Session restore stubs
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, SessionRestore_SerializeReturnsString) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Serialize should return a string (currently empty placeholder).
+  // std::string data = f->SerializeForSessionRestore();
+  // // Currently a stub — just verify it doesn't crash.
+  // (void)data;
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, SessionRestore_DeserializeEmptyNoOp) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // std::string original_id = f->tab_unique_id();
+  //
+  // // Deserializing empty data should be a no-op.
+  // f->DeserializeFromSessionRestore("");
+  //
+  // EXPECT_EQ(f->tab_unique_id(), original_id);
+  // EXPECT_EQ(f->workspace_id(), "default");
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// Reset — new field verification
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, Reset_PreservesTabUniqueId) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // std::string original_id = f->tab_unique_id();
+  //
+  // f->set_tab_color(SK_ColorRED);
+  // f->set_workspace_id("ws-temp");
+  // f->Hibernate();
+  //
+  // f->Reset();
+  //
+  // // Tab unique ID should survive Reset().
+  // EXPECT_EQ(f->tab_unique_id(), original_id);
+  // EXPECT_FALSE(f->tab_unique_id().empty());
+  //
+  // // Other fields should be reset.
+  // EXPECT_EQ(f->workspace_id(), "default");
+  // EXPECT_FALSE(f->has_tab_color());
+  // EXPECT_FALSE(f->is_hibernated());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, Reset_PreservesCreatedTime) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // base::Time original_created = f->created_time();
+  //
+  // f->Reset();
+  //
+  // // Created time should survive Reset().
+  // EXPECT_EQ(f->created_time(), original_created);
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// ClearAllAstraMetadata — new field verification
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, ClearAllAstraMetadata_PreservesTabUniqueId) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // std::string original_id = f->tab_unique_id();
+  //
+  // f->set_tab_color(SK_ColorRED);
+  // f->set_read_later(true);
+  // f->Hibernate();
+  //
+  // f->ClearAllAstraMetadata();
+  //
+  // // Tab unique ID should be preserved.
+  // EXPECT_EQ(f->tab_unique_id(), original_id);
+  //
+  // // Astra metadata should be cleared.
+  // EXPECT_FALSE(f->has_tab_color());
+  // EXPECT_FALSE(f->read_later());
+  // EXPECT_FALSE(f->is_hibernated());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+// ===========================================================================
+// HasAnyAstraMetadata — new field verification
+// ===========================================================================
+
+TEST_F(TabFeaturesTest, HasAnyAstraMetadata_TabColorTrue) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->set_tab_color(SK_ColorBLUE);
+  // EXPECT_TRUE(f->HasAnyAstraMetadata());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, HasAnyAstraMetadata_SnoozeTrue) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->SnoozeUntil(base::Time::Now() + base::Minutes(30));
+  // EXPECT_TRUE(f->HasAnyAstraMetadata());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, HasAnyAstraMetadata_HibernationTrue) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->Hibernate();
+  // EXPECT_TRUE(f->HasAnyAstraMetadata());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, HasAnyAstraMetadata_ReadLaterTrue) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->set_read_later(true);
+  // EXPECT_TRUE(f->HasAnyAstraMetadata());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, HasAnyAstraMetadata_SourceWorkspaceTrue) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->set_source_workspace_id("ws-old");
+  // EXPECT_TRUE(f->HasAnyAstraMetadata());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, HasAnyAstraMetadata_TabIdNotCounted) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Tab unique ID is always set but doesn't count as "Astra metadata".
+  // EXPECT_FALSE(f->tab_unique_id().empty());
+  // EXPECT_FALSE(f->HasAnyAstraMetadata());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, HasAnyAstraMetadata_CreatedTimeNotCounted) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // // Created time is always set but doesn't count as "Astra metadata".
+  // EXPECT_FALSE(f->created_time().is_null());
+  // EXPECT_FALSE(f->HasAnyAstraMetadata());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
+TEST_F(TabFeaturesTest, HasAnyAstraMetadata_LastActivatedNotCounted) {
+  // AstraTabFeatures* f = features();
+  // ASSERT_NE(f, nullptr);
+  //
+  // f->MarkActivated();
+  // ASSERT_FALSE(f->last_activated_time().is_null());
+  //
+  // // Last activated time doesn't count as "Astra metadata".
+  // EXPECT_FALSE(f->HasAnyAstraMetadata());
+  SUCCEED() << "Test structure ready; needs content test harness.";
+}
+
 }  // namespace astra

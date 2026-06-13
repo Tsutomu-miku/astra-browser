@@ -9,7 +9,9 @@
 #include <utility>
 
 #include "base/time/time.h"
+#include "base/unguessable_token.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "third_party/skia/include/core/SkColor.h"
 #include "ui/gfx/geometry/size.h"
 #include "url/gurl.h"
 
@@ -78,6 +80,47 @@ class AstraTabFeatures final
   static AstraTabFeatures* GetOrCreateForWebContents(
       content::WebContents* web_contents);
 
+  // Returns the AstraTabFeatures for |web_contents|, or nullptr if none
+  // has been created yet.
+  static AstraTabFeatures* GetForWebContents(content::WebContents* web_contents);
+
+  // Convenience: returns the stable Astra tab ID for |web_contents|.
+  // Returns an empty string if no AstraTabFeatures exists for the contents.
+  static std::string GetTabId(content::WebContents* web_contents);
+
+  // Convenience: assigns |web_contents| to |workspace_id|.
+  // Creates AstraTabFeatures if it doesn't exist yet.
+  static void AssignToWorkspace(content::WebContents* web_contents,
+                                const std::string& workspace_id);
+
+  // Convenience: returns the workspace ID for |web_contents|.
+  // Returns "default" if no AstraTabFeatures exists for the contents.
+  static std::string GetWorkspaceId(content::WebContents* web_contents);
+
+  // -- Tab identity -------------------------------------------------------
+
+  // Stable Astra tab identifier.  This ID persists across navigations,
+  // tab discarding, and session restore (when properly integrated).
+  //
+  // Unlike WebContents pointers and Chromium tab IDs, which can change
+  // when a tab is discarded and restored, the Astra tab unique ID
+  // represents the logical identity of the tab from the user's perspective.
+  //
+  // Generated on first creation via base::UnguessableToken, stored as a
+  // string for easy serialization and comparison.
+  const std::string& tab_unique_id() const { return tab_unique_id_; }
+
+  // Sets a custom tab unique ID.  Used during session restore to
+  // re-establish tab identity from persisted state.
+  // TODO(astra): Use this in session restore integration.
+  void set_tab_unique_id(std::string id) {
+    tab_unique_id_ = std::move(id);
+  }
+
+  // Generates a new random tab unique ID.  Use when a tab is genuinely
+  // new (not a restore or reuse) and needs a fresh identity.
+  void GenerateNewTabUniqueId();
+
   // Resets all Astra metadata to defaults. Used when a WebContents is reused
   // (e.g., session restore, tab discarding replacement) and old product
   // metadata should not carry over.
@@ -91,6 +134,16 @@ class AstraTabFeatures final
   }
 
   bool IsInDefaultWorkspace() const { return workspace_id_ == "default"; }
+
+  // ID of the workspace this tab was moved from, if the tab was recently
+  // moved between workspaces.  Empty if the tab has not been moved or
+  // the source has been cleared.
+  //
+  // Used for move tracking and undo support.
+  const std::string& source_workspace_id() const { return source_workspace_id_; }
+  void set_source_workspace_id(std::string id) {
+    source_workspace_id_ = std::move(id);
+  }
 
   // -- Favorites ----------------------------------------------------------
 
@@ -349,6 +402,19 @@ class AstraTabFeatures final
   // No-op if not in the reading list.
   void RemoveFromReadingList();
 
+  // -- Read later (Astra-specific) ----------------------------------------
+
+  // True if this tab is in Astra's "read later" list.
+  //
+  // This is distinct from Chromium's reading list (is_in_reading_list_).
+  // Read later is an Astra-native feature for temporarily saving tabs to
+  // read later, with automatic expiration and snooze integration.
+  //
+  // Truth: AstraReadingListService or similar Astra service owns the
+  //   actual list; this flag is the per-tab projection.
+  bool read_later() const { return read_later_; }
+  void set_read_later(bool in_read_later) { read_later_ = in_read_later; }
+
   // -- Notes --------------------------------------------------------------
 
   // True if this tab has an attached note.
@@ -368,6 +434,120 @@ class AstraTabFeatures final
     note_id_ = std::move(id);
     has_note_ = !note_id_.empty();
   }
+
+  // -- Tab color ----------------------------------------------------------
+
+  // Custom color for this tab, used in the sidebar and tab strip.
+  // Similar to Arc browser's tab coloring feature.
+  //
+  // A value of SK_ColorTRANSPARENT (or 0) means no custom color is set
+  // and the default theme color should be used.
+  //
+  // This is an Astra-native feature.  Chromium has tab group colors but
+  // not per-tab colors.
+  SkColor tab_color() const { return tab_color_; }
+  void set_tab_color(SkColor color) { tab_color_ = color; }
+
+  // Returns true if a custom tab color is set.
+  bool has_tab_color() const { return tab_color_ != SK_ColorTRANSPARENT; }
+
+  // Clears the custom tab color, reverting to the theme default.
+  void ClearTabColor() { tab_color_ = SK_ColorTRANSPARENT; }
+
+  // -- Snooze -------------------------------------------------------------
+
+  // True if this tab is currently snoozed.  A snoozed tab is hidden from
+  // the regular tab list and will reappear at the scheduled snooze_time.
+  //
+  // Snooze is an Astra-native feature.  The actual hiding / showing is
+  // handled by Astra's tab management layer; this flag is the metadata
+  // projection.
+  bool is_snoozed() const { return is_snoozed_; }
+
+  // Time when the snoozed tab should reappear.
+  // Only meaningful when is_snoozed() is true.
+  base::Time snooze_time() const { return snooze_time_; }
+
+  // Snoozes the tab until |time|.  Sets is_snoozed to true and records
+  // the wake-up time.
+  //
+  // If the tab is already snoozed, updates the snooze time.
+  void SnoozeUntil(base::Time time);
+
+  // Cancels the snooze, waking the tab up immediately.
+  // No-op if the tab is not snoozed.
+  void CancelSnooze();
+
+  // Returns true if the snooze time has passed and the tab should wake up.
+  // Returns false if the tab is not snoozed or the snooze time is in the future.
+  bool IsSnoozeDue() const;
+
+  // -- Hibernation --------------------------------------------------------
+
+  // True if this tab is hibernated.  A hibernated tab has its contents
+  // unloaded (discarded) but remains visible in the tab list with its
+  // title and favicon preserved.
+  //
+  // Hibernation is similar to Chromium's tab discarding but is user-initiated
+  // and has different semantics:
+  //   - Hibernation is explicit (user action or rule-based), not automatic.
+  //   - Hibernated tabs are visually distinguished in the sidebar.
+  //   - Hibernation is an Astra concept; the actual tab unload is done
+  //     by Chromium's discard mechanism.
+  //
+  // Truth:
+  //   - Chromium owns the actual discard (WebContents::Discard()).
+  //   - This flag is Astra's metadata projection of hibernation state.
+  //   - AstraMemorySaverService or similar handles the actual discard.
+  //
+  // TODO(astra): Integrate with Chromium's tab discard mechanism.
+  //   Patch point: content::WebContents::Discard() or
+  //   resource_coordinator::TabManager — add Astra hibernation marker.
+  bool is_hibernated() const { return is_hibernated_; }
+
+  // Hibernates the tab (marks it as hibernated in Astra metadata).
+  //
+  // Note: This does NOT actually discard the tab contents.  The actual
+  // discard is done by Chromium's discard mechanism.  This only updates
+  // Astra's metadata projection.
+  //
+  // TODO(astra): Hook into Chromium's discard pipeline so that hibernation
+  //   triggers an actual tab discard.
+  void Hibernate();
+
+  // Wakes the tab from hibernation (clears the hibernated flag).
+  //
+  // Note: This does NOT actually reload the tab.  The actual reload is
+  // done by Chromium when the tab is activated.  This only updates
+  // Astra's metadata projection.
+  void Wake();
+
+  // -- Created / activated times ------------------------------------------
+
+  // Wall-clock time when this tab was created.
+  // Set during construction (or session restore).
+  base::Time created_time() const { return created_time_; }
+
+  // Sets the created time.  Used during session restore to preserve
+  // the original creation time.
+  void set_created_time(base::Time time) { created_time_ = time; }
+
+  // Wall-clock time when this tab was last activated (made the active tab).
+  //
+  // This is distinct from last_active_time_ (TimeTicks) which is used for
+  // staleness calculations.  last_activated_time_ is the wall-clock
+  // timestamp for display and sorting purposes.
+  base::Time last_activated_time() const { return last_activated_time_; }
+
+  // Sets the last activated wall-clock time.
+  // Called by observers when the tab becomes active.
+  void set_last_activated_time(base::Time time) {
+    last_activated_time_ = time;
+  }
+
+  // Convenience: updates both last_active_time_ (TimeTicks for staleness)
+  // and last_activated_time_ (Time for display) to "now".
+  void MarkActivated();
 
   // -- View state ---------------------------------------------------------
 
@@ -531,7 +711,19 @@ class AstraTabFeatures final
 
   // Copies all Astra metadata from |other| to this tab.
   // Used when duplicating a tab or restoring tab state.
+  //
+  // Note: tab_unique_id_ is NOT copied — each tab has its own identity.
+  // Note: created_time_ and last_activated_time_ are NOT copied.
   void CopyFrom(const AstraTabFeatures& other);
+
+  // Clones metadata from |other| to this tab.  This is a richer version
+  // of CopyFrom() that also copies tab identity fields used in session
+  // restore scenarios.
+  //
+  // TODO(astra): Define exact semantics for CloneFrom vs CopyFrom.
+  //   For now CloneFrom is an alias for CopyFrom plus tab_unique_id
+  //   transfer for session restore use cases.
+  void CloneFrom(const AstraTabFeatures& other);
 
   // Clears all Astra-specific metadata, resetting it to default values.
   // This is similar to Reset() but does NOT re-evaluate incognito read-only
@@ -544,13 +736,57 @@ class AstraTabFeatures final
   // Used to determine if a tab has any Astra-specific customization.
   bool HasAnyAstraMetadata() const;
 
+  // ========================================================================
+  // Session restore integration (stubs)
+  // ========================================================================
+  //
+  // Astra tab metadata must survive browser restarts.  The correct
+  // architecture is to attach Astra metadata to Chromium's session restore
+  // pipeline, so that when a tab is restored, its Astra metadata is
+  // restored along with it.
+  //
+  // These are stub methods that outline the serialization interface.
+  // The actual integration requires patching Chromium's session service.
+  //
+  // TODO(astra): Implement session restore serialization.
+  // Patch point: chrome/browser/sessions/session_service.cc — add
+  //   extra data blob to each tab's session entry containing Astra metadata.
+  // Chromium component: sessions / SessionService / TabRestoreService.
+
+  // Serializes the Astra-specific tab metadata to a string for storage
+  // in Chromium's session restore data.
+  //
+  // TODO(astra): Implement actual serialization format (JSON or protobuf).
+  //   For now this is a placeholder.
+  std::string SerializeForSessionRestore() const;
+
+  // Deserializes Astra tab metadata from a session restore string and
+  // applies it to this tab features object.
+  //
+  // TODO(astra): Implement actual deserialization.
+  //   For now this is a placeholder.
+  void DeserializeFromSessionRestore(const std::string& data);
+
  private:
   friend class content::WebContentsUserData<AstraTabFeatures>;
 
   explicit AstraTabFeatures(content::WebContents* web_contents);
 
+  // -- Tab identity -------------------------------------------------------
+
+  // Stable Astra tab unique identifier.  Generated on construction via
+  // base::UnguessableToken, stored as a string for easy serialization.
+  //
+  // This ID represents the logical identity of a tab from the user's
+  // perspective.  It persists across navigations, tab discarding, and
+  // (when session restore is integrated) browser restarts.
+  std::string tab_unique_id_;
+
   // Workspace membership.
   std::string workspace_id_ = "default";
+
+  // Source workspace for move tracking.  Empty if not recently moved.
+  std::string source_workspace_id_;
 
   // Favorite state and ordering.
   bool is_favorite_ = false;
@@ -559,6 +795,9 @@ class AstraTabFeatures final
   // When true, is_favorite_ cannot be changed (incognito mode).
   // Set during construction based on the WebContents' BrowserContext.
   bool favorite_read_only_ = false;
+
+  // Custom tab color.  SK_ColorTRANSPARENT means no custom color.
+  SkColor tab_color_ = SK_ColorTRANSPARENT;
 
   // Split view configuration.
   bool is_in_split_view_ = false;
@@ -648,6 +887,12 @@ class AstraTabFeatures final
   bool is_in_reading_list_ = false;
   base::Time reading_list_added_time_;
 
+  // Read later state (Astra-native feature).
+  //
+  // read_later_: true if the tab is in Astra's read-later list.
+  //   This is distinct from Chromium's reading list.
+  bool read_later_ = false;
+
   // Notes association.
   //
   // has_note_: true if this tab has an attached note.
@@ -656,6 +901,30 @@ class AstraTabFeatures final
   // Truth: AstraNoteService owns the actual note content.
   bool has_note_ = false;
   std::string note_id_;
+
+  // Snooze state.
+  //
+  // is_snoozed_: true if the tab is currently snoozed.
+  // snooze_time_: when the snoozed tab should reappear.
+  //
+  // Snooze is an Astra-native feature.
+  bool is_snoozed_ = false;
+  base::Time snooze_time_;
+
+  // Hibernation state.
+  //
+  // is_hibernated_: true if the tab is user-hibernated.
+  //   This is Astra metadata — actual tab unload is done by Chromium.
+  //
+  // Chromium owner: resource_coordinator::TabManager / WebContents::Discard()
+  bool is_hibernated_ = false;
+
+  // Wall-clock time when the tab was created.
+  base::Time created_time_;
+
+  // Wall-clock time when the tab was last activated.
+  // Used for display and sorting.
+  base::Time last_activated_time_;
 
   // View state projections.
   //
