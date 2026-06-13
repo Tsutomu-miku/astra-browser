@@ -1,13 +1,17 @@
-/**
- * ADR-0008 / W-11: electron-builder afterSign 钩子 — macOS notarization。
- *
- * 只在以下条件都满足时执行：
- *   1. 目标平台是 mac
- *   2. 环境变量 APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID 都已设置
- *   3. CSC_FOR_PULL_REQUEST 未被设置（防止 PR 分支触发）
- *
- * 本地构建 & 未配置密钥的 CI 分支会静默跳过，不报错。
- */
+// LEGACY SCRIPT — Electron era
+//
+// ADR-0008 / W-11: electron-builder afterSign 钩子 — macOS notarization。
+//
+// Part of the legacy Electron build pipeline.
+// The direct-Chromium build will use its own notarization workflow
+// (e.g. `codesign` + `notarytool` invoked from build scripts).
+//
+// 只在以下条件都满足时执行：
+//   1. 目标平台是 mac
+//   2. 环境变量 APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID 都已设置
+//   3. CSC_FOR_PULL_REQUEST 未被设置（防止 PR 分支触发）
+//
+// 本地构建 & 未配置密钥的 CI 分支会静默跳过，不报错。
 
 /* eslint-disable no-console */
 

@@ -1,0 +1,46 @@
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -30,6 +30,10 @@
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/common/chrome_constants.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/app/astra_content_browser_client.h"
++#endif
++
+ // ... other includes ...
+
+ ChromeContentBrowserClient::ChromeContentBrowserClient() {
+@@ -120,6 +124,13 @@ ChromeContentBrowserClient::ChromeContentBrowserClient() {
+   // ... other initialization ...
+   RegisterWebContentsHelpers();
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Install Astra-specific ChromeContentBrowserClient hooks.
++  // Keep this minimal — Astra only adds product-specific policy overrides.
++  // All standard browser behavior remains in Chromium's hands.
++  astra::AstraContentBrowserClient::InstallChromeContentBrowserClientHooks();
++#endif
++
+   // ... rest of constructor ...
+ }
+
+ ChromeContentBrowserClient::~ChromeContentBrowserClient() = default;
+@@ -580,6 +591,16 @@ void ChromeContentBrowserClient::OverrideWebPreferences(
+   // ... Chrome's web preference overrides ...
+   prefs->hyperlink_auditing_enabled = false;
+   // ... more overrides ...
++
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra-specific web preference overrides.
++  //
++  // Most web preferences are controlled by Chrome's existing pref service.
++  // Only Astra-specific surfaces (e.g., sidebar web views) get custom
++  // tweaks here.  Use sparingly — prefer Chrome's pref system when possible.
++  astra::AstraContentBrowserClient::OverrideWebPreferences(web_contents, prefs);
++#endif
+ }
+
+ // ... rest of file ...

@@ -1,0 +1,45 @@
+diff --git a/components/omnibox/browser/autocomplete_controller.cc b/components/omnibox/browser/autocomplete_controller.cc
+index abc1234..def5678 100644
+--- a/components/omnibox/browser/autocomplete_controller.cc
++++ b/components/omnibox/browser/autocomplete_controller.cc
+@@ -20,6 +20,11 @@
+ #include "components/omnibox/browser/history_url_provider.h"
+ #include "components/omnibox/browser/search_provider.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/browser/astra_omnibox_provider.h"
++#endif
++
+ // ... other includes ...
+
+ AutocompleteController::AutocompleteController(
+@@ -145,6 +150,16 @@ void AutocompleteController::AddProviders() {
+   providers_.push_back(base::MakeRefCounted<BookmarkProvider>(
+       bookmark_model, history_service, template_url_service));
+   // ... more providers ...
++
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra-specific omnibox suggestions (workspace switch, tab search,
++  // command execution).  Triggered by special prefixes like ">",
++  // "@workspace", "@tab", etc.
++  //
++  // All logic lives in astra/browser/astra_omnibox_provider.cc; this patch
++  // only registers the provider with the controller.
++  providers_.push_back(base::MakeRefCounted<AstraOmniboxProvider>(
++      profile_, astra::AstraOmniboxManager::GetForProfile(profile_)));
++#endif
+ }
+diff --git a/components/omnibox/browser/BUILD.gn b/components/omnibox/browser/BUILD.gn
+index abc1234..def5678 100644
+--- a/components/omnibox/browser/BUILD.gn
++++ b/components/omnibox/browser/BUILD.gn
+@@ -480,6 +480,11 @@ source_set("browser") {
+     "//components/url_formatter",
+     # ... more deps ...
+   ]
++
++  # Astra omnibox provider (workspace suggestions, command palette, etc.)
++  if (is_astra_branded) {
++    deps += [ "//astra/browser" ]
++  }
+ }

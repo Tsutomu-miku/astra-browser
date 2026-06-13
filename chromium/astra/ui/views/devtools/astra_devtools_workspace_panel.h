@@ -1,0 +1,257 @@
+#ifndef ASTRA_UI_VIEWS_DEVTOOLS_ASTRA_DEVTOOLS_WORKSPACE_PANEL_H_
+#define ASTRA_UI_VIEWS_DEVTOOLS_ASTRA_DEVTOOLS_WORKSPACE_PANEL_H_
+
+#include <string>
+#include <vector>
+
+#include "base/memory/raw_ptr.h"
+#include "ui/views/view.h"
+
+namespace content {
+class WebContents;
+}  // namespace content
+
+namespace views {
+class Label;
+class BoxLayout;
+class ScrollView;
+class Textfield;
+class LabelButton;
+}  // namespace views
+
+namespace astra {
+
+class AstraWorkspaceService;
+
+// =========================================================================
+// AstraDevToolsWorkspacePanel — Workspace inspector DevTools panel
+// =========================================================================
+//
+// A native Views panel that displays Astra workspace and tab metadata for
+// debugging purposes.  It shows the current workspace, workspace list, and
+// per-tab Astra features for the inspected WebContents.
+//
+// This is a DEBUG-ONLY / developer tool panel.  It is the Astra equivalent
+// of the "Application" or "Storage" panel in DevTools, but focused on
+// Astra product metadata.
+//
+// Displayed data:
+//   - Current workspace: name, ID, accent color, creation time
+//   - All workspaces: list with IDs, names, tab counts
+//   - Active tab Astra metadata:
+//       * workspace_id
+//       * is_favorite / favorite_folder_id
+//       * split_view state (partner_id, ratio, orientation)
+//       * sidebar_pinned / sidebar_hidden
+//       * is_in_stack / stack_parent_id
+//       * is_pip_tab
+//       * is_suspended / suspended_url
+//       * last_active_time
+//
+// Features:
+//   - Workspace list view with selection
+//   - Tab list for selected workspace
+//   - Workspace actions (new, delete, rename)
+//   - Tab management (drag between workspaces)
+//   - Search/filter for workspaces and tabs
+//   - Context menus on workspace and tab items
+//   - Improved layout and styling
+//
+// Architecture:
+//   - Pure projection — all data is read from Astra services at render time.
+//   - No state storage — the panel does not cache or own data.
+//   - Read-only by default — editing dispatches through services.
+//
+// Truth sources:
+//   - AstraWorkspaceService (profile-scoped keyed service)
+//   - AstraTabFeatures (WebContentsUserData on the inspected tab)
+//   - Chromium's TabStripModel (for tab counts per workspace)
+//
+// Chromium subsystems reused:
+//   - DevToolsPanel / DevToolsUIBindings — panel registration and hosting.
+//   - views::Label, views::BoxLayout — text display and layout.
+//   - views::ScrollView — scrollable list containers.
+//   - views::Textfield — search/filter input.
+//   - views::LabelButton — action buttons.
+//   - SkColor — accent color rendering.
+//
+// Chromium patch point:
+//   TODO(astra): Register this panel as a custom DevTools panel.
+//     Two approaches:
+//     1. Native Views panel: Patch DevToolsWindow or DevToolsUIBindings
+//        to add a native panel alongside the WebUI panels.
+//     2. Extension-based panel: Use chrome.devtools.panels API to register
+//        a WebUI panel served by an extension or WebUI.
+//     We are going with approach 1 (native Views) for direct service access.
+//   Chromium owner: DevToolsWindow / DevToolsUIBindings
+//     (chrome/browser/devtools/devtools_window.h)
+//     (chrome/browser/devtools/devtools_ui_bindings.h)
+//
+// For the overlay skeleton, this is a standalone View that can be embedded
+// in any widget or container.  The integration coordinator handles wiring
+// it into the DevTools window.
+// =========================================================================
+
+class AstraDevToolsWorkspacePanel : public views::View {
+ public:
+  // Delegate for panel actions that go back to the integration layer.
+  class Delegate {
+   public:
+    virtual ~Delegate() = default;
+
+    // Called when the user requests a new workspace.
+    virtual void OnNewWorkspace() = 0;
+
+    // Called when the user requests deletion of a workspace.
+    virtual void OnDeleteWorkspace(const std::string& workspace_id) = 0;
+
+    // Called when the user requests renaming a workspace.
+    virtual void OnRenameWorkspace(const std::string& workspace_id,
+                                   const std::string& new_name) = 0;
+
+    // Called when a workspace is selected in the list.
+    virtual void OnWorkspaceSelected(const std::string& workspace_id) = 0;
+
+    // Called when a tab is selected in the tab list.
+    virtual void OnTabSelected(int tab_index) = 0;
+  };
+
+  AstraDevToolsWorkspacePanel();
+  ~AstraDevToolsWorkspacePanel() override;
+
+  AstraDevToolsWorkspacePanel(const AstraDevToolsWorkspacePanel&) = delete;
+  AstraDevToolsWorkspacePanel& operator=(
+      const AstraDevToolsWorkspacePanel&) = delete;
+
+  // Sets the delegate for action dispatch.
+  void SetDelegate(Delegate* delegate) { delegate_ = delegate; }
+
+  // Sets the inspected WebContents.  The panel reads Astra tab metadata
+  // from this WebContents' AstraTabFeatures user data.
+  // Passing nullptr clears the tab info section.
+  void SetInspectedWebContents(content::WebContents* web_contents);
+
+  // Sets the workspace service to read workspace data from.
+  // The service must outlive this panel.
+  void SetWorkspaceService(AstraWorkspaceService* service);
+
+  // Refreshes all displayed data from services.  Call this when underlying
+  // data may have changed (workspace switched, tab metadata updated, etc.).
+  void Refresh();
+
+  // Sets search filter text.  Filters workspace and tab lists.
+  void SetSearchFilter(const std::u16string& filter);
+
+  // Applies dark or light theme.
+  void SetTheme(bool dark_theme);
+
+  // Accessors for testing.
+  views::Label* workspace_name_label_for_testing() {
+    return workspace_name_label_;
+  }
+  views::Label* tab_metadata_label_for_testing() {
+    return tab_metadata_label_;
+  }
+  views::View* workspace_list_container_for_testing() {
+    return workspace_list_container_;
+  }
+  views::View* tab_list_container_for_testing() {
+    return tab_list_container_;
+  }
+  views::Textfield* search_box_for_testing() { return search_box_; }
+  views::LabelButton* new_workspace_button_for_testing() {
+    return new_workspace_button_;
+  }
+  views::LabelButton* delete_workspace_button_for_testing() {
+    return delete_workspace_button_;
+  }
+  views::LabelButton* rename_workspace_button_for_testing() {
+    return rename_workspace_button_;
+  }
+  size_t workspace_item_count_for_testing() const;
+  size_t tab_item_count_for_testing() const;
+  std::string selected_workspace_id_for_testing() const {
+    return selected_workspace_id_;
+  }
+
+ private:
+  // Builds the panel's UI structure.
+  void BuildPanel();
+
+  // Creates a section header label.
+  views::Label* AddSectionLabel(const std::u16string& text);
+
+  // Creates a key-value row (key label + value label) in a container.
+  void AddKeyValueRow(views::View* container,
+                      const std::string& key,
+                      const std::string& value);
+
+  // Refreshes the workspace info section from AstraWorkspaceService.
+  void RefreshWorkspaceInfo();
+
+  // Refreshes the workspace list section.
+  void RefreshWorkspaceList();
+
+  // Refreshes the tab list for the selected workspace.
+  void RefreshTabList();
+
+  // Refreshes the tab metadata section from AstraTabFeatures.
+  void RefreshTabMetadata();
+
+  // Applies current theme to all UI elements.
+  void ApplyTheme();
+
+  // Handles workspace list item click.
+  void OnWorkspaceItemClicked(const std::string& workspace_id);
+
+  // Button action handlers.
+  void OnNewWorkspaceButton();
+  void OnDeleteWorkspaceButton();
+  void OnRenameWorkspaceButton();
+
+  // Delegate for actions.  Not owned.
+  raw_ptr<Delegate> delegate_ = nullptr;
+
+  // The workspace service — not owned.
+  raw_ptr<AstraWorkspaceService> workspace_service_ = nullptr;
+
+  // The inspected WebContents — not owned.
+  raw_ptr<content::WebContents> inspected_contents_ = nullptr;
+
+  // Current search filter text.
+  std::u16string search_filter_;
+
+  // Currently selected workspace ID (for tab list display).
+  std::string selected_workspace_id_;
+
+  // Whether dark theme is active.
+  bool dark_theme_ = true;
+
+  // UI elements — owned by the views hierarchy.
+
+  // Search box.
+  raw_ptr<views::Textfield> search_box_ = nullptr;
+
+  // Workspace info section.
+  raw_ptr<views::Label> workspace_name_label_ = nullptr;
+  raw_ptr<views::Label> workspace_id_label_ = nullptr;
+  raw_ptr<views::Label> workspace_color_label_ = nullptr;
+
+  // Workspace list section.
+  raw_ptr<views::View> workspace_list_container_ = nullptr;
+  raw_ptr<views::ScrollView> workspace_scroll_view_ = nullptr;
+  raw_ptr<views::LabelButton> new_workspace_button_ = nullptr;
+  raw_ptr<views::LabelButton> delete_workspace_button_ = nullptr;
+  raw_ptr<views::LabelButton> rename_workspace_button_ = nullptr;
+
+  // Tab list section.
+  raw_ptr<views::View> tab_list_container_ = nullptr;
+  raw_ptr<views::ScrollView> tab_scroll_view_ = nullptr;
+
+  // Tab metadata display — a multi-line label showing all tab features.
+  raw_ptr<views::Label> tab_metadata_label_ = nullptr;
+};
+
+}  // namespace astra
+
+#endif  // ASTRA_UI_VIEWS_DEVTOOLS_ASTRA_DEVTOOLS_WORKSPACE_PANEL_H_

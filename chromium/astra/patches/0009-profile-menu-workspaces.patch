@@ -1,0 +1,61 @@
+diff --git a/chrome/browser/ui/views/profiles/profile_menu_view.cc b/chrome/browser/ui/views/profiles/profile_menu_view.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/views/profiles/profile_menu_view.cc
++++ b/chrome/browser/ui/views/profiles/profile_menu_view.cc
+@@ -25,6 +25,11 @@
+ #include "chrome/browser/ui/views/profiles/profile_menu_view.h"
+ #include "chrome/browser/profiles/profile.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/ui/views/profiles/astra_profile_menu_controller.h"
++#endif
++
+ // ... other includes ...
+
+ ProfileMenuView::ProfileMenuView(Profile* profile)
+@@ -150,6 +155,19 @@ void ProfileMenuView::BuildBody() {
+   // ... profile identity / header section ...
+   AddProfileHeader();
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra workspace section — shows current workspace and quick switcher.
++  // Workspaces are a product-level concept that fits naturally in the
++  // profile/identity menu since they represent different user contexts.
++  //
++  // All workspace state and logic lives in AstraWorkspaceService
++  // (ProfileKeyedService).  This patch only inserts the view; all
++  // data binding and user actions are handled by Astra code.
++  astra_workspace_section_ = AddChildView(
++      std::make_unique<astra::AstraProfileMenuWorkspacesView>(browser()));
++#endif
++
+   // ... sync info section ...
+   AddSyncInfo();
+
+diff --git a/chrome/browser/ui/views/profiles/profile_menu_view.h b/chrome/browser/ui/views/profiles/profile_menu_view.h
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/views/profiles/profile_menu_view.h
++++ b/chrome/browser/ui/views/profiles/profile_menu_view.h
+@@ -20,6 +20,11 @@
+ #include "ui/views/view.h"
+
+ class Profile;
++
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++namespace astra {
++class AstraProfileMenuWorkspacesView;
++}
++#endif
+
+ // The profile menu bubble view.  Shows profile identity, sync info,
+ // sign-in controls, and profile management actions.
+@@ -85,6 +90,10 @@ class ProfileMenuView : public views::View {
+   raw_ptr<views::View> sync_info_view_ = nullptr;
+   raw_ptr<views::View> menu_items_view_ = nullptr;
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  raw_ptr<astra::AstraProfileMenuWorkspacesView> astra_workspace_section_ = nullptr;
++#endif
++
+   // ... other members ...
+ };

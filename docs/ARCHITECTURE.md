@@ -1,10 +1,125 @@
 # Architecture
 
+## Component Diagram
+
+```
+  Chrome Browser Layer (chrome/browser)
+  ================================================================
+  |                                                              |
+  |   Browser  <-->  BrowserView  <-->  BrowserCommandController        |
+  |      \           |                      |                        |
+  |       \      |                      |                        |
+  |        v     v                      v                        |
+  |   TabStripModel  <-----------  chrome commands (IDC_*)               |
+  |        |                                                    |
+  |        | observes / owns                                          |
+  |        v                                                     |
+  |   (many) WebContents  --> NavigationController              |
+  |                                                              |
+  ================^==================================================
+                   | reads / owns
+                   v
+  Content Layer (content/public/browser)
+  ================================================================
+  |                                                              |
+  |   WebContents   NavigationController   RenderProcessHost       |
+  |                                                              |
+  ================^================================================
+                   | composed of
+  Components Layer (components/*)
+  ================================================================
+  |                                                              |
+  |   extensions   passwords   history   downloads             |
+  |   permissions   autofill   safe_browsing   policy           |
+  |   devtools   webui   updater                               |
+  |                                                              |
+  ================^================================================
+                   | depends on
+  Astra Overlay Layer (//astra)
+  ================================================================
+  |                                                              |
+  |  Profile-scoped services (astra/browser)                            |
+  |  --------------------------------------------------------  |
+  |   AstraWorkspaceService  (ProfileKeyedService)                  |
+  |     - workspace list, active workspace                     |
+  |     - project TabStripModel by workspace_id                |
+  |                                                              |
+  |   AstraTabFeatures  (WebContentsUserData)                   |
+  |     - workspace_id, is_favorite, is_in_split_view         |
+  |                                                              |
+  |   AstraCommandDelegate                                      |
+  |     - Astra command IDs (60000+)                            |
+  |     - delegates to Chrome commands for standard work         |
+  |                                                              |
+  |  UI Views (astra/ui/views)                                 |
+  |  --------------------------------------------------------  |
+  |   AstraBrowserView  (controller, augments BrowserView)    |
+  |     - installs sidebar, manages split/glance layout             |
+  |                                                              |
+  |   AstraSidebarView  (views::View)                           |
+  |     - reads TabStripModel + AstraTabFeatures              |
+  |     - projects by workspace + favorites + pinned         |
+  |     - dispatches commands to Chrome + Astra              |
+  |                                                              |
+  |   DevTools extensions (astra/ui/views/devtools)              |
+  |     - AstraDevToolsToolbar — extra DevTools toolbar buttons  |
+  |     - AstraDevToolsWorkspacePanel — workspace inspector      |
+  |     - AstraDevToolsIntegration — coordinator / lifecycle   |
+  |                                                              |
+  |  UI Color (astra/ui/color)                                 |
+  |  --------------------------------------------------------  |
+  |   AstraColorMixer  — extends Chromium ColorProvider     |
+  |     - Astra-specific color IDs (kColorAstra*)              |
+  |     - Light/dark mode variants                            |
+  |     - Accent color derivation                               |
+  |                                                              |
+  |  Common Layer (astra/common)                               |
+  |  --------------------------------------------------------  |
+  |   Shared types, enums, constants                           |
+  |     - Workspace types (AstraWorkspaceInfo, accent colors) |
+  |     - Tab types (split view state, feature flags)          |
+  |     - Command constants (ID range, accelerator IDs)        |
+  |     - UI constants (dimensions, spacing, radii)            |
+  |                                                              |
+  |  Startup hooks (astra/app)                                  |
+  |  --------------------------------------------------------  |
+  |   AstraBrowserMainExtraParts                                 |
+  |   AstraContentBrowserClient                              |
+  |   AstraMainDelegate                                       |
+  |                                                              |
+  ================^================================================
+                   | patches call into
+  Chromium Patch Points (tiny changes in chrome/*)
+  ================================================================
+  |                                                              |
+  |   chrome_browser_main.cc   ->  register Astra parts        |
+  |   browser_view.cc          ->  install AstraBrowserView      |
+  |   browser_command_controller.cc -> forward Astra commands   |
+  |   BUILD.gn                 ->  include //astra                   |
+  |   chrome_command_ids.h     ->  reserve Astra ID range          |
+  |                                                              |
+  ================================================================
+```
+
+Dependency direction arrows point upward: lower layers are depended on by upper layers.
+Patch points are tiny delegation hooks.
+
+**Key principles:
+
+- **Chromium owns state.** `Browser`, `TabStripModel`, `WebContents`,
+  `Profile`, extensions, passwords, history, etc. are all Chromium-owned.
+- **Astra projects state.** Astra reads Chromium models and adds metadata.
+  It does not own browser state.
+- **UI dispatches, never owns.** Views code reads models and dispatches commands.
+  It is never the source of truth.
+- **Patches delegate.** Chromium patch points call into `//astra` and do
+  nothing else.
+
 ## Runtime Model
 
 Astra is a direct Chromium product layer. The browser process, renderer
 processes, profiles, WebContents lifecycle, downloads, permissions, history,
-passwords, extensions, DevTools, WebUI, policy, and update infrastructure remain
+passwords, extensions, DevTools, WebUI, updater, and policy infrastructure remain
 Chromium-owned.
 
 Astra code should be small, explicit, and product-specific:
@@ -60,9 +175,21 @@ chromium/astra/browser
   Astra product services and WebContents metadata. These classes must depend on
   Chromium browser primitives, not replace them.
 
+chromium/astra/common
+  Shared types, enums, constants, and lightweight utilities used across all
+  layers. Depends only on //base, //skia, //ui/gfx. Bottom of the dependency graph.
+
 chromium/astra/ui/views
   Views-based BrowserView/sidebar/split/glance shell. No business state truth
   source may live here.
+
+chromium/astra/ui/views/devtools
+  DevTools extensions: native Views toolbar and workspace inspector panel.
+  Injected via Chromium patch points. Coordinated by AstraDevToolsIntegration.
+
+chromium/astra/ui/color
+  Astra ColorProvider mixer and color IDs. Extends Chromium's color system with
+  Astra-specific color tokens and accent color derivation.
 
 chromium/astra/patches
   Human-readable patch queue notes. Keep Chromium patches tiny and delegating.
@@ -70,21 +197,99 @@ chromium/astra/patches
 
 ## Dependency Direction
 
+Full dependency graph (arrows point from dependent to dependency: X → Y means X depends on Y):
+
+```
+                     Chromium subsystems
+  (//base, //skia, //ui/gfx, //ui/color, etc.)
+            ▲                ▲
+            │                │
+       astra/common   astra/ui/color
+            ▲    ▲          ▲
+            │    │          │
+       astra/browser │          │
+            ▲    │          │
+            │    └─────── astra/ui/views
+            │                 ▲
+       astra/app           astra/ui/views/devtools
+
+  Chromium patch points ── call into any //astra layer
+```
+
+Key dependency rules:
+
+- `astra/common` is the bottom layer. It depends only on fundamental
+  Chromium types and nothing else in Astra.
+- `astra/browser` depends on `astra/common` and Chromium browser/content.
+  It does NOT depend on `astra/ui/views` or any UI layer.
+- `astra/ui/views` depends on `astra/browser` and `astra/common`.
+  It reads models to render, but never owns state.
+- `astra/ui/color` depends on `astra/common` and Chromium's color
+  `ui/color`. It does NOT depend on `astra/browser`.
+- `astra/ui/views/devtools` depends on `astra/browser` (for services)
+  and `astra/common`.
+- `astra/app` depends on `astra/browser` (for service registration) and
+  `astra/common`.
+- Chromium patch points may call into any `//astra` layer.
+
 Allowed:
 
 - `astra/app` may register `astra/browser` services.
 - `astra/browser` may depend on Chromium browser/content primitives.
 - `astra/ui/views` may read Chromium models and Astra metadata to render.
+- `astra/ui/color` may extend Chromium's ColorProvider.
 - Chromium patch points may call into `//astra`.
 
 Forbidden:
 
 - `astra/browser` depending on `astra/ui/views`.
 - `astra/ui/views` owning product collections.
+- `astra/common` depending on any other Astra layer.
 - New Electron, CEF, AppKit, or CMake browser runtime code.
 - Parallel services named like Chromium-owned infrastructure, such as
   `DownloadManager`, `PermissionManager`, `HistoryService`, `ExtensionService`,
   `PasswordManager`, or `ProfileManager`.
+
+## Data Flow: Sidebar Projection
+
+```
+TabStripModel (Chrome)
+    |
+    |  TabStripModelObserver
+    v
+AstraSidebarView (Astra UI)
+    |
+    |  reads workspace_id from
+    v
+AstraTabFeatures (WebContentsUserData)
+    |
+    |  reads active workspace from
+    v
+AstraWorkspaceService (ProfileKeyedService)
+```
+
+The sidebar projects tabs by combining Chromium tab data plus Astra metadata. It never
+modifies tab state directly; it dispatches commands that flow back through
+Chrome's command infrastructure.
+
+## Data Flow: Command Dispatch
+
+```
+User action (menu, keybinding, palette)
+    |
+    v
+BrowserCommandController (Chrome)
+    |
+    +-- standard IDC_*  -->  Chrome handles normally
+    |
+    +-- Astra ID (60000+)  -->  patch forward
+                              |
+                              v
+                        AstraCommandDelegate
+                              |
+                              +-- mutates Astra services
+                              +-- calls Chrome commands for standard work
+```
 
 ## Legacy Code
 

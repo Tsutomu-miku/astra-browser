@@ -1,0 +1,76 @@
+# Astra command palette — quick command launcher UI.
+#
+# The command palette is a quick-access command search UI (Cmd/Ctrl+Shift+P)
+# that lets users search and execute commands from the keyboard.
+#
+# Sub-components:
+#   - AstraCommandPaletteBubble        (bubble dialog wrapper)
+#   - AstraCommandPaletteView          (main content view with search + results)
+#   - AstraCommandPaletteModel         (searchable command index + ranking)
+#   - AstraCommandPaletteItemView      (single command result item)
+#   - AstraCommandPaletteSectionHeaderView (category section header)
+#
+# Architecture:
+#   - Model owns command data, search logic, selection state, and recent
+#     command tracking.
+#   - View is pure presentation — it observes the model and renders results.
+#   - Bubble is the dialog container / widget owner.
+#   - Commands are delegated upward through Delegate interfaces — the view
+#     never executes commands directly.
+#
+# Rules:
+#   - View code is presentation-only — never owns product state.
+#   - Command execution flows through the delegate chain to the browser layer.
+#   - All theming uses Astra color IDs (kColorAstra*).
+#   - Follows Chromium Views patterns (BubbleDialogDelegateView, Observer).
+
+import("//build/config/chrome_build.gni")
+
+source_set("command_palette") {
+  sources = [
+    "astra_command_palette_bubble.cc",
+    "astra_command_palette_bubble.h",
+    "astra_command_palette_item_view.cc",
+    "astra_command_palette_item_view.h",
+    "astra_command_palette_model.cc",
+    "astra_command_palette_model.h",
+    "astra_command_palette_section_header_view.cc",
+    "astra_command_palette_section_header_view.h",
+    "astra_command_palette_view.cc",
+    "astra_command_palette_view.h",
+  ]
+
+  public_deps = [
+    "//astra/browser",
+    "//astra/build:buildflags",
+  ]
+
+  deps = [
+    "//astra/ui/color",
+    "//base",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/views",
+    "//skia",
+    "//ui/base",
+    "//ui/color",
+    "//ui/gfx",
+    "//ui/views",
+    "//ui/views/controls",
+  ]
+
+  visibility = [
+    "//astra/*",
+    "//chrome/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Audit deps against actual #includes in source files.
+  # Use `gn check` or include-what-you-use in a full Chromium checkout.
+  #
+  # TODO(astra): Wire this target into //astra/ui/views:views BUILD.gn
+  # so the command palette is built as part of the views layer rather than
+  # having its sources listed directly in the parent target.
+  # Patch point: //astra/ui/views/BUILD.gn — add ":command_palette" to deps
+  # and remove the individual command_palette/ source files from sources.
+}

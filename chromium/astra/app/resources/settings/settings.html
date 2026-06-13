@@ -1,0 +1,309 @@
+<!--
+  Copyright 2026 The Astra Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+
+  Astra Settings — HTML structure
+  =========================================================================
+
+  This is the HTML entry point for the Astra settings page (astra://settings).
+  It is served by content::URLDataSource from astra_resources.pak.
+
+  Settings sections:
+    - General: startup behavior, default search engine
+    - Sidebar: position, width, auto-hide
+    - Workspaces: accent colors, default workspace, workspace management
+    - Focus mode: default duration, blocklist
+    - Appearance: theme, accent color, compact mode
+
+  This page complements Chromium's built-in chrome://settings with
+  Astra-specific preferences.  Standard browser settings (privacy,
+  extensions, passwords, etc.) remain in chrome://settings.
+
+  Chromium pattern: chrome/browser/resources/settings/settings_main.html
+  TODO(astra): Add more settings sections as features are implemented.
+  TODO(astra): Add left-hand navigation sidebar for quick section jumping.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Astra Settings</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div id="settings-container">
+
+    <!-- Header -->
+    <header id="settings-header">
+      <h1 id="settings-title">Astra Settings</h1>
+      <p id="settings-subtitle">Customize your Astra Browser experience</p>
+    </header>
+
+    <!-- Navigation sidebar -->
+    <nav id="settings-nav">
+      <ul id="nav-list">
+        <li class="nav-item" data-section="general">
+          <span class="nav-icon">⚙</span>
+          <span class="nav-label">General</span>
+        </li>
+        <li class="nav-item" data-section="sidebar">
+          <span class="nav-icon">☰</span>
+          <span class="nav-label">Sidebar</span>
+        </li>
+        <li class="nav-item" data-section="workspaces">
+          <span class="nav-icon">▦</span>
+          <span class="nav-label">Workspaces</span>
+        </li>
+        <li class="nav-item" data-section="focus-mode">
+          <span class="nav-icon">⏱</span>
+          <span class="nav-label">Focus Mode</span>
+        </li>
+        <li class="nav-item" data-section="appearance">
+          <span class="nav-icon">◐</span>
+          <span class="nav-label">Appearance</span>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main content area -->
+    <main id="settings-content">
+
+      <!-- General section -->
+      <section id="section-general" class="settings-section">
+        <h2 class="section-heading">General</h2>
+        <p class="section-description">Startup behavior and search preferences</p>
+
+        <div class="settings-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">On startup</label>
+              <span class="setting-description">Choose what happens when you open Astra</span>
+            </div>
+            <select id="startup-behavior" class="setting-select">
+              <option value="continue">Continue where you left off</option>
+              <option value="newtab">Open the New Tab page</option>
+              <option value="specific">Open a specific page</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Default search engine</label>
+              <span class="setting-description">Search engine used in the address bar</span>
+            </div>
+            <select id="default-search-engine" class="setting-select">
+              <option value="google">Google</option>
+              <option value="bing">Bing</option>
+              <option value="duckduckgo">DuckDuckGo</option>
+              <option value="baidu">Baidu</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sidebar section -->
+      <section id="section-sidebar" class="settings-section">
+        <h2 class="section-heading">Sidebar</h2>
+        <p class="section-description">Configure the Astra sidebar appearance and behavior</p>
+
+        <div class="settings-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Show sidebar</label>
+              <span class="setting-description">Display the sidebar on browser windows</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="sidebar-enabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Sidebar position</label>
+              <span class="setting-description">Which side of the window the sidebar appears on</span>
+            </div>
+            <select id="sidebar-position" class="setting-select">
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Sidebar width</label>
+              <span class="setting-description">Width of the sidebar in pixels</span>
+            </div>
+            <div class="setting-slider-row">
+              <input type="range" id="sidebar-width" min="200" max="600" step="10" value="280">
+              <span id="sidebar-width-value" class="slider-value">280px</span>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Auto-hide sidebar</label>
+              <span class="setting-description">Sidebar slides out of view until hovered</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="sidebar-auto-hide">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Workspaces section -->
+      <section id="section-workspaces" class="settings-section">
+        <h2 class="section-heading">Workspaces</h2>
+        <p class="section-description">Manage your workspaces and workspace preferences</p>
+
+        <div class="settings-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Default workspace</label>
+              <span class="setting-description">Workspace that opens on startup</span>
+            </div>
+            <select id="default-workspace" class="setting-select">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Workspace management list -->
+        <div class="settings-group">
+          <div class="group-header">
+            <h3 class="group-title">All workspaces</h3>
+            <button id="add-workspace-btn" class="btn btn-primary btn-sm">
+              + Add workspace
+            </button>
+          </div>
+          <div id="workspaces-list" class="workspaces-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Accent color presets -->
+        <div class="settings-group">
+          <div class="group-header">
+            <h3 class="group-title">Accent color presets</h3>
+          </div>
+          <div id="accent-presets" class="accent-presets">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Focus mode section -->
+      <section id="section-focus-mode" class="settings-section">
+        <h2 class="section-heading">Focus Mode</h2>
+        <p class="section-description">Configure focus sessions and distraction blocking</p>
+
+        <div class="settings-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Default focus duration</label>
+              <span class="setting-description">Length of a focus session in minutes</span>
+            </div>
+            <div class="setting-slider-row">
+              <input type="range" id="focus-duration" min="5" max="120" step="5" value="25">
+              <span id="focus-duration-value" class="slider-value">25 min</span>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Focus completion sound</label>
+              <span class="setting-description">Play a sound when a focus session ends</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="focus-sound-enabled" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="group-header">
+            <h3 class="group-title">Blocked sites</h3>
+            <span class="group-subtitle">Sites blocked during focus sessions</span>
+          </div>
+          <div id="blocklist" class="blocklist">
+            <!-- Populated by JS -->
+          </div>
+          <div class="blocklist-add">
+            <input type="text" id="blocklist-input" class="text-input"
+                   placeholder="Add a site (e.g. twitter.com)">
+            <button id="add-blocked-site-btn" class="btn btn-secondary btn-sm">Add</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Appearance section -->
+      <section id="section-appearance" class="settings-section">
+        <h2 class="section-heading">Appearance</h2>
+        <p class="section-description">Theme, colors, and visual density</p>
+
+        <div class="settings-group">
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Theme</label>
+              <span class="setting-description">Choose light, dark, or system theme</span>
+            </div>
+            <select id="appearance-theme" class="setting-select">
+              <option value="system">System default</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Accent color</label>
+              <span class="section-description">Primary brand color used throughout the UI</span>
+            </div>
+            <div class="accent-picker">
+              <input type="color" id="accent-color" value="#6366f1">
+              <span id="accent-color-value" class="color-value">#6366f1</span>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Use system theme colors</label>
+              <span class="setting-description">Match the OS system accent color</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="use-system-theme" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-label">Compact mode</label>
+              <span class="setting-description">Reduce padding and spacing for denser UI</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="compact-mode">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Status / save indicator -->
+    <div id="save-status" class="save-status hidden">
+      <span id="save-status-text">Settings saved</span>
+    </div>
+
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

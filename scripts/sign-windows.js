@@ -1,14 +1,18 @@
-/**
- * ADR-0008 / W-11: electron-builder Windows sign 钩子。
- *
- * 优先级策略（均走 DigiCert KeyLocker / Azure Code Signing 云端 HSM）：
- *   1. 若 DIGICERT_KEYLOCKER_API_KEY + CLIENT_CERT_FILE_ONELINER + SIGNER_CERT_SM2 都设置，
- *      使用 DigiCert ONE KeyLocker + Sign Manager 客户端（smctl）——EV 级云端签名；
- *   2. 若 WINDOWS_CERT_BASE64 + WINDOWS_CERT_PASSWORD 设置，回退到普通 OV 证书 pfx 导入；
- *   3. 否则返回 null，electron-builder 走默认逻辑（未签名），PR 分支静默通过。
- *
- * 函数签名：(configuration: any) => string[] | null，electron-builder 自定义 sign hook。
- */
+// LEGACY SCRIPT — Electron era
+//
+// ADR-0008 / W-11: electron-builder Windows sign 钩子。
+//
+// Part of the legacy Electron build pipeline.
+// The direct-Chromium build will use its own signing workflow
+// (signtool.exe / smctl invoked from build scripts).
+//
+// 优先级策略（均走 DigiCert KeyLocker / Azure Code Signing 云端 HSM）：
+//   1. 若 DIGICERT_KEYLOCKER_API_KEY + CLIENT_CERT_FILE_ONELINER + SIGNER_CERT_SM2 都设置，
+//      使用 DigiCert ONE KeyLocker + Sign Manager 客户端（smctl）——EV 级云端签名；
+//   2. 若 WINDOWS_CERT_BASE64 + WINDOWS_CERT_PASSWORD 设置，回退到普通 OV 证书 pfx 导入；
+//   3. 否则返回 null，electron-builder 走默认逻辑（未签名），PR 分支静默通过。
+//
+// 函数签名：(configuration: any) => string[] | null，electron-builder 自定义 sign hook。
 
 /* eslint-disable no-console */
 

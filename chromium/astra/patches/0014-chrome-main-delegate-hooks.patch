@@ -1,0 +1,45 @@
+diff --git a/chrome/app/chrome_main_delegate.cc b/chrome/app/chrome_main_delegate.cc
+index abc1234..def5678 100644
+--- a/chrome/app/chrome_main_delegate.cc
++++ b/chrome/app/chrome_main_delegate.cc
+@@ -25,6 +25,10 @@
+ #include "chrome/app/chrome_main_delegate.h"
+ #include "chrome/browser/chrome_browser_main.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/app/astra_main_delegate.h"
++#endif
++
+ // ... other includes ...
+
+ ChromeMainDelegate::ChromeMainDelegate() = default;
+@@ -150,6 +154,14 @@ absl::optional<int> ChromeMainDelegate::PreSandboxStartup() {
+   // ... Chromium pre-sandbox setup ...
+   // (crash reporting, field trials, locale, etc.)
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra pre-sandbox setup hook.
++  //
++  // Keep this minimal — most Astra initialization happens in
++  // AstraBrowserMainExtraParts after the sandbox is engaged.
++  astra::AstraMainDelegate::PreSandboxStartup();
++#endif
++
+   return absl::nullopt;
+ }
+
+@@ -210,6 +222,14 @@ void ChromeMainDelegate::BasicStartupComplete() {
+   // ... Chromium basic startup complete handling ...
+   // (feature list, metrics, etc.)
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra basic startup complete hook.
++  //
++  // Called after Chromium's basic startup (feature list, locale, crash keys)
++  // is done.  Astra uses this to log feature state and register any
++  // post-startup hooks that depend on basic initialization.
++  astra::AstraMainDelegate::BasicStartupComplete();
++#endif
+ }
+
+ // ... rest of file ...

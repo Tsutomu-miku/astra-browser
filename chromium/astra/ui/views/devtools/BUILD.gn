@@ -1,0 +1,109 @@
+# Astra DevTools Views — Astra-specific DevTools UI extensions.
+#
+# This target contains native Views-based components that extend Chromium's
+# DevTools with Astra-specific panels and toolbar buttons.
+#
+# We do NOT rewrite DevTools. Chromium's full DevTools (all standard panels,
+# protocol, JavaScript engine, WebUI frontend) is used as-is. Astra only adds:
+#   - AstraDevToolsToolbar     — extra buttons in the DevTools toolbar area
+#   - AstraDevToolsWorkspacePanel — "Workspace Inspector" debug panel
+#   - AstraDevToolsIntegration — coordinator that wires everything together
+#
+# Chromium subsystems reused:
+#   - DevToolsWindow           — hosts the Astra toolbar and panels
+#   - DevToolsUIBindings       — panel registration (via patch point)
+#   - Profile / KeyedService   — Astra service lookup
+#
+# Chromium patch points (documented in source files):
+#   1. chrome/browser/devtools/devtools_window.cc
+#      — create AstraDevToolsIntegration in DevToolsWindow constructor
+#      — inject toolbar into the DevTools title/toolbar area
+#      — track inspected WebContents changes
+#   2. chrome/browser/devtools/devtools_ui_bindings.cc
+#      — register Workspace Inspector as a custom native panel
+#
+# Rules:
+#   - UI code must not be a product state truth source.
+#   - State comes from astra/browser services or Chromium subsystems.
+#   - All TODOs use TODO(astra): format with Chromium owner / patch point.
+
+import("//build/config/chrome_build.gni")
+
+source_set("devtools") {
+  sources = [
+    "astra_devtools_integration.cc",
+    "astra_devtools_integration.h",
+    "astra_devtools_model.cc",
+    "astra_devtools_model.h",
+    "astra_devtools_toolbar.cc",
+    "astra_devtools_toolbar.h",
+    "astra_devtools_workspace_panel.cc",
+    "astra_devtools_workspace_panel.h",
+  ]
+
+  public_deps = [
+    "//astra/browser",
+  ]
+
+  deps = [
+    "//base",
+    "//chrome/browser/profiles",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/views",
+    "//content/public/browser",
+    "//skia",
+    "//ui/base",
+    "//ui/color",
+    "//ui/gfx",
+    "//ui/native_theme",
+    "//ui/views",
+    "//ui/views/controls",
+    "//ui/views/controls/button",
+    "//ui/views/controls/label",
+    "//ui/views/layout",
+    "//url",
+  ]
+
+  visibility = [
+    "//astra/*",
+    "//chrome/browser/devtools/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Audit all deps against actual #includes in source files.
+  #   Use `gn check` or include-what-you-use in a full Chromium checkout.
+  #   Some deps may be over-specified for the overlay skeleton.
+}
+
+# Unit tests for Astra DevTools views components.
+#
+# Test categories:
+#   - Unit tests for AstraDevToolsToolbar (button states, clicks, view hierarchy).
+#   - Unit tests for AstraDevToolsWorkspacePanel (construction, refresh, labels).
+#   - Unit tests for AstraDevToolsIntegration (lifecycle, delegation).
+#
+# TODO(astra): Add AstraDevToolsIntegration tests once the integration
+#   coordinator has stable APIs and test dependencies.
+#
+# Uses views::test::ViewsTestBase from //ui/views:views_test_support.
+#
+# Patch point: //chrome/test:unit_tests test suite.
+source_set("astra_devtools_views_tests") {
+  testonly = true
+
+  sources = [
+    "astra_devtools_toolbar_unittest.cc",
+    "astra_devtools_unittest.cc",
+    "astra_devtools_workspace_panel_unittest.cc",
+  ]
+
+  deps = [
+    ":devtools",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+    "//ui/views:views_test_support",
+  ]
+}

@@ -1,0 +1,79 @@
+diff --git a/chrome/common/chrome_constants.cc b/chrome/common/chrome_constants.cc
+index abc1234..def5678 100644
+--- a/chrome/common/chrome_constants.cc
++++ b/chrome/common/chrome_constants.cc
+@@ -15,6 +15,11 @@
+ #include "chrome/common/chrome_switches.h"
+ #include "chrome/version.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/app/astra_brand.h"
++#endif
++
+ // ... other includes ...
+
+ namespace chrome {
+@@ -29,17 +34,33 @@ namespace chrome {
+ // product name everywhere.
+ // TODO(pkasting): If this is truly the case, we should just have one constant.
+
+-const char kBrowserProcessExecutableName[] = "Chromium";
+-const char kBrowserFrameName[] = "Chromium";
+-const char kShortProductName[] = "Chromium";
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++const char kBrowserProcessExecutableName[] = "Astra Browser";
++const char kBrowserFrameName[] = "Astra Browser";
++const char kShortProductName[] = "Astra";
++#else
++const char kBrowserProcessExecutableName[] = "Chromium";
++const char kBrowserFrameName[] = "Chromium";
++const char kShortProductName[] = "Chromium";
++#endif
++
+ // ... other constants ...
+
+-const char kCompanyName[] = "Chromium";
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++const char kCompanyName[] = "Astra";
++#else
++const char kCompanyName[] = "Chromium";
++#endif
+
+ // ... more constants ...
+
+ #if defined(OS_MAC)
+-const char kHelperAppBundleIdBase[] = "org.chromium.Chromium";
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++const char kHelperAppBundleIdBase[] = "app.astra.browser";
++#else
++const char kHelperAppBundleIdBase[] = "org.chromium.Chromium";
++#endif
+ #endif  // defined(OS_MAC)
+
+ // ... rest of file ...
+diff --git a/chrome/browser/about_flags.cc b/chrome/browser/about_flags.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/about_flags.cc
++++ b/chrome/browser/about_flags.cc
+@@ -45,6 +45,10 @@
+ #include "chrome/browser/about_flags.h"
+ #include "chrome/common/chrome_version.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/app/astra_brand.h"
++#endif
++
+ // ... other includes ...
+
+ namespace {
+@@ -120,7 +124,13 @@ std::string FlagsStateDescription(flags_ui::FlagAccess access) {
+   base::ReplaceChars(description, "Chromium",
+ #if BUILDFLAG(IS_CHROMEOS_LACROS)
+                      "Chrome",
+-#else
++#elif BUILDFLAG(IS_ASTRA_BRANDED)
++                     base::as_string_view(astra::kAstraShortProductName),
++#else
+                      "Chromium",
+ #endif
+                      &description);

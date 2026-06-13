@@ -1,35 +1,157 @@
 # Astra product layer for direct Chromium builds.
+#
+# Dependency graph:
+#   astra_browser (aggregate)
+#     +-- astra/app        (startup hooks, patch helpers)
+#     +-- astra/app/resources  (GRD resources, strings, WebUI assets)
+#     +-- astra/common     (shared types, constants, enums)
+#     +-- astra/ui/views   (Views UI surfaces)
+#     +-- astra/ui/views/devtools  (DevTools extension views)
+#     +-- astra/ui/webui   (WebUI pages: astra://newtab, etc.)
+#     +-- astra/ui/color   (Astra ColorProvider mixer)
+#     +-- astra/ui/accessibility  (accessibility utilities)
+#     +-- astra/browser    (product metadata/services)
+#     +-- astra/build      (buildflags and build config)
+#
+# Direction: app -> browser, ui/views -> browser, all -> common.
+# Resources (app/resources/) are depended on by ui/webui/.
+# All targets live in the //astra source tree that syncs into chromium/src/astra.
+#
+# ---------------------------------------------------------------------------
+# Chromium patch points
+# ---------------------------------------------------------------------------
+#
+# The following Chromium files need patches to integrate Astra:
+#
+#   chrome/browser/chrome_browser_main.cc
+#       — Register AstraBrowserMainExtraParts (patch 0001)
+#   chrome/browser/BUILD.gn
+#       — Add //astra:astra_browser dep (patch 0002 / 0004)
+#   build/config/chrome_build.gni
+#       — Add is_astra_branded GN arg (patch 0003)
+#   chrome/browser/ui/views/frame/browser_view.cc
+#       — Install AstraBrowserView (patch 0004)
+#   chrome/common/chrome_constants.cc
+#       — Wire Astra branding constants (patch 0005)
+#   chrome/browser/ui/browser_command_controller.cc
+#       — Forward commands to AstraCommandDelegate (patch 0006)
+#   chrome/browser/ui/views/accelerator_table.cc
+#       — Merge Astra accelerator table (patch 0007)
+#   chrome/app/chrome_command_ids.h
+#       — Reserve Astra command ID range (patch 0008)
+#
+# See astra/patches/ for detailed patch descriptions.
+# All patches are build-flag gated with BUILDFLAG(IS_ASTRA_BRANDED).
+# ---------------------------------------------------------------------------
 
 import("//build/config/chrome_build.gni")
+import("//astra/build/buildflags.gni")
 
-source_set("astra_browser") {
-  sources = [
-    "app/astra_browser_main_extra_parts.cc",
-    "app/astra_browser_main_extra_parts.h",
-    "app/astra_content_browser_client.cc",
-    "app/astra_content_browser_client.h",
-    "app/astra_main_delegate.cc",
-    "app/astra_main_delegate.h",
-    "browser/astra_command_delegate.cc",
-    "browser/astra_command_delegate.h",
-    "browser/astra_tab_features.cc",
-    "browser/astra_tab_features.h",
-    "browser/astra_workspace_service.cc",
-    "browser/astra_workspace_service.h",
-    "ui/views/astra_browser_view.cc",
-    "ui/views/astra_browser_view.h",
-    "ui/views/sidebar/astra_sidebar_view.cc",
-    "ui/views/sidebar/astra_sidebar_view.h",
+# Public API target — headers and buildflags that Chromium patch points include.
+#
+# This target is safe to depend on from Chromium patch code. It exposes only
+# buildflags and forward declarations — no product logic.
+#
+# TODO(astra): Define full public API surface for Chromium patch points.
+# Currently only buildflags and a few forward-declared classes.
+group("public") {
+  public_deps = [
+    "//astra/build:buildflags",
   ]
+  visibility = [ "//chrome/*" ]
+}
+
+group("astra_browser") {
+  public_deps = [
+    "//astra/app",
+    "//astra/app/resources",
+    "//astra/browser",
+    "//astra/build:buildflags",
+    "//astra/common",
+    "//astra/ui/accessibility",
+    "//astra/ui/color",
+    "//astra/ui/views",
+    "//astra/ui/views/devtools",
+    "//astra/ui/webui",
+  ]
+}
+
+# Aggregate test target that collects tests from all Astra layers.
+#
+# Test categories included:
+#   - astra_app_tests            (app-layer unit tests: feature flags,
+#                                 startup hooks)
+#   - astra_browser_unit_tests   (browser-layer unit tests: workspace
+#                                 service, tab features, command delegate,
+#                                 favorite, note, reading list, etc.)
+#   - astra_common_unittests     (common-layer unit tests: types, enums,
+#                                 constants)
+#   - astra_accessibility_unittests  (accessibility utility unit tests)
+#   - astra_ui_color_tests       (color mixer / color ID unit tests)
+#   - astra_ui_views_tests       (views-layer unit tests)
+#   - astra_devtools_views_tests (devtools views unit tests)
+#   - astra_ui_webui_tests       (webui-layer unit tests)
+#
+# TODO(astra): Integrate this target into Chromium's test suite targets:
+#   - unit_tests         //chrome/test:unit_tests  (for *_unittest.cc)
+#   - browser_tests      //chrome/test:browser_tests  (for *_browsertest.cc)
+#   - interactive_ui_tests  //chrome/test:interactive_ui_tests
+#
+# Patch point: //chrome/test/BUILD.gn test suite definitions.
+# Add astra_tests as a dependency of the appropriate test suite target.
+source_set("astra_tests") {
+  testonly = true
 
   deps = [
+    "//astra/app:astra_app_tests",
+    "//astra/browser:astra_browser_unit_tests",
+    "//astra/common:astra_common_unittests",
+    "//astra/ui/accessibility:astra_accessibility_unittests",
+    "//astra/ui/color:astra_ui_color_tests",
+    "//astra/ui/views:astra_ui_views_tests",
+    "//astra/ui/views/devtools:astra_devtools_views_tests",
+    "//astra/ui/webui:astra_ui_webui_tests",
     "//base",
-    "//chrome/browser",
-    "//chrome/browser/ui",
-    "//chrome/browser/ui/views",
-    "//components/keyed_service/core",
-    "//content/public/browser",
-    "//ui/base",
-    "//ui/views",
+    "//base/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+  ]
+}
+
+# Aggregate browser test target.
+#
+# Browser tests exercise full browser process with InProcessBrowserTest.
+#
+# TODO(astra): Implement browser tests and integrate with
+# //chrome/test:browser_tests test suite.
+# Patch point: //chrome/test/BUILD.gn browser_tests target.
+source_set("astra_browser_tests") {
+  testonly = true
+
+  deps = [
+    "//astra/app:astra_app_browsertests",
+    "//astra/browser:astra_browser_browsertests",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gtest",
+  ]
+}
+
+# Aggregate interactive UI test target.
+#
+# Interactive UI tests exercise views inside a real browser window using
+# InteractiveViewsTestApi and InProcessBrowserTest.
+#
+# TODO(astra): Implement interactive UI tests and integrate with
+# //chrome/test:interactive_ui_tests test suite.
+# Patch point: //chrome/test/BUILD.gn interactive_ui_tests target.
+source_set("astra_interactive_ui_tests") {
+  testonly = true
+
+  deps = [
+    "//astra/ui/views:astra_ui_views_interactive_uitests",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gtest",
   ]
 }

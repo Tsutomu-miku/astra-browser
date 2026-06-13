@@ -1,0 +1,324 @@
+# Astra ui/views layer — Chromium Views UI additions.
+#
+# This layer owns Astra-specific Views surfaces that augment Chrome's BrowserView
+# instead of replacing the desktop UI stack. Toolbar, tab strip, WebUI, DevTools,
+# download UI, and profile plumbing all stay on Chromium rails.
+#
+# Surfaces:
+#   - AstraBrowserView            (controller that installs Astra widgets into BrowserView)
+#   - AstraSidebarView            (left sidebar root container)
+#   - AstraSidebarSectionView     (sidebar section with header + items)
+#   - AstraSidebarItemView        (individual sidebar row item)
+#   - AstraWorkspaceSwitcherView  (workspace selector at top of sidebar)
+#
+# Rules:
+#   - UI code must not be a product state truth source.
+#   - State comes from astra/browser services or Chromium subsystems.
+#   - All Astra-only commands forward to AstraCommandDelegate.
+
+import("//build/config/chrome_build.gni")
+
+source_set("views") {
+  sources = [
+    "astra_browser_view.cc",
+    "astra_browser_view.h",
+    "focus_mode/astra_focus_mode_controller.cc",
+    "focus_mode/astra_focus_mode_controller.h",
+    "focus_mode/astra_focus_mode_indicator.cc",
+    "focus_mode/astra_focus_mode_indicator.h",
+    "focus_mode/astra_focus_mode_menu_bubble.cc",
+    "focus_mode/astra_focus_mode_menu_bubble.h",
+    "focus_mode/astra_focus_mode_model.cc",
+    "focus_mode/astra_focus_mode_model.h",
+    "command_palette/astra_command_palette_bubble.cc",
+    "command_palette/astra_command_palette_bubble.h",
+    "command_palette/astra_command_palette_item_view.cc",
+    "command_palette/astra_command_palette_item_view.h",
+    "command_palette/astra_command_palette_model.cc",
+    "command_palette/astra_command_palette_model.h",
+    "command_palette/astra_command_palette_view.cc",
+    "command_palette/astra_command_palette_view.h",
+    "glance/astra_glance_view.cc",
+    "glance/astra_glance_view.h",
+    "glance/astra_glance_view_controller.cc",
+    "glance/astra_glance_view_controller.h",
+    "newtab/astra_new_tab_bubble.cc",
+    "newtab/astra_new_tab_bubble.h",
+    "newtab/astra_new_tab_controller.cc",
+    "newtab/astra_new_tab_controller.h",
+    "newtab/astra_new_tab_model.cc",
+    "newtab/astra_new_tab_model.h",
+    "newtab/astra_new_tab_view.cc",
+    "newtab/astra_new_tab_view.h",
+    "newtab/astra_ntp_shortcut_view.cc",
+    "newtab/astra_ntp_shortcut_view.h",
+    "newtab/astra_ntp_workspace_card.cc",
+    "newtab/astra_ntp_workspace_card.h",
+    "omnibox/astra_location_bar_decoration.cc",
+    "omnibox/astra_location_bar_decoration.h",
+    "omnibox/astra_omnibox_decoration_model.cc",
+    "omnibox/astra_omnibox_decoration_model.h",
+    "pip/astra_pip_controls_model.cc",
+    "pip/astra_pip_controls_model.h",
+    "pip/astra_pip_controls_view.cc",
+    "pip/astra_pip_controls_view.h",
+    "profiles/astra_profile_menu_controller.cc",
+    "profiles/astra_profile_menu_controller.h",
+    "profiles/astra_profile_menu_footer_view.cc",
+    "profiles/astra_profile_menu_footer_view.h",
+    "profiles/astra_profile_menu_header_view.cc",
+    "profiles/astra_profile_menu_header_view.h",
+    "profiles/astra_profile_menu_model.cc",
+    "profiles/astra_profile_menu_model.h",
+    "profiles/astra_profile_menu_workspaces.cc",
+    "profiles/astra_profile_menu_workspaces.h",
+    "profiles/astra_workspace_avatar_button.cc",
+    "profiles/astra_workspace_avatar_button.h",
+    "profiles/astra_workspace_menu_item_view.cc",
+    "profiles/astra_workspace_menu_item_view.h",
+    "screenshot/astra_screenshot_capture_bubble.cc",
+    "screenshot/astra_screenshot_capture_bubble.h",
+    "screenshot/astra_screenshot_capture_model.cc",
+    "screenshot/astra_screenshot_capture_model.h",
+    "screenshot/astra_screenshot_region_overlay.cc",
+    "screenshot/astra_screenshot_region_overlay.h",
+    "settings/astra_search_settings_view.cc",
+    "settings/astra_search_settings_view.h",
+    "settings/astra_settings_bubble.cc",
+    "settings/astra_settings_bubble.h",
+    "settings/astra_settings_model.cc",
+    "settings/astra_settings_model.h",
+    "settings/astra_settings_page_view.cc",
+    "settings/astra_settings_page_view.h",
+    "settings/astra_settings_search_box.cc",
+    "settings/astra_settings_search_box.h",
+    "settings/astra_settings_section_view.cc",
+    "settings/astra_settings_section_view.h",
+    "sidebar/astra_bookmark_item_view.cc",
+    "sidebar/astra_bookmark_item_view.h",
+    "sidebar/astra_download_item_view.cc",
+    "sidebar/astra_download_item_view.h",
+    "sidebar/astra_extension_icon_view.cc",
+    "sidebar/astra_extension_icon_view.h",
+    "sidebar/astra_extension_popup_view.cc",
+    "sidebar/astra_extension_popup_view.h",
+    "sidebar/astra_history_item_view.cc",
+    "sidebar/astra_history_item_view.h",
+    "sidebar/astra_note_editor_view.cc",
+    "sidebar/astra_note_editor_view.h",
+    "sidebar/astra_note_item_view.cc",
+    "sidebar/astra_note_item_view.h",
+    "sidebar/astra_password_item_view.cc",
+    "sidebar/astra_password_item_view.h",
+    "sidebar/astra_reading_list_item_view.cc",
+    "sidebar/astra_reading_list_item_view.h",
+    "sidebar/astra_recently_closed_item_view.cc",
+    "sidebar/astra_recently_closed_item_view.h",
+    "sidebar/astra_sidebar_bookmarks_view.cc",
+    "sidebar/astra_sidebar_bookmarks_view.h",
+    "sidebar/astra_sidebar_controller.cc",
+    "sidebar/astra_sidebar_controller.h",
+    "sidebar/astra_sidebar_drag_types.h",
+    "sidebar/astra_sidebar_downloads_view.cc",
+    "sidebar/astra_sidebar_downloads_view.h",
+    "sidebar/astra_sidebar_drop_indicator_view.cc",
+    "sidebar/astra_sidebar_drop_indicator_view.h",
+    "sidebar/astra_sidebar_extensions_view.cc",
+    "sidebar/astra_sidebar_extensions_view.h",
+    "sidebar/astra_sidebar_history_view.cc",
+    "sidebar/astra_sidebar_history_view.h",
+    "sidebar/astra_sidebar_item_view.cc",
+    "sidebar/astra_sidebar_item_view.h",
+    "sidebar/astra_sidebar_model.cc",
+    "sidebar/astra_sidebar_model.h",
+    "sidebar/astra_sidebar_notes_view.cc",
+    "sidebar/astra_sidebar_notes_view.h",
+    "sidebar/astra_sidebar_passwords_view.cc",
+    "sidebar/astra_sidebar_passwords_view.h",
+    "sidebar/astra_sidebar_reading_list_view.cc",
+    "sidebar/astra_sidebar_reading_list_view.h",
+    "sidebar/astra_sidebar_recently_closed_view.cc",
+    "sidebar/astra_sidebar_recently_closed_view.h",
+    "sidebar/astra_sidebar_section_view.cc",
+    "sidebar/astra_sidebar_section_view.h",
+    "sidebar/astra_sidebar_stack_child_view.cc",
+    "sidebar/astra_sidebar_stack_child_view.h",
+    "sidebar/astra_sidebar_stack_header_view.cc",
+    "sidebar/astra_sidebar_stack_header_view.h",
+    "sidebar/astra_sidebar_stack_tab_item_view.cc",
+    "sidebar/astra_sidebar_stack_tab_item_view.h",
+    "sidebar/astra_sidebar_stack_view.cc",
+    "sidebar/astra_sidebar_stack_view.h",
+    "sidebar/astra_sidebar_tab_groups_view.cc",
+    "sidebar/astra_sidebar_tab_groups_view.h",
+    "sidebar/astra_sidebar_view.cc",
+    "sidebar/astra_sidebar_view.h",
+    "sidebar/astra_tab_group_header_view.cc",
+    "sidebar/astra_tab_group_header_view.h",
+    "sidebar/astra_tab_group_tab_item_view.cc",
+    "sidebar/astra_tab_group_tab_item_view.h",
+    "sidebar/astra_workspace_switcher_view.cc",
+    "sidebar/astra_workspace_switcher_view.h",
+    "split_view/astra_split_view.cc",
+    "split_view/astra_split_view.h",
+    "split_view/astra_split_view_controller.cc",
+    "split_view/astra_split_view_controller.h",
+    "tab_hover/astra_tab_hover_model.cc",
+    "tab_hover/astra_tab_hover_model.h",
+    "tab_hover/astra_tab_hover_peek_controller.cc",
+    "tab_hover/astra_tab_hover_peek_controller.h",
+    "tab_hover/astra_tab_hover_preview_view.cc",
+    "tab_hover/astra_tab_hover_preview_view.h",
+    "tab_search/astra_tab_search_bubble.cc",
+    "tab_search/astra_tab_search_bubble.h",
+    "tab_search/astra_tab_search_item_view.cc",
+    "tab_search/astra_tab_search_item_view.h",
+    "tab_search/astra_tab_search_model.cc",
+    "tab_search/astra_tab_search_model.h",
+    "workspace/astra_workspace_card_view.cc",
+    "workspace/astra_workspace_card_view.h",
+    "workspace/astra_workspace_import_export_dialog.cc",
+    "workspace/astra_workspace_import_export_dialog.h",
+    "workspace/astra_workspace_overview_controller.cc",
+    "workspace/astra_workspace_overview_controller.h",
+    "workspace/astra_workspace_overview_view.cc",
+    "workspace/astra_workspace_overview_view.h",
+    "devtools/astra_devtools_integration.cc",
+    "devtools/astra_devtools_integration.h",
+    "devtools/astra_devtools_model.cc",
+    "devtools/astra_devtools_model.h",
+    "devtools/astra_devtools_toolbar.cc",
+    "devtools/astra_devtools_toolbar.h",
+    "devtools/astra_devtools_workspace_panel.cc",
+    "devtools/astra_devtools_workspace_panel.h",
+  ]
+
+  public_deps = [
+    "//astra/browser",
+    "//astra/build:buildflags",
+  ]
+
+  deps = [
+    "//astra/ui/accessibility",
+    "//base",
+    "//chrome/browser/bookmarks",
+    "//chrome/browser/download",
+    "//chrome/browser/extensions",
+    "//chrome/browser/profiles",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/views",
+    "//components/bookmarks/browser",
+    "//components/history/core/browser",
+    "//components/password_manager/core/browser",
+    "//components/prefs",
+    "//components/sessions",
+    "//extensions/common",
+    "//skia",
+    "//ui/base",
+    "//ui/base/clipboard",
+    "//ui/color",
+    "//ui/gfx",
+    "//ui/native_theme",
+    "//ui/views",
+    "//ui/views/controls",
+    "//url",
+  ]
+
+  visibility = [
+    "//astra/*",
+    "//chrome/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Audit all deps against actual #includes in source files.
+  # Use `gn check` or include-what-you-use in a full Chromium checkout.
+}
+
+# Unit and interactive UI tests for views-layer code.
+#
+# Test categories:
+#   - Unit tests for individual views (e.g. AstraSidebarItemView,
+#     AstraWorkspaceSwitcherView, AstraSplitView) using views_test_support
+#     and views::test::ViewsTestBase.
+#   - interactive_ui_tests for full BrowserView integration (e.g.
+#     AstraSidebarView installed into BrowserView, command handling,
+#     split view controller lifecycle).
+#
+# TODO(astra): Add unit tests for individual sidebar and split view widgets
+# once the views layer has stable APIs and testable widgets.
+# TODO(astra): Add interactive_ui_tests for AstraSidebarView,
+# AstraBrowserView, and AstraSplitViewController once the views layer is
+# wired into BrowserView.
+# Use views::test::ViewsTestBase for unit tests and InteractiveViewsTestApi
+# / InProcessBrowserTest for interactive tests.
+#
+# Patch point: //chrome/browser/ui/views/frame.
+# Integration point: //chrome/test:interactive_ui_tests test suite.
+source_set("astra_ui_views_tests") {
+  testonly = true
+
+  sources = [
+    "astra_browser_view_unittest.cc",
+    "command_palette/astra_command_palette_views_unittest.cc",
+    "devtools/astra_devtools_toolbar_unittest.cc",
+    "devtools/astra_devtools_unittest.cc",
+    "devtools/astra_devtools_workspace_panel_unittest.cc",
+    "focus_mode/astra_focus_mode_views_unittest.cc",
+    "glance/astra_glance_view_unittest.cc",
+    "newtab/astra_newtab_views_unittest.cc",
+    "omnibox/astra_omnibox_views_unittest.cc",
+    "pip/astra_pip_views_unittest.cc",
+    "profiles/astra_profile_menu_unittest.cc",
+    "profiles/astra_profile_views_unittest.cc",
+    "screenshot/astra_screenshot_views_unittest.cc",
+    "settings/astra_settings_views_unittest.cc",
+    "sidebar/astra_sidebar_unittest.cc",
+    "split_view/astra_split_view_unittest.cc",
+    "tab_hover/astra_tab_hover_preview_view_unittest.cc",
+    "tab_hover/astra_tab_hover_unittest.cc",
+    "tab_search/astra_tab_search_views_unittest.cc",
+    "workspace/astra_workspace_card_view_unittest.cc",
+    "workspace/astra_workspace_overview_controller_unittest.cc",
+    "workspace/astra_workspace_overview_view_unittest.cc",
+    "devtools/astra_devtools_unittest.cc",
+  ]
+
+  deps = [
+    ":views",
+    "//astra/ui/color",
+    "//base",
+    "//base/test:test_support",
+    "//chrome/test:test_support",
+    "//components/prefs",
+    "//testing/gmock",
+    "//testing/gtest",
+    "//ui/views:views_test_support",
+  ]}
+
+# Interactive UI tests for views-layer integration with BrowserView.
+#
+# These tests exercise Astra views inside a real browser window using
+# InteractiveViewsTestApi and InProcessBrowserTest.  They verify that
+# Astra widgets are installed correctly, respond to commands, and
+# integrate with Chromium's BrowserView lifecycle.
+#
+# TODO(astra): Implement interactive_ui_tests for AstraBrowserView,
+# AstraSidebarView, AstraSplitViewController, and command palette.
+# Patch point: //chrome/test:interactive_ui_tests test suite.
+source_set("astra_ui_views_interactive_uitests") {
+  testonly = true
+
+  sources = []
+
+  deps = [
+    ":views",
+    "//base",
+    "//base/test:test_support",
+    "//chrome/test:test_support",
+    "//chrome/test:interactive_ui_test_support",
+    "//content/public/test:test_support",
+    "//testing/gtest",
+    "//ui/views:views_test_support",
+  ]
+}

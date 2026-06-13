@@ -1,0 +1,101 @@
+# Astra ui/webui layer — WebUI page infrastructure.
+#
+# This layer owns Astra-specific WebUI pages (astra://newtab,
+# astra://settings, etc.) that complement the native Views UI.
+#
+# WebUI pages vs Views surfaces:
+#   - Views: sidebar, workspace switcher, split view, command palette
+#   - WebUI: new tab page (full tab), settings page, about page
+#
+# Both coexist — Views for chrome-integrated UI widgets, WebUI for
+# full-page content that benefits from HTML/CSS/JS rendering.
+#
+# Chromium subsystems reused:
+#   - content::WebUIController — base class for all WebUI pages
+#   - content::WebUIMessageHandler — JS <-> C++ bridge
+#   - content::URLDataSource — resource serving from .pak files
+#   - ui/webui — WebUIConfig registration system
+#
+# Rules:
+#   - All WebUI controllers are registered via WebUIConfig.
+#   - Resources are served from astra/app/resources/ via URLDataSource.
+#   - Message handlers bridge to astra/browser services — no direct
+#     business logic in WebUI code.
+#   - UI code must not be a product state truth source.
+
+import("//build/config/chrome_build.gni")
+import("//astra/build/buildflags.gni")
+
+source_set("webui") {
+  sources = [
+    "astra_new_tab_handler.cc",
+    "astra_new_tab_handler.h",
+    "astra_new_tab_ui.cc",
+    "astra_new_tab_ui.h",
+    "astra_settings_handler.cc",
+    "astra_settings_handler.h",
+    "astra_settings_ui.cc",
+    "astra_settings_ui.h",
+    "astra_webui_config.cc",
+    "astra_webui_config.h",
+    "astra_webui_constants.h",
+  ]
+
+  public_deps = [
+    "//astra/build:buildflags",
+  ]
+
+  deps = [
+    "//astra/app/resources",
+    "//astra/browser",
+    "//base",
+    "//chrome/browser/profiles",
+    "//components/keyed_service/core",
+    "//content/public/browser",
+    "//net",
+    "//services/network/public/cpp",
+    "//skia",
+    "//ui/base",
+    "//ui/base/resource",
+    "//ui/webui",
+    "//url",
+  ]
+
+  visibility = [
+    "//astra/*",
+    "//chrome/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Audit all deps against actual #includes in source files.
+  # Use `gn check` in a full Chromium checkout.
+}
+
+# Unit tests for webui-layer code.
+#
+# Test categories:
+#   - AstraNewTabHandler message handling unit tests
+#     (mock out the services, verify message parsing)
+#   - WebUIConfig registration tests
+#
+# TODO(astra): Add unit tests for AstraNewTabHandler message handling.
+# These tests would mock AstraNewTabPageService and AstraWorkspaceService
+# and verify that the handler correctly dispatches messages.
+#
+# TODO(astra): Integrate these tests into the Chromium unit_tests target.
+# Patch point: //chrome/test/BUILD.gn unit test suites.
+source_set("astra_ui_webui_tests") {
+  testonly = true
+
+  sources = []
+
+  deps = [
+    ":webui",
+    "//base",
+    "//base/test:test_support",
+    "//content/public/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+  ]
+}

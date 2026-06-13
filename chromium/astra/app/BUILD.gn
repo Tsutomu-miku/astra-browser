@@ -1,0 +1,154 @@
+# Astra app layer — startup hooks and Chromium patch helpers.
+#
+# This layer owns:
+#   - AstraMainDelegate        (ChromeMainDelegate patch helper)
+#   - AstraContentBrowserClient (ChromeContentBrowserClient patch helper)
+#   - AstraBrowserMainExtraParts (ChromeBrowserMainExtraParts adapter)
+#   - AstraFeatureList         (Astra product feature flags)
+#   - AstraAcceleratorTable    (Astra keyboard shortcut definitions)
+#   - AstraAcceleratorRegistrar (runtime accelerator registration)
+#   - AstraBrand / AstraVersion (product identity strings)
+#
+# It must not contain product logic — only registration and delegation into
+# astra/browser. Patch points in chrome/browser/chrome_browser_main.cc and
+# chrome/app/chrome_main_delegate.cc call into these objects.
+
+import("//build/config/chrome_build.gni")
+import("//astra/build/buildflags.gni")
+
+source_set("app") {
+  sources = [
+    "astra_accelerator_registrar.cc",
+    "astra_accelerator_registrar.h",
+    "astra_accelerator_table.cc",
+    "astra_accelerator_table.h",
+    "astra_brand.cc",
+    "astra_brand.h",
+    "astra_browser_main_extra_parts.cc",
+    "astra_browser_main_extra_parts.h",
+    "astra_content_browser_client.cc",
+    "astra_content_browser_client.h",
+    "astra_feature_list.cc",
+    "astra_feature_list.h",
+    "astra_main_delegate.cc",
+    "astra_main_delegate.h",
+    "astra_version.h",
+  ]
+
+  # Public API of the app layer — buildflags and branding headers
+  # that are safe to include from other layers and from Chromium patch points.
+  public_deps = [
+    "//astra/browser",
+    "//astra/build:buildflags",
+  ]
+
+  deps = [
+    "//base",
+    "//chrome/browser",
+    "//components/keyed_service/content",
+    "//components/prefs",
+    "//content/public/browser",
+    "//third_party/blink/public/common",
+    "//ui/base",
+    "//ui/base/accelerators",
+    "//ui/base/l10n",
+    "//ui/base/resource",
+    "//ui/events",
+    "//ui/gfx",
+    "//ui/views",
+    "//url",
+  ]
+
+  # TODO(astra): Add //astra/app/resources dep when resource assets are ready.
+  # Currently resources/ is a placeholder directory with a README only.
+  # Patch point: astra/app/resources/ — grit target for Astra icons and strings.
+  # Owner: astra/app/resources/BUILD.gn (to be created).
+
+  visibility = [
+    "//astra/*",
+    "//chrome/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Audit all deps against actual #includes in source files.
+  # Use `gn check` in a full Chromium checkout.
+  #
+  # Dep rationale:
+  #   //base — basic types (FeatureList, logging, raw_ptr, etc.)
+  #   //chrome/browser — ChromeBrowserMainExtraParts, Profile
+  #   //components/keyed_service/content — BrowserContextDependencyManager
+  #   //components/prefs — PrefService (feature pref overrides)
+  #   //content/public/browser — WebContents, RenderFrameHost, BrowserContext
+  #   //third_party/blink/public/common — WebPreferences
+  #   //ui/base — general UI utilities
+  #   //ui/base/accelerators — ui::Accelerator
+  #   //ui/base/l10n — l10n_util (locale / resource loading)
+  #   //ui/base/resource — ResourceBundle (resource pak loading)
+  #   //ui/events — event types, keyboard codes
+  #   //ui/gfx — geometry / color types (used transitively)
+  #   //ui/views — FocusManager, AcceleratorTarget, Views framework
+  #   //url — GURL, URL constants
+}
+
+# Unit tests for app-layer code.
+#
+# Test coverage plan:
+#   - AstraFeatureList defaults and override behavior
+#   - AstraBrowserMainExtraParts lifecycle hooks (PostCreateThreads,
+#     PreProfileInit, PostProfileInit, PreBrowserStart, PostBrowserStart)
+#   - AstraMainDelegate patch registration
+#   - AstraContentBrowserClient override points
+#   - AstraAcceleratorTable — table lookup and shortcut formatting
+#   - AstraAcceleratorRegistrar — conflict detection
+#
+# TODO(astra): Add unit tests for AstraBrowserMainExtraParts lifecycle hooks
+# and AstraFeatureList defaults.
+# App-layer tests tend to be browser_tests rather than unit_tests because
+# they exercise full browser startup.  Consider adding browsertest-style
+# tests using InProcessBrowserTest.
+# Patch point: //chrome/test/base/in_process_browser_test.h
+source_set("astra_app_tests") {
+  testonly = true
+
+  sources = [
+    "astra_accelerator_registrar_unittest.cc",
+    "astra_accelerator_table_unittest.cc",
+    "astra_browser_main_extra_parts_unittest.cc",
+    "astra_content_browser_client_unittest.cc",
+    "astra_feature_list_unittest.cc",
+    "astra_main_delegate_unittest.cc",
+  ]
+
+  deps = [
+    ":app",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+  ]
+}
+
+# Browser tests for app-layer startup integration.
+#
+# These tests use InProcessBrowserTest to verify Astra startup hooks
+# (AstraMainDelegate, AstraBrowserMainExtraParts) work correctly in a
+# full browser process.
+#
+# TODO(astra): Implement browser tests for Astra startup lifecycle and
+# feature list initialization.
+# Patch point: //chrome/test:browser_tests test suite.
+source_set("astra_app_browsertests") {
+  testonly = true
+
+  sources = []
+
+  deps = [
+    ":app",
+    "//base",
+    "//base/test:test_support",
+    "//chrome/test:test_support",
+    "//content/public/test:test_support",
+    "//testing/gtest",
+  ]
+}

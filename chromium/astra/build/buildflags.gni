@@ -1,0 +1,114 @@
+# Astra build configuration.
+#
+# This file declares GN variables and build flags for the Astra product layer.
+# These flags control which Astra features are compiled into the binary.
+#
+# Chromium owns: build/buildflag_header.gni template, chrome_build.gni flags.
+# Astra owns: product-specific flag names and default values.
+#
+# TODO(astra): Wire these flags into build/config/chrome_build.gni so they
+# can be set via GN args like `is_astra_branded=true`.
+# Patch point: //build/config/chrome_build.gni
+#
+# TODO(astra): Generate astra_buildflags.h from GN using buildflag_header.gni
+# template instead of maintaining it manually.
+# Patch point: //build/buildflag_header.gni
+
+# ---------------------------------------------------------------------------
+# Branding
+# ---------------------------------------------------------------------------
+
+# Whether this build is an Astra-branded browser build.
+# When enabled, Chromium UI surfaces show "Astra Browser" instead of
+# "Chromium", and Astra-specific UI surfaces are compiled in.
+#
+# Set by GN arg: is_astra_branded = true
+# Default: false (plain Chromium build)
+declare_args() {
+  is_astra_branded = false
+}
+
+# ---------------------------------------------------------------------------
+# Feature compilation flags
+# ---------------------------------------------------------------------------
+#
+# Each feature can be independently enabled or disabled at build time.
+# Features default to enabled so that developer builds include all
+# functionality.  Individual features can be turned off for size-optimized
+# builds or to disable experimental code paths.
+#
+# These flags mirror BUILDFLAG(ENABLE_ASTRA_*) constants in astra_buildflags.h.
+#
+# To disable a feature at build time:
+#   gn gen out/Default --args="enable_astra_sidebar=false"
+#
+# Or from within a GN build config that imports this file:
+#   import("//astra/build/buildflags.gni")
+#   enable_astra_sidebar = false
+
+declare_args() {
+  # Whether the Astra sidebar UI surface is compiled in.
+  # The sidebar is the primary Astra navigation surface (vertical tab
+  # strip + workspace switcher + favorites).
+  #
+  # Default: true
+  enable_astra_sidebar = true
+
+  # Whether Astra split view / Glance presentation is compiled in.
+  # Split view allows two WebContents side-by-side in one tab container
+  # with a draggable divider.
+  #
+  # Default: true
+  enable_astra_split_view = true
+
+  # Whether Astra workspaces are compiled in.
+  # Workspaces let users organize tabs into named, switchable groups
+  # with their own metadata, favorites, and session state.
+  #
+  # Default: true
+  enable_astra_workspaces = true
+
+  # Whether the Astra command palette is compiled in.
+  # The command palette provides quick-access command search (Cmd/Ctrl+K)
+  # for navigating the browser and triggering Astra-specific commands.
+  #
+  # Default: true
+  enable_astra_command_palette = true
+
+  # Whether Astra focus mode is compiled in.
+  # Focus mode provides distraction-free browsing by hiding UI
+  # chrome, dimming secondary tabs, and suppressing notifications.
+  #
+  # Default: true
+  enable_astra_focus_mode = true
+
+  # Whether the Astra DevTools panel is compiled in.
+  # The Astra DevTools panel adds an Astra-specific tab to the
+  # Chromium DevTools window for inspecting Astra metadata
+  # (workspaces, sidebar state, split view configuration).
+  #
+  # Default: true
+  enable_astra_devtools_panel = true
+
+  # Whether Astra WebUI pages are compiled in.
+  # Astra WebUI pages are chrome://astra-* pages for settings,
+  # workspace management, and other Astra-specific surfaces.
+  # When disabled, Astra uses native Views UI instead of WebUI.
+  #
+  # Default: false (prefer native Views for Astra surfaces)
+  enable_astra_webui = false
+}
+
+# ---------------------------------------------------------------------------
+# Derived flags
+# ---------------------------------------------------------------------------
+#
+# Flags below are computed from the flags above and are not user-configurable
+# GN args.  They are used internally by Astra's build configuration.
+
+# Whether any Astra UI features are enabled.
+# Used by the build to conditionally include Astra UI support code.
+astra_has_ui_features =
+    enable_astra_sidebar || enable_astra_split_view ||
+    enable_astra_workspaces || enable_astra_command_palette ||
+    enable_astra_focus_mode

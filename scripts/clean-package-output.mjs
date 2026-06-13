@@ -1,3 +1,11 @@
+// LEGACY SCRIPT — Electron era
+//
+// Cleans electron-builder staging artifacts from the release/ directory.
+// Used after `electron-builder` packaging to remove intermediate files.
+//
+// This is part of the legacy Electron build pipeline.
+// The direct-Chromium build uses ninja out/ directories instead.
+
 import { readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";

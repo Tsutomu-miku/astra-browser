@@ -1,0 +1,37 @@
+diff --git a/chrome/browser/ui/color/chrome_color_mixers.cc b/chrome/browser/ui/color/chrome_color_mixers.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/color/chrome_color_mixers.cc
++++ b/chrome/browser/ui/color/chrome_color_mixers.cc
+@@ -15,6 +15,10 @@
+ #include "chrome/browser/ui/color/native_chrome_color_mixer.h"
+ #include "chrome/browser/ui/color/material_ui_color_mixer.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/ui/color/astra_color_mixer.h"
++#endif
++
+ // ... other includes ...
+
+ void AddChromeColorMixers(ui::ColorProvider* provider,
+@@ -100,6 +104,22 @@ void AddChromeColorMixers(ui::ColorProvider* provider,
+   AddOmniboxColorMixer(provider, key);
+   AddSidePanelColorMixer(provider, key);
+   // ... more mixers ...
++
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra product colors (sidebar, workspace accents, command palette, etc.).
++  //
++  // Added after Chrome mixers so Astra colors can reference Chrome colors
++  // as fallbacks and can override if needed.  Astra colors use the
++  // kAstraColorsStart offset (based on kUiColorsEnd) to avoid collisions.
++  //
++  // TODO(astra): Pass the real workspace accent color instead of the
++  //   hardcoded default.  The accent color should come from the active
++  //   workspace (AstraWorkspaceService) via ColorProviderKey or
++  //   ThemeService.  For now, use the default accent color.
++  // Chromium owner: ColorProviderKey / ThemeService
++  const bool dark_mode =
++      key.color_mode == ui::ColorProviderKey::ColorMode::kDark;
++  astra::AddAstraColorMixer(provider, dark_mode, SK_ColorBLUE);
++#endif
+ }

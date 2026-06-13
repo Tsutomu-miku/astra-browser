@@ -1,0 +1,105 @@
+# Astra UI color system — Chromium ColorProvider mixin for Astra colors.
+#
+# This target provides Astra-specific color IDs and a color mixer that
+# registers them with Chromium's ui::ColorProvider system. All Astra UI
+# surfaces (sidebar, workspace switcher, command palette, etc.) should
+# query colors from the ColorProvider using the kColorAstra* IDs.
+#
+# Architecture:
+#   - astra_color_ids.h    — ColorId constants (Astra-specific enum values).
+#   - astra_color_mixer.h  — Mixer function declaration.
+#   - astra_color_mixer.cc — Mixer implementation (light/dark + accent colors).
+#
+# Integration with Chromium:
+#
+#   This target is a dependency of the Astra views layer and is also
+#   depended on by Chromium patch points that register Astra colors in
+#   the browser's ColorProvider.
+#
+#   TODO(astra): Add this target as a dependency from the Chromium patch
+#     point that initializes the ColorProvider (e.g., chrome/browser/ui/color).
+#     The patch should call astra::AddAstraColorMixer() during ColorProvider
+#     construction so Astra color IDs are available to all views.
+#
+#     Patch files:
+#       - chrome/browser/ui/color/native_chrome_color_mixer.cc
+#       - chrome/browser/ui/color/BUILD.gn
+#
+#     Chromium owner: ColorProvider / NativeTheme team.
+#     (ui/color/color_provider.h)
+#
+# Rules:
+#   - Only Astra-specific colors go here. Reuse Chromium colors from
+#     ui/color/color_id.h and chrome/browser/ui/color/chrome_color_id.h
+#     for standard UI elements (text, icons, borders, etc.).
+#   - All colors must have both light and dark variants.
+#   - Colors are queried via GetColorProvider()->GetColor(kColorAstra*).
+
+import("//build/config/chrome_build.gni")
+import("//astra/build/buildflags.gni")
+
+source_set("color") {
+  sources = [
+    "astra_color_ids.h",
+    "astra_color_mixer.cc",
+    "astra_color_mixer.h",
+  ]
+
+  public_deps = [
+    "//astra/build:buildflags",
+  ]
+
+  deps = [
+    "//astra/common",
+    "//base",
+    "//skia",
+    "//ui/color",
+    "//ui/gfx",
+    "//ui/native_theme",
+  ]
+
+  visibility = [
+    "//astra/*",
+    "//chrome/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Run `gn check` against a full Chromium checkout to verify
+  #   all dependencies are correct and there are no missing includes.
+  #   Some headers may be pulled transitively through //ui/color or //skia.
+}
+
+# Unit tests for the color system.
+#
+# Tests verify:
+#   - All Astra color IDs are registered correctly by the mixer.
+#   - Light and dark modes produce different colors where expected.
+#   - Accent color derivation produces valid contrast ratios.
+#   - No color ID collisions with Chromium's built-in color space.
+#
+# TODO(astra): Implement unit tests for the color mixer.
+#   - Test that AddAstraColorMixer sets a value for every kColorAstra* ID.
+#   - Test accent palette derivation (hover, active, subtle, text, border).
+#   - Test that accent text color meets WCAG AA contrast against accent bg.
+#   - Test dark/light mode toggle produces expected color differences.
+#
+#   Test location: astra/ui/color/astra_color_mixer_unittest.cc
+#   Test target deps: :color, //base/test:test_support, //testing/gtest
+source_set("astra_ui_color_tests") {
+  testonly = true
+
+  sources = [
+    "astra_color_mixer_unittest.cc",
+  ]
+
+  deps = [
+    ":color",
+    "//astra/common",
+    "//base",
+    "//base/test:test_support",
+    "//skia",
+    "//testing/gtest",
+    "//ui/color",
+  ]
+}

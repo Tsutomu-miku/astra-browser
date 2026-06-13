@@ -1,0 +1,63 @@
+diff --git a/chrome/browser/ui/views/accelerator_table.cc b/chrome/browser/ui/views/accelerator_table.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/views/accelerator_table.cc
++++ b/chrome/browser/ui/views/accelerator_table.cc
+@@ -15,6 +15,10 @@
+ #include "chrome/app/chrome_command_ids.h"
+ #include "ui/events/event_constants.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/app/astra_accelerator_table.h"
++#endif
++
+ // ... other includes ...
+
+ namespace {
+@@ -480,7 +484,7 @@ const AcceleratorMapping kAcceleratorMap[] = {
+ // The actual table is much longer; this is just representative.
+ // ... many more accelerator entries ...
+
+-};
+-
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra-specific accelerators are appended below.
++  // See astra/app/astra_accelerator_table.cc for the full list.
++#endif
++};
+
+ // ============================================================================
+ // Accelerator table getter
+@@ -520,6 +524,19 @@ base::span<const AcceleratorMapping> GetAcceleratorTable() {
+   // ... build the table for the current platform ...
+   // In newer Chromium, this returns a span directly from kAcceleratorMap.
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Append Astra-specific accelerators to the Chrome accelerator table.
++  //
++  // Astra commands live in the 60000+ command ID range (see
++  // astra/browser/astra_command_delegate.h).  Keyboard shortcuts for
++  // these commands are defined in astra/app/astra_accelerator_table.cc
++  // and are merged here so they are processed by FocusManager and
++  // dispatched through BrowserCommandController.
++  //
++  // The merge happens at runtime because the Astra table is a separate
++  // array; alternatively, the table could be concatenated at compile time.
++  // TODO(astra): Consider compile-time concatenation for performance.
++  static std::vector<AcceleratorMapping> merged_table;
++  if (merged_table.empty()) {
++    merged_table.assign(std::begin(kAcceleratorMap), std::end(kAcceleratorMap));
++    for (const auto& entry : astra::GetAstraAcceleratorTable()) {
++      AcceleratorMapping mapping;
++      mapping.keycode = entry.keycode;
++      mapping.modifiers = entry.modifiers;
++      mapping.command_id = entry.command_id;
++      merged_table.push_back(mapping);
++    }
++  }
++  return base::make_span(merged_table);
++#else
+   return base::make_span(kAcceleratorMap);
++#endif
+ }
+
+ // ... rest of file ...

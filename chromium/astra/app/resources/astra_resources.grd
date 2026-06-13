@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2026 The Astra Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+
+  Astra resource definitions.
+  =========================================================================
+
+  This GRD (GRIT Definition) file lists all Astra-specific resources:
+  strings, icons, HTML/CSS/JS for WebUI pages, and other assets.
+
+  Chromium owns:
+    - The GRIT tool (Google Resource and Internationalization Tool)
+    - ResourceBundle loading system
+    - Resource ID numbering conventions
+
+  Astra owns:
+    - Product-specific icons, strings, and WebUI assets
+    - This .grd file and all included .grdp files
+
+  Processing:
+    - GRIT reads this file and generates:
+        - astra_resources.h        — IDR_* / IDS_* constant definitions
+        - astra_resources.cc       — compiled resource data
+        - astra_resources.pak      — binary resource pack
+    - The .pak file is loaded into ResourceBundle at startup.
+
+  TODO(astra): Add icon resources (app icon, sidebar icons, etc.)
+    once the design assets are ready.
+    Patch point: astra/app/resources/icons/ (directory to be created)
+
+  TODO(astra): Add all Astra string resources and wire into the
+    l10n / translation pipeline.
+    Chromium owner: tools/gritsettings/resource_ids
+-->
+
+<grit latest_public_release="0" current_release="1"
+      output_all_resource_defines="false"
+      source_lang_id="en" enc_check="möl">
+
+  <outputs>
+    <!-- C++ header with resource ID constants -->
+    <output filename="grit/astra_resources.h" type="rc_header">
+      <emit emit_type="prepend"></emit>
+    </output>
+    <!-- C++ source with compiled resource data -->
+    <output filename="grit/astra_resources.cc" type="rc_data" />
+    <!-- Binary resource pack loaded at runtime -->
+    <output filename="astra_resources.pak" type="data_package" />
+  </outputs>
+
+  <release seq="1" allow_pseudo="false">
+
+    <!-- =================================================================
+         Includes — string tables from .grdp files
+         ================================================================= -->
+
+    <!-- Astra-specific UI strings -->
+    <part file="astra_strings.grdp" />
+
+    <!-- =================================================================
+         Structures — non-string binary resources
+         ================================================================= -->
+
+    <structures>
+
+      <!-- -------------------------------------------------------------------
+           New Tab Page (astra://newtab) WebUI resources
+           -------------------------------------------------------------------
+           These are served by content::URLDataSource via ResourceBundle.
+           Each file is a raw binary structure loaded by its IDR_ constant.
+
+           TODO(astra): Add more NTP resources as features grow
+             (background images, icons, modules, etc.)
+      -->
+
+      <!-- NTP HTML entry point -->
+      <structure name="IDR_ASTRA_NEW_TAB_HTML"
+                 file="newtab/newtab.html"
+                 type="chrome_html"
+                 compress="gzip" />
+
+      <!-- NTP styles -->
+      <structure name="IDR_ASTRA_NEW_TAB_CSS"
+                 file="newtab/newtab.css"
+                 type="chrome_html"
+                 compress="gzip" />
+
+      <!-- NTP JavaScript -->
+      <structure name="IDR_ASTRA_NEW_TAB_JS"
+                 file="newtab/newtab.js"
+                 type="chrome_html"
+                 compress="gzip" />
+
+      <!-- -------------------------------------------------------------------
+           Settings page (astra://settings) WebUI resources
+           -------------------------------------------------------------------
+           These are served by content::URLDataSource via ResourceBundle.
+           The settings page provides Astra-specific preferences that
+           complement chrome://settings.
+
+           TODO(astra): Add more settings resources as features grow
+             (sub-page modules, icons, etc.)
+      -->
+
+      <!-- Settings HTML entry point -->
+      <structure name="IDR_ASTRA_SETTINGS_HTML"
+                 file="settings/settings.html"
+                 type="chrome_html"
+                 compress="gzip" />
+
+      <!-- Settings styles -->
+      <structure name="IDR_ASTRA_SETTINGS_CSS"
+                 file="settings/settings.css"
+                 type="chrome_html"
+                 compress="gzip" />
+
+      <!-- Settings JavaScript -->
+      <structure name="IDR_ASTRA_SETTINGS_JS"
+                 file="settings/settings.js"
+                 type="chrome_html"
+                 compress="gzip" />
+
+      <!-- TODO(astra): Add app icon resources (16px through 512px)
+           See README.md for the full icon inventory.
+           Icons should be PNG files in an icons/ subdirectory.
+           Chromium pattern: chrome/app/theme/chrome/theme_resources.grd
+      -->
+
+      <!-- TODO(astra): Add sidebar icon resources (20dp, 2x, 3x variants)
+           Icons for workspace, favorites, history, downloads, etc.
+      -->
+
+    </structures>
+
+  </release>
+
+</grit>

@@ -1,0 +1,107 @@
+<!--
+  Copyright 2026 The Astra Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+
+  Astra New Tab Page — HTML structure
+  =========================================================================
+
+  This is the HTML entry point for the Astra new tab page (astra://newtab).
+  It is served by content::URLDataSource from astra_resources.pak.
+
+  The NTP provides:
+    - Workspace cards with tab counts
+    - Most-visited site shortcuts
+    - Recently visited pages
+    - Quick actions (new workspace, etc.)
+
+  This is the WebUI-based alternative to the Views-based new tab bubble
+  (astra/ui/views/newtab/).  Both surfaces exist — the WebUI NTP renders
+  inside a regular tab, while the Views bubble is an overlay.
+
+  Chromium pattern: chrome/browser/resources/new_tab_page/new_tab_page.html
+  TODO(astra): Add more NTP modules (favorites, notes, reading list, etc.)
+    as those features are implemented.
+  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New Tab</title>
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+  <div id="ntp-container">
+
+    <!-- Logo / greeting section -->
+    <div id="ntp-greeting">
+      <h1 id="greeting-text">Good day</h1>
+      <p id="greeting-sub">Welcome back to Astra</p>
+    </div>
+
+    <!-- Search / omnibox placeholder
+         TODO(astra): Wire up real search box that integrates with
+         the browser omnibox.  For now this is a visual placeholder.
+         Chromium owner: chrome/browser/ui/webui/omnibox/
+    -->
+    <div id="ntp-search">
+      <input type="text" id="search-input" placeholder="Search or enter address"
+             aria-label="Search or enter address">
+    </div>
+
+    <!-- Workspaces section -->
+    <section id="ntp-workspaces" class="ntp-section">
+      <div class="section-header">
+        <h2 class="section-title">Workspaces</h2>
+        <button id="new-workspace-btn" class="section-action">
+          + New workspace
+        </button>
+      </div>
+      <div id="workspace-grid" class="card-grid">
+        <!-- Workspace cards are populated by JS -->
+      </div>
+    </section>
+
+    <!-- Most visited shortcuts section -->
+    <section id="ntp-most-visited" class="ntp-section">
+      <div class="section-header">
+        <h2 class="section-title">Most visited</h2>
+        <button id="add-shortcut-btn" class="section-action" aria-label="Add shortcut">
+          + Add shortcut
+        </button>
+      </div>
+      <div id="shortcuts-grid" class="shortcut-grid">
+        <!-- Shortcut tiles are populated by JS -->
+      </div>
+    </section>
+
+    <!-- Recently closed section -->
+    <section id="ntp-recently-closed" class="ntp-section">
+      <div class="section-header">
+        <h2 class="section-title">Recently closed</h2>
+        <button id="restore-last-btn" class="section-action" aria-label="Restore last closed tab">
+          Restore last
+        </button>
+      </div>
+      <ul id="recently-closed-list" class="recently-closed-list">
+        <!-- Recently closed items are populated by JS -->
+      </ul>
+    </section>
+
+    <!-- Recently visited section -->
+    <section id="ntp-recent" class="ntp-section">
+      <div class="section-header">
+        <h2 class="section-title">Recently visited</h2>
+      </div>
+      <ul id="recent-list" class="recent-list">
+        <!-- Recent items are populated by JS -->
+      </ul>
+    </section>
+
+  </div>
+
+  <script src="newtab.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+diff --git a/chrome/browser/ui/views/location_bar/location_bar_view.h b/chrome/browser/ui/views/location_bar/location_bar_view.h
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/views/location_bar/location_bar_view.h
++++ b/chrome/browser/ui/views/location_bar/location_bar_view.h
+@@ -35,6 +35,11 @@
+ class StarView;
+ class TranslateIconView;
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++namespace astra {
++class AstraLocationBarDecorationView;
++}
++#endif
+
+ // The location bar view contains the omnibox / URL input field,
+ // location icon, and various decorations.
+ class LocationBarView : public views::View {
+@@ -220,6 +225,10 @@ class LocationBarView : public views::View {
+   raw_ptr<StarView> star_view_ = nullptr;
+   raw_ptr<TranslateIconView> translate_icon_view_ = nullptr;
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra workspace indicator decoration.
++  raw_ptr<astra::AstraLocationBarDecorationView> astra_decoration_view_ = nullptr;
++#endif
+
+   // ... other decoration views ...
+ };
+diff --git a/chrome/browser/ui/views/location_bar/location_bar_view.cc b/chrome/browser/ui/views/location_bar/location_bar_view.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/views/location_bar/location_bar_view.cc
++++ b/chrome/browser/ui/views/location_bar/location_bar_view.cc
+@@ -30,6 +30,11 @@
+ #include "chrome/browser/ui/views/location_bar/star_view.h"
+ #include "chrome/browser/ui/views/location_bar/translate_icon_view.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/ui/views/omnibox/astra_location_bar_decoration.h"
++#include "astra/browser/astra_workspace_service.h"
++#endif
++
+ // ... other includes ...
+
+ LocationBarView::LocationBarView(Browser* browser,
+@@ -125,6 +130,19 @@ void LocationBarView::Init() {
+   // ... create star_view_, translate_icon_view_, etc. ...
+   star_view_ = AddChildView(std::make_unique<StarView>(browser_));
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra workspace indicator decoration on the leading edge of the omnibox.
++  // Shows the current workspace's accent color and name.
++  // Clicking opens the workspace switcher or command palette.
++  astra_decoration_view_ = AddChildView(
++      std::make_unique<astra::AstraLocationBarDecorationView>(
++          astra::AstraLocationBarDecorationView::Edge::kLeading));
++  astra_decoration_view_->SetProperty(
++      views::kElementIdentifierKey, kLocationBarAstraDecorationElementId);
++#endif
++
+   // ... other decorations ...
+   // AddPageInfoView_ = AddChildView(...);
+@@ -420,6 +438,20 @@ void LocationBarView::Update() {
+     translate_icon_view_->SetIcon();
+   }
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Update Astra workspace decoration with current workspace state.
++  // Reads the active workspace from AstraWorkspaceService and updates
++  // the decoration view with the workspace name and accent color.
++  if (astra_decoration_view_) {
++    astra::AstraWorkspaceService* workspace_service =
++        astra::AstraWorkspaceServiceFactory::GetForProfile(
++            browser_->profile());
++    if (workspace_service) {
++      const astra::AstraWorkspace* active =
++          workspace_service->GetWorkspace(
++              workspace_service->active_workspace_id());
++      if (active) {
++        astra_decoration_view_->UpdateWorkspace(active->name,
++                                                active->accent_color);
++      }
++    }
++    astra_decoration_view_->SetDecorationVisible(true);
++  }
++#endif
++
+   // ... rest of Update ...
+ }

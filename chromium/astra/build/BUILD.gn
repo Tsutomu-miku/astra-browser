@@ -1,0 +1,51 @@
+# Astra build configuration targets.
+#
+# Provides buildflags header target that other Astra layers depend on.
+# Also provides feature list configuration for GN build-time feature gating.
+#
+# TODO(astra): Replace manual header with generated buildflag_header
+# target using //build/buildflag_header.gni template.
+# Patch point: //build/buildflag_header.gni
+
+import("//build/config/chrome_build.gni")
+import("//astra/build/astra_feature_list.gni")
+
+# Buildflags config — exposes astra_buildflags.h to dependents.
+#
+# This is a source_set (not a config) so that the header is accessible
+# via public_deps and follows Chromium's buildflag pattern.
+#
+# TODO(astra): Generate this from GN using buildflag_header template.
+# Currently manually maintained in astra_buildflags.h.
+source_set("buildflags") {
+  sources = [
+    "astra_buildflags.h",
+  ]
+
+  public_deps = [
+    "//build:buildflag",
+  ]
+
+  # Propagate feature flag defines from GN to the compiler.
+  # Each ENABLE_ASTRA_* flag generates a -D flag that matches the
+  # BUILDFLAG_INTERNAL_* pattern expected by build/buildflag.h.
+  #
+  # TODO(astra): Replace with buildflag_header.gni template once
+  # the buildflag_header target is available in the Chromium tree.
+  # Patch point: //build/buildflag_header.gni
+  defines = [
+    "BUILDFLAG_INTERNAL_IS_ASTRA_BRANDED()=($is_astra_branded)",
+    "BUILDFLAG_INTERNAL_ENABLE_ASTRA_SIDEBAR()=($enable_astra_sidebar)",
+    "BUILDFLAG_INTERNAL_ENABLE_ASTRA_SPLIT_VIEW()=($enable_astra_split_view)",
+    "BUILDFLAG_INTERNAL_ENABLE_ASTRA_WORKSPACES()=($enable_astra_workspaces)",
+    "BUILDFLAG_INTERNAL_ENABLE_ASTRA_COMMAND_PALETTE()=($enable_astra_command_palette)",
+    "BUILDFLAG_INTERNAL_ENABLE_ASTRA_FOCUS_MODE()=($enable_astra_focus_mode)",
+    "BUILDFLAG_INTERNAL_ENABLE_ASTRA_DEVTOOLS_PANEL()=($enable_astra_devtools_panel)",
+    "BUILDFLAG_INTERNAL_ENABLE_ASTRA_WEBUI()=($enable_astra_webui)",
+  ]
+
+  visibility = [
+    "//astra/*",
+    "//chrome/*",
+  ]
+}

@@ -1,0 +1,59 @@
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+index abc1234..def5678 100644
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -15,6 +15,10 @@
+ # TODO(astra): Import astra build config when available.
+ import("//build/config/chrome_build.gni")
+
++if (is_astra_branded) {
++  import("//astra/build/buildflags.gni")
++}
++
+ source_set("browser") {
+   # ... sources, public_deps, etc. ...
+
+@@ -320,6 +324,11 @@ source_set("browser") {
+     "//chrome/common:version_header",
+     # ... many more deps ...
+   ]
++
++  # Astra product-layer code.  Contains product metadata services, command
++  # delegation, and UI surfaces that augment Chromium's browser layer.
++  if (is_astra_branded) {
++    deps += [ "//astra:astra_browser" ]
++  }
+ }
+
+ # ... other targets ...
+diff --git a/chrome/browser/ui/views/BUILD.gn b/chrome/browser/ui/views/BUILD.gn
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/views/BUILD.gn
++++ b/chrome/browser/ui/views/BUILD.gn
+@@ -280,6 +280,11 @@ source_set("views") {
+     "//ui/views",
+     # ... more deps ...
+   ]
++
++  # Astra Views UI surfaces.
++  if (is_astra_branded) {
++    deps += [ "//astra/ui/views" ]
++  }
+ }
+diff --git a/build/config/chrome_build.gni b/build/config/chrome_build.gni
+index abc1234..def5678 100644
+--- a/build/config/chrome_build.gni
++++ b/build/config/chrome_build.gni
+@@ -30,6 +30,13 @@
+ # ============================================================================
+ declare_args() {
+
++  # When true, builds the Astra product layer on top of Chromium.
++  # This enables Astra-specific UI surfaces, branding, and services.
++  # Set via `gn gen --args="is_astra_branded=true"`.
++  # Default: false (plain Chromium build).
++  is_astra_branded = false
++
++
+   # Whether this is a Chrome-branded build (Google Chrome).
+   is_chrome_branded = false

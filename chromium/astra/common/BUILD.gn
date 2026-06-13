@@ -1,0 +1,86 @@
+# Astra common layer — shared types and constants.
+#
+# This layer holds type definitions, enums, constants, and lightweight
+# utility functions that are shared across the app, browser, and ui/views
+# layers.  It is the bottom of Astra's dependency graph — it depends only
+# on //base and fundamental Chromium types (Skia, gfx).
+#
+# Rules:
+#   - Pure headers or very lightweight implementations only.
+#   - No state, no services, no singletons.
+#   - No dependencies on browser or views layers.
+#   - Types are data carriers — no business logic.
+#
+# Dependency graph:
+#   astra/app    ----+
+#   astra/browser  --+--> astra/common --> //base + //skia + //ui/gfx
+#   astra/ui/views --+
+#
+# Direction: common never depends on app, browser, or ui/views.
+
+import("//build/config/chrome_build.gni")
+import("//astra/build/buildflags.gni")
+
+source_set("common") {
+  sources = [
+    "astra_color_utils.cc",
+    "astra_color_utils.h",
+    "astra_command_constants.h",
+    "astra_tab_types.h",
+    "astra_ui_constants.h",
+    "astra_url_constants.cc",
+    "astra_url_constants.h",
+    "astra_workspace_types.cc",
+    "astra_workspace_types.h",
+  ]
+
+  public_deps = [
+    "//astra/build:buildflags",
+  ]
+
+  deps = [
+    "//base",
+    "//skia",
+    "//ui/gfx",
+    "//ui/native_theme",
+    "//url",
+  ]
+
+  visibility = [
+    "//astra/*",
+    "//chrome/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+}
+
+# Unit tests for the Astra common layer.
+#
+# Test categories:
+#   - AstraWorkspaceAccentColor enum and color lookup.
+#   - AstraWorkspaceInfo struct defaults and field access.
+#   - IsAstraCommandId range checks.
+#   - AstraSplitViewState defaults and field access.
+#   - Split view ratio constant invariants.
+#   - String ID constants (invalid, default, root folder).
+#   - AstraTabFeatureFlag bit operations.
+#
+# Patch point: //chrome/test:unit_tests test suite.
+source_set("astra_common_unittests") {
+  testonly = true
+
+  sources = [
+    "astra_color_utils_unittest.cc",
+    "astra_common_unittest.cc",
+  ]
+
+  deps = [
+    ":common",
+    "//base",
+    "//base/test:test_support",
+    "//skia",
+    "//testing/gtest",
+    "//ui/gfx",
+    "//url",
+  ]
+}

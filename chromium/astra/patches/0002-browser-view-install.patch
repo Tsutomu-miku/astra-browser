@@ -1,0 +1,61 @@
+diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/views/frame/browser_view.h
++++ b/chrome/browser/ui/views/frame/browser_view.h
+@@ -40,6 +40,11 @@
+ class TabStripRegionView;
+ class SidePanelView;
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++namespace astra {
++class AstraBrowserView;
++}
++#endif
+
+ // The main view of the browser window. Owns toolbar, tab strip, contents, etc.
+ class BrowserView : public views::WidgetDelegateView,
+@@ -320,6 +325,12 @@ class BrowserView : public views::WidgetDelegateView,
+   raw_ptr<TabStripRegionView> tab_strip_region_view_ = nullptr;
+   raw_ptr<SidePanelView> side_panel_view_ = nullptr;
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra product UI layer.  Adds sidebar, workspace switcher, command palette,
++  // and other Astra-specific surfaces to the browser window.
++  std::unique_ptr<astra::AstraBrowserView> astra_browser_view_;
++#endif
++
+   // ... other member variables ...
+ };
+
+ #endif  // CHROME_BROWSER_UI_VIEWS_FRAME_BROWSER_VIEW_H_
+diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/views/frame/browser_view.cc
++++ b/chrome/browser/ui/views/frame/browser_view.cc
+@@ -55,6 +55,10 @@
+ #include "chrome/browser/ui/views/tabs/tab_strip.h"
+ #include "chrome/browser/ui/views/toolbar/toolbar_view.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/ui/views/astra_browser_view.h"
++#endif
++
+ // ... other includes ...
+
+ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
+@@ -310,6 +314,15 @@ void BrowserView::Init() {
+   // ... initialize toolbar, tab strip, side panel, etc. ...
+   side_panel_view_ = AddChildView(std::make_unique<SidePanelView>(browser_.get()));
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Install Astra product UI surfaces (sidebar, workspace switcher, etc.).
++  // This must happen after the core Chromium view hierarchy is constructed
++  // so that AstraBrowserView can observe and augment existing views.
++  astra_browser_view_ = std::make_unique<astra::AstraBrowserView>(this);
++  astra_browser_view_->Install();
++#endif
++
+   // ... rest of Init() ...
+ }
+
+ BrowserView::~BrowserView() = default;

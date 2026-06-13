@@ -1,0 +1,101 @@
+# Astra accessibility utilities.
+#
+# Reusable accessibility helpers for Astra views.  Wraps Chromium's
+# AXNodeData and views accessibility infrastructure with convenience
+# functions for accessible names, roles, states, focus management,
+# and keyboard navigation.
+#
+# Chromium subsystems reused:
+#   - ui/accessibility/ — AXNodeData, AXRole, AXState, AXPlatformNode
+#   - ui/views/ — View accessibility, FocusManager, ScrollView, FocusRing
+#   - ui/native_theme/ — high contrast, reduced motion detection
+#   - ui/events/ — key event handling
+#
+# Rules:
+#   - This layer must not depend on astra/browser (product state).
+#   - This layer is pure UI utility code.
+#   - All todo comments must use TODO(astra): with Chromium owner named.
+
+import("//build/config/chrome_build.gni")
+
+source_set("accessibility") {
+  sources = [
+    "astra_accessibility_ids.h",
+    "astra_accessibility_strings.cc",
+    "astra_accessibility_strings.h",
+    "astra_accessibility_util.cc",
+    "astra_accessibility_util.h",
+    "astra_accessibility_utils.cc",
+    "astra_accessibility_utils.h",
+    "astra_focus_manager.cc",
+    "astra_focus_manager.h",
+  ]
+
+  deps = [
+    "//base",
+    "//ui/accessibility",
+    "//ui/accessibility:ax_platform",
+    "//ui/base",
+    "//ui/events",
+    "//ui/native_theme",
+    "//ui/views",
+    "//ui/views/controls",
+  ]
+
+  visibility = [
+    "//astra/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Audit deps against actual #includes once building
+  # against a full Chromium checkout with `gn check`.
+  # Verify ax_platform dep is correct (may need to be
+  # ui/accessibility/platform).
+}
+
+# Unit tests for accessibility utilities.
+#
+# Test categories:
+#   - Accessibility IDs and string constants
+#   - Accessible name / description / role helpers
+#   - State attribute helpers (pressed, selected, expanded, disabled)
+#   - Focus management utilities (FocusNextChild, AstraFocusManager, etc.)
+#   - Keyboard navigation (HandleListKeyboardNavigation)
+#   - Live region helpers
+#   - Focus ring and high contrast support
+#   - Screen reader announcement helpers
+#
+# TODO(astra): Integrate these tests into the Chromium test suite.
+# Patch point: //ui/views:views_test_support or //chrome/test/BUILD.gn
+# unit test suites.
+#
+# These tests depend on views test support and will not compile in a
+# standalone overlay repo because they require the full Chromium checkout
+# with test support libraries.
+source_set("astra_accessibility_unittests") {
+  testonly = true
+
+  sources = [
+    "astra_accessibility_unittest.cc",
+    "astra_accessibility_utils_unittest.cc",
+  ]
+
+  deps = [
+    ":accessibility",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+    "//ui/accessibility",
+    "//ui/events",
+    "//ui/views",
+    "//ui/views/test:test_support",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Verify the correct test support deps once building
+  # against a full Chromium checkout.  Views tests typically depend on
+  # //ui/views/test:views_test_support and //ui/views/test:test_views_delegate.
+}

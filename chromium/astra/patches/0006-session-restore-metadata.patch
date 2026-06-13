@@ -1,0 +1,95 @@
+diff --git a/chrome/browser/sessions/base_session_service.cc b/chrome/browser/sessions/base_session_service.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/sessions/base_session_service.cc
++++ b/chrome/browser/sessions/base_session_service.cc
+@@ -25,6 +25,11 @@
+ #include "chrome/browser/sessions/session_service_base.h"
+ #include "content/public/browser/web_contents.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/browser/astra_session_restore_helper.h"
++#endif
++
+ // ... other includes ...
+
+ namespace {
+@@ -210,6 +215,15 @@ std::unique_ptr<sessions::SessionTab>
+   tab->current_navigation_index = current_index;
+   // ... populate navigations, pinned state, etc. ...
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Attach Astra per-tab metadata (workspace ID, favorite state, split view,
++  // etc.) to the session tab.  This metadata rides along with Chromium's
++  // session data and is restored when the tab is recreated.
++  base::Value::Dict astra_metadata =
++      astra::AstraSessionRestoreHelper::OnWillSaveTab(web_contents);
++  if (!astra_metadata.empty()) {
++    tab->extra_data.Merge(std::move(astra_metadata));
++  }
++#endif
++
+   return tab;
+ }
+diff --git a/chrome/browser/sessions/session_restore.cc b/chrome/browser/sessions/session_restore.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/sessions/session_restore.cc
++++ b/chrome/browser/sessions/session_restore.cc
+@@ -30,6 +30,11 @@
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/sessions/session_restore.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/browser/astra_session_restore_helper.h"
++#endif
++
+ // ... other includes ...
+
+ namespace {
+@@ -620,6 +625,17 @@ void SessionRestore::RestoredTab::CreateWebContents(
+   // ... create WebContents, restore navigation state, etc. ...
+   web_contents_ = content::WebContents::Create(create_params);
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Apply Astra per-tab metadata from the saved session data.
++  // This restores workspace ID, favorite state, split view configuration,
++  // and other Astra-specific tab metadata.
++  const base::Value::Dict& astra_metadata = session_tab_->extra_data;
++  if (astra::HasAstraMetadata(astra_metadata)) {
++    astra::AstraSessionRestoreHelper::OnWillRestoreTab(
++        profile_, web_contents_.get(), astra_metadata);
++  }
++#endif
++
+   // ... insert into tab strip, etc. ...
+ }
+diff --git a/chrome/browser/sessions/tab_restore_service.cc b/chrome/browser/sessions/tab_restore_service.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/sessions/tab_restore_service.cc
++++ b/chrome/browser/sessions/tab_restore_service.cc
+@@ -25,6 +25,11 @@
+ #include "chrome/browser/profiles/profile.h"
+ #include "content/public/browser/web_contents.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/browser/astra_session_restore_helper.h"
++#endif
++
+ // ... other includes ...
+
+ // ============================================================================
+@@ -380,6 +385,16 @@ content::WebContents* TabRestoreService::RestoreTab(
+   // ... create WebContents, restore navigation state ...
+   std::unique_ptr<content::WebContents> web_contents = CreateWebContentsForTab(tab);
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Apply Astra per-tab metadata from the closed-tab entry.
++  // This restores workspace ID, favorite state, and other Astra metadata
++  // when a tab is reopened from the recently-closed list.
++  if (astra::HasAstraMetadata(tab->extra_data)) {
++    astra::AstraSessionRestoreHelper::OnWillRestoreTab(
++        profile(), web_contents.get(), tab->extra_data);
++  }
++#endif
++
+   // ... insert into tab strip ...
+ }

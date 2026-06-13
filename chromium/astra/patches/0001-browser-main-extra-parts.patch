@@ -1,0 +1,27 @@
+diff --git a/chrome/browser/chrome_browser_main.cc b/chrome/browser/chrome_browser_main.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/chrome_browser_main.cc
++++ b/chrome/browser/chrome_browser_main.cc
+@@ -36,6 +36,10 @@
+ #include "chrome/browser/chrome_browser_main_extra_parts_profiles.h"
+ #include "chrome/browser/profiles/profile.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/app/astra_browser_main_extra_parts.h"
++#endif
++
+ // ... other includes ...
+
+ // ============================================================================
+@@ -245,6 +249,11 @@ void ChromeBrowserMainParts::CreateExtraParts() {
+   AddParts(std::make_unique<ChromeBrowserMainExtraPartsProfiles>());
+   // ... more extra parts registration ...
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Astra product-layer startup hooks.  All Astra initialization happens
++  // through this extra parts instance; no other startup patches are needed.
++  AddParts(std::make_unique<astra::AstraBrowserMainExtraParts>());
++#endif
+ }
+
+ void ChromeBrowserMainParts::PreEarlyInitialization() {

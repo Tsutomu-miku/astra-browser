@@ -1,0 +1,42 @@
+diff --git a/chrome/app/chrome_command_ids.h b/chrome/app/chrome_command_ids.h
+index abc1234..def5678 100644
+--- a/chrome/app/chrome_command_ids.h
++++ b/chrome/app/chrome_command_ids.h
+@@ -18,6 +18,14 @@
+ #ifndef CHROME_APP_CHROME_COMMAND_IDS_H_
+ #define CHROME_APP_CHROME_COMMAND_IDS_H_
+
++#include "build/build_config.h"
++
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++// Astra product layer reserves the 60000-60999 range for product-specific
++// commands.  This range is well above Chrome's highest built-in command ID
++// (~40000) and below typical label/separator ID ranges.
++//
++// Individual Astra command IDs are defined in astra/browser/astra_command_delegate.h
++// and use the astra::AstraCommandId enum.
++//
++// Range reservation is build-flag gated; plain Chromium builds have no
++// knowledge of these IDs.
++#define IDC_ASTRA_FIRST 60000
++#define IDC_ASTRA_LAST  60999
++#endif
++
+ // ... existing include and define block ...
+
+ // ============================================================================
+@@ -1580,8 +1588,13 @@
+ // NOTE: All values above must be < IDC_MinimumLabelValue.
+ // The minimum label value is the smallest command ID that can be used for
+ // dynamic label IDs (e.g., for the bookmark bar).
+-
++
+ #define IDC_MinimumLabelValue 40000
++
++// Sanity check: verify Astra command range does not collide with label IDs.
++#if BUILDFLAG(IS_ASTRA_BRANDED) && IDC_ASTRA_LAST >= IDC_MinimumLabelValue
++#error "Astra command ID range overlaps with IDC_MinimumLabelValue"
++#endif
+
+ // ============================================================================
+ // Windows-specific command IDs

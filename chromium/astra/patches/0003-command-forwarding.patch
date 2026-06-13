@@ -1,0 +1,47 @@
+diff --git a/chrome/browser/ui/browser_command_controller.cc b/chrome/browser/ui/browser_command_controller.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/ui/browser_command_controller.cc
++++ b/chrome/browser/ui/browser_command_controller.cc
+@@ -25,6 +25,11 @@
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/app/chrome_command_ids.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "astra/browser/astra_command_delegate.h"
++#endif
++
+ // ... other includes ...
+
+ namespace {
+@@ -165,6 +170,15 @@ bool BrowserCommandController::ExecuteCommandWithDisposition(
+     int command_id,
+     WindowOpenDisposition disposition) {
+   DCHECK(browser_);
++
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Forward Astra-range command IDs to AstraCommandDelegate.
++  // Astra commands (60000+) are product-specific and have no equivalent in
++  // Chrome's built-in command set.
++  if (astra::AstraCommandDelegate::IsAstraCommand(command_id)) {
++    return astra::AstraCommandDelegate::ExecuteCommand(browser_, command_id);
++  }
++#endif
+
+   switch (command_id) {
+     case IDC_NEW_TAB:
+@@ -340,6 +354,15 @@ bool BrowserCommandController::IsCommandEnabled(int command_id) const {
+   if (!browser_)
+     return false;
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Let AstraCommandDelegate manage enabled/disabled state for
++  // Astra-range command IDs.
++  if (astra::AstraCommandDelegate::IsAstraCommand(command_id)) {
++    return astra::AstraCommandDelegate::IsCommandEnabled(browser_, command_id);
++  }
++#endif
++
+   // ... rest of IsCommandEnabled implementation ...
+ }
+
+ // ... rest of file ...

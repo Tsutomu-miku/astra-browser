@@ -1,0 +1,276 @@
+# Astra browser layer — product metadata and services.
+#
+# This layer owns Astra-specific state that Chromium does not own:
+#   - AstraWorkspaceService      (spaces/workspace metadata)
+#   - AstraFavoriteService       (favorite folder metadata)
+#   - AstraTabFeatures           (per-tab Astra metadata, via WebContentsUserData)
+#   - AstraSessionRestoreHelper  (bridge between Chromium session service and
+#                                 Astra tab metadata)
+#   - astra_session_metadata     (serialization helpers for Astra session data)
+#   - AstraCommandDelegate       (Astra-only command dispatch)
+#   - astra_prefs                (shared pref key registration + defaults)
+#
+# Rules:
+#   - Reuse Chromium for Profile, WebContents, TabStripModel,
+#     NavigationController, history, downloads, permissions, passwords,
+#     extensions, DevTools, WebUI, update, and policy.
+#   - Use ProfileKeyedService for profile-scoped metadata.
+#   - Use content::WebContentsUserData for tab-scoped metadata.
+#   - Never declare a service that duplicates a Chromium-owned service.
+#   - All persistence goes through Chromium PrefService — no custom file I/O.
+#   - Session restore is owned by Chromium; Astra only adds metadata.
+
+import("//build/config/chrome_build.gni")
+import("//astra/build/buildflags.gni")
+
+source_set("browser") {
+  sources = [
+    "astra_accessibility_service.cc",
+    "astra_accessibility_service.h",
+    "astra_accessibility_service_factory.cc",
+    "astra_accessibility_service_factory.h",
+    "astra_autofill_helper.cc",
+    "astra_autofill_helper.h",
+    "astra_autofill_helper_factory.cc",
+    "astra_autofill_helper_factory.h",
+    "astra_command_delegate.cc",
+    "astra_command_delegate.h",
+    "astra_devtools_helper.cc",
+    "astra_devtools_helper.h",
+    "astra_downloads_helper.cc",
+    "astra_downloads_helper.h",
+    "astra_downloads_helper_factory.cc",
+    "astra_downloads_helper_factory.h",
+    "astra_extension_helper.cc",
+    "astra_extension_helper.h",
+    "astra_favorite_service.cc",
+    "astra_favorite_service.h",
+    "astra_favorite_service_factory.cc",
+    "astra_favorite_service_factory.h",
+    "astra_focus_mode_service.cc",
+    "astra_focus_mode_service.h",
+    "astra_focus_mode_service_factory.cc",
+    "astra_focus_mode_service_factory.h",
+    "astra_history_helper.cc",
+    "astra_history_helper.h",
+    "astra_history_helper_factory.cc",
+    "astra_history_helper_factory.h",
+    "astra_incognito_handler.cc",
+    "astra_incognito_handler.h",
+    "astra_keyed_service_factories.cc",
+    "astra_keyed_service_factories.h",
+    "astra_memory_saver_service.cc",
+    "astra_memory_saver_service.h",
+    "astra_memory_saver_service_factory.cc",
+    "astra_memory_saver_service_factory.h",
+    "astra_new_tab_page_service.cc",
+    "astra_new_tab_page_service.h",
+    "astra_new_tab_page_service_factory.cc",
+    "astra_new_tab_page_service_factory.h",
+    "astra_note_service.cc",
+    "astra_note_service.h",
+    "astra_note_service_factory.cc",
+    "astra_note_service_factory.h",
+    "astra_notification_service.cc",
+    "astra_notification_service.h",
+    "astra_notification_service_factory.cc",
+    "astra_notification_service_factory.h",
+    "astra_omnibox_action.cc",
+    "astra_omnibox_action.h",
+    "astra_omnibox_manager.cc",
+    "astra_omnibox_manager.h",
+    "astra_omnibox_provider.cc",
+    "astra_omnibox_provider.h",
+    "astra_password_helper.cc",
+    "astra_password_helper.h",
+    "astra_pip_service.cc",
+    "astra_pip_service.h",
+    "astra_pip_service_factory.cc",
+    "astra_pip_service_factory.h",
+    "astra_prefs.cc",
+    "astra_prefs.h",
+    "astra_reading_list_service.cc",
+    "astra_reading_list_service.h",
+    "astra_reading_list_service_factory.cc",
+    "astra_reading_list_service_factory.h",
+    "astra_recent_tabs_helper.cc",
+    "astra_recent_tabs_helper.h",
+    "astra_safety_helper.cc",
+    "astra_safety_helper.h",
+    "astra_safety_helper_factory.cc",
+    "astra_safety_helper_factory.h",
+    "astra_screenshot_service.cc",
+    "astra_screenshot_service.h",
+    "astra_screenshot_service_factory.cc",
+    "astra_screenshot_service_factory.h",
+    "astra_search_engine_helper.cc",
+    "astra_search_engine_helper.h",
+    "astra_session_metadata.cc",
+    "astra_session_metadata.h",
+    "astra_session_restore_helper.cc",
+    "astra_session_restore_helper.h",
+    "astra_sync_helper.cc",
+    "astra_sync_helper.h",
+    "astra_sync_helper_factory.cc",
+    "astra_sync_helper_factory.h",
+    "astra_tab_features.cc",
+    "astra_tab_features.h",
+    "astra_tab_stack_service.cc",
+    "astra_tab_stack_service.h",
+    "astra_tab_stack_service_factory.cc",
+    "astra_tab_stack_service_factory.h",
+    "astra_theme_service.cc",
+    "astra_theme_service.h",
+    "astra_theme_service_factory.cc",
+    "astra_theme_service_factory.h",
+    "astra_window_features.cc",
+    "astra_window_features.h",
+    "astra_workspace_import_export.cc",
+    "astra_workspace_import_export.h",
+    "astra_workspace_service.cc",
+    "astra_workspace_service.h",
+    "astra_workspace_service_factory.cc",
+    "astra_workspace_service_factory.h",
+    "astra_workspace_window_manager.cc",
+    "astra_workspace_window_manager.h",
+  ]
+
+  # Public headers that form the Astra browser-layer API.
+  # These headers are safe to include from other layers (app, ui/views).
+  # TODO(astra): Audit public_deps against actual external includes.
+  public_deps = [
+    "//astra/build:buildflags",
+  ]
+
+  deps = [
+    "//astra/common",
+    "//base",
+    "//chrome/browser",
+    "//chrome/browser/profiles",
+    "//components/bookmarks/browser",
+    "//components/history/core/browser",
+    "//components/keyed_service/core",
+    "//components/password_manager/core/browser",
+    "//components/prefs",
+    "//components/reading_list/core",
+    "//components/sessions",
+    "//content/public/browser",
+    "//extensions/browser",
+    "//extensions/common",
+    "//skia",
+    "//ui/base/clipboard",
+    "//ui/gfx",
+    "//url",
+  ]
+
+  visibility = [
+    "//astra/*",
+    "//chrome/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Audit all deps against actual #includes in source files.
+  # Some deps may be unnecessary or missing.  Full audit requires a Chromium
+  # checkout with `gn check` or include-what-you-use.
+}
+
+# Unit tests for browser-layer services.
+#
+# Test categories:
+#   - AstraWorkspaceService unit tests        (profile-keyed, uses TestingProfile)
+#   - AstraFavoriteService unit tests         (profile-keyed, uses TestingProfile)
+#   - AstraNoteService unit tests             (note CRUD + workspace association)
+#   - AstraTabFeatures unit tests             (WebContentsUserData, needs content
+#                                              test harness)
+#   - AstraCommandDelegate unit tests         (command identity + observer pattern)
+#   - AstraWorkspaceImportExport unit tests   (JSON validation + import/export)
+#   - AstraFocusModeService unit tests        (focus mode + distraction blocklist)
+#   - AstraMemorySaverService unit tests      (tab suspend + settings + observers)
+#   - AstraPipService unit tests              (PiP state + size presets)
+#   - AstraReadingListService unit tests      (reading list projection + observers)
+#   - AstraScreenshotService unit tests       (screenshot capture + observers)
+#   - AstraSessionRestoreHelper unit tests    (session metadata bridge)
+#
+# TODO(astra): Integrate these tests into the Chromium unit_tests target.
+# Patch point: //chrome/test/BUILD.gn unit test suites.
+# These tests depend on //chrome/test:test_support for TestingProfile and
+# related test utilities.  They will not compile in a standalone overlay repo
+# because they require the full Chromium checkout with test support libraries.
+#
+# TODO(astra): Add unit tests for astra_prefs (key registration + defaults).
+source_set("astra_browser_unit_tests") {
+  testonly = true
+
+  sources = [
+    "astra_accessibility_service_unittest.cc",
+    "astra_autofill_helper_unittest.cc",
+    "astra_command_delegate_unittest.cc",
+    "astra_devtools_helper_unittest.cc",
+    "astra_downloads_helper_unittest.cc",
+    "astra_extension_helper_unittest.cc",
+    "astra_favorite_service_unittest.cc",
+    "astra_focus_mode_service_unittest.cc",
+    "astra_history_helper_unittest.cc",
+    "astra_incognito_handler_unittest.cc",
+    "astra_memory_saver_service_unittest.cc",
+    "astra_note_service_unittest.cc",
+    "astra_notification_service_unittest.cc",
+    "astra_new_tab_page_service_unittest.cc",
+    "astra_omnibox_manager_unittest.cc",
+    "astra_password_helper_unittest.cc",
+    "astra_pip_service_unittest.cc",
+    "astra_reading_list_service_unittest.cc",
+    "astra_recent_tabs_helper_unittest.cc",
+    "astra_screenshot_service_unittest.cc",
+    "astra_safety_helper_unittest.cc",
+    "astra_search_engine_helper_unittest.cc",
+    "astra_session_restore_helper_unittest.cc",
+    "astra_sync_helper_unittest.cc",
+    "astra_tab_features_unittest.cc",
+    "astra_tab_stack_service_unittest.cc",
+    "astra_theme_service_unittest.cc",
+    "astra_window_features_unittest.cc",
+    "astra_workspace_import_export_unittest.cc",
+    "astra_workspace_service_unittest.cc",
+    "astra_workspace_window_manager_unittest.cc",
+  ]
+
+  deps = [
+    ":browser",
+    "//base",
+    "//base/test:test_support",
+    "//chrome/test:test_support",
+    "//content/public/test:test_support",
+    "//testing/gmock",
+    "//testing/gtest",
+  ]
+
+  # TODO(astra): Add test support for browser_tests variant once we have
+  # in-process browser test harness.  Browser tests would use
+  # InProcessBrowserTest from //chrome/test/base/in_process_browser_test.h
+  # and exercise the full Browser + TabStripModel + WebContents stack.
+}
+
+# Browser tests for browser-layer services.
+#
+# These tests use InProcessBrowserTest to exercise services in a full
+# browser environment with real profiles, tab strips, and WebContents.
+#
+# TODO(astra): Implement browser tests for AstraWorkspaceService,
+# AstraSessionRestoreHelper, and AstraCommandDelegate end-to-end.
+# Patch point: //chrome/test:browser_tests test suite.
+source_set("astra_browser_browsertests") {
+  testonly = true
+
+  sources = []
+
+  deps = [
+    ":browser",
+    "//base",
+    "//base/test:test_support",
+    "//chrome/test:test_support",
+    "//content/public/test:test_support",
+    "//testing/gtest",
+  ]
+}

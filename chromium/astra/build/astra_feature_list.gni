@@ -1,0 +1,119 @@
+# Astra feature list — GN-level feature configuration.
+#
+# This file declares all Astra feature flags as a structured list.
+# It is used by both the GN build system (for compile-time flags)
+# and the C++ feature system (for runtime feature registration).
+#
+# Chromium owns: base::FeatureList, base::Feature, feature flag infrastructure.
+# Astra owns: product-specific feature names, defaults, and descriptions.
+#
+# Feature flags vs build flags:
+#   Build flags (buildflags.gni) are compile-time — they control which
+#   code is compiled into the binary at all.  Use them for things that
+#   must not be present in certain build variants.
+#
+#   Feature flags (this file) are runtime — they control whether compiled-in
+#   features are active by default.  They can be toggled via command line,
+#   field trials, or about:flags.
+#
+# Each entry in astra_features has:
+#   name        — C++ identifier name (also used as the feature name string)
+#   display_name — Human-readable name shown in about:flags
+#   description  — Description shown in about:flags
+#   default_state — Default state: "enabled" or "disabled"
+#   build_flag   — BUILDFLAG() guard that gates compilation of this feature
+#
+# TODO(astra): Generate astra_feature_list.cc from this GNI file using a
+# template, similar to how Chromium generates feature flag definitions.
+# Patch point: //build/buildflag_header.gni pattern, adapted for features.
+
+# ---------------------------------------------------------------------------
+# Astra feature list
+# ---------------------------------------------------------------------------
+#
+# All Astra product features.  Order determines display order in about:flags
+# and is roughly grouped by product surface.
+
+astra_features = [
+  {
+    name = "AstraSidebar"
+    display_name = "Astra Sidebar"
+    description =
+        "Enables the Astra vertical sidebar with tab strip, workspace " +
+        "switcher, and favorites.  When disabled, the browser uses the " +
+        "standard horizontal tab strip."
+    default_state = "enabled"
+    build_flag = "ENABLE_ASTRA_SIDEBAR"
+  },
+  {
+    name = "AstraSplitView"
+    display_name = "Astra Split View"
+    description =
+        "Enables split view / Glance mode for showing two tabs " +
+        "side-by-side in a single browser tab container."
+    default_state = "enabled"
+    build_flag = "ENABLE_ASTRA_SPLIT_VIEW"
+  },
+  {
+    name = "AstraWorkspaces"
+    display_name = "Astra Workspaces"
+    description =
+        "Enables workspace-based tab organization.  Workspaces are " +
+        "named groups of tabs with their own session state and metadata."
+    default_state = "enabled"
+    build_flag = "ENABLE_ASTRA_WORKSPACES"
+  },
+  {
+    name = "AstraCommandPalette"
+    display_name = "Astra Command Palette"
+    description =
+        "Enables the command palette (Cmd/Ctrl+K) for quick command " +
+        "search and browser navigation."
+    default_state = "enabled"
+    build_flag = "ENABLE_ASTRA_COMMAND_PALETTE"
+  },
+  {
+    name = "AstraFocusMode"
+    display_name = "Astra Focus Mode"
+    description =
+        "Enables focus mode for distraction-free browsing.  Focus mode " +
+        "hides UI chrome, dims secondary tabs, and suppresses notifications."
+    default_state = "enabled"
+    build_flag = "ENABLE_ASTRA_FOCUS_MODE"
+  },
+  {
+    name = "AstraDevToolsPanel"
+    display_name = "Astra DevTools Panel"
+    description =
+        "Adds an Astra tab to DevTools for inspecting Astra metadata " +
+        "(workspaces, sidebar state, split view configuration)."
+    default_state = "enabled"
+    build_flag = "ENABLE_ASTRA_DEVTOOLS_PANEL"
+  },
+  {
+    name = "AstraWebUI"
+    display_name = "Astra WebUI Surfaces"
+    description =
+        "Enables WebUI-based Astra surfaces (chrome://astra-*) instead " +
+        "of native Views-based surfaces.  Native Views is the default."
+    default_state = "disabled"
+    build_flag = "ENABLE_ASTRA_WEBUI"
+  },
+]
+
+# ---------------------------------------------------------------------------
+# Feature counts
+# ---------------------------------------------------------------------------
+#
+# Utility variables for build-time validation and iteration.
+
+# Total number of Astra features declared in the list.
+astra_feature_count = astra_features.length()
+
+# Number of features enabled by default.
+astra_default_enabled_count = 0
+foreach(feature, astra_features) {
+  if (feature.default_state == "enabled") {
+    astra_default_enabled_count += 1
+  }
+}

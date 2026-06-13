@@ -1,0 +1,54 @@
+diff --git a/chrome/browser/devtools/devtools_window.h b/chrome/browser/devtools/devtools_window.h
+index abc1234..def5678 100644
+--- a/chrome/browser/devtools/devtools_window.h
++++ b/chrome/browser/devtools/devtools_window.h
+@@ -120,6 +120,17 @@ class DevToolsWindow : public content::WebContentsObserver,
+   // Toggles the dock state for the inspected WebContents.
+   static void ToggleDevToolsWindow(content::WebContents* web_contents,
+                                    DevToolsToggleAction action);
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++  // Returns the current dock side for this DevTools window.
++  // Exposed for Astra product integration (AstraDevToolsHelper).
++  // TODO(astra): Consider upstreaming this if generally useful.
++  // Chromium owner: devtools team
++  DevToolsDockSide dock_side() const { return dock_side_; }
++
++  // Returns true if DevTools is currently open for the given WebContents.
++  static bool IsDevToolsOpenFor(content::WebContents* web_contents);
++#endif
++
+   // ... other public methods ...
+
+  private:
+diff --git a/chrome/browser/devtools/devtools_window.cc b/chrome/browser/devtools/devtools_window.cc
+index abc1234..def5678 100644
+--- a/chrome/browser/devtools/devtools_window.cc
++++ b/chrome/browser/devtools/devtools_window.cc
+@@ -15,6 +15,10 @@
+ #include "chrome/browser/devtools/devtools_window.h"
+ #include "content/public/browser/web_contents.h"
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++#include "build/buildflag.h"
++#endif
++
+ // ... other includes ...
+
+ DevToolsWindow::DevToolsWindow(Profile* profile,
+@@ -350,6 +354,17 @@ void DevToolsWindow::SetDockSide(DevToolsDockSide side) {
+   // ... dock side change logic ...
+ }
+
++#if BUILDFLAG(IS_ASTRA_BRANDED)
++// static
++bool DevToolsWindow::IsDevToolsOpenFor(content::WebContents* web_contents) {
++  // Returns true if DevTools is currently open for the inspected WebContents.
++  // Exposed for Astra product integration.
++  //
++  // Uses FindForInspectedWebContents to look up the DevToolsWindow instance.
++  return FindForInspectedWebContents(web_contents) != nullptr;
++}
++#endif
++
+ // ... rest of file ...

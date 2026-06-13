@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2026 The Astra Authors. All rights reserved.
+  Use of this source code is governed by a BSD-style license that can be
+  found in the LICENSE file.
+
+  Astra string resources.
+  =========================================================================
+
+  This GRDP (GRIT Part) file contains all Astra-specific UI strings.
+  It is included by astra_resources.grd.
+
+  Chromium owns:
+    - The GRIT l10n / translation pipeline
+    - String ID conventions (IDS_ prefix)
+    - .xtb translation file format
+
+  Astra owns:
+    - Product-specific strings (product name, feature names, etc.)
+    - UI strings for Astra-only surfaces (sidebar, workspaces, NTP, etc.)
+
+  Naming conventions (following Chromium patterns):
+    - IDS_ASTRA_<FEATURE>_<STRING_NAME>
+    - Examples: IDS_ASTRA_PRODUCT_NAME, IDS_ASTRA_SIDEBAR_TITLE
+
+  TODO(astra): Add all Astra UI strings as features are implemented.
+    This file currently contains the core product strings and NTP strings.
+    More strings will be added for sidebar, settings, workspaces, etc.
+
+  TODO(astra): Set up translation pipeline and generate .xtb files.
+    Chromium owner: tools/gritsettings/resource_ids
+-->
+
+<grit-part>
+
+  <!-- =================================================================
+       Product identity strings
+       ================================================================= -->
+
+  <!-- Full product name for window titles, about dialog, installer. -->
+  <message name="IDS_ASTRA_PRODUCT_NAME" desc="Full product name displayed in window titles, about dialog, and installer.">
+    Astra Browser
+  </message>
+
+  <!-- Short product name for compact contexts (menus, tray, notifications). -->
+  <message name="IDS_ASTRA_SHORT_PRODUCT_NAME" desc="Short product name for compact contexts like menus and system tray.">
+    Astra
+  </message>
+
+  <!-- Company / publisher name. -->
+  <message name="IDS_ASTRA_COMPANY_NAME" desc="Company name shown in about dialog, installer, and system UI.">
+    Astra
+  </message>
+
+  <!-- =================================================================
+       New Tab Page (NTP) strings
+       ================================================================= -->
+
+  <!-- Title of the new tab page (shown in tab title, accessibility). -->
+  <message name="IDS_ASTRA_NEW_TAB_TITLE" desc="Title text for the new tab page, shown in the tab title and accessibility.">
+    New Tab
+  </message>
+
+  <!-- Heading for the workspaces section on the new tab page. -->
+  <message name="IDS_ASTRA_NTP_WORKSPACES_TITLE" desc="Heading text for the workspaces section on the new tab page.">
+    Workspaces
+  </message>
+
+  <!-- Button label for creating a new workspace from the NTP. -->
+  <message name="IDS_ASTRA_NTP_NEW_WORKSPACE_BUTTON" desc="Button label for creating a new workspace from the new tab page.">
+    New workspace
+  </message>
+
+  <!-- Heading for the "Most visited" shortcuts section on the NTP. -->
+  <message name="IDS_ASTRA_NTP_MOST_VISITED_TITLE" desc="Heading for the most-visited site shortcuts section on the new tab page.">
+    Most visited
+  </message>
+
+  <!-- Heading for the "Recently visited" section on the NTP. -->
+  <message name="IDS_ASTRA_NTP_RECENTLY_VISITED_TITLE" desc="Heading for the recently visited section on the new tab page.">
+    Recently visited
+  </message>
+
+  <!-- Placeholder text shown when there are no shortcuts yet. -->
+  <message name="IDS_ASTRA_NTP_NO_SHORTCUTS_TEXT" desc="Placeholder text shown on the new tab page when there are no site shortcuts yet.">
+    Your shortcuts will appear here
+  </message>
+
+  <!-- Accessibility label for adding a custom shortcut. -->
+  <message name="IDS_ASTRA_NTP_ADD_SHORTCUT" desc="Accessibility label for the button to add a custom shortcut on the new tab page.">
+    Add shortcut
+  </message>
+
+  <!-- Tab count label shown on workspace cards (e.g. "3 tabs").
+       The placeholder is the number of tabs. -->
+  <message name="IDS_ASTRA_NTP_TAB_COUNT" desc="Label showing the number of tabs in a workspace on the new tab page. The {0} placeholder is replaced with the tab count.">
+    <ph name="TAB_COUNT">$1<ex>3</ex></ph> tabs
+  </message>
+
+  <!-- Heading for the "Recently closed" section on the NTP. -->
+  <message name="IDS_ASTRA_NTP_RECENTLY_CLOSED_TITLE" desc="Heading for the recently closed tabs section on the new tab page.">
+    Recently closed
+  </message>
+
+  <!-- Button label for restoring the most recently closed tab. -->
+  <message name="IDS_ASTRA_NTP_RESTORE_LAST" desc="Button label for restoring the most recently closed tab or window.">
+    Restore last
+  </message>
+
+  <!-- Empty state text for the recently closed section. -->
+  <message name="IDS_ASTRA_NTP_NO_RECENTLY_CLOSED" desc="Text shown when there are no recently closed tabs to display.">
+    No recently closed tabs
+  </message>
+
+  <!-- =================================================================
+       Sidebar strings (placeholder — move to sidebar module later)
+       ================================================================= -->
+
+  <!-- Accessibility title for the sidebar panel. -->
+  <message name="IDS_ASTRA_SIDEBAR_TITLE" desc="Accessibility title for the Astra sidebar panel.">
+    Astra Sidebar
+  </message>
+
+  <!-- Label for the "New workspace" menu item in the sidebar. -->
+  <message name="IDS_ASTRA_SIDEBAR_NEW_WORKSPACE" desc="Label for the 'New workspace' action in the sidebar.">
+    New workspace
+  </message>
+
+  <!-- =================================================================
+       Settings strings
+       ================================================================= -->
+
+  <!-- Title of the Astra settings page. -->
+  <message name="IDS_ASTRA_SETTINGS_TITLE" desc="Title of the Astra settings page.">
+    Astra Settings
+  </message>
+
+  <!-- Navigation label for the General settings section. -->
+  <message name="IDS_ASTRA_SETTINGS_GENERAL" desc="Label for the General settings section in the settings sidebar navigation.">
+    General
+  </message>
+
+  <!-- Navigation label for the Sidebar settings section. -->
+  <message name="IDS_ASTRA_SETTINGS_SIDEBAR" desc="Label for the Sidebar settings section in the settings sidebar navigation.">
+    Sidebar
+  </message>
+
+  <!-- Navigation label for the Workspaces settings section. -->
+  <message name="IDS_ASTRA_SETTINGS_WORKSPACES" desc="Label for the Workspaces settings section in the settings sidebar navigation.">
+    Workspaces
+  </message>
+
+  <!-- Navigation label for the Focus Mode settings section. -->
+  <message name="IDS_ASTRA_SETTINGS_FOCUS_MODE" desc="Label for the Focus Mode settings section in the settings sidebar navigation.">
+    Focus Mode
+  </message>
+
+  <!-- Navigation label for the Appearance settings section. -->
+  <message name="IDS_ASTRA_SETTINGS_APPEARANCE" desc="Label for the Appearance settings section in the settings sidebar navigation.">
+    Appearance
+  </message>
+
+  <!-- Label for the "On startup" setting. -->
+  <message name="IDS_ASTRA_SETTINGS_STARTUP_BEHAVIOR" desc="Label for the startup behavior setting that controls what happens when the browser opens.">
+    On startup
+  </message>
+
+  <!-- Option: Continue where you left off (startup setting). -->
+  <message name="IDS_ASTRA_SETTINGS_STARTUP_CONTINUE" desc="Option label for continuing where you left off on browser startup.">
+    Continue where you left off
+  </message>
+
+  <!-- Option: Open the New Tab page (startup setting). -->
+  <message name="IDS_ASTRA_SETTINGS_STARTUP_NEWTAB" desc="Option label for opening the new tab page on browser startup.">
+    Open the New Tab page
+  </message>
+
+  <!-- Option: Open a specific page (startup setting). -->
+  <message name="IDS_ASTRA_SETTINGS_STARTUP_SPECIFIC" desc="Option label for opening a specific page or set of pages on browser startup.">
+    Open a specific page
+  </message>
+
+  <!-- Label for the default search engine setting. -->
+  <message name="IDS_ASTRA_SETTINGS_DEFAULT_SEARCH" desc="Label for the default search engine setting.">
+    Default search engine
+  </message>
+
+  <!-- Label for the "Show sidebar" toggle setting. -->
+  <message name="IDS_ASTRA_SETTINGS_SIDEBAR_ENABLED" desc="Label for the toggle that controls whether the sidebar is shown.">
+    Show sidebar
+  </message>
+
+  <!-- Label for the sidebar position setting. -->
+  <message name="IDS_ASTRA_SETTINGS_SIDEBAR_POSITION" desc="Label for the sidebar position setting (left or right side).">
+    Sidebar position
+  </message>
+
+  <!-- Label for the sidebar width setting. -->
+  <message name="IDS_ASTRA_SETTINGS_SIDEBAR_WIDTH" desc="Label for the sidebar width slider setting.">
+    Sidebar width
+  </message>
+
+  <!-- Label for the sidebar auto-hide toggle setting. -->
+  <message name="IDS_ASTRA_SETTINGS_SIDEBAR_AUTO_HIDE" desc="Label for the sidebar auto-hide toggle setting.">
+    Auto-hide sidebar
+  </message>
+
+  <!-- Label for the default workspace setting. -->
+  <message name="IDS_ASTRA_SETTINGS_DEFAULT_WORKSPACE" desc="Label for the default workspace dropdown setting.">
+    Default workspace
+  </message>
+
+  <!-- Label for the focus duration setting. -->
+  <message name="IDS_ASTRA_SETTINGS_FOCUS_DURATION" desc="Label for the default focus session duration setting.">
+    Default focus duration
+  </message>
+
+  <!-- Label for the focus completion sound toggle setting. -->
+  <message name="IDS_ASTRA_SETTINGS_FOCUS_SOUND" desc="Label for the toggle that controls whether a sound plays when a focus session ends.">
+    Focus completion sound
+  </message>
+
+  <!-- Label for the blocked sites list in focus mode settings. -->
+  <message name="IDS_ASTRA_SETTINGS_BLOCKED_SITES" desc="Heading for the list of sites blocked during focus sessions.">
+    Blocked sites
+  </message>
+
+  <!-- Label for the theme setting. -->
+  <message name="IDS_ASTRA_SETTINGS_THEME" desc="Label for the theme setting (light, dark, system).">
+    Theme
+  </message>
+
+  <!-- Label for the accent color setting. -->
+  <message name="IDS_ASTRA_SETTINGS_ACCENT_COLOR" desc="Label for the accent color picker setting.">
+    Accent color
+  </message>
+
+  <!-- Label for the "Use system theme colors" toggle setting. -->
+  <message name="IDS_ASTRA_SETTINGS_SYSTEM_THEME" desc="Label for the toggle that controls whether to use the system accent color.">
+    Use system theme colors
+  </message>
+
+  <!-- Label for the compact mode toggle setting. -->
+  <message name="IDS_ASTRA_SETTINGS_COMPACT_MODE" desc="Label for the compact mode toggle setting that reduces UI spacing.">
+    Compact mode
+  </message>
+
+  <!-- Status message shown when settings are successfully saved. -->
+  <message name="IDS_ASTRA_SETTINGS_SAVED" desc="Status message shown briefly after settings are saved.">
+    Settings saved
+  </message>
+
+  <!-- Button label for adding a new workspace from settings. -->
+  <message name="IDS_ASTRA_SETTINGS_ADD_WORKSPACE" desc="Button label for adding a new workspace in the workspaces settings section.">
+    Add workspace
+  </message>
+
+  <!-- Label for the accent color presets section. -->
+  <message name="IDS_ASTRA_SETTINGS_ACCENT_PRESETS" desc="Heading for the accent color preset swatches in settings.">
+    Accent color presets
+  </message>
+
+</grit-part>

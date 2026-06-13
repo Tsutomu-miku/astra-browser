@@ -1,0 +1,143 @@
+# Astra sidebar views — vertical navigation and panel UI.
+#
+# The sidebar is Astra's primary navigation surface. It projects Chromium
+# state (tabs, bookmarks, history, downloads, extensions, passwords) into
+# a vertical panel alongside the browser content area.
+#
+# Sub-components:
+#   - AstraSidebarView            (root container, section layout)
+#   - AstraSidebarItemView        (generic sidebar row item)
+#   - AstraSidebarSectionView     (collapsible section with header + items)
+#   - AstraWorkspaceSwitcherView  (workspace selector at top of sidebar)
+#   - AstraSidebarHistoryView     (recent history panel)
+#   - AstraSidebarBookmarksView   (bookmarks tree panel)
+#   - AstraSidebarDownloadsView   (active/recent downloads panel)
+#   - AstraSidebarReadingListView (reading list panel)
+#   - AstraSidebarTabGroupsView   (tab groups tree panel)
+#   - AstraSidebarExtensionsView  (extension browser actions panel)
+#   - AstraSidebarPasswordsView   (saved passwords panel)
+#   - AstraSidebarRecentlyClosedView (recently closed tabs panel)
+#   - AstraSidebarNotesView       (notes panel)
+#   - AstraSidebarStackView       (named tab stacks panel)
+#   - Item views (history, bookmark, download, password, etc.)
+#   - Drag-and-drop support views
+#
+# Rules:
+#   - All views are presentation-only — they never own product state.
+#   - State is projected from Chromium services via delegates and observers.
+#   - Astra color IDs (kColorAstra*) are used for all theming.
+#   - UI code must not be a product state truth source.
+
+import("//build/config/chrome_build.gni")
+
+source_set("sidebar") {
+  sources = [
+    "astra_bookmark_item_view.cc",
+    "astra_bookmark_item_view.h",
+    "astra_download_item_view.cc",
+    "astra_download_item_view.h",
+    "astra_extension_icon_view.cc",
+    "astra_extension_icon_view.h",
+    "astra_extension_popup_view.cc",
+    "astra_extension_popup_view.h",
+    "astra_history_item_view.cc",
+    "astra_history_item_view.h",
+    "astra_note_editor_view.cc",
+    "astra_note_editor_view.h",
+    "astra_note_item_view.cc",
+    "astra_note_item_view.h",
+    "astra_password_item_view.cc",
+    "astra_password_item_view.h",
+    "astra_reading_list_item_view.cc",
+    "astra_reading_list_item_view.h",
+    "astra_recently_closed_item_view.cc",
+    "astra_recently_closed_item_view.h",
+    "astra_sidebar_bookmarks_view.cc",
+    "astra_sidebar_bookmarks_view.h",
+    "astra_sidebar_controller.cc",
+    "astra_sidebar_controller.h",
+    "astra_sidebar_drag_types.h",
+    "astra_sidebar_downloads_view.cc",
+    "astra_sidebar_downloads_view.h",
+    "astra_sidebar_drop_indicator_view.cc",
+    "astra_sidebar_drop_indicator_view.h",
+    "astra_sidebar_extensions_view.cc",
+    "astra_sidebar_extensions_view.h",
+    "astra_sidebar_history_view.cc",
+    "astra_sidebar_history_view.h",
+    "astra_sidebar_item_view.cc",
+    "astra_sidebar_item_view.h",
+    "astra_sidebar_model.cc",
+    "astra_sidebar_model.h",
+    "astra_sidebar_notes_view.cc",
+    "astra_sidebar_notes_view.h",
+    "astra_sidebar_passwords_view.cc",
+    "astra_sidebar_passwords_view.h",
+    "astra_sidebar_reading_list_view.cc",
+    "astra_sidebar_reading_list_view.h",
+    "astra_sidebar_recently_closed_view.cc",
+    "astra_sidebar_recently_closed_view.h",
+    "astra_sidebar_section_view.cc",
+    "astra_sidebar_section_view.h",
+    "astra_sidebar_stack_child_view.cc",
+    "astra_sidebar_stack_child_view.h",
+    "astra_sidebar_stack_header_view.cc",
+    "astra_sidebar_stack_header_view.h",
+    "astra_sidebar_stack_tab_item_view.cc",
+    "astra_sidebar_stack_tab_item_view.h",
+    "astra_sidebar_stack_view.cc",
+    "astra_sidebar_stack_view.h",
+    "astra_sidebar_tab_groups_view.cc",
+    "astra_sidebar_tab_groups_view.h",
+    "astra_sidebar_view.cc",
+    "astra_sidebar_view.h",
+    "astra_tab_group_header_view.cc",
+    "astra_tab_group_header_view.h",
+    "astra_tab_group_tab_item_view.cc",
+    "astra_tab_group_tab_item_view.h",
+    "astra_workspace_switcher_view.cc",
+    "astra_workspace_switcher_view.h",
+  ]
+
+  public_deps = [
+    "//astra/browser",
+    "//astra/build:buildflags",
+  ]
+
+  deps = [
+    "//astra/ui/accessibility",
+    "//astra/ui/color",
+    "//base",
+    "//chrome/browser/bookmarks",
+    "//chrome/browser/download",
+    "//chrome/browser/extensions",
+    "//chrome/browser/profiles",
+    "//chrome/browser/ui",
+    "//chrome/browser/ui/views",
+    "//components/bookmarks/browser",
+    "//components/history/core/browser",
+    "//components/password_manager/core/browser",
+    "//components/prefs",
+    "//components/sessions",
+    "//extensions/common",
+    "//skia",
+    "//ui/base",
+    "//ui/base/clipboard",
+    "//ui/color",
+    "//ui/gfx",
+    "//ui/native_theme",
+    "//ui/views",
+    "//ui/views/controls",
+    "//url",
+  ]
+
+  visibility = [
+    "//astra/*",
+    "//chrome/*",
+  ]
+
+  configs += [ "//build/config:precompiled_headers" ]
+
+  # TODO(astra): Audit all deps against actual #includes in source files.
+  # Use `gn check` or include-what-you-use in a full Chromium checkout.
+}
