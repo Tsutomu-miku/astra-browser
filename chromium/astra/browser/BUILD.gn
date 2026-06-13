@@ -51,6 +51,8 @@ source_set("browser") {
     "astra_focus_mode_service.h",
     "astra_focus_mode_service_factory.cc",
     "astra_focus_mode_service_factory.h",
+    "astra_focus_session.cc",
+    "astra_focus_session.h",
     "astra_history_helper.cc",
     "astra_history_helper.h",
     "astra_history_helper_factory.cc",
@@ -131,6 +133,8 @@ source_set("browser") {
     "astra_workspace_service.h",
     "astra_workspace_service_factory.cc",
     "astra_workspace_service_factory.h",
+    "astra_workspace_template.cc",
+    "astra_workspace_template.h",
     "astra_workspace_window_manager.cc",
     "astra_workspace_window_manager.h",
   ]
