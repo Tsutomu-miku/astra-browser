@@ -58,6 +58,29 @@ class TestWorkspaceServiceObserver
     last_cloned_name_ = new_workspace.name;
   }
 
+  void OnWorkspacePinnedChanged(const std::string& workspace_id,
+                                 bool is_pinned) override {
+    pinned_changed_count_++;
+    last_pinned_id_ = workspace_id;
+    last_pinned_value_ = is_pinned;
+  }
+
+  void OnWorkspaceMoved(const std::string& workspace_id,
+                         size_t old_index,
+                         size_t new_index) override {
+    moved_count_++;
+    last_moved_id_ = workspace_id;
+    last_moved_old_index_ = old_index;
+    last_moved_new_index_ = new_index;
+  }
+
+  void OnWorkspacesMerged(const std::string& source_id,
+                           const std::string& target_id) override {
+    merged_count_++;
+    last_merged_source_id_ = source_id;
+    last_merged_target_id_ = target_id;
+  }
+
   // Counters
   int added_count_ = 0;
   int removed_count_ = 0;
@@ -66,6 +89,9 @@ class TestWorkspaceServiceObserver
   int reordered_count_ = 0;
   int accent_color_changed_count_ = 0;
   int cloned_count_ = 0;
+  int pinned_changed_count_ = 0;
+  int moved_count_ = 0;
+  int merged_count_ = 0;
 
   // Last recorded values
   std::string last_added_id_;
@@ -79,6 +105,13 @@ class TestWorkspaceServiceObserver
   std::string last_accent_color_;
   std::string last_cloned_id_;
   std::string last_cloned_name_;
+  std::string last_pinned_id_;
+  bool last_pinned_value_ = false;
+  std::string last_moved_id_;
+  size_t last_moved_old_index_ = 0;
+  size_t last_moved_new_index_ = 0;
+  std::string last_merged_source_id_;
+  std::string last_merged_target_id_;
 };
 
 }  // namespace
@@ -904,6 +937,379 @@ TEST_F(WorkspaceServiceTest, DefaultWorkspaceHasIsDefaultTrue) {
       service_->GetWorkspace(service_->GetDefaultWorkspaceId());
   ASSERT_NE(default_ws, nullptr);
   EXPECT_TRUE(default_ws->is_default);
+}
+
+// ---------------------------------------------------------------------------
+// GetWorkspaceAtIndex
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, GetWorkspaceAtIndex_Valid) {
+  AddTestWorkspace("ws-1", "One");
+  AddTestWorkspace("ws-2", "Two");
+
+  // Index 0 should be the default workspace (always first).
+  const AstraWorkspace* ws0 = service_->GetWorkspaceAtIndex(0);
+  ASSERT_NE(ws0, nullptr);
+  EXPECT_TRUE(ws0->is_default);
+
+  const AstraWorkspace* ws1 = service_->GetWorkspaceAtIndex(1);
+  ASSERT_NE(ws1, nullptr);
+  EXPECT_EQ(ws1->id, "ws-1");
+}
+
+TEST_F(WorkspaceServiceTest, GetWorkspaceAtIndex_OutOfBounds) {
+  EXPECT_EQ(service_->GetWorkspaceAtIndex(999), nullptr);
+  EXPECT_EQ(service_->GetWorkspaceAtIndex(static_cast<size_t>(-1)), nullptr);
+}
+
+// ---------------------------------------------------------------------------
+// FindWorkspaceByName
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, FindWorkspaceByName_Found) {
+  AddTestWorkspace("ws-find", "Find Me");
+
+  const AstraWorkspace* found = service_->FindWorkspaceByName("Find Me");
+  ASSERT_NE(found, nullptr);
+  EXPECT_EQ(found->id, "ws-find");
+}
+
+TEST_F(WorkspaceServiceTest, FindWorkspaceByName_NotFound) {
+  EXPECT_EQ(service_->FindWorkspaceByName("Does Not Exist"), nullptr);
+}
+
+TEST_F(WorkspaceServiceTest, FindWorkspaceByName_CaseSensitive) {
+  AddTestWorkspace("ws-case", "MixedCase");
+
+  EXPECT_NE(service_->FindWorkspaceByName("MixedCase"), nullptr);
+  EXPECT_EQ(service_->FindWorkspaceByName("mixedcase"), nullptr);
+}
+
+// ---------------------------------------------------------------------------
+// GetDefaultWorkspace
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, GetDefaultWorkspace_ReturnsDefault) {
+  const AstraWorkspace& default_ws = service_->GetDefaultWorkspace();
+  EXPECT_TRUE(default_ws.is_default);
+  EXPECT_EQ(default_ws.id, service_->GetDefaultWorkspaceId());
+}
+
+// ---------------------------------------------------------------------------
+// Switch history
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, SwitchHistory_BackAndForward) {
+  AddTestWorkspace("ws-a", "Workspace A");
+  AddTestWorkspace("ws-b", "Workspace B");
+
+  std::string default_id = service_->GetDefaultWorkspaceId();
+
+  // Switch to ws-a
+  service_->ActivateWorkspace("ws-a");
+  EXPECT_EQ(service_->active_workspace_id(), "ws-a");
+  EXPECT_TRUE(service_->CanGoBackInHistory());
+  EXPECT_FALSE(service_->CanGoForwardInHistory());
+  EXPECT_EQ(service_->PeekBackHistory(), default_id);
+  EXPECT_EQ(service_->PeekForwardHistory(), "");
+
+  // Switch to ws-b
+  service_->ActivateWorkspace("ws-b");
+  EXPECT_EQ(service_->active_workspace_id(), "ws-b");
+  EXPECT_EQ(service_->PeekBackHistory(), "ws-a");
+
+  // Go back to ws-a
+  EXPECT_TRUE(service_->NavigateSwitchHistory(
+      AstraWorkspaceService::SwitchDirection::kBack));
+  EXPECT_EQ(service_->active_workspace_id(), "ws-a");
+  EXPECT_TRUE(service_->CanGoForwardInHistory());
+  EXPECT_EQ(service_->PeekForwardHistory(), "ws-b");
+
+  // Go forward to ws-b
+  EXPECT_TRUE(service_->NavigateSwitchHistory(
+      AstraWorkspaceService::SwitchDirection::kForward));
+  EXPECT_EQ(service_->active_workspace_id(), "ws-b");
+  EXPECT_TRUE(service_->CanGoBackInHistory());
+}
+
+TEST_F(WorkspaceServiceTest, SwitchHistory_BackFromStartReturnsFalse) {
+  std::string default_id = service_->GetDefaultWorkspaceId();
+
+  // No navigation yet — can't go back or forward.
+  EXPECT_FALSE(service_->CanGoBackInHistory());
+  EXPECT_FALSE(service_->CanGoForwardInHistory());
+
+  EXPECT_FALSE(service_->NavigateSwitchHistory(
+      AstraWorkspaceService::SwitchDirection::kBack));
+  EXPECT_EQ(service_->active_workspace_id(), default_id);
+}
+
+TEST_F(WorkspaceServiceTest, SwitchHistory_ClearHistory) {
+  AddTestWorkspace("ws-clear", "Clear History Test");
+
+  service_->ActivateWorkspace("ws-clear");
+  EXPECT_TRUE(service_->CanGoBackInHistory());
+
+  service_->ClearSwitchHistory();
+  EXPECT_FALSE(service_->CanGoBackInHistory());
+  EXPECT_FALSE(service_->CanGoForwardInHistory());
+}
+
+TEST_F(WorkspaceServiceTest, SwitchHistory_NewActivationClearsForward) {
+  AddTestWorkspace("ws-x", "X");
+  AddTestWorkspace("ws-y", "Y");
+  AddTestWorkspace("ws-z", "Z");
+
+  // default -> X -> Y
+  service_->ActivateWorkspace("ws-x");
+  service_->ActivateWorkspace("ws-y");
+
+  // Go back to X
+  service_->NavigateSwitchHistory(AstraWorkspaceService::SwitchDirection::kBack);
+  EXPECT_EQ(service_->active_workspace_id(), "ws-x");
+  EXPECT_TRUE(service_->CanGoForwardInHistory());
+
+  // Activate Z directly — should clear forward history
+  service_->ActivateWorkspace("ws-z");
+  EXPECT_FALSE(service_->CanGoForwardInHistory());
+  EXPECT_EQ(service_->forward_history_size(), 0u);
+}
+
+TEST_F(WorkspaceServiceTest, SwitchHistory_BackHistorySize) {
+  AddTestWorkspace("ws-1", "One");
+  AddTestWorkspace("ws-2", "Two");
+  AddTestWorkspace("ws-3", "Three");
+
+  service_->ActivateWorkspace("ws-1");
+  service_->ActivateWorkspace("ws-2");
+  service_->ActivateWorkspace("ws-3");
+
+  EXPECT_GE(service_->back_history_size(), 3u);
+}
+
+// ---------------------------------------------------------------------------
+// Workspace pinning
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, PinWorkspace) {
+  AddTestWorkspace("ws-pin", "Pin Me");
+
+  const AstraWorkspace* ws = service_->GetWorkspace("ws-pin");
+  ASSERT_NE(ws, nullptr);
+  EXPECT_FALSE(ws->is_pinned);
+
+  EXPECT_TRUE(service_->SetWorkspacePinned("ws-pin", true));
+  ws = service_->GetWorkspace("ws-pin");
+  ASSERT_NE(ws, nullptr);
+  EXPECT_TRUE(ws->is_pinned);
+
+  // Unpin
+  EXPECT_TRUE(service_->SetWorkspacePinned("ws-pin", false));
+  ws = service_->GetWorkspace("ws-pin");
+  ASSERT_NE(ws, nullptr);
+  EXPECT_FALSE(ws->is_pinned);
+}
+
+TEST_F(WorkspaceServiceTest, PinWorkspace_Idempotent) {
+  AddTestWorkspace("ws-pin2", "Pin Idempotent");
+
+  // Pin an already pinned workspace — should return true but not fire extra
+  // observer events.
+  TestWorkspaceServiceObserver observer;
+  service_->AddObserver(&observer);
+
+  service_->SetWorkspacePinned("ws-pin2", true);
+  EXPECT_EQ(observer.pinned_changed_count_, 1);
+
+  service_->SetWorkspacePinned("ws-pin2", true);
+  EXPECT_EQ(observer.pinned_changed_count_, 1);  // Still 1
+
+  service_->RemoveObserver(&observer);
+}
+
+TEST_F(WorkspaceServiceTest, PinWorkspace_NonexistentReturnsFalse) {
+  EXPECT_FALSE(service_->SetWorkspacePinned("no-such-workspace", true));
+}
+
+TEST_F(WorkspaceServiceTest, GetPinnedWorkspaces) {
+  AddTestWorkspace("ws-p1", "Pinned 1");
+  AddTestWorkspace("ws-p2", "Pinned 2");
+  AddTestWorkspace("ws-np", "Not Pinned");
+
+  service_->SetWorkspacePinned("ws-p1", true);
+  service_->SetWorkspacePinned("ws-p2", true);
+
+  auto pinned = service_->GetPinnedWorkspaces();
+  EXPECT_EQ(pinned.size(), 2u);
+
+  // Both should be in the result.
+  bool has_p1 = false, has_p2 = false;
+  for (const auto& ws : pinned) {
+    if (ws.id == "ws-p1") has_p1 = true;
+    if (ws.id == "ws-p2") has_p2 = true;
+    EXPECT_TRUE(ws.is_pinned);
+  }
+  EXPECT_TRUE(has_p1);
+  EXPECT_TRUE(has_p2);
+}
+
+TEST_F(WorkspaceServiceTest, GetPinnedWorkspaces_Empty) {
+  auto pinned = service_->GetPinnedWorkspaces();
+  EXPECT_TRUE(pinned.empty());
+}
+
+TEST_F(WorkspaceServiceTest, NewWorkspaceUnpinnedByDefault) {
+  AddTestWorkspace("ws-newpin", "New Pin Test");
+  const AstraWorkspace* ws = service_->GetWorkspace("ws-newpin");
+  ASSERT_NE(ws, nullptr);
+  EXPECT_FALSE(ws->is_pinned);
+}
+
+// ---------------------------------------------------------------------------
+// Workspace reordering (move up/down/position)
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, MoveWorkspaceUp) {
+  AddTestWorkspace("ws-m1", "Move 1");
+  AddTestWorkspace("ws-m2", "Move 2");
+  AddTestWorkspace("ws-m3", "Move 3");
+
+  // Move ws-m3 up by one
+  size_t old_index = service_->GetWorkspaceIndex("ws-m3");
+  EXPECT_TRUE(service_->MoveWorkspaceUp("ws-m3"));
+  size_t new_index = service_->GetWorkspaceIndex("ws-m3");
+  EXPECT_EQ(new_index, old_index - 1);
+}
+
+TEST_F(WorkspaceServiceTest, MoveWorkspaceDown) {
+  AddTestWorkspace("ws-md1", "Move D1");
+  AddTestWorkspace("ws-md2", "Move D2");
+
+  // Move first non-default workspace down
+  size_t old_index = service_->GetWorkspaceIndex("ws-md1");
+  EXPECT_TRUE(service_->MoveWorkspaceDown("ws-md1"));
+  size_t new_index = service_->GetWorkspaceIndex("ws-md1");
+  EXPECT_EQ(new_index, old_index + 1);
+}
+
+TEST_F(WorkspaceServiceTest, MoveWorkspaceUp_FirstReturnsFalse) {
+  // First workspace (default) can't move up.
+  EXPECT_FALSE(service_->MoveWorkspaceUp(service_->GetDefaultWorkspaceId()));
+}
+
+TEST_F(WorkspaceServiceTest, MoveWorkspaceDown_LastReturnsFalse) {
+  AddTestWorkspace("ws-last", "Last Workspace");
+  EXPECT_FALSE(service_->MoveWorkspaceDown("ws-last"));
+}
+
+TEST_F(WorkspaceServiceTest, MoveWorkspaceToPosition) {
+  AddTestWorkspace("ws-pos1", "Pos 1");
+  AddTestWorkspace("ws-pos2", "Pos 2");
+  AddTestWorkspace("ws-pos3", "Pos 3");
+
+  // Move ws-pos3 to position 1 (just after default)
+  size_t default_index = service_->GetWorkspaceIndex(service_->GetDefaultWorkspaceId());
+  size_t target_pos = default_index + 1;
+
+  EXPECT_TRUE(service_->MoveWorkspaceToPosition("ws-pos3", target_pos));
+  EXPECT_EQ(service_->GetWorkspaceIndex("ws-pos3"), target_pos);
+}
+
+TEST_F(WorkspaceServiceTest, MoveWorkspaceToPosition_Invalid) {
+  AddTestWorkspace("ws-inv", "Invalid Move");
+  EXPECT_FALSE(service_->MoveWorkspaceToPosition("ws-inv", 9999));
+  EXPECT_FALSE(service_->MoveWorkspaceToPosition("nonexistent", 0));
+}
+
+TEST_F(WorkspaceServiceTest, MoveWorkspaceToPosition_SamePosition) {
+  AddTestWorkspace("ws-same", "Same Pos");
+  size_t index = service_->GetWorkspaceIndex("ws-same");
+  // Moving to same position is a no-op but returns true.
+  EXPECT_TRUE(service_->MoveWorkspaceToPosition("ws-same", index));
+}
+
+// ---------------------------------------------------------------------------
+// Merge workspaces
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, MergeWorkspaces_Success) {
+  TestWorkspaceServiceObserver observer;
+  service_->AddObserver(&observer);
+
+  AddTestWorkspace("ws-src", "Source");
+  AddTestWorkspace("ws-tgt", "Target");
+
+  size_t initial_count = service_->workspace_count();
+
+  EXPECT_TRUE(service_->MergeWorkspaces("ws-src", "ws-tgt"));
+  EXPECT_EQ(service_->workspace_count(), initial_count - 1);
+  EXPECT_EQ(service_->GetWorkspace("ws-src"), nullptr);
+  EXPECT_NE(service_->GetWorkspace("ws-tgt"), nullptr);
+  EXPECT_GT(observer.merged_count_, 0);
+
+  service_->RemoveObserver(&observer);
+}
+
+TEST_F(WorkspaceServiceTest, MergeWorkspaces_SameIdReturnsFalse) {
+  AddTestWorkspace("ws-same", "Same");
+  EXPECT_FALSE(service_->MergeWorkspaces("ws-same", "ws-same"));
+}
+
+TEST_F(WorkspaceServiceTest, MergeWorkspaces_NonexistentReturnsFalse) {
+  AddTestWorkspace("ws-exists", "Exists");
+  EXPECT_FALSE(service_->MergeWorkspaces("nonexistent", "ws-exists"));
+  EXPECT_FALSE(service_->MergeWorkspaces("ws-exists", "nonexistent"));
+}
+
+// ---------------------------------------------------------------------------
+// Clear workspace
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, ClearWorkspace_ReturnsZeroStub) {
+  AddTestWorkspace("ws-clear", "Clear Me");
+
+  // TODO(astra): Once ClearWorkspace is implemented with real tab
+  // manipulation, update this test to verify actual tab movement.
+  size_t result = service_->ClearWorkspace("ws-clear");
+  // Currently a stub that returns 0.
+  EXPECT_EQ(result, 0u);
+}
+
+TEST_F(WorkspaceServiceTest, ClearWorkspace_NonexistentReturnsZero) {
+  EXPECT_EQ(service_->ClearWorkspace("nonexistent"), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// Pinned observer notification
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, PinWorkspace_ObserverNotification) {
+  TestWorkspaceServiceObserver observer;
+  service_->AddObserver(&observer);
+
+  AddTestWorkspace("ws-obspin", "Observer Pin Test");
+
+  service_->SetWorkspacePinned("ws-obspin", true);
+  EXPECT_EQ(observer.pinned_changed_count_, 1);
+  EXPECT_EQ(observer.last_pinned_id_, "ws-obspin");
+  EXPECT_TRUE(observer.last_pinned_value_);
+
+  service_->SetWorkspacePinned("ws-obspin", false);
+  EXPECT_EQ(observer.pinned_changed_count_, 2);
+  EXPECT_FALSE(observer.last_pinned_value_);
+
+  service_->RemoveObserver(&observer);
+}
+
+// ---------------------------------------------------------------------------
+// New workspace default field values expanded
+// ---------------------------------------------------------------------------
+
+TEST_F(WorkspaceServiceTest, NewWorkspaceIsUnpinnedByDefault) {
+  AddTestWorkspace("ws-defaultpin", "Default Pin Test");
+  const AstraWorkspace* ws = service_->GetWorkspace("ws-defaultpin");
+  ASSERT_NE(ws, nullptr);
+  EXPECT_FALSE(ws->is_pinned);
 }
 
 }  // namespace astra

@@ -39,6 +39,7 @@ constexpr char kWorkspaceIconKey[] = "icon";
 constexpr char kWorkspaceDescriptionKey[] = "description";
 constexpr char kWorkspaceLastUsedTimeKey[] = "last_used_time";
 constexpr char kWorkspaceIsHibernatedKey[] = "is_hibernated";
+constexpr char kWorkspaceIsPinnedKey[] = "is_pinned";
 
 }  // namespace
 
@@ -103,6 +104,26 @@ const std::string& AstraWorkspaceService::GetDefaultWorkspaceId() const {
   return *kId;
 }
 
+const AstraWorkspace& AstraWorkspaceService::GetDefaultWorkspace() const {
+  const AstraWorkspace* ws = GetWorkspace(kDefaultWorkspaceId);
+  CHECK(ws);
+  return *ws;
+}
+
+const AstraWorkspace* AstraWorkspaceService::GetWorkspaceAtIndex(
+    size_t index) const {
+  if (index >= workspaces_.size()) {
+    return nullptr;
+  }
+  return &workspaces_[index];
+}
+
+const AstraWorkspace* AstraWorkspaceService::FindWorkspaceByName(
+    const std::string& name) const {
+  auto it = base::ranges::find(workspaces_, name, &AstraWorkspace::name);
+  return it == workspaces_.end() ? nullptr : &(*it);
+}
+
 // -- Workspace mutation ------------------------------------------------------
 
 void AstraWorkspaceService::EnsureDefaultWorkspace() {
@@ -134,6 +155,15 @@ void AstraWorkspaceService::ActivateWorkspace(
   }
 
   std::string old_id = active_workspace_id_;
+
+  // Push previous workspace onto back history stack.
+  back_history_.push_back(old_id);
+  if (back_history_.size() > kMaxHistorySize) {
+    back_history_.erase(back_history_.begin());
+  }
+  // Clear forward history on a new navigation.
+  forward_history_.clear();
+
   active_workspace_id_ = workspace_id;
 
   // Update last used time for the newly activated workspace.
@@ -150,6 +180,93 @@ void AstraWorkspaceService::ActivateWorkspace(
   }
 
   SaveToPrefs();
+}
+
+// -- Workspace switch history ------------------------------------------------
+
+bool AstraWorkspaceService::NavigateSwitchHistory(SwitchDirection direction) {
+  if (direction == SwitchDirection::kBack) {
+    if (back_history_.empty()) {
+      return false;
+    }
+    std::string prev_id = back_history_.back();
+    back_history_.pop_back();
+    if (!GetWorkspace(prev_id)) {
+      // Workspace no longer exists, skip it.
+      return NavigateSwitchHistory(direction);
+    }
+    forward_history_.push_back(active_workspace_id_);
+    std::string old_id = active_workspace_id_;
+    active_workspace_id_ = prev_id;
+    TouchWorkspace(active_workspace_id_);
+    for (auto& observer : observers_) {
+      observer.OnActiveWorkspaceChanged(old_id, active_workspace_id_);
+    }
+    SaveToPrefs();
+    return true;
+  } else {
+    if (forward_history_.empty()) {
+      return false;
+    }
+    std::string next_id = forward_history_.back();
+    forward_history_.pop_back();
+    if (!GetWorkspace(next_id)) {
+      return NavigateSwitchHistory(direction);
+    }
+    back_history_.push_back(active_workspace_id_);
+    std::string old_id = active_workspace_id_;
+    active_workspace_id_ = next_id;
+    TouchWorkspace(active_workspace_id_);
+    for (auto& observer : observers_) {
+      observer.OnActiveWorkspaceChanged(old_id, active_workspace_id_);
+    }
+    SaveToPrefs();
+    return true;
+  }
+}
+
+bool AstraWorkspaceService::CanGoBackInHistory() const {
+  // Check if there's any valid (existing) workspace in back history.
+  for (auto it = back_history_.rbegin(); it != back_history_.rend(); ++it) {
+    if (GetWorkspace(*it)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool AstraWorkspaceService::CanGoForwardInHistory() const {
+  for (auto it = forward_history_.rbegin(); it != forward_history_.rend();
+       ++it) {
+    if (GetWorkspace(*it)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string AstraWorkspaceService::PeekBackHistory() const {
+  for (auto it = back_history_.rbegin(); it != back_history_.rend(); ++it) {
+    if (GetWorkspace(*it)) {
+      return *it;
+    }
+  }
+  return std::string();
+}
+
+std::string AstraWorkspaceService::PeekForwardHistory() const {
+  for (auto it = forward_history_.rbegin(); it != forward_history_.rend();
+       ++it) {
+    if (GetWorkspace(*it)) {
+      return *it;
+    }
+  }
+  return std::string();
+}
+
+void AstraWorkspaceService::ClearSwitchHistory() {
+  back_history_.clear();
+  forward_history_.clear();
 }
 
 void AstraWorkspaceService::AddWorkspace(AstraWorkspace workspace) {
@@ -318,6 +435,92 @@ bool AstraWorkspaceService::SetWorkspaceDescription(
   return true;
 }
 
+bool AstraWorkspaceService::SetWorkspacePinned(const std::string& id,
+                                                bool pinned) {
+  AstraWorkspace* ws = FindWorkspace(id);
+  if (!ws) {
+    return false;
+  }
+
+  if (ws->is_pinned == pinned) {
+    return true;
+  }
+
+  ws->is_pinned = pinned;
+
+  for (auto& observer : observers_) {
+    observer.OnWorkspacePinnedChanged(id, pinned);
+  }
+
+  SaveToPrefs();
+  return true;
+}
+
+std::vector<AstraWorkspace>
+AstraWorkspaceService::GetPinnedWorkspaces() const {
+  std::vector<AstraWorkspace> result;
+  for (const auto& ws : workspaces_) {
+    if (ws.is_pinned) {
+      result.push_back(ws);
+    }
+  }
+  return result;
+}
+
+bool AstraWorkspaceService::MoveWorkspaceUp(const std::string& id) {
+  size_t index = GetWorkspaceIndex(id);
+  if (index == 0 || index >= workspaces_.size()) {
+    return false;
+  }
+  return MoveWorkspaceToPosition(id, index - 1);
+}
+
+bool AstraWorkspaceService::MoveWorkspaceDown(const std::string& id) {
+  size_t index = GetWorkspaceIndex(id);
+  if (index >= workspaces_.size() - 1) {
+    return false;
+  }
+  return MoveWorkspaceToPosition(id, index + 1);
+}
+
+bool AstraWorkspaceService::MoveWorkspaceToPosition(const std::string& id,
+                                                     size_t position) {
+  AstraWorkspace* ws = FindWorkspace(id);
+  if (!ws || position >= workspaces_.size()) {
+    return false;
+  }
+
+  size_t old_index = GetWorkspaceIndex(id);
+  if (old_index == position) {
+    return true;
+  }
+
+  // Build ordered list with the workspace moved to new position.
+  std::vector<std::string> ordered_ids;
+  ordered_ids.reserve(workspaces_.size());
+  bool inserted = false;
+  for (size_t i = 0; i < workspaces_.size(); ++i) {
+    if (i == position) {
+      ordered_ids.push_back(id);
+      inserted = true;
+    }
+    if (workspaces_[i].id != id) {
+      ordered_ids.push_back(workspaces_[i].id);
+    }
+  }
+  if (!inserted) {
+    ordered_ids.push_back(id);
+  }
+
+  bool result = ReorderWorkspaces(ordered_ids);
+  if (result) {
+    for (auto& observer : observers_) {
+      observer.OnWorkspaceMoved(id, old_index, position);
+    }
+  }
+  return result;
+}
+
 std::string AstraWorkspaceService::CloneWorkspace(
     const std::string& source_id) {
   const AstraWorkspace* source = GetWorkspace(source_id);
@@ -347,6 +550,7 @@ std::string AstraWorkspaceService::CloneWorkspace(
   cloned.last_used_time = base::Time::Now();
   cloned.is_default = false;
   cloned.is_hibernated = false;
+  cloned.is_pinned = source->is_pinned;
   cloned.icon = source->icon;
 
   // Place at the end of the list.
@@ -371,6 +575,61 @@ std::string AstraWorkspaceService::CloneWorkspace(
 
   SaveToPrefs();
   return new_id;
+}
+
+bool AstraWorkspaceService::MergeWorkspaces(const std::string& source_id,
+                                             const std::string& target_id) {
+  if (source_id == target_id) {
+    return false;
+  }
+
+  const AstraWorkspace* source = GetWorkspace(source_id);
+  const AstraWorkspace* target = GetWorkspace(target_id);
+  if (!source || !target) {
+    return false;
+  }
+
+  // TODO(astra): Move all tabs from source to target workspace.
+  // This requires iterating TabStripModel + AstraTabFeatures for each
+  // Browser in the profile, and updating workspace_id on matching tabs.
+  // For now, this is a metadata-only merge — the target workspace's
+  // metadata remains, and the source workspace is deleted.
+  //
+  // Chromium owner: BrowserList + TabStripModel.
+  // Patch point: chrome/browser/ui/browser_list.h + TabStripModel iteration.
+
+  std::string source_name = source->name;
+  (void)source_name;  // Referenced in note below.
+
+  // Delete the source workspace.  Tabs (if any) would need to be moved first.
+  bool deleted = DeleteWorkspace(source_id);
+  if (!deleted) {
+    return false;
+  }
+
+  for (auto& observer : observers_) {
+    observer.OnWorkspacesMerged(source_id, target_id);
+  }
+
+  // TODO(astra): Consider appending source workspace name to target
+  // description, or adding a "merged from" metadata field.
+
+  return true;
+}
+
+size_t AstraWorkspaceService::ClearWorkspace(const std::string& id) {
+  if (!GetWorkspace(id)) {
+    return 0;
+  }
+
+  // TODO(astra): Move all tabs from this workspace to the default workspace.
+  // Like MergeWorkspaces, this requires TabStripModel + AstraTabFeatures.
+  // For now, this is a no-op that returns 0.
+  //
+  // Chromium owner: BrowserList + TabStripModel.
+  // Patch point: chrome/browser/ui/browser_list.h.
+
+  return 0;
 }
 
 bool AstraWorkspaceService::TouchWorkspace(const std::string& id) {
@@ -680,6 +939,9 @@ void AstraWorkspaceService::LoadFromPrefs() {
     absl::optional<bool> is_hibernated = dict.FindBool(kWorkspaceIsHibernatedKey);
     ws.is_hibernated = is_hibernated.value_or(false);
 
+    absl::optional<bool> is_pinned = dict.FindBool(kWorkspaceIsPinnedKey);
+    ws.is_pinned = is_pinned.value_or(false);
+
     workspaces_.push_back(std::move(ws));
   }
 
@@ -751,6 +1013,10 @@ void AstraWorkspaceService::SaveToPrefs() {
 
     if (ws.is_hibernated) {
       dict.Set(kWorkspaceIsHibernatedKey, true);
+    }
+
+    if (ws.is_pinned) {
+      dict.Set(kWorkspaceIsPinnedKey, true);
     }
 
     list.Append(std::move(dict));

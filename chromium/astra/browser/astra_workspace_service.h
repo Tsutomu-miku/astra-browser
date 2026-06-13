@@ -45,6 +45,8 @@ struct AstraWorkspace {
   // When the workspace was last used (activated).
   // Used for "recent workspaces" sorting and recommendations.
   base::Time last_used_time;
+  // Whether the workspace is pinned (stays at top of list, etc.).
+  bool is_pinned = false;
   // Whether the workspace is hibernated (tabs unloaded from memory).
   // Hibernated workspaces keep their metadata but their tabs are
   // discarded to save memory. Tabs reload when the workspace is activated.
@@ -95,6 +97,20 @@ class AstraWorkspaceServiceObserver : public base::CheckedObserver {
       const AstraWorkspace& new_workspace,
       const std::string& template_id) {}
 
+  // Called after a workspace is pinned or unpinned.
+  virtual void OnWorkspacePinnedChanged(const std::string& workspace_id,
+                                        bool is_pinned) {}
+
+  // Called after a workspace is moved (reordered).
+  virtual void OnWorkspaceMoved(const std::string& workspace_id,
+                                size_t old_index,
+                                size_t new_index) {}
+
+  // Called after workspaces are merged.
+  // |source_id| is the workspace that was merged into |target_id|.
+  virtual void OnWorkspacesMerged(const std::string& source_id,
+                                   const std::string& target_id) {}
+
  protected:
   ~AstraWorkspaceServiceObserver() override = default;
 };
@@ -122,6 +138,12 @@ class AstraWorkspaceServiceObserver : public base::CheckedObserver {
 //   restore pipeline.  See astra_tab_features.h for details.
 class AstraWorkspaceService final : public KeyedService {
  public:
+  // Direction for workspace switch history navigation.
+  enum class SwitchDirection {
+    kBack,
+    kForward,
+  };
+
   explicit AstraWorkspaceService(Profile* profile);
   AstraWorkspaceService(const AstraWorkspaceService&) = delete;
   AstraWorkspaceService& operator=(const AstraWorkspaceService&) = delete;
@@ -146,6 +168,12 @@ class AstraWorkspaceService final : public KeyedService {
   // Returns the workspace with the given id, or nullptr if not found.
   const AstraWorkspace* GetWorkspace(const std::string& id) const;
 
+  // Returns the workspace at the given index, or nullptr if out of bounds.
+  const AstraWorkspace* GetWorkspaceAtIndex(size_t index) const;
+
+  // Finds a workspace by name (case-sensitive). Returns nullptr if not found.
+  const AstraWorkspace* FindWorkspaceByName(const std::string& name) const;
+
   // Returns the currently active workspace.  There is always at least the
   // default workspace, so this is never null.
   const AstraWorkspace& active_workspace() const;
@@ -158,6 +186,9 @@ class AstraWorkspaceService final : public KeyedService {
   // Returns the id of the default workspace.
   const std::string& GetDefaultWorkspaceId() const;
 
+  // Returns the default workspace.  Always exists.
+  const AstraWorkspace& GetDefaultWorkspace() const;
+
   // -- Workspace mutation ------------------------------------------------
 
   // Ensures at least the default workspace exists.  Idempotent.
@@ -166,7 +197,37 @@ class AstraWorkspaceService final : public KeyedService {
   // Switches the active workspace.  This changes which tab projection is
   // shown in the Astra sidebar; it does NOT create, destroy, or move any
   // WebContents.  TabStripModel owns all tabs at all times.
+  // Pushes the previous workspace onto the back history stack.
   void ActivateWorkspace(const std::string& workspace_id);
+
+  // -- Workspace switch history ------------------------------------------
+
+  // Navigates backward or forward in the workspace switch history.
+  // Returns true if navigation succeeded (there was history in that direction).
+  bool NavigateSwitchHistory(SwitchDirection direction);
+
+  // Returns whether there is back navigation history available.
+  bool CanGoBackInHistory() const;
+
+  // Returns whether there is forward navigation history available.
+  bool CanGoForwardInHistory() const;
+
+  // Returns the id of the workspace we would go to if we navigated back.
+  // Returns empty string if no back history.
+  std::string PeekBackHistory() const;
+
+  // Returns the id of the workspace we would go to if we navigated forward.
+  // Returns empty string if no forward history.
+  std::string PeekForwardHistory() const;
+
+  // Clears the switch history stack.
+  void ClearSwitchHistory();
+
+  // Returns the current size of the back history stack.
+  size_t back_history_size() const { return back_history_.size(); }
+
+  // Returns the current size of the forward history stack.
+  size_t forward_history_size() const { return forward_history_.size(); }
 
   // Adds a new workspace.  The new workspace gets an order_index at the end
   // of the current list.  Fires OnWorkspaceAdded.
@@ -200,6 +261,23 @@ class AstraWorkspaceService final : public KeyedService {
   bool SetWorkspaceDescription(const std::string& id,
                                const std::string& description);
 
+  // Sets the pinned state of a workspace.  Pinned workspaces stay at the
+  // top of the list.  Returns true if the workspace existed and state was
+  // changed.
+  bool SetWorkspacePinned(const std::string& id, bool pinned);
+
+  // Returns all pinned workspaces, in order.
+  std::vector<AstraWorkspace> GetPinnedWorkspaces() const;
+
+  // Moves a workspace up by one position.  Returns true on success.
+  bool MoveWorkspaceUp(const std::string& id);
+
+  // Moves a workspace down by one position.  Returns true on success.
+  bool MoveWorkspaceDown(const std::string& id);
+
+  // Moves a workspace to a specific position.  Returns true on success.
+  bool MoveWorkspaceToPosition(const std::string& id, size_t position);
+
   // Clones (duplicates) a workspace.  Creates a new workspace with the
   // same name (with " copy" suffix), color, icon, and description.
   // The new workspace gets a fresh ID and current timestamps.
@@ -211,6 +289,17 @@ class AstraWorkspaceService final : public KeyedService {
   // TODO(astra): Consider adding a CloneWorkspaceWithTabs variant that
   // duplicates all tabs in the workspace.
   std::string CloneWorkspace(const std::string& source_id);
+
+  // Merges two workspaces.  All tabs from |source_id| are moved to
+  // |target_id|, then |source_id| is deleted.  Returns true on success.
+  // Returns false if either workspace doesn't exist or if source == target.
+  bool MergeWorkspaces(const std::string& source_id,
+                       const std::string& target_id);
+
+  // Clears all tabs from a workspace (moves them to the default workspace).
+  // Returns the number of tabs that were moved.
+  // TODO(astra): Implement with real TabStripModel integration.
+  size_t ClearWorkspace(const std::string& id);
 
   // Updates the last_used_time of a workspace to now.
   // Called when a workspace is activated or interacted with.
@@ -329,6 +418,15 @@ class AstraWorkspaceService final : public KeyedService {
   std::vector<AstraWorkspace> workspaces_;
   std::string active_workspace_id_;
   base::ObserverList<AstraWorkspaceServiceObserver> observers_;
+
+  // Switch history stacks for back/forward navigation.
+  // back_history_ contains previous workspace ids (most recent last).
+  // forward_history_ contains workspace ids we navigated back from.
+  std::vector<std::string> back_history_;
+  std::vector<std::string> forward_history_;
+
+  // Maximum size of each history stack (prevents unbounded growth).
+  static constexpr size_t kMaxHistorySize = 50;
 };
 
 // Factory for AstraWorkspaceService.
