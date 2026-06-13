@@ -36,6 +36,11 @@ const char AstraSidebarModel::kSectionPasswords[] = "passwords";
 const char AstraSidebarModel::kSectionExtensions[] = "extensions";
 const char AstraSidebarModel::kSectionDevTools[] = "devtools";
 const char AstraSidebarModel::kSectionSettings[] = "settings";
+const char AstraSidebarModel::kSectionFeeds[] = "feeds";
+const char AstraSidebarModel::kSectionAIChat[] = "ai_chat";
+const char AstraSidebarModel::kSectionTranslate[] = "translate";
+const char AstraSidebarModel::kSectionScreenshots[] = "screenshots";
+const char AstraSidebarModel::kSectionPlaylists[] = "playlists";
 
 namespace {
 
@@ -185,6 +190,99 @@ void AstraSidebarModel::SetPosition(AstraSidebarPosition position) {
     pref_service_->SetString(prefs::kPrefSidebarPosition, pos_str);
   }
   NotifySidebarPositionChanged(position);
+}
+
+// -- Width preset ----------------------------------------------------------
+
+AstraSidebarWidthPreset AstraSidebarModel::width_preset() const {
+  int current_width = width();
+  if (current_width <= kNarrowWidth + 20) {
+    return AstraSidebarWidthPreset::kNarrow;
+  }
+  if (current_width >= kWideWidth - 20) {
+    return AstraSidebarWidthPreset::kWide;
+  }
+  return AstraSidebarWidthPreset::kNormal;
+}
+
+void AstraSidebarModel::SetWidthPreset(AstraSidebarWidthPreset preset) {
+  int target_width = kDefaultWidth;
+  switch (preset) {
+    case AstraSidebarWidthPreset::kNarrow:
+      target_width = kNarrowWidth;
+      break;
+    case AstraSidebarWidthPreset::kNormal:
+      target_width = kNormalWidth;
+      break;
+    case AstraSidebarWidthPreset::kWide:
+      target_width = kWideWidth;
+      break;
+  }
+  if (width() == target_width) {
+    return;
+  }
+  SetWidth(target_width);
+  NotifyWidthPresetChanged(preset);
+}
+
+void AstraSidebarModel::CycleWidthPreset() {
+  AstraSidebarWidthPreset current = width_preset();
+  switch (current) {
+    case AstraSidebarWidthPreset::kNarrow:
+      SetWidthPreset(AstraSidebarWidthPreset::kNormal);
+      break;
+    case AstraSidebarWidthPreset::kNormal:
+      SetWidthPreset(AstraSidebarWidthPreset::kWide);
+      break;
+    case AstraSidebarWidthPreset::kWide:
+      SetWidthPreset(AstraSidebarWidthPreset::kNarrow);
+      break;
+  }
+}
+
+// -- Auto-hide mode --------------------------------------------------------
+
+AstraSidebarAutoHideMode AstraSidebarModel::auto_hide_mode() const {
+  if (!pref_service_) {
+    return AstraSidebarAutoHideMode::kDisabled;
+  }
+  std::string mode = pref_service_->GetString(prefs::kPrefSidebarAutoHideMode);
+  if (mode == "click_outside") {
+    return AstraSidebarAutoHideMode::kOnClickOutside;
+  }
+  if (mode == "hover_leave") {
+    return AstraSidebarAutoHideMode::kOnHoverLeave;
+  }
+  if (mode == "tab_click") {
+    return AstraSidebarAutoHideMode::kOnTabClick;
+  }
+  return AstraSidebarAutoHideMode::kDisabled;
+}
+
+void AstraSidebarModel::SetAutoHideMode(AstraSidebarAutoHideMode mode) {
+  if (auto_hide_mode() == mode) {
+    return;
+  }
+  if (pref_service_) {
+    std::string mode_str = "disabled";
+    switch (mode) {
+      case AstraSidebarAutoHideMode::kDisabled:
+        mode_str = "disabled";
+        break;
+      case AstraSidebarAutoHideMode::kOnClickOutside:
+        mode_str = "click_outside";
+        break;
+      case AstraSidebarAutoHideMode::kOnHoverLeave:
+        mode_str = "hover_leave";
+        break;
+      case AstraSidebarAutoHideMode::kOnTabClick:
+        mode_str = "tab_click";
+        break;
+    }
+    pref_service_->SetString(prefs::kPrefSidebarAutoHideMode, mode_str);
+  }
+  NotifyAutoHideModeChanged(mode);
+  NotifySidebarSettingsChanged();
 }
 
 // -- Active section --------------------------------------------------------
@@ -426,6 +524,181 @@ size_t AstraSidebarModel::GetSectionCountInGroup(
   return count;
 }
 
+// -- Section badges --------------------------------------------------------
+
+bool AstraSidebarModel::SetSectionBadgeCount(const std::string& section_id,
+                                              int count) {
+  auto it = FindSectionById(&sections_, section_id);
+  if (it == sections_.end()) {
+    return false;
+  }
+  if (it->badge_count == count && it->badge_is_count) {
+    return true;
+  }
+  it->badge_count = count;
+  it->badge_is_count = true;
+  NotifySectionBadgeChanged(section_id);
+  return true;
+}
+
+int AstraSidebarModel::GetSectionBadgeCount(
+    const std::string& section_id) const {
+  auto it = FindSectionByIdConst(sections_, section_id);
+  if (it == sections_.end()) {
+    return 0;
+  }
+  return it->badge_count;
+}
+
+bool AstraSidebarModel::SetSectionBadgeText(const std::string& section_id,
+                                            const std::u16string& text) {
+  auto it = FindSectionById(&sections_, section_id);
+  if (it == sections_.end()) {
+    return false;
+  }
+  if (it->badge_text == text && !it->badge_is_count) {
+    return true;
+  }
+  it->badge_text = text;
+  it->badge_is_count = false;
+  NotifySectionBadgeChanged(section_id);
+  return true;
+}
+
+std::u16string AstraSidebarModel::GetSectionBadgeText(
+    const std::string& section_id) const {
+  auto it = FindSectionByIdConst(sections_, section_id);
+  if (it == sections_.end()) {
+    return std::u16string();
+  }
+  return it->badge_text;
+}
+
+bool AstraSidebarModel::ClearSectionBadge(const std::string& section_id) {
+  auto it = FindSectionById(&sections_, section_id);
+  if (it == sections_.end()) {
+    return false;
+  }
+  if (it->badge_count == 0 && it->badge_text.empty() && !it->badge_is_count) {
+    return true;
+  }
+  it->badge_count = 0;
+  it->badge_text.clear();
+  it->badge_is_count = false;
+  NotifySectionBadgeChanged(section_id);
+  return true;
+}
+
+// -- Section add button ----------------------------------------------------
+
+bool AstraSidebarModel::SetSectionHasAddButton(const std::string& section_id,
+                                               bool has_button) {
+  auto it = FindSectionById(&sections_, section_id);
+  if (it == sections_.end()) {
+    return false;
+  }
+  if (it->has_add_button == has_button) {
+    return true;
+  }
+  it->has_add_button = has_button;
+  NotifySectionAddButtonChanged(section_id, has_button);
+  return true;
+}
+
+bool AstraSidebarModel::GetSectionHasAddButton(
+    const std::string& section_id) const {
+  auto it = FindSectionByIdConst(sections_, section_id);
+  if (it == sections_.end()) {
+    return false;
+  }
+  return it->has_add_button;
+}
+
+bool AstraSidebarModel::SetSectionCanAddItems(const std::string& section_id,
+                                              bool can_add) {
+  auto it = FindSectionById(&sections_, section_id);
+  if (it == sections_.end()) {
+    return false;
+  }
+  it->can_add_items = can_add;
+  return true;
+}
+
+// -- Keyboard navigation ---------------------------------------------------
+
+bool AstraSidebarModel::ActivateSectionByVisibleIndex(int index) {
+  auto visible = GetVisibleSections();
+  if (index < 0 || index >= static_cast<int>(visible.size())) {
+    return false;
+  }
+  SetActiveSection(visible[index].id);
+  return true;
+}
+
+void AstraSidebarModel::ActivateNextSection() {
+  auto visible = GetVisibleSections();
+  if (visible.empty()) {
+    return;
+  }
+  int current_index = GetActiveSectionVisibleIndex();
+  int next_index = current_index + 1;
+  if (next_index >= static_cast<int>(visible.size())) {
+    next_index = 0;  // wrap around
+  }
+  if (next_index >= 0 && next_index < static_cast<int>(visible.size())) {
+    SetActiveSection(visible[next_index].id);
+  }
+}
+
+void AstraSidebarModel::ActivatePreviousSection() {
+  auto visible = GetVisibleSections();
+  if (visible.empty()) {
+    return;
+  }
+  int current_index = GetActiveSectionVisibleIndex();
+  int prev_index = current_index - 1;
+  if (prev_index < 0) {
+    prev_index = static_cast<int>(visible.size()) - 1;  // wrap around
+  }
+  if (prev_index >= 0 && prev_index < static_cast<int>(visible.size())) {
+    SetActiveSection(visible[prev_index].id);
+  }
+}
+
+int AstraSidebarModel::GetActiveSectionVisibleIndex() const {
+  auto visible = GetVisibleSections();
+  const std::string& active_id = active_section_id_;
+  for (size_t i = 0; i < visible.size(); ++i) {
+    if (visible[i].id == active_id) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+absl::optional<AstraSidebarSection> AstraSidebarModel::FindSectionByShortcut(
+    int keycode) const {
+  if (keycode == 0) {
+    return absl::nullopt;
+  }
+  for (const auto& section : sections_) {
+    if (section.keyboard_shortcut_keycode == keycode) {
+      return section;
+    }
+  }
+  return absl::nullopt;
+}
+
+bool AstraSidebarModel::SetSectionShortcut(const std::string& section_id,
+                                           int keycode) {
+  auto it = FindSectionById(&sections_, section_id);
+  if (it == sections_.end()) {
+    return false;
+  }
+  it->keyboard_shortcut_keycode = keycode;
+  return true;
+}
+
 // -- Bulk operations -------------------------------------------------------
 
 void AstraSidebarModel::SetAllSectionsVisible(bool visible) {
@@ -529,6 +802,7 @@ void AstraSidebarModel::ResetAllSettings() {
   pref_service_->ClearPref(prefs::kPrefSidebarPinned);
   pref_service_->ClearPref(prefs::kPrefSidebarPosition);
   pref_service_->ClearPref(prefs::kPrefSidebarAutoHide);
+  pref_service_->ClearPref(prefs::kPrefSidebarAutoHideMode);
   pref_service_->ClearPref(prefs::kPrefSidebarPinnedSections);
   pref_service_->ClearPref(prefs::kPrefSidebarShowSectionIcons);
   pref_service_->ClearPref(prefs::kPrefSidebarShowSectionLabels);
@@ -1186,6 +1460,80 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .can_hide = true,
   });
 
+  // Additional Astra sections (hidden by default, discoverable via settings)
+  // These are Astra-specific features that extend beyond standard Chromium.
+
+  sections.push_back({
+      .id = kSectionFeeds,
+      .name = u"Feeds",
+      .icon_id = "feeds",
+      .is_visible = false,
+      .position = 13,
+      .is_collapsible = true,
+      .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
+      .can_add_items = true,
+      .has_add_button = true,
+  });
+
+  sections.push_back({
+      .id = kSectionAIChat,
+      .name = u"AI Chat",
+      .icon_id = "ai_chat",
+      .is_visible = false,
+      .position = 14,
+      .is_collapsible = true,
+      .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
+  });
+
+  sections.push_back({
+      .id = kSectionTranslate,
+      .name = u"Translate",
+      .icon_id = "translate",
+      .is_visible = false,
+      .position = 15,
+      .is_collapsible = true,
+      .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
+  });
+
+  sections.push_back({
+      .id = kSectionScreenshots,
+      .name = u"Screenshots",
+      .icon_id = "screenshots",
+      .is_visible = false,
+      .position = 16,
+      .is_collapsible = true,
+      .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
+      .can_add_items = true,
+      .has_add_button = true,
+  });
+
+  sections.push_back({
+      .id = kSectionPlaylists,
+      .name = u"Playlists",
+      .icon_id = "playlists",
+      .is_visible = false,
+      .position = 17,
+      .is_collapsible = true,
+      .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
+      .can_add_items = true,
+      .has_add_button = true,
+  });
+
   // ---- Bottom group sections (utility) ----
 
   sections.push_back({
@@ -1193,7 +1541,7 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .name = u"DevTools",
       .icon_id = "devtools",
       .is_visible = true,
-      .position = 13,
+      .position = 18,
       .is_collapsible = true,
       .is_collapsed = true,
       .group = AstraSidebarSectionGroup::kBottom,
@@ -1206,7 +1554,7 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .name = u"Settings",
       .icon_id = "settings",
       .is_visible = true,
-      .position = 14,
+      .position = 19,
       .is_collapsible = false,
       .is_collapsed = false,
       .group = AstraSidebarSectionGroup::kBottom,
@@ -1430,6 +1778,31 @@ void AstraSidebarModel::NotifyCompactModeChanged(bool compact) {
 void AstraSidebarModel::NotifySidebarLayoutChanged() {
   for (auto& observer : observers_) {
     observer.OnSidebarLayoutChanged();
+  }
+}
+
+void AstraSidebarModel::NotifyAutoHideModeChanged(AstraSidebarAutoHideMode mode) {
+  for (auto& observer : observers_) {
+    observer.OnAutoHideModeChanged(mode);
+  }
+}
+
+void AstraSidebarModel::NotifySectionBadgeChanged(const std::string& section_id) {
+  for (auto& observer : observers_) {
+    observer.OnSectionBadgeChanged(section_id);
+  }
+}
+
+void AstraSidebarModel::NotifyWidthPresetChanged(AstraSidebarWidthPreset preset) {
+  for (auto& observer : observers_) {
+    observer.OnWidthPresetChanged(preset);
+  }
+}
+
+void AstraSidebarModel::NotifySectionAddButtonChanged(const std::string& section_id,
+                                                       bool visible) {
+  for (auto& observer : observers_) {
+    observer.OnSectionAddButtonChanged(section_id, visible);
   }
 }
 

@@ -19,6 +19,23 @@ enum class AstraSidebarPosition {
   kRight,
 };
 
+// Sidebar width presets for quick width switching.
+// These are predefined width options that users can cycle through.
+// The actual pixel values are defined as constants on the model.
+enum class AstraSidebarWidthPreset {
+  kNarrow,   // Narrow sidebar (compact, icon-heavy)
+  kNormal,   // Default width
+  kWide,     // Wide sidebar (more content visible)
+};
+
+// Auto-hide behavior modes for the sidebar.
+enum class AstraSidebarAutoHideMode {
+  kDisabled,      // Auto-hide disabled; sidebar stays visible
+  kOnClickOutside, // Hide when clicking outside the sidebar
+  kOnHoverLeave,   // Hide when mouse leaves the sidebar area
+  kOnTabClick,     // Hide when a tab is activated (already exists as auto_hide_on_tab_click)
+};
+
 // Section group: top vs bottom sections.
 // Top sections are the primary navigation items (workspaces, favorites, tabs).
 // Bottom sections are secondary/utility items (downloads, settings, etc.).
@@ -185,8 +202,28 @@ struct AstraSidebarSection {
   // Badge text (e.g. count of items). Empty means no badge.
   std::u16string badge_text;
 
+  // Numeric badge count (e.g. notification count). 0 means no badge.
+  int badge_count = 0;
+
+  // Whether the badge shows a numeric count or custom text.
+  bool badge_is_count = false;
+
+  // Whether this section has an "add new item" button in the header.
+  bool has_add_button = false;
+
+  // Whether this section supports adding new items via the add button.
+  bool can_add_items = false;
+
+  // Keyboard shortcut accelerator key (e.g. VKEY_1 through VKEY_9).
+  // ui::VKEY (ui/events/keycodes/keyboard_codes.h) equivalent int.
+  // 0 means no keyboard shortcut.
+  int keyboard_shortcut_keycode = 0;
+
   // Whether this section is the active section.
   bool is_active = false;
+
+  // Whether this section shows a drag handle (for reordering).
+  bool show_drag_handle = false;
 };
 
 // =========================================================================
@@ -244,6 +281,19 @@ class AstraSidebarModelObserver : public base::CheckedObserver {
   // Called when a section is dragged and dropped (reorder).
   virtual void OnSectionDragDropCompleted(const std::string& section_id,
                                           int new_position) {}
+
+  // Called when auto-hide mode changes.
+  virtual void OnAutoHideModeChanged(AstraSidebarAutoHideMode mode) {}
+
+  // Called when a section's badge text/count changes.
+  virtual void OnSectionBadgeChanged(const std::string& section_id) {}
+
+  // Called when the width preset changes.
+  virtual void OnWidthPresetChanged(AstraSidebarWidthPreset preset) {}
+
+  // Called when a section's add button visibility changes.
+  virtual void OnSectionAddButtonChanged(const std::string& section_id,
+                                         bool visible) {}
 
  protected:
   ~AstraSidebarModelObserver() override = default;
@@ -306,6 +356,15 @@ class AstraSidebarModel {
   AstraSidebarPosition position() const;
   void SetPosition(AstraSidebarPosition position);
 
+  // Sidebar width preset (narrow/normal/wide).
+  AstraSidebarWidthPreset width_preset() const;
+  void SetWidthPreset(AstraSidebarWidthPreset preset);
+  void CycleWidthPreset();
+
+  // Auto-hide mode for the sidebar.
+  AstraSidebarAutoHideMode auto_hide_mode() const;
+  void SetAutoHideMode(AstraSidebarAutoHideMode mode);
+
   // -- Active section ------------------------------------------------------
 
   // The ID of the currently active section.
@@ -364,6 +423,64 @@ class AstraSidebarModel {
 
   // Returns the number of sections in a specific group.
   size_t GetSectionCountInGroup(AstraSidebarSectionGroup group) const;
+
+  // -- Section badges ------------------------------------------------------
+
+  // Set the numeric badge count for a section.
+  // Returns true if the section exists and was updated.
+  bool SetSectionBadgeCount(const std::string& section_id, int count);
+
+  // Get the numeric badge count for a section.
+  // Returns 0 if the section doesn't exist.
+  int GetSectionBadgeCount(const std::string& section_id) const;
+
+  // Set the badge text for a section.
+  // Returns true if the section exists and was updated.
+  bool SetSectionBadgeText(const std::string& section_id,
+                           const std::u16string& text);
+
+  // Get the badge text for a section.
+  // Returns empty string if the section doesn't exist.
+  std::u16string GetSectionBadgeText(const std::string& section_id) const;
+
+  // Clear the badge for a section (both count and text).
+  bool ClearSectionBadge(const std::string& section_id);
+
+  // -- Section add button --------------------------------------------------
+
+  // Set whether the "add new item" button is shown for a section.
+  // Returns true if the section exists and was updated.
+  bool SetSectionHasAddButton(const std::string& section_id, bool has_button);
+
+  // Get whether the "add new item" button is shown for a section.
+  bool GetSectionHasAddButton(const std::string& section_id) const;
+
+  // Set whether a section supports adding items (can_add_items).
+  bool SetSectionCanAddItems(const std::string& section_id, bool can_add);
+
+  // -- Keyboard navigation --------------------------------------------------
+
+  // Activate the section at the given visible index.
+  // Returns true if the index is valid.
+  bool ActivateSectionByVisibleIndex(int index);
+
+  // Activate the next visible section (wraps around).
+  void ActivateNextSection();
+
+  // Activate the previous visible section (wraps around).
+  void ActivatePreviousSection();
+
+  // Get the index of the active section in the visible sections list.
+  // Returns -1 if the active section is not visible or doesn't exist.
+  int GetActiveSectionVisibleIndex() const;
+
+  // Find a section by its keyboard shortcut keycode.
+  // Returns nullopt if no section has that shortcut.
+  absl::optional<AstraSidebarSection> FindSectionByShortcut(
+      int keycode) const;
+
+  // Set the keyboard shortcut keycode for a section.
+  bool SetSectionShortcut(const std::string& section_id, int keycode);
 
   // -- Bulk operations -----------------------------------------------------
 
@@ -533,6 +650,11 @@ class AstraSidebarModel {
   static constexpr int kMaxWidth = 500;
   static constexpr int kDefaultWidth = 280;
 
+  // Sidebar width preset pixel values.
+  static constexpr int kNarrowWidth = 200;
+  static constexpr int kNormalWidth = 280;
+  static constexpr int kWideWidth = 400;
+
   // Known section ID constants.
   static const char kSectionWorkspaces[];
   static const char kSectionFavorites[];
@@ -549,6 +671,11 @@ class AstraSidebarModel {
   static const char kSectionExtensions[];
   static const char kSectionDevTools[];
   static const char kSectionSettings[];
+  static const char kSectionFeeds[];
+  static const char kSectionAIChat[];
+  static const char kSectionTranslate[];
+  static const char kSectionScreenshots[];
+  static const char kSectionPlaylists[];
 
   PrefService* pref_service() { return pref_service_; }
   const PrefService* pref_service() const { return pref_service_; }
@@ -588,6 +715,11 @@ class AstraSidebarModel {
   void NotifySidebarSettingsChanged();
   void NotifyCompactModeChanged(bool compact);
   void NotifySidebarLayoutChanged();
+  void NotifyAutoHideModeChanged(AstraSidebarAutoHideMode mode);
+  void NotifySectionBadgeChanged(const std::string& section_id);
+  void NotifyWidthPresetChanged(AstraSidebarWidthPreset preset);
+  void NotifySectionAddButtonChanged(const std::string& section_id,
+                                     bool visible);
 
   raw_ptr<PrefService> pref_service_ = nullptr;
   base::ObserverList<AstraSidebarModelObserver> observers_;

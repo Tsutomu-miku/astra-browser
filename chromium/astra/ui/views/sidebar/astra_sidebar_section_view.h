@@ -98,6 +98,27 @@ class AstraSidebarSectionDropDelegate {
       const AstraSidebarDropResult& drop_result) = 0;
 };
 
+// Delegate interface for section header actions.
+// Implemented by the parent sidebar view to handle section-level actions
+// like add button clicks and more button context menus.
+class AstraSidebarSectionHeaderDelegate {
+ public:
+  virtual ~AstraSidebarSectionHeaderDelegate() = default;
+
+  // Called when the add button (+) is clicked in the section header.
+  virtual void OnSectionAddClicked(AstraSidebarSectionType section_type) = 0;
+
+  // Called when the more button (⋮) is clicked in the section header.
+  // |point| is in screen coordinates.
+  virtual void OnSectionMoreClicked(AstraSidebarSectionType section_type,
+                                    const gfx::Point& point) = 0;
+
+  // Called when a context menu is requested on the section header.
+  // |point| is in screen coordinates.
+  virtual void OnSectionHeaderContextMenu(AstraSidebarSectionType section_type,
+                                          const gfx::Point& point) = 0;
+};
+
 // A labeled sidebar section with a header, content area, and optional
 // footer.  Sections include: Workspaces (via switcher), Favorites,
 // Pinned Tabs, Open Tabs, Bookmarks, History, Downloads.
@@ -210,6 +231,41 @@ class AstraSidebarSectionView : public views::View {
   // Set a tint color for the section (used for icon and accent elements).
   void SetSectionColor(SkColor color);
   SkColor GetSectionColor() const { return section_color_; }
+
+  // -- Drag handle ---------------------------------------------------------
+
+  // Set whether the section shows a drag handle (for reordering sections).
+  void SetShowDragHandle(bool show);
+  bool GetShowDragHandle() const { return show_drag_handle_; }
+
+  // -- Keyboard navigation --------------------------------------------------
+
+  // Set the index of the currently selected item (for keyboard navigation).
+  // -1 means no item is selected.
+  void SetSelectedItemIndex(int index);
+  int GetSelectedItemIndex() const { return selected_item_index_; }
+
+  // Select the next item (down arrow). Returns true if selection changed.
+  bool SelectNextItem();
+
+  // Select the previous item (up arrow). Returns true if selection changed.
+  bool SelectPreviousItem();
+
+  // Activate the currently selected item (Enter key). Returns true if handled.
+  bool ActivateSelectedItem();
+
+  // -- Animation -----------------------------------------------------------
+
+  // Set whether expand/collapse uses smooth animation.
+  void SetAnimated(bool animated);
+  bool GetAnimated() const { return animated_; }
+
+  // -- Header delegate -----------------------------------------------------
+
+  // Set the header action delegate. Not owned by this view.
+  void set_header_delegate(AstraSidebarSectionHeaderDelegate* delegate) {
+    header_delegate_ = delegate;
+  }
 
   // -- Drag and drop -------------------------------------------------------
 
@@ -329,6 +385,7 @@ class AstraSidebarSectionView : public views::View {
   gfx::Size CalculatePreferredSize(
       const views::SizeBounds& available_size) const override;
   void OnThemeChanged() override;
+  bool OnKeyPressed(const ui::KeyEvent& event) override;
 
  protected:
   // Called when the add button is clicked.  Subclasses can override.
@@ -392,16 +449,20 @@ class AstraSidebarSectionView : public views::View {
   bool show_add_button_ = false;
   bool show_more_button_ = false;
   bool show_context_menu_ = true;
+  bool show_drag_handle_ = false;
   SkColor section_color_ = SK_ColorTRANSPARENT;
   bool drag_drop_enabled_ = false;
   AstraSidebarSortOrder sort_order_ = AstraSidebarSortOrder::kManual;
   AstraSidebarFilter filter_ = AstraSidebarFilter::kAll;
   bool is_loading_ = false;
   bool is_empty_ = true;
+  int selected_item_index_ = -1;
+  bool animated_ = false;
 
   // Header child views (owned by view hierarchy).
   raw_ptr<views::View> header_view_ = nullptr;
   raw_ptr<views::ImageView> header_icon_ = nullptr;
+  raw_ptr<views::ImageView> drag_handle_view_ = nullptr;
   raw_ptr<views::Label> header_label_ = nullptr;
   raw_ptr<views::Label> count_badge_ = nullptr;
   raw_ptr<views::ImageView> chevron_view_ = nullptr;
@@ -425,6 +486,9 @@ class AstraSidebarSectionView : public views::View {
   raw_ptr<AstraSidebarSectionDropDelegate> drop_delegate_ = nullptr;
   raw_ptr<AstraSidebarDropIndicatorView> drop_indicator_ = nullptr;
   bool has_active_drag_ = false;
+
+  // Header action delegate (not owned).
+  raw_ptr<AstraSidebarSectionHeaderDelegate> header_delegate_ = nullptr;
 };
 
 }  // namespace astra

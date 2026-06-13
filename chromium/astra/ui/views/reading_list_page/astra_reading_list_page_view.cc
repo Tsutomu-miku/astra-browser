@@ -1280,16 +1280,13 @@ void AstraReadingListPageView::Build() {
   row_layout->SetCrossAxisAlignment(views::LayoutAlignment::kStretch);
 
   // Sidebar.
-  BuildSidebar();
-  content_row->AddChildView(sidebar_container_.get());
+  BuildSidebar(content_row);
 
   // Content scroll area.
-  BuildContent();
-  content_row->AddChildView(content_scroll_.get());
+  BuildContent(content_row);
 
   // Detail panel.
-  BuildDetailPanel();
-  content_row->AddChildView(detail_panel_.get());
+  BuildDetailPanel(content_row);
 }
 
 void AstraReadingListPageView::BuildToolbar() {
@@ -1348,30 +1345,29 @@ void AstraReadingListPageView::BuildToolbar() {
   add_button_ = toolbar_->AddChildView(std::move(add_button));
 }
 
-void AstraReadingListPageView::BuildSidebar() {
-  sidebar_container_ = std::make_unique<views::View>();
-  sidebar_container_->SetPreferredSize(gfx::Size(kSidebarWidth, 0));
-  sidebar_container_->SetProperty(
+void AstraReadingListPageView::BuildSidebar(views::View* parent) {
+  auto sidebar = std::make_unique<views::View>();
+  sidebar->SetPreferredSize(gfx::Size(kSidebarWidth, 0));
+  sidebar->SetProperty(
       views::kFlexBehaviorKey,
       views::FlexSpecification(views::MinimumFlexSizeRule::kPreferred,
                                views::MaximumFlexSizeRule::kPreferred));
 
   auto* layout =
-      sidebar_container_->SetLayoutManager(std::make_unique<views::FlexLayout>());
+      sidebar->SetLayoutManager(std::make_unique<views::FlexLayout>());
   layout->SetOrientation(views::LayoutOrientation::kVertical);
   layout->SetCrossAxisAlignment(views::LayoutAlignment::kStretch);
   layout->SetInteriorMargin(gfx::Insets::VH(12, 8));
 
   // Filter list.
-  filter_list_ = sidebar_container_->AddChildView(
-      std::make_unique<views::View>());
+  filter_list_ = sidebar->AddChildView(std::make_unique<views::View>());
   auto* filter_layout =
       filter_list_->SetLayoutManager(std::make_unique<views::BoxLayout>(
           views::BoxLayout::Orientation::kVertical));
   filter_layout->set_between_child_spacing(2);
 
   // Folders header.
-  folders_header_label_ = sidebar_container_->AddChildView(
+  folders_header_label_ = sidebar->AddChildView(
       std::make_unique<views::Label>(u"Folders"));
   folders_header_label_->SetTextContext(views::style::CONTEXT_LABEL);
   folders_header_label_->SetTextStyle(views::style::STYLE_SECONDARY);
@@ -1380,7 +1376,7 @@ void AstraReadingListPageView::BuildSidebar() {
       views::CreateEmptyBorder(gfx::Insets::VH(12, 8)));
 
   // Folder list (scrollable).
-  sidebar_scroll_ = sidebar_container_->AddChildView(
+  sidebar_scroll_ = sidebar->AddChildView(
       std::make_unique<views::ScrollView>());
   sidebar_scroll_->SetProperty(
       views::kFlexBehaviorKey,
@@ -1388,26 +1384,32 @@ void AstraReadingListPageView::BuildSidebar() {
                                views::MaximumFlexSizeRule::kUnbounded));
   sidebar_scroll_->SetDrawOverflowIndicator(false);
 
-  folder_list_ = std::make_unique<views::View>();
+  auto folder_list = std::make_unique<views::View>();
   auto* folder_layout =
-      folder_list_->SetLayoutManager(std::make_unique<views::BoxLayout>(
+      folder_list->SetLayoutManager(std::make_unique<views::BoxLayout>(
           views::BoxLayout::Orientation::kVertical));
   folder_layout->set_between_child_spacing(2);
-  sidebar_scroll_->SetContents(std::move(folder_list_));
+  folder_list_ = folder_list.get();
+  sidebar_scroll_->SetContents(std::move(folder_list));
+
+  sidebar_container_ = parent->AddChildView(std::move(sidebar));
 }
 
-void AstraReadingListPageView::BuildContent() {
-  content_scroll_ = std::make_unique<views::ScrollView>();
-  content_scroll_->SetProperty(
+void AstraReadingListPageView::BuildContent(views::View* parent) {
+  auto content_scroll = std::make_unique<views::ScrollView>();
+  content_scroll->SetProperty(
       views::kFlexBehaviorKey,
       views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
                                views::MaximumFlexSizeRule::kUnbounded));
-  content_scroll_->SetDrawOverflowIndicator(false);
+  content_scroll->SetDrawOverflowIndicator(false);
 
-  content_container_ = std::make_unique<views::View>();
-  content_container_->SetBorder(
+  auto content_container = std::make_unique<views::View>();
+  content_container->SetBorder(
       views::CreateEmptyBorder(gfx::Insets::VH(kContentPadding, kContentPadding)));
-  content_scroll_->SetContents(std::move(content_container_));
+  content_container_ = content_container.get();
+  content_scroll->SetContents(std::move(content_container));
+
+  content_scroll_ = parent->AddChildView(std::move(content_scroll));
 
   // Empty state view (initially hidden).
   empty_view_ = content_scroll_->contents()->AddChildView(
@@ -1415,20 +1417,22 @@ void AstraReadingListPageView::BuildContent() {
   empty_view_->SetVisible(false);
 }
 
-void AstraReadingListPageView::BuildDetailPanel() {
-  detail_panel_ = std::make_unique<AstraReadingListDetailView>();
-  detail_panel_->SetPreferredSize(gfx::Size(kDetailPanelWidth, 0));
-  detail_panel_->SetProperty(
+void AstraReadingListPageView::BuildDetailPanel(views::View* parent) {
+  auto detail_panel = std::make_unique<AstraReadingListDetailView>();
+  detail_panel->SetPreferredSize(gfx::Size(kDetailPanelWidth, 0));
+  detail_panel->SetProperty(
       views::kFlexBehaviorKey,
       views::FlexSpecification(views::MinimumFlexSizeRule::kPreferred,
                                views::MaximumFlexSizeRule::kPreferred));
 
-  detail_panel_->SetMarkReadCallback(base::BindRepeating(
+  detail_panel->SetMarkReadCallback(base::BindRepeating(
       &AstraReadingListPageView::OnDetailMarkRead, base::Unretained(this)));
-  detail_panel_->SetRemoveCallback(base::BindRepeating(
+  detail_panel->SetRemoveCallback(base::BindRepeating(
       &AstraReadingListPageView::OnDetailRemove, base::Unretained(this)));
-  detail_panel_->SetShareCallback(base::BindRepeating(
+  detail_panel->SetShareCallback(base::BindRepeating(
       &AstraReadingListPageView::OnDetailShare, base::Unretained(this)));
+
+  detail_panel_ = parent->AddChildView(std::move(detail_panel));
 }
 
 void AstraReadingListPageView::RebuildSidebar() {
@@ -1483,7 +1487,10 @@ void AstraReadingListPageView::RebuildSidebar() {
 }
 
 void AstraReadingListPageView::RebuildListContent() {
-  content_container_->RemoveAllChildViews();
+  // Remove existing list items (keeping the empty view).
+  for (auto* item : list_items_) {
+    content_container_->RemoveChildView(item);
+  }
   list_items_.clear();
 
   auto entries = GetDisplayedEntries();
@@ -1491,8 +1498,8 @@ void AstraReadingListPageView::RebuildListContent() {
   // Show empty state if no entries.
   if (entries.empty()) {
     empty_view_->SetVisible(true);
-    empty_view_->SetIsSearchEmpty(!model_->GetSearchQuery().empty());
-    content_container_->AddChildView(empty_view_.get());
+    empty_view_->SetIsSearchEmpty(!model_ || !model_->GetSearchQuery().empty());
+    content_container_->InvalidateLayout();
     return;
   }
 
@@ -1588,6 +1595,16 @@ void AstraReadingListPageView::Layout() {
   // Layout the content container items.
   int content_width = content_container_->width();
   int y = 0;
+
+  if (empty_view_ && empty_view_->GetVisible()) {
+    // Center the empty view in the content area.
+    gfx::Size pref = empty_view_->CalculatePreferredSize(
+        views::SizeBounds(content_width, std::nullopt));
+    int x = std::max(0, (content_width - pref.width()) / 2);
+    int y_empty = std::max(0, (content_container_->height() - pref.height()) / 2);
+    empty_view_->SetBoundsRect(gfx::Rect(x, y_empty, pref.width(), pref.height()));
+    return;
+  }
 
   if (display_mode_ == AstraReadingListDisplayMode::kList) {
     for (auto* item : list_items_) {
@@ -1880,7 +1897,7 @@ void AstraReadingListPageView::OnFolderSelected(const std::string& folder_id) {
     // Find folder by id and set folder filter by name.
     for (const auto& folder : model_->GetFolders()) {
       if (folder.id == folder_id) {
-        model_->SetFolderFilter(folder.name);
+        model_->SetFolderFilter(base::UTF16ToUTF8(folder.name));
         break;
       }
     }

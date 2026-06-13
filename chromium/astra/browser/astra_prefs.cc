@@ -143,6 +143,8 @@ void RegisterProfilePrefs(PrefRegistrySimple* registry) {
   registry->RegisterBooleanPref(kPrefSidebarPinned, kDefaultSidebarPinned);
   registry->RegisterStringPref(kPrefSidebarPosition, kDefaultSidebarPosition);
   registry->RegisterBooleanPref(kPrefSidebarAutoHide, kDefaultSidebarAutoHide);
+  registry->RegisterStringPref(kPrefSidebarAutoHideMode,
+                               kDefaultSidebarAutoHideMode);
   registry->RegisterListPref(kPrefSidebarPinnedSections);
   registry->RegisterBooleanPref(kPrefSidebarShowSectionIcons,
                                 kDefaultSidebarShowSectionIcons);

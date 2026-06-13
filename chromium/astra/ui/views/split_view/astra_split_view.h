@@ -218,6 +218,8 @@ struct AstraSplitViewSettings {
 
 // Forward declaration.
 class AstraSplitView;
+class AstraSplitEmptyPaneView;
+class AstraSplitDropIndicator;
 
 // =========================================================================
 // AstraSplitDivider
@@ -536,6 +538,92 @@ class AstraSplitDividerToolbar : public views::View {
 };
 
 // =========================================================================
+// AstraSplitEmptyPaneView
+// =========================================================================
+//
+// Placeholder view shown when a split pane has no content.
+// Displays a message and an "Open tab" button to encourage the user
+// to populate the pane.
+//
+// This is a pure presentation widget — it does not create tabs or
+// manipulate browser state.  It just shows a UI and fires a callback
+// when the button is pressed.
+//
+// Accessibility:
+//   - Role: kGrouping
+//   - Contains a button with "Open tab" label
+class AstraSplitEmptyPaneView : public views::View {
+ public:
+  explicit AstraSplitEmptyPaneView(base::RepeatingClosure open_tab_callback);
+  ~AstraSplitEmptyPaneView() override;
+
+  // Set the message text displayed in the placeholder.
+  void SetMessage(const std::u16string& message);
+  const std::u16string& message() const { return message_; }
+
+  // Set the button label.
+  void SetButtonLabel(const std::u16string& label);
+
+  // Show or hide the "Open tab" button.
+  void SetButtonVisible(bool visible);
+
+  // views::View:
+  void Layout() override;
+  gfx::Size CalculatePreferredSize(
+      const views::SizeBounds& available_size) const override;
+  void OnPaint(gfx::Canvas* canvas) override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
+  void OnThemeChanged() override;
+
+ private:
+  void OnOpenTabButtonPressed();
+
+  std::u16string message_ = u"This pane is empty";
+  raw_ptr<AstraSplitViewButton> open_tab_button_ = nullptr;
+  base::RepeatingClosure open_tab_callback_;
+  bool button_visible_ = true;
+};
+
+// =========================================================================
+// AstraSplitDropIndicator
+// =========================================================================
+//
+// Visual indicator shown when a tab is being dragged over a split pane.
+// Highlights the target pane to show where the dropped tab will land.
+//
+// This is a transient overlay view that appears during drag-and-drop.
+//
+// Accessibility:
+//   - Role: kGrouping
+//   - Name: "Drop target"
+class AstraSplitDropIndicator : public views::View {
+ public:
+  AstraSplitDropIndicator();
+  ~AstraSplitDropIndicator() override;
+
+  // Show the drop indicator at the specified pane position.
+  // |pane_bounds| is the bounds of the target pane in the split view's
+  // coordinate space.
+  void ShowForPane(const gfx::Rect& pane_bounds);
+
+  // Hide the drop indicator.
+  void Hide();
+
+  // Set whether the drop is currently valid (affects appearance).
+  void SetDropValid(bool valid);
+  bool drop_valid() const { return drop_valid_; }
+
+  // views::View:
+  void OnPaint(gfx::Canvas* canvas) override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
+  void OnThemeChanged() override;
+
+ private:
+  bool drop_valid_ = true;
+  bool is_visible_ = false;
+};
+
+// =========================================================================
 // AstraSplitView
 // =========================================================================
 
@@ -770,6 +858,84 @@ class AstraSplitView : public views::View {
   void ClosePane(AstraSplitPane pane);
 
   // ========================================================================
+  // Focus indicator
+  // ========================================================================
+
+  // Show or hide the focus highlight border around the active pane.
+  void SetShowFocusIndicator(bool show);
+  bool show_focus_indicator() const { return show_focus_indicator_; }
+
+  // ========================================================================
+  // Empty pane placeholder
+  // ========================================================================
+
+  // Show or hide the empty pane placeholder for a specific pane.
+  // The placeholder is shown when a pane has no content.
+  void SetEmptyPaneVisible(AstraSplitPane pane, bool visible);
+  bool IsEmptyPaneVisible(AstraSplitPane pane) const;
+
+  // Set the message text for the empty pane placeholder.
+  void SetEmptyPaneMessage(AstraSplitPane pane, const std::u16string& message);
+
+  // ========================================================================
+  // Tab drop indicator
+  // ========================================================================
+
+  // Show the drop indicator on the specified pane (during tab drag).
+  void ShowDropIndicator(AstraSplitPane pane, bool valid = true);
+
+  // Hide the drop indicator.
+  void HideDropIndicator();
+
+  // Returns true if the drop indicator is currently visible.
+  bool IsDropIndicatorVisible() const;
+
+  // ========================================================================
+  // Divider context menu
+  // ========================================================================
+
+  // Show the divider context menu at the given position (in screen coords).
+  // The menu provides layout options: orientation toggle, presets, etc.
+  // TODO(astra): Implement using views::MenuRunner.
+  //   Chromium owner: ui/views/controls/menu/menu_runner.h
+  void ShowDividerContextMenu(const gfx::Point& screen_point);
+
+  // ========================================================================
+  // Snap points visual feedback
+  // ========================================================================
+
+  // Show visual snap point indicators along the divider axis.
+  void SetShowSnapIndicators(bool show);
+  bool show_snap_indicators() const { return show_snap_indicators_; }
+
+  // Set the snap points (as ratios) for visual indicators and snapping.
+  void SetSnapPoints(const std::vector<double>& points);
+  const std::vector<double>& snap_points() const { return snap_points_; }
+
+  // Reset snap points to defaults (25%, 33%, 50%, 67%, 75%).
+  void ResetSnapPointsToDefaults();
+
+  // ========================================================================
+  // Pane action buttons
+  // ========================================================================
+
+  // Show or hide the per-pane action buttons (swap, maximize, close, new tab).
+  void SetShowPaneActionButtons(bool show);
+  bool show_pane_action_buttons() const { return show_pane_action_buttons_; }
+
+  // ========================================================================
+  // Smooth resizing animations
+  // ========================================================================
+
+  // Set whether smooth resizing animations are enabled.
+  void SetAnimateResizing(bool animate);
+  bool animate_resizing() const { return animate_resizing_; }
+
+  // Set the animation duration in milliseconds.
+  void SetAnimationDurationMs(int duration_ms);
+  int animation_duration_ms() const { return animation_duration_ms_; }
+
+  // ========================================================================
   // Accessibility
   // ========================================================================
 
@@ -866,6 +1032,7 @@ class AstraSplitView : public views::View {
   void Layout() override;
   gfx::Size CalculatePreferredSize(
       const views::SizeBounds& available_size) const override;
+  void OnPaint(gfx::Canvas* canvas) override;
   void OnThemeChanged() override;
   void OnBoundsChanged(const gfx::Rect& previous_bounds) override;
 
@@ -959,6 +1126,24 @@ class AstraSplitView : public views::View {
   // Notify observers that a pane was closed.
   void NotifyPaneClosed(AstraSplitPane pane);
 
+  // Paint focus indicator border around the focused pane.
+  void PaintFocusIndicator(gfx::Canvas* canvas);
+
+  // Paint snap point indicators along the divider axis.
+  void PaintSnapIndicators(gfx::Canvas* canvas);
+
+  // Layout the empty pane placeholders.
+  void LayoutEmptyPanes();
+
+  // Layout the drop indicator.
+  void LayoutDropIndicator();
+
+  // Handle "open tab" button press in an empty pane.
+  void OnEmptyPaneOpenTab(AstraSplitPane pane);
+
+  // Get the bounds of a specific pane in this view's coordinate space.
+  gfx::Rect GetPaneBounds(AstraSplitPane pane) const;
+
   raw_ptr<views::View> primary_view_ = nullptr;
   raw_ptr<views::View> secondary_view_ = nullptr;
   raw_ptr<AstraSplitDivider> divider_ = nullptr;
@@ -966,6 +1151,9 @@ class AstraSplitView : public views::View {
   raw_ptr<AstraSplitPaneHeader> primary_header_ = nullptr;
   raw_ptr<AstraSplitPaneHeader> secondary_header_ = nullptr;
   raw_ptr<AstraSplitDividerToolbar> divider_toolbar_ = nullptr;
+  raw_ptr<AstraSplitEmptyPaneView> primary_empty_pane_ = nullptr;
+  raw_ptr<AstraSplitEmptyPaneView> secondary_empty_pane_ = nullptr;
+  raw_ptr<AstraSplitDropIndicator> drop_indicator_ = nullptr;
 
   double ratio_ = 0.5;
   SplitViewOrientation orientation_ = SplitViewOrientation::kHorizontal;
@@ -1011,6 +1199,33 @@ class AstraSplitView : public views::View {
 
   // Whether the minimap is currently visible.
   bool minimap_visible_ = false;
+
+  // Whether focus indicator (highlight border) is shown around the active pane.
+  bool show_focus_indicator_ = false;
+
+  // Whether snap point visual indicators are shown.
+  bool show_snap_indicators_ = false;
+
+  // Snap points (ratios) for visual indicators and snapping behavior.
+  std::vector<double> snap_points_;
+
+  // Whether per-pane action buttons are shown.
+  bool show_pane_action_buttons_ = false;
+
+  // Whether smooth resizing animations are enabled.
+  bool animate_resizing_ = true;
+
+  // Animation duration in milliseconds.
+  int animation_duration_ms_ = 150;
+
+  // Whether the drop indicator is currently visible.
+  bool drop_indicator_visible_ = false;
+
+  // Which pane the drop indicator is shown on (when visible).
+  AstraSplitPane drop_indicator_pane_ = AstraSplitPane::kPrimary;
+
+  // Whether the drop is valid (affects indicator appearance).
+  bool drop_valid_ = true;
 
   // Observers for split view state changes.
   base::ObserverList<Observer> observers_;

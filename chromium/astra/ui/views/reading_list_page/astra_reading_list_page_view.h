@@ -78,6 +78,11 @@ class AstraReadingListItemView : public views::View {
     more_callback_ = std::move(callback);
   }
 
+  // Layout constants (public for use by parent layout).
+  static constexpr int kListItemHeight = 120;
+  static constexpr int kGridItemWidth = 280;
+  static constexpr int kGridItemHeight = 200;
+
   // views::View:
   void OnPaint(gfx::Canvas* canvas) override;
   gfx::Size CalculatePreferredSize(
@@ -423,13 +428,13 @@ class AstraReadingListPageView
   void BuildToolbar();
 
   // Build the sidebar (filters + folders).
-  void BuildSidebar();
+  void BuildSidebar(views::View* parent);
 
   // Build the main content area.
-  void BuildContent();
+  void BuildContent(views::View* parent);
 
   // Build the detail panel.
-  void BuildDetailPanel();
+  void BuildDetailPanel(views::View* parent);
 
   // Rebuild the sidebar filter and folder lists from the model.
   void RebuildSidebar();

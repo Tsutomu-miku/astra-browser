@@ -32,6 +32,10 @@ std::string AstraSplitLayoutModeToString(AstraSplitLayoutMode mode) {
       return "grid_two_by_two";
     case AstraSplitLayoutMode::kGridThreeByTwo:
       return "grid_three_by_two";
+    case AstraSplitLayoutMode::kPictureInPicture:
+      return "picture_in_picture";
+    case AstraSplitLayoutMode::kTabShift:
+      return "tab_shift";
   }
   return "two_pane_horizontal";
 }
@@ -51,6 +55,12 @@ AstraSplitLayoutMode AstraSplitLayoutModeFromString(const std::string& value) {
   }
   if (value == "grid_three_by_two") {
     return AstraSplitLayoutMode::kGridThreeByTwo;
+  }
+  if (value == "picture_in_picture") {
+    return AstraSplitLayoutMode::kPictureInPicture;
+  }
+  if (value == "tab_shift") {
+    return AstraSplitLayoutMode::kTabShift;
   }
   return AstraSplitLayoutMode::kTwoPaneHorizontal;
 }
@@ -121,6 +131,10 @@ std::u16string AstraSplitLayoutModeToName(AstraSplitLayoutMode mode) {
       return u"Grid (2x2)";
     case AstraSplitLayoutMode::kGridThreeByTwo:
       return u"Grid (3x2)";
+    case AstraSplitLayoutMode::kPictureInPicture:
+      return u"Picture in Picture";
+    case AstraSplitLayoutMode::kTabShift:
+      return u"Tab Shift";
   }
   return u"Split View";
 }
@@ -132,6 +146,7 @@ std::u16string AstraSplitLayoutModeToName(AstraSplitLayoutMode mode) {
 AstraSplitViewModel::AstraSplitViewModel(AstraSplitLayoutMode mode)
     : layout_mode_(mode) {
   InitializeDividers();
+  ResetSnapPointsToDefaults();
 }
 
 AstraSplitViewModel::~AstraSplitViewModel() {
@@ -197,6 +212,12 @@ int AstraSplitViewModel::GetColumnCount() const {
       return 2;
     case AstraSplitLayoutMode::kGridThreeByTwo:
       return 3;
+    case AstraSplitLayoutMode::kPictureInPicture:
+      // PiP has 2 columns conceptually (main + floating), but layout is free-form.
+      return 2;
+    case AstraSplitLayoutMode::kTabShift:
+      // Tab shift: narrow sidebar + main content.
+      return 2;
   }
   return 1;
 }
@@ -213,6 +234,12 @@ int AstraSplitViewModel::GetRowCount() const {
       return 2;
     case AstraSplitLayoutMode::kGridThreeByTwo:
       return 2;
+    case AstraSplitLayoutMode::kPictureInPicture:
+      // PiP: 1 row with a floating overlay.
+      return 1;
+    case AstraSplitLayoutMode::kTabShift:
+      // Tab shift: 1 row with sidebar + main.
+      return 1;
   }
   return 1;
 }
@@ -483,6 +510,10 @@ void AstraSplitViewModel::ToggleOrientation() {
     case AstraSplitLayoutMode::kGridThreeByTwo:
       // For grids, we don't toggle — it's already both horizontal and vertical.
       break;
+    case AstraSplitLayoutMode::kPictureInPicture:
+    case AstraSplitLayoutMode::kTabShift:
+      // PiP and TabShift are primarily horizontal layouts; no toggle needed.
+      break;
   }
 }
 
@@ -497,6 +528,10 @@ bool AstraSplitViewModel::IsHorizontal() const {
     case AstraSplitLayoutMode::kGridTwoByTwo:
     case AstraSplitLayoutMode::kGridThreeByTwo:
       // Grid layouts have both axes; primary axis is considered horizontal.
+      return true;
+    case AstraSplitLayoutMode::kPictureInPicture:
+    case AstraSplitLayoutMode::kTabShift:
+      // PiP and TabShift are primarily horizontal layouts.
       return true;
   }
   return true;
@@ -631,6 +666,10 @@ int AstraSplitViewModel::DividerCountForMode(AstraSplitLayoutMode mode) {
       return 2;  // 1 column divider + 1 row divider
     case AstraSplitLayoutMode::kGridThreeByTwo:
       return 3;  // 2 column dividers + 1 row divider
+    case AstraSplitLayoutMode::kPictureInPicture:
+      return 1;  // Conceptual divider between main and PiP pane
+    case AstraSplitLayoutMode::kTabShift:
+      return 1;  // Divider between sidebar and main content
   }
   return 0;
 }
@@ -648,6 +687,10 @@ int AstraSplitViewModel::PaneCountForMode(AstraSplitLayoutMode mode) {
       return 4;
     case AstraSplitLayoutMode::kGridThreeByTwo:
       return 6;
+    case AstraSplitLayoutMode::kPictureInPicture:
+      return 2;  // Main pane + PiP pane
+    case AstraSplitLayoutMode::kTabShift:
+      return 2;  // Sidebar pane + main pane
   }
   return 1;
 }
@@ -755,6 +798,365 @@ void AstraSplitViewModel::NotifyResizeBehaviorChanged() {
 void AstraSplitViewModel::NotifyDestroyed() {
   for (AstraSplitViewModelObserver& observer : observers_) {
     observer.OnSplitViewModelDestroyed();
+  }
+}
+
+// =========================================================================
+// Pane headers
+// =========================================================================
+
+void AstraSplitViewModel::SetShowPaneHeaders(bool show) {
+  if (show_pane_headers_ == show) {
+    return;
+  }
+  show_pane_headers_ = show;
+  NotifyPaneHeadersVisibilityChanged();
+}
+
+// =========================================================================
+// Pane toolbars
+// =========================================================================
+
+void AstraSplitViewModel::SetShowPaneToolbars(bool show) {
+  if (show_pane_toolbars_ == show) {
+    return;
+  }
+  show_pane_toolbars_ = show;
+  NotifyPaneToolbarsVisibilityChanged();
+}
+
+// =========================================================================
+// Workspace association
+// =========================================================================
+
+void AstraSplitViewModel::SetWorkspaceId(const std::string& workspace_id) {
+  if (workspace_id_ == workspace_id) {
+    return;
+  }
+  workspace_id_ = workspace_id;
+  NotifyWorkspaceIdChanged();
+}
+
+bool AstraSplitViewModel::HasWorkspaceAssociation() const {
+  return !workspace_id_.empty();
+}
+
+// =========================================================================
+// Saved layout presets
+// =========================================================================
+
+void AstraSplitViewModel::SaveLayoutPreset(const std::string& name) {
+  if (name.empty()) {
+    return;
+  }
+  saved_presets_[name] = SerializeToString();
+  NotifyLayoutPresetSaved(name);
+}
+
+bool AstraSplitViewModel::LoadLayoutPreset(const std::string& name) {
+  auto it = saved_presets_.find(name);
+  if (it == saved_presets_.end()) {
+    return false;
+  }
+  bool success = DeserializeFromString(it->second);
+  if (success) {
+    NotifyLayoutPresetLoaded(name);
+  }
+  return success;
+}
+
+bool AstraSplitViewModel::DeleteLayoutPreset(const std::string& name) {
+  auto it = saved_presets_.find(name);
+  if (it == saved_presets_.end()) {
+    return false;
+  }
+  saved_presets_.erase(it);
+  return true;
+}
+
+bool AstraSplitViewModel::HasLayoutPreset(const std::string& name) const {
+  return saved_presets_.find(name) != saved_presets_.end();
+}
+
+std::vector<std::string> AstraSplitViewModel::GetLayoutPresetNames() const {
+  std::vector<std::string> names;
+  names.reserve(saved_presets_.size());
+  for (const auto& pair : saved_presets_) {
+    names.push_back(pair.first);
+  }
+  return names;
+}
+
+size_t AstraSplitViewModel::GetPresetCount() const {
+  return saved_presets_.size();
+}
+
+// =========================================================================
+// Snap points
+// =========================================================================
+
+void AstraSplitViewModel::SetSnapEnabled(bool enabled) {
+  if (snap_enabled_ == enabled) {
+    return;
+  }
+  snap_enabled_ = enabled;
+  NotifySnapEnabledChanged();
+}
+
+void AstraSplitViewModel::SetSnapPoints(const std::vector<double>& points) {
+  snap_points_ = points;
+  // Sort for consistency.
+  std::sort(snap_points_.begin(), snap_points_.end());
+}
+
+void AstraSplitViewModel::ResetSnapPointsToDefaults() {
+  snap_points_ = {0.25, 1.0 / 3.0, 0.5, 2.0 / 3.0, 0.75};
+}
+
+double AstraSplitViewModel::SnapToNearestPoint(double ratio,
+                                                double tolerance) const {
+  if (!snap_enabled_ || snap_points_.empty()) {
+    return ratio;
+  }
+
+  double best = ratio;
+  double best_distance = tolerance;
+
+  for (double point : snap_points_) {
+    double distance = std::abs(ratio - point);
+    if (distance < best_distance) {
+      best_distance = distance;
+      best = point;
+    }
+  }
+
+  return best;
+}
+
+// =========================================================================
+// Pane maximize / restore
+// =========================================================================
+
+void AstraSplitViewModel::MaximizePane(AstraSplitPaneId pane_id) {
+  if (!IsValidPaneId(pane_id)) {
+    return;
+  }
+  if (is_pane_maximized_ && maximized_pane_ == pane_id) {
+    return;
+  }
+
+  // Save current ratios for restore.
+  pre_maximize_ratios_ = divider_ratios_;
+
+  is_pane_maximized_ = true;
+  maximized_pane_ = pane_id;
+
+  // TODO(astra): For multi-pane layouts, compute the correct ratios to
+  //   maximize a specific pane.  For 2-pane layouts, the maximized pane
+  //   takes all space except the minimum for the other pane.
+  //   For now, we set ratios to maximize the first or last pane based on
+  //   whether the pane index is 0 or the last one.
+  //
+  //   Chromium owner: views::View layout system.
+  //   Patch point: No patch needed — pure layout logic.
+
+  int pane_index = static_cast<int>(pane_id);
+  int pane_count = GetPaneCount();
+
+  if (pane_count == 2) {
+    // 2-pane: maximize one pane, minimize the other.
+    if (pane_index == 0) {
+      // Pane 0 (primary) maximized — divider near the end.
+      SetDividerRatio(AstraSplitDividerId::kDivider0, 1.0 - kMinPaneRatio);
+    } else {
+      // Pane 1 (secondary) maximized — divider near the start.
+      SetDividerRatio(AstraSplitDividerId::kDivider0, kMinPaneRatio);
+    }
+  } else {
+    // For multi-pane: approximate by setting ratios to give the pane
+    // as much space as possible.  Simplified implementation.
+    DLOG(WARNING) << "MaximizePane for multi-pane layouts is simplified";
+  }
+
+  NotifyPaneMaximized(pane_id);
+}
+
+void AstraSplitViewModel::RestoreFromMaximized() {
+  if (!is_pane_maximized_) {
+    return;
+  }
+
+  AstraSplitPaneId restored_pane = maximized_pane_;
+  is_pane_maximized_ = false;
+
+  // Restore saved ratios.
+  if (pre_maximize_ratios_.size() == divider_ratios_.size()) {
+    divider_ratios_ = pre_maximize_ratios_;
+    for (int i = 0; i < static_cast<int>(divider_ratios_.size()); ++i) {
+      NotifyDividerPositionChanged(static_cast<AstraSplitDividerId>(i));
+    }
+  }
+  pre_maximize_ratios_.clear();
+
+  NotifyPaneRestored(restored_pane);
+}
+
+bool AstraSplitViewModel::IsPaneMaximized() const {
+  return is_pane_maximized_;
+}
+
+absl::optional<AstraSplitPaneId> AstraSplitViewModel::GetMaximizedPane() const {
+  if (!is_pane_maximized_) {
+    return absl::nullopt;
+  }
+  return maximized_pane_;
+}
+
+void AstraSplitViewModel::ToggleFocusedPaneMaximized() {
+  if (is_pane_maximized_) {
+    RestoreFromMaximized();
+  } else {
+    MaximizePane(focused_pane_);
+  }
+}
+
+// =========================================================================
+// Tab-to-split / split-to-tab conversion
+// =========================================================================
+
+void AstraSplitViewModel::NotifyTabToSplitConverted(AstraSplitPaneId pane_id) {
+  if (!IsValidPaneId(pane_id)) {
+    return;
+  }
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitTabToSplitConverted(pane_id);
+  }
+}
+
+void AstraSplitViewModel::NotifySplitToTabConverted(AstraSplitPaneId pane_id) {
+  if (!IsValidPaneId(pane_id)) {
+    return;
+  }
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitSplitToTabConverted(pane_id);
+  }
+}
+
+// =========================================================================
+// Cycle layout modes
+// =========================================================================
+
+void AstraSplitViewModel::CycleNextLayoutMode() {
+  AstraSplitLayoutMode next;
+  switch (layout_mode_) {
+    case AstraSplitLayoutMode::kTwoPaneHorizontal:
+      next = AstraSplitLayoutMode::kTwoPaneVertical;
+      break;
+    case AstraSplitLayoutMode::kTwoPaneVertical:
+      next = AstraSplitLayoutMode::kThreePaneHorizontal;
+      break;
+    case AstraSplitLayoutMode::kThreePaneHorizontal:
+      next = AstraSplitLayoutMode::kThreePaneVertical;
+      break;
+    case AstraSplitLayoutMode::kThreePaneVertical:
+      next = AstraSplitLayoutMode::kGridTwoByTwo;
+      break;
+    case AstraSplitLayoutMode::kGridTwoByTwo:
+      next = AstraSplitLayoutMode::kGridThreeByTwo;
+      break;
+    case AstraSplitLayoutMode::kGridThreeByTwo:
+      next = AstraSplitLayoutMode::kPictureInPicture;
+      break;
+    case AstraSplitLayoutMode::kPictureInPicture:
+      next = AstraSplitLayoutMode::kTabShift;
+      break;
+    case AstraSplitLayoutMode::kTabShift:
+      next = AstraSplitLayoutMode::kTwoPaneHorizontal;
+      break;
+  }
+  SetLayoutMode(next);
+}
+
+void AstraSplitViewModel::CyclePreviousLayoutMode() {
+  AstraSplitLayoutMode prev;
+  switch (layout_mode_) {
+    case AstraSplitLayoutMode::kTwoPaneHorizontal:
+      prev = AstraSplitLayoutMode::kTabShift;
+      break;
+    case AstraSplitLayoutMode::kTwoPaneVertical:
+      prev = AstraSplitLayoutMode::kTwoPaneHorizontal;
+      break;
+    case AstraSplitLayoutMode::kThreePaneHorizontal:
+      prev = AstraSplitLayoutMode::kTwoPaneVertical;
+      break;
+    case AstraSplitLayoutMode::kThreePaneVertical:
+      prev = AstraSplitLayoutMode::kThreePaneHorizontal;
+      break;
+    case AstraSplitLayoutMode::kGridTwoByTwo:
+      prev = AstraSplitLayoutMode::kThreePaneVertical;
+      break;
+    case AstraSplitLayoutMode::kGridThreeByTwo:
+      prev = AstraSplitLayoutMode::kGridTwoByTwo;
+      break;
+    case AstraSplitLayoutMode::kPictureInPicture:
+      prev = AstraSplitLayoutMode::kGridThreeByTwo;
+      break;
+    case AstraSplitLayoutMode::kTabShift:
+      prev = AstraSplitLayoutMode::kPictureInPicture;
+      break;
+  }
+  SetLayoutMode(prev);
+}
+
+// =========================================================================
+// Extended observer notification helpers
+// =========================================================================
+
+void AstraSplitViewModel::NotifyPaneHeadersVisibilityChanged() {
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitPaneHeadersVisibilityChanged(show_pane_headers_);
+  }
+}
+
+void AstraSplitViewModel::NotifyPaneToolbarsVisibilityChanged() {
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitPaneToolbarsVisibilityChanged(show_pane_toolbars_);
+  }
+}
+
+void AstraSplitViewModel::NotifyWorkspaceIdChanged() {
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitWorkspaceIdChanged(workspace_id_);
+  }
+}
+
+void AstraSplitViewModel::NotifyLayoutPresetSaved(const std::string& name) {
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitLayoutPresetSaved(name);
+  }
+}
+
+void AstraSplitViewModel::NotifyLayoutPresetLoaded(const std::string& name) {
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitLayoutPresetLoaded(name);
+  }
+}
+
+void AstraSplitViewModel::NotifySnapEnabledChanged() {
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitSnapEnabledChanged(snap_enabled_);
+  }
+}
+
+void AstraSplitViewModel::NotifyPaneMaximized(AstraSplitPaneId pane_id) {
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitPaneMaximized(pane_id);
+  }
+}
+
+void AstraSplitViewModel::NotifyPaneRestored(AstraSplitPaneId pane_id) {
+  for (AstraSplitViewModelObserver& observer : observers_) {
+    observer.OnSplitPaneRestored(pane_id);
   }
 }
 

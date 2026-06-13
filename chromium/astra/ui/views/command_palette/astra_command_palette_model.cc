@@ -69,6 +69,8 @@ const char16_t* GetCategoryLabel(AstraCommandCategory category) {
       return u"Settings";
     case AstraCommandCategory::kHelp:
       return u"Help";
+    case AstraCommandCategory::kExtensions:
+      return u"Extensions";
   }
   return u"";
 }
@@ -95,6 +97,8 @@ const char* GetCategoryIconName(AstraCommandCategory category) {
       return "settings";
     case AstraCommandCategory::kHelp:
       return "help";
+    case AstraCommandCategory::kExtensions:
+      return "extension";
   }
   return "help";
 }
@@ -155,6 +159,22 @@ const ChromeCommandEntry kChromeCommands[] = {
      "close_window"},
     {IDC_SELECT_TAB_0, u"Switch to Tab 1", u"Jump to the first tab", u"⌘1",
      AstraCommandType::kTab, AstraCommandCategory::kTabs, "tab_1"},
+    {IDC_SELECT_TAB_1, u"Switch to Tab 2", u"Jump to the second tab", u"⌘2",
+     AstraCommandType::kTab, AstraCommandCategory::kTabs, "tab_2"},
+    {IDC_SELECT_TAB_2, u"Switch to Tab 3", u"Jump to the third tab", u"⌘3",
+     AstraCommandType::kTab, AstraCommandCategory::kTabs, "tab_3"},
+    {IDC_SELECT_TAB_3, u"Switch to Tab 4", u"Jump to the fourth tab", u"⌘4",
+     AstraCommandType::kTab, AstraCommandCategory::kTabs, "tab_4"},
+    {IDC_SELECT_TAB_4, u"Switch to Tab 5", u"Jump to the fifth tab", u"⌘5",
+     AstraCommandType::kTab, AstraCommandCategory::kTabs, "tab_5"},
+    {IDC_SELECT_TAB_5, u"Switch to Tab 6", u"Jump to the sixth tab", u"⌘6",
+     AstraCommandType::kTab, AstraCommandCategory::kTabs, "tab_6"},
+    {IDC_SELECT_TAB_6, u"Switch to Tab 7", u"Jump to the seventh tab", u"⌘7",
+     AstraCommandType::kTab, AstraCommandCategory::kTabs, "tab_7"},
+    {IDC_SELECT_TAB_7, u"Switch to Tab 8", u"Jump to the eighth tab", u"⌘8",
+     AstraCommandType::kTab, AstraCommandCategory::kTabs, "tab_8"},
+    {IDC_SELECT_LAST_TAB, u"Switch to Last Tab", u"Jump to the last tab", u"⌘9",
+     AstraCommandType::kTab, AstraCommandCategory::kTabs, "tab_last"},
     {IDC_SELECT_NEXT_TAB,
      u"Next Tab",
      u"Switch to the next tab",
@@ -334,11 +354,11 @@ const ChromeCommandEntry kChromeCommands[] = {
     {IDC_OPTIONS, u"Settings", u"Open browser settings", u"⌘,",
      AstraCommandType::kSetting, AstraCommandCategory::kSettings, "settings"},
     {IDC_MANAGE_EXTENSIONS,
-     u"Extensions",
-     u"Manage installed extensions",
+     u"Manage Extensions",
+     u"Open the extensions management page",
      u"",
      AstraCommandType::kExtension,
-     AstraCommandCategory::kTools,
+     AstraCommandCategory::kExtensions,
      "extension"},
     {IDC_PASSWORD_MANAGER,
      u"Password Manager",
@@ -846,6 +866,8 @@ double GetCategoryWeightInternal(AstraCommandCategory category) {
       return -0.1;
     case AstraCommandCategory::kHelp:
       return -0.2;
+    case AstraCommandCategory::kExtensions:
+      return -0.05;
   }
   return 0.0;
 }
@@ -1617,6 +1639,125 @@ void AstraCommandPaletteModel::ClearRecentCommands() {
 }
 
 // =========================================================================
+// Pinned / favorite commands
+// =========================================================================
+
+std::vector<AstraCommandItem> AstraCommandPaletteModel::GetPinnedCommands()
+    const {
+  std::vector<AstraCommandItem> results;
+  std::unordered_map<int, const AstraCommandItem*> id_to_cmd;
+  for (const auto& cmd : commands_) {
+    id_to_cmd[cmd.command_id] = &cmd;
+  }
+
+  for (int cmd_id : pinned_command_ids_) {
+    auto it = id_to_cmd.find(cmd_id);
+    if (it != id_to_cmd.end()) {
+      AstraCommandItem item = *it->second;
+      item.is_pinned = true;
+      results.push_back(std::move(item));
+    }
+  }
+
+  return results;
+}
+
+bool AstraCommandPaletteModel::PinCommand(int command_id) {
+  int idx = FindCommandIndex(command_id);
+  if (idx < 0) {
+    return false;
+  }
+
+  int pinned_idx = FindPinnedIndex(command_id);
+  if (pinned_idx >= 0) {
+    return false;  // Already pinned.
+  }
+
+  pinned_command_ids_.push_back(command_id);
+  commands_[idx].is_pinned = true;
+
+  UpdateResults();
+
+  // Notify new-style observers.
+  for (auto& observer : observers_) {
+    observer.OnPinnedCommandsChanged(this);
+    observer.OnSearchResultsChanged(this);
+  }
+
+  // Notify legacy observers.
+  for (auto& observer : legacy_observers_) {
+    observer.OnPinnedCommandsChanged();
+    observer.OnModelChanged();
+  }
+
+  return true;
+}
+
+bool AstraCommandPaletteModel::UnpinCommand(int command_id) {
+  int idx = FindCommandIndex(command_id);
+  int pinned_idx = FindPinnedIndex(command_id);
+  if (pinned_idx < 0) {
+    return false;
+  }
+
+  pinned_command_ids_.erase(pinned_command_ids_.begin() + pinned_idx);
+  if (idx >= 0) {
+    commands_[idx].is_pinned = false;
+  }
+
+  UpdateResults();
+
+  // Notify new-style observers.
+  for (auto& observer : observers_) {
+    observer.OnPinnedCommandsChanged(this);
+    observer.OnSearchResultsChanged(this);
+  }
+
+  // Notify legacy observers.
+  for (auto& observer : legacy_observers_) {
+    observer.OnPinnedCommandsChanged();
+    observer.OnModelChanged();
+  }
+
+  return true;
+}
+
+bool AstraCommandPaletteModel::IsCommandPinned(int command_id) const {
+  return FindPinnedIndex(command_id) >= 0;
+}
+
+bool AstraCommandPaletteModel::ToggleCommandPinned(int command_id) {
+  if (IsCommandPinned(command_id)) {
+    UnpinCommand(command_id);
+    return false;
+  } else {
+    PinCommand(command_id);
+    return true;
+  }
+}
+
+size_t AstraCommandPaletteModel::GetPinnedCommandCount() const {
+  return pinned_command_ids_.size();
+}
+
+int AstraCommandPaletteModel::FindPinnedIndex(int command_id) const {
+  for (size_t i = 0; i < pinned_command_ids_.size(); ++i) {
+    if (pinned_command_ids_[i] == command_id) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+void AstraCommandPaletteModel::ApplyPinnedStatus() {
+  std::unordered_set<int> pinned_set(pinned_command_ids_.begin(),
+                                     pinned_command_ids_.end());
+  for (auto& cmd : commands_) {
+    cmd.is_pinned = pinned_set.count(cmd.command_id) > 0;
+  }
+}
+
+// =========================================================================
 // Default commands
 // =========================================================================
 
@@ -1674,6 +1815,108 @@ std::vector<AstraCommandItem> AstraCommandPaletteModel::GetDefaultCommands()
   }
 
   return results;
+}
+
+// =========================================================================
+// Suggested commands ("did you mean")
+// =========================================================================
+//
+// When a query returns no or few results, we compute suggestions based on
+// fuzzy matching against the full command index.  This provides "did you
+// mean" functionality for typos and near-misses.
+// =========================================================================
+
+std::vector<AstraCommandItem> AstraCommandPaletteModel::GetSuggestedCommands(
+    const std::u16string& query) const {
+  std::vector<AstraCommandItem> suggestions;
+
+  if (query.empty()) {
+    return suggestions;
+  }
+
+  // Use fuzzy matching to find commands that are "close" to the query.
+  // We search across titles, descriptions, and aliases.
+  std::vector<std::pair<double, const AstraCommandItem*>> scored;
+
+  for (const auto& cmd : commands_) {
+    if (!IsCategoryVisible(cmd.category)) {
+      continue;
+    }
+
+    double score = -1.0;
+
+    // Try fuzzy match on title.
+    if (FuzzyMatch(query, cmd.title)) {
+      score = 30.0;
+      // Bonus for shorter queries (more likely to be intentional acronyms).
+      if (query.size() <= 3) {
+        score += 10.0;
+      }
+    }
+
+    // Try fuzzy match on description.
+    if (score < 0 && FuzzyMatch(query, cmd.description)) {
+      score = 15.0;
+    }
+
+    // Try fuzzy match on aliases.
+    if (score < 0) {
+      for (const auto& alias : cmd.aliases) {
+        if (FuzzyMatch(query, alias)) {
+          score = 20.0;
+          break;
+        }
+      }
+    }
+
+    // Try acronym match (often catches typos).
+    if (score < 0 && IsAcronymMatch(query, cmd.title)) {
+      score = 40.0;
+    }
+
+    if (score >= 0) {
+      // Apply usage boost.
+      score += cmd.use_count * 2.0;
+      // Apply category weight.
+      score *= (1.0 + GetCategoryWeightInternal(cmd.category));
+      scored.push_back({score, &cmd});
+    }
+  }
+
+  // Sort by score (highest first).
+  std::sort(scored.begin(), scored.end(),
+            [](const auto& a, const auto& b) {
+              return a.first > b.first;
+            });
+
+  // Cap at 5 suggestions.
+  constexpr size_t kMaxSuggestions = 5;
+  size_t count = std::min(scored.size(), kMaxSuggestions);
+  for (size_t i = 0; i < count; ++i) {
+    AstraCommandItem item = *scored[i].second;
+    item.relevance_score = scored[i].first;
+    suggestions.push_back(std::move(item));
+  }
+
+  // Cache the suggestions.
+  suggestions_ = suggestions;
+
+  return suggestions;
+}
+
+void AstraCommandPaletteModel::UpdateSuggestions() const {
+  if (!show_suggestions_ || query_.empty()) {
+    suggestions_.clear();
+    return;
+  }
+
+  // Only compute suggestions if there are few or no results.
+  if (results_.size() >= 3) {
+    suggestions_.clear();
+    return;
+  }
+
+  GetSuggestedCommands(query_);
 }
 
 // =========================================================================

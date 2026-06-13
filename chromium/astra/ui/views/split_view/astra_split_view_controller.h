@@ -525,6 +525,81 @@ class AstraSplitViewController : public AstraSplitView::Observer {
                           content::WebContents* dragged_contents);
 
   // ========================================================================
+  // Workspace sync
+  // ========================================================================
+
+  // Save the current split view state for the given workspace.
+  // The state is stored in the model's workspace association and can be
+  // restored later when switching back to this workspace.
+  //
+  // TODO(astra): Persist workspace split state to PrefService or
+  //   AstraWorkspaceService.  Chromium owner: PrefService for profile-scoped
+  //   persistence, or a dedicated workspace service.
+  void SaveSplitStateForWorkspace(const std::string& workspace_id);
+
+  // Restore split view state for the given workspace.
+  // Returns true if state was found and restored.
+  bool RestoreSplitStateForWorkspace(const std::string& workspace_id);
+
+  // Clear saved split state for a workspace.
+  void ClearWorkspaceState(const std::string& workspace_id);
+
+  // Returns true if there is saved split state for the given workspace.
+  bool HasWorkspaceState(const std::string& workspace_id) const;
+
+  // ========================================================================
+  // Focus cycling
+  // ========================================================================
+
+  // Cycle focus to the next pane (wraps around).
+  // Bound to F6 by default.
+  void CycleFocusNextPane();
+
+  // Cycle focus to the previous pane.
+  void CycleFocusPreviousPane();
+
+  // Cycle focus between all panes (F6 behavior).
+  // Returns the pane that now has focus.
+  AstraSplitPaneId CycleFocus();
+
+  // ========================================================================
+  // History / back-forward per pane
+  // ========================================================================
+
+  // Navigate back in the focused pane.
+  void GoBackInFocusedPane();
+
+  // Navigate forward in the focused pane.
+  void GoForwardInFocusedPane();
+
+  // Reload the focused pane.
+  void ReloadFocusedPane();
+
+  // Navigate back in the specified pane.
+  // TODO(astra): Wire to content::NavigationController.
+  //   Chromium owner: content::WebContents::GetController()
+  void GoBackInPane(AstraSplitPaneId pane_id);
+
+  // Navigate forward in the specified pane.
+  void GoForwardInPane(AstraSplitPaneId pane_id);
+
+  // Reload the specified pane.
+  void ReloadPane(AstraSplitPaneId pane_id);
+
+  // ========================================================================
+  // Tab-to-split / split-to-tab conversion
+  // ========================================================================
+
+  // Convert a regular tab into a split pane (add it to the split view).
+  // Returns true if the conversion was successful.
+  bool ConvertTabToSplit(content::WebContents* web_contents,
+                          AstraSplitPaneId target_pane);
+
+  // Convert a split pane back to a regular tab (remove from split view).
+  // Returns true if the conversion was successful.
+  bool ConvertSplitToTab(AstraSplitPaneId pane_id);
+
+  // ========================================================================
   // Model access (for testing and advanced use cases)
   // ========================================================================
 
@@ -699,6 +774,9 @@ class AstraSplitViewController : public AstraSplitView::Observer {
   // The model is the source of truth for split view state.
   // The controller mediates between the model and the view.
   AstraSplitViewModel model_;
+
+  // Saved workspace split states: workspace_id -> serialized model state.
+  std::map<std::string, std::string> workspace_states_;
 };
 
 }  // namespace astra

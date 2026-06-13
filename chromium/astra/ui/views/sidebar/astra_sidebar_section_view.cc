@@ -34,6 +34,7 @@ constexpr int kSectionVerticalPadding = 8;
 constexpr int kSectionItemSpacing = 2;
 constexpr int kSectionHeaderFontSizeDelta = 1;
 constexpr int kChevronSize = 12;
+constexpr int kDragHandleSize = 12;
 constexpr int kHeaderIconSize = 16;
 constexpr int kCountBadgePaddingHorizontal = 6;
 constexpr int kCountBadgePaddingVertical = 1;
@@ -115,6 +116,12 @@ void AstraSidebarSectionView::BuildHeader() {
   header_icon_ = header_view_->AddChildView(std::make_unique<views::ImageView>());
   header_icon_->SetPreferredSize(gfx::Size(kHeaderIconSize, kHeaderIconSize));
   header_icon_->SetVisible(false);
+
+  // Drag handle (initially hidden) — for reordering sections by drag.
+  drag_handle_view_ = header_view_->AddChildView(std::make_unique<views::ImageView>());
+  drag_handle_view_->SetPreferredSize(gfx::Size(kDragHandleSize, kDragHandleSize));
+  drag_handle_view_->SetVisible(false);
+  drag_handle_view_->SetAccessibleName(u"Drag to reorder");
 
   // Chevron (expand/collapse).
   chevron_view_ = header_view_->AddChildView(std::make_unique<views::ImageView>());
@@ -334,6 +341,18 @@ void AstraSidebarSectionView::SetShowChevron(bool show) {
 }
 
 // =========================================================================
+// Drag handle
+// =========================================================================
+
+void AstraSidebarSectionView::SetShowDragHandle(bool show) {
+  if (show_drag_handle_ == show) {
+    return;
+  }
+  show_drag_handle_ = show;
+  UpdateHeaderVisibility();
+}
+
+// =========================================================================
 // Search
 // =========================================================================
 
@@ -402,6 +421,96 @@ void AstraSidebarSectionView::SetSectionColor(SkColor color) {
     // Would apply color filter to the icon image.
   }
   OnThemeChanged();
+}
+
+// =========================================================================
+// Keyboard navigation
+// =========================================================================
+
+void AstraSidebarSectionView::SetSelectedItemIndex(int index) {
+  if (selected_item_index_ == index) {
+    return;
+  }
+
+  // Unselect the old item.
+  if (selected_item_index_ >= 0) {
+    AstraSidebarItemView* old_item = GetItemAt(selected_item_index_);
+    if (old_item) {
+      old_item->SetSelected(false);
+    }
+  }
+
+  selected_item_index_ = index;
+
+  // Select the new item.
+  if (selected_item_index_ >= 0) {
+    AstraSidebarItemView* new_item = GetItemAt(selected_item_index_);
+    if (new_item) {
+      new_item->SetSelected(true);
+      // Scroll to make the selected item visible.
+      // TODO(astra): Implement scroll-to-item behavior.
+    }
+  }
+}
+
+bool AstraSidebarSectionView::SelectNextItem() {
+  size_t count = GetItemCountTyped();
+  if (count == 0) {
+    return false;
+  }
+  int next_index = selected_item_index_ + 1;
+  if (next_index >= static_cast<int>(count)) {
+    next_index = 0;  // wrap around
+  }
+  SetSelectedItemIndex(next_index);
+  return true;
+}
+
+bool AstraSidebarSectionView::SelectPreviousItem() {
+  size_t count = GetItemCountTyped();
+  if (count == 0) {
+    return false;
+  }
+  int prev_index = selected_item_index_ - 1;
+  if (prev_index < 0) {
+    prev_index = static_cast<int>(count) - 1;  // wrap around
+  }
+  SetSelectedItemIndex(prev_index);
+  return true;
+}
+
+bool AstraSidebarSectionView::ActivateSelectedItem() {
+  if (selected_item_index_ < 0) {
+    return false;
+  }
+  AstraSidebarItemView* item = GetItemAt(selected_item_index_);
+  if (!item) {
+    return false;
+  }
+  // Simulate a click on the item.
+  // TODO(astra): Use a proper activation method instead of relying on click.
+  item->OnMousePressed(ui::MouseEvent(ui::ET_MOUSE_PRESSED, gfx::Point(),
+                                      gfx::Point(), base::TimeTicks(),
+                                      ui::EF_LEFT_MOUSE_BUTTON,
+                                      ui::EF_LEFT_MOUSE_BUTTON));
+  item->OnMouseReleased(ui::MouseEvent(ui::ET_MOUSE_RELEASED, gfx::Point(),
+                                       gfx::Point(), base::TimeTicks(),
+                                       ui::EF_LEFT_MOUSE_BUTTON,
+                                       ui::EF_LEFT_MOUSE_BUTTON));
+  return true;
+}
+
+// =========================================================================
+// Animation
+// =========================================================================
+
+void AstraSidebarSectionView::SetAnimated(bool animated) {
+  animated_ = animated;
+  // TODO(astra): Wire up animation for expand/collapse transitions.
+  // When animations are enabled, expand/collapse should smoothly animate
+  // the height of the content view instead of toggling visibility instantly.
+  // Chromium pattern: views::Animation / gfx::SlideAnimation
+  // (ui/gfx/animation/slide_animation.h)
 }
 
 // =========================================================================
@@ -703,11 +812,19 @@ int AstraSidebarSectionView::GetInsertIndexFromY(int y_in_section) const {
 // =========================================================================
 
 void AstraSidebarSectionView::OnAddButtonClicked() {
-  // Subclasses override to handle add button clicks.
+  // Notify the header delegate if one is set.
+  if (header_delegate_) {
+    header_delegate_->OnSectionAddClicked(section_type_);
+  }
 }
 
 void AstraSidebarSectionView::OnMoreButtonClicked() {
-  // Subclasses override to show a context menu for more options.
+  // Show the more options menu via the delegate.
+  if (header_delegate_ && more_button_) {
+    gfx::Point screen_point;
+    views::View::ConvertPointToScreen(more_button_, &screen_point);
+    header_delegate_->OnSectionMoreClicked(section_type_, screen_point);
+  }
 }
 
 void AstraSidebarSectionView::OnSearchQueryChanged(const std::u16string& /*query*/) {
@@ -734,6 +851,11 @@ void AstraSidebarSectionView::UpdateHeaderVisibility() {
   // Icon visibility: show if section_color is set or icon is configured.
   if (header_icon_) {
     header_icon_->SetVisible(section_color_ != SK_ColorTRANSPARENT);
+  }
+
+  // Drag handle visibility.
+  if (drag_handle_view_) {
+    drag_handle_view_->SetVisible(show_drag_handle_);
   }
 
   // Chevron visibility.

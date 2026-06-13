@@ -192,28 +192,45 @@ TEST_F(AstraReadingListModelTest, Search) {
   model_->PopulateSampleEntries();
   size_t total = model_->GetCount();
 
-  // Search for "Chromium".
+  // Search for "Chromium" - should match some entries.
   model_->SetSearchQuery(u"Chromium");
   auto filtered = model_->GetFilteredEntries();
   EXPECT_LT(filtered.size(), total);
   EXPECT_GT(filtered.size(), 0u);
 
+  // Each result should contain the search term in title, preview, site, or url
+  // (case-insensitive).
+  std::u16 query = u"chromium";
   for (const auto& entry : filtered) {
-    std::u16 title_lower = base::i18n::ToLower(entry.title);
-    std::u16 preview_lower = base::i18n::ToLower(entry.preview_text);
-    std::u16 site_lower = base::i18n::ToLower(
-        base::UTF8ToUTF16(entry.site_name));
-    std::u16 url_lower = base::i18n::ToLower(
-        base::UTF8ToUTF16(entry.url));
-    std::u16 query_lower = base::i18n::ToLower(u"Chromium");
+    std::u16 title_lower;
+    for (char16_t c : entry.title) {
+      title_lower += std::towlower(c);
+    }
+    std::u16 preview_lower;
+    for (char16_t c : entry.preview_text) {
+      preview_lower += std::towlower(c);
+    }
+    std::u16 site_lower = base::UTF8ToUTF16(entry.site_name);
+    for (auto& c : site_lower) {
+      c = std::towlower(c);
+    }
+    std::u16 url_lower = base::UTF8ToUTF16(entry.url);
+    for (auto& c : url_lower) {
+      c = std::towlower(c);
+    }
 
-    bool found = title_lower.find(query_lower) != std::u16string::npos ||
-                 preview_lower.find(query_lower) != std::u16string::npos ||
-                 site_lower.find(query_lower) != std::u16string::npos ||
-                 url_lower.find(query_lower) != std::u16string::npos;
+    bool found = title_lower.find(query) != std::u16string::npos ||
+                 preview_lower.find(query) != std::u16string::npos ||
+                 site_lower.find(query) != std::u16string::npos ||
+                 url_lower.find(query) != std::u16string::npos;
     EXPECT_TRUE(found) << "Entry does not match search: "
                        << base::UTF16ToUTF8(entry.title);
   }
+
+  // Search for something that doesn't exist should return empty.
+  model_->SetSearchQuery(u"zzzzzzzzzzzzzzzzzzzzzzzz");
+  auto empty_results = model_->GetFilteredEntries();
+  EXPECT_EQ(0u, empty_results.size());
 
   // Reset search.
   model_->SetSearchQuery(u"");

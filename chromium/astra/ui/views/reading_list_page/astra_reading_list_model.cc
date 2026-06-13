@@ -206,9 +206,10 @@ const AstraReadingListFolder* AstraReadingListModel::FindFolder(
 
 void AstraReadingListModel::UpdateFolderEntryCounts() {
   for (auto& folder : folders_) {
+    std::string folder_name = base::UTF16ToUTF8(folder.name);
     int count = 0;
     for (const auto& entry : all_entries_) {
-      if (entry.folder == folder.name) {
+      if (entry.folder == folder_name) {
         ++count;
       }
     }
@@ -333,18 +334,17 @@ void AstraReadingListModel::RemoveFolder(const std::string& id) {
     return;
   }
 
-  std::u16string folder_name = it->name;
+  std::string folder_name = base::UTF16ToUTF8(it->name);
   folders_.erase(it, folders_.end());
 
   // Move entries from the removed folder to "Unsorted".
   for (auto& entry : all_entries_) {
-    if (base::UTF16ToUTF8(entry.folder.empty() ? u"" : base::UTF8ToUTF16(entry.folder)) ==
-        base::UTF16ToUTF8(folder_name)) {
+    if (entry.folder == folder_name) {
       entry.folder = "Unsorted";
     }
   }
 
-  if (base::UTF8ToUTF16(folder_filter_) == folder_name) {
+  if (folder_filter_ == folder_name) {
     folder_filter_.clear();
   }
 
@@ -360,14 +360,20 @@ void AstraReadingListModel::RenameFolder(const std::string& id,
   if (!folder || folder->name == name) {
     return;
   }
-  std::u16string old_name = folder->name;
+  std::string old_name = base::UTF16ToUTF8(folder->name);
   folder->name = name;
+  std::string new_name = base::UTF16ToUTF8(name);
 
   // Update entries in this folder.
   for (auto& entry : all_entries_) {
-    if (base::UTF8ToUTF16(entry.folder) == old_name) {
-      entry.folder = base::UTF16ToUTF8(name);
+    if (entry.folder == old_name) {
+      entry.folder = new_name;
     }
+  }
+
+  // Update folder filter if needed.
+  if (folder_filter_ == old_name) {
+    folder_filter_ = new_name;
   }
 
   filtered_dirty_ = true;

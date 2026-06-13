@@ -213,6 +213,12 @@ inline constexpr char kPrefSidebarPosition[] = "astra.sidebar.position";
 // leaves the sidebar area.
 inline constexpr char kPrefSidebarAutoHide[] = "astra.sidebar.auto_hide";
 
+// Auto-hide mode for the sidebar (string).
+// Values: "disabled", "click_outside", "hover_leave", "tab_click"
+// Controls when and how the sidebar auto-hides.
+// Default: "disabled" — sidebar stays visible until explicitly hidden.
+inline constexpr char kPrefSidebarAutoHideMode[] = "astra.sidebar.auto_hide_mode";
+
 // List of pinned section IDs in the sidebar (list of strings).
 // Controls which sections (favorites, workspaces, tab stacks, etc.) are
 // shown in the sidebar's pinned area and in what order.
@@ -2461,6 +2467,7 @@ inline constexpr bool kDefaultSidebarVisible = true;
 inline constexpr bool kDefaultSidebarPinned = true;
 inline constexpr char kDefaultSidebarPosition[] = "left";
 inline constexpr bool kDefaultSidebarAutoHide = false;
+inline constexpr char kDefaultSidebarAutoHideMode[] = "disabled";
 inline constexpr bool kDefaultSidebarShowSectionIcons = true;
 inline constexpr bool kDefaultSidebarShowSectionLabels = true;
 inline constexpr bool kDefaultSidebarCompactMode = false;

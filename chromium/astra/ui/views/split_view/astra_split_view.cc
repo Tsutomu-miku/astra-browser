@@ -1094,6 +1094,239 @@ void AstraSplitDividerToolbar::OnThemeChanged() {
 }
 
 // =========================================================================
+// AstraSplitEmptyPaneView
+// =========================================================================
+
+AstraSplitEmptyPaneView::AstraSplitEmptyPaneView(
+    base::RepeatingClosure open_tab_callback)
+    : open_tab_callback_(std::move(open_tab_callback)) {
+  SetPaintToLayer();
+
+  // Create the "Open tab" button.
+  open_tab_button_ =
+      AddChildView(std::make_unique<AstraSplitViewButton>(base::BindRepeating(
+          &AstraSplitEmptyPaneView::OnOpenTabButtonPressed,
+          base::Unretained(this))));
+  open_tab_button_->SetAccessibleName(u"Open tab in this pane");
+  open_tab_button_->SetTooltipText(u"Open a new tab in this pane");
+}
+
+AstraSplitEmptyPaneView::~AstraSplitEmptyPaneView() = default;
+
+void AstraSplitEmptyPaneView::SetMessage(const std::u16string& message) {
+  if (message_ == message) {
+    return;
+  }
+  message_ = message;
+  SchedulePaint();
+  NotifyAccessibilityEvent(ax::mojom::Event::kTextChanged, true);
+}
+
+void AstraSplitEmptyPaneView::SetButtonLabel(const std::u16string& label) {
+  if (open_tab_button_) {
+    open_tab_button_->SetAccessibleName(label);
+    open_tab_button_->SetTooltipText(label);
+  }
+}
+
+void AstraSplitEmptyPaneView::SetButtonVisible(bool visible) {
+  if (button_visible_ == visible) {
+    return;
+  }
+  button_visible_ = visible;
+  if (open_tab_button_) {
+    open_tab_button_->SetVisible(visible);
+  }
+  Layout();
+}
+
+void AstraSplitEmptyPaneView::Layout() {
+  gfx::Rect bounds = GetLocalBounds();
+  const int kButtonSize = 36;
+  const int kButtonOffsetY = 40;  // Below the message text area.
+
+  if (open_tab_button_ && button_visible_) {
+    int x = (bounds.width() - kButtonSize) / 2;
+    int y = bounds.height() / 2 + kButtonOffsetY;
+    open_tab_button_->SetBounds(x, y, kButtonSize, kButtonSize);
+  }
+}
+
+gfx::Size AstraSplitEmptyPaneView::CalculatePreferredSize(
+    const views::SizeBounds& available_size) const {
+  return gfx::Size(200, 150);
+}
+
+void AstraSplitEmptyPaneView::OnPaint(gfx::Canvas* canvas) {
+  views::View::OnPaint(canvas);
+
+  gfx::Rect bounds = GetLocalBounds();
+
+  // Draw background.
+  SkColor bg_color = SK_ColorWHITE;
+  if (GetColorProvider()) {
+    bg_color = GetColorProvider()->GetColor(ui::kColorDialogBackground);
+  }
+  canvas->FillRect(bounds, bg_color);
+
+  // Draw border.
+  SkColor border_color = SK_ColorLTGRAY;
+  if (GetColorProvider()) {
+    border_color = GetColorProvider()->GetColor(ui::kColorSeparator);
+  }
+  canvas->DrawRect(bounds, border_color);
+
+  // Draw message text (simple placeholder - real implementation uses
+  // gfx::Canvas::DrawStringRect or a views::Label).
+  // TODO(astra): Use proper text rendering.
+  //   Chromium owner: ui/gfx/canvas.h — DrawStringRect.
+  //   For now, we just show a dashed border pattern to indicate empty state.
+  //
+  // Draw dashed inner border to indicate empty state.
+  cc::PaintFlags flags;
+  flags.setColor(border_color);
+  flags.setStyle(cc::PaintFlags::kStroke_Style);
+  flags.setStrokeWidth(1);
+  flags.setAntiAlias(true);
+  // Dashed effect via multiple small rectangles (simplified).
+  // Real implementation would use SkDashPathEffect.
+
+  // Draw a simple icon placeholder (centered square with plus sign feel).
+  const int kIconSize = 32;
+  int icon_x = (bounds.width() - kIconSize) / 2;
+  int icon_y = bounds.height() / 2 - kIconSize / 2 - 20;
+  gfx::Rect icon_rect(icon_x, icon_y, kIconSize, kIconSize);
+  canvas->DrawRect(icon_rect, border_color);
+
+  // Draw plus sign inside the icon.
+  int center_x = bounds.width() / 2;
+  int center_y = bounds.height() / 2 - 20;
+  const int kPlusSize = 12;
+  canvas->DrawLine(
+      gfx::Point(center_x - kPlusSize / 2, center_y),
+      gfx::Point(center_x + kPlusSize / 2, center_y),
+      flags);
+  canvas->DrawLine(
+      gfx::Point(center_x, center_y - kPlusSize / 2),
+      gfx::Point(center_x, center_y + kPlusSize / 2),
+      flags);
+}
+
+void AstraSplitEmptyPaneView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  views::View::GetAccessibleNodeData(node_data);
+  node_data->role = ax::mojom::Role::kGrouping;
+  if (!message_.empty()) {
+    node_data->SetName(message_);
+  } else {
+    node_data->SetName(u"Empty pane");
+  }
+}
+
+void AstraSplitEmptyPaneView::OnThemeChanged() {
+  views::View::OnThemeChanged();
+  SchedulePaint();
+}
+
+void AstraSplitEmptyPaneView::OnOpenTabButtonPressed() {
+  if (open_tab_callback_) {
+    open_tab_callback_.Run();
+  }
+}
+
+// =========================================================================
+// AstraSplitDropIndicator
+// =========================================================================
+
+AstraSplitDropIndicator::AstraSplitDropIndicator() {
+  SetPaintToLayer();
+  SetVisible(false);
+}
+
+AstraSplitDropIndicator::~AstraSplitDropIndicator() = default;
+
+void AstraSplitDropIndicator::ShowForPane(const gfx::Rect& pane_bounds) {
+  is_visible_ = true;
+  SetVisible(true);
+  SetBounds(pane_bounds.x(), pane_bounds.y(),
+            pane_bounds.width(), pane_bounds.height());
+  SchedulePaint();
+}
+
+void AstraSplitDropIndicator::Hide() {
+  if (!is_visible_) {
+    return;
+  }
+  is_visible_ = false;
+  SetVisible(false);
+}
+
+void AstraSplitDropIndicator::SetDropValid(bool valid) {
+  if (drop_valid_ == valid) {
+    return;
+  }
+  drop_valid_ = valid;
+  SchedulePaint();
+}
+
+void AstraSplitDropIndicator::OnPaint(gfx::Canvas* canvas) {
+  views::View::OnPaint(canvas);
+
+  if (!is_visible_) {
+    return;
+  }
+
+  gfx::Rect bounds = GetLocalBounds();
+
+  // Use a semi-transparent highlight color.
+  SkColor highlight_color = drop_valid_ ? 0x334285F4 : 0x33D93025;
+  if (GetColorProvider()) {
+    // TODO(astra): Use proper color IDs for drop indicator.
+    if (drop_valid_) {
+      highlight_color = GetColorProvider()->GetColor(
+          ui::kColorFocusableBorderFocused);
+      // Make it semi-transparent.
+      highlight_color = SkColorSetA(highlight_color, 0x33);
+    } else {
+      highlight_color = SkColorSetRGB(0xD9, 0x30, 0x25);
+      highlight_color = SkColorSetA(highlight_color, 0x33);
+    }
+  }
+
+  // Fill with highlight.
+  canvas->FillRect(bounds, highlight_color);
+
+  // Draw border.
+  SkColor border_color = drop_valid_ ? 0xFF4285F4 : 0xFFD93025;
+  if (GetColorProvider()) {
+    if (drop_valid_) {
+      border_color = GetColorProvider()->GetColor(
+          ui::kColorFocusableBorderFocused);
+    } else {
+      border_color = SkColorSetRGB(0xD9, 0x30, 0x25);
+    }
+  }
+
+  cc::PaintFlags flags;
+  flags.setColor(border_color);
+  flags.setStyle(cc::PaintFlags::kStroke_Style);
+  flags.setStrokeWidth(2);
+  flags.setAntiAlias(true);
+  canvas->DrawRect(gfx::Rect(1, 1, bounds.width() - 2, bounds.height() - 2),
+                   flags);
+}
+
+void AstraSplitDropIndicator::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  views::View::GetAccessibleNodeData(node_data);
+  node_data->role = ax::mojom::Role::kGrouping;
+  node_data->SetName(drop_valid_ ? u"Valid drop target" : u"Invalid drop target");
+}
+
+void AstraSplitDropIndicator::OnThemeChanged() {
+  views::View::OnThemeChanged();
+  SchedulePaint();
+}
+
+// =========================================================================
 // AstraSplitView
 // =========================================================================
 
@@ -1110,6 +1343,9 @@ AstraSplitView::AstraSplitView() {
   // Create the minimap (hidden by default).
   minimap_ = AddChildView(std::make_unique<AstraSplitMinimapView>());
   minimap_->SetVisible(false);
+
+  // Initialize default snap points.
+  ResetSnapPointsToDefaults();
 }
 
 AstraSplitView::~AstraSplitView() {
@@ -1790,6 +2026,319 @@ void AstraSplitView::NotifyPaneClosed(AstraSplitPane pane) {
 }
 
 // =========================================================================
+// Focus indicator
+// =========================================================================
+
+void AstraSplitView::SetShowFocusIndicator(bool show) {
+  if (show_focus_indicator_ == show) {
+    return;
+  }
+  show_focus_indicator_ = show;
+  SchedulePaint();
+}
+
+// =========================================================================
+// Empty pane placeholder
+// =========================================================================
+
+void AstraSplitView::SetEmptyPaneVisible(AstraSplitPane pane, bool visible) {
+  raw_ptr<AstraSplitEmptyPaneView>& empty_pane =
+      (pane == AstraSplitPane::kPrimary) ? primary_empty_pane_
+                                          : secondary_empty_pane_;
+
+  if (visible && !empty_pane) {
+    // Create the empty pane view.
+    empty_pane = AddChildView(std::make_unique<AstraSplitEmptyPaneView>(
+        base::BindRepeating(&AstraSplitView::OnEmptyPaneOpenTab,
+                            base::Unretained(this), pane)));
+    empty_pane->SetMessage(
+        pane == AstraSplitPane::kPrimary ? u"Primary pane is empty"
+                                          : u"Secondary pane is empty");
+  }
+
+  if (empty_pane) {
+    empty_pane->SetVisible(visible);
+  }
+
+  InvalidateLayout();
+}
+
+bool AstraSplitView::IsEmptyPaneVisible(AstraSplitPane pane) const {
+  const raw_ptr<AstraSplitEmptyPaneView>& empty_pane =
+      (pane == AstraSplitPane::kPrimary) ? primary_empty_pane_
+                                          : secondary_empty_pane_;
+  return empty_pane && empty_pane->GetVisible();
+}
+
+void AstraSplitView::SetEmptyPaneMessage(AstraSplitPane pane,
+                                          const std::u16string& message) {
+  raw_ptr<AstraSplitEmptyPaneView>& empty_pane =
+      (pane == AstraSplitPane::kPrimary) ? primary_empty_pane_
+                                          : secondary_empty_pane_;
+  if (empty_pane) {
+    empty_pane->SetMessage(message);
+  }
+}
+
+void AstraSplitView::LayoutEmptyPanes() {
+  gfx::Rect bounds = GetLocalBounds();
+  const int kHeaderHeight = 28;
+  int header_offset = show_pane_headers_ ? kHeaderHeight : 0;
+
+  if (orientation_ == SplitViewOrientation::kHorizontal) {
+    int primary_width = static_cast<int>(bounds.width() * ratio_);
+    int divider_thickness = show_handle_ ? divider_width_ : 0;
+
+    if (primary_empty_pane_ && primary_empty_pane_->GetVisible()) {
+      primary_empty_pane_->SetBounds(0, header_offset, primary_width,
+                                     bounds.height() - header_offset);
+    }
+
+    int secondary_x = primary_width + divider_thickness;
+    int secondary_width = bounds.width() - secondary_x;
+    if (secondary_empty_pane_ && secondary_empty_pane_->GetVisible()) {
+      secondary_empty_pane_->SetBounds(
+          secondary_x, header_offset, secondary_width,
+          bounds.height() - header_offset);
+    }
+  } else {
+    int primary_height = static_cast<int>(bounds.height() * ratio_);
+    int divider_thickness = show_handle_ ? divider_width_ : 0;
+
+    if (primary_empty_pane_ && primary_empty_pane_->GetVisible()) {
+      primary_empty_pane_->SetBounds(0, header_offset, bounds.width(),
+                                     primary_height - header_offset);
+    }
+
+    int secondary_y = primary_height + divider_thickness;
+    int secondary_height = bounds.height() - secondary_y;
+    if (secondary_empty_pane_ && secondary_empty_pane_->GetVisible()) {
+      secondary_empty_pane_->SetBounds(
+          0, secondary_y, bounds.width(), secondary_height);
+    }
+  }
+}
+
+void AstraSplitView::OnEmptyPaneOpenTab(AstraSplitPane pane) {
+  // TODO(astra): Notify observers that the user requested a new tab
+  //   in the empty pane.  The controller handles actual tab creation.
+  //   Chromium owner: TabStripModel::AddWebContents
+  //   (chrome/browser/ui/tabs/tab_strip_model.h)
+  DLOG(INFO) << "Open tab requested in "
+             << (pane == AstraSplitPane::kPrimary ? "primary" : "secondary")
+             << " pane";
+}
+
+// =========================================================================
+// Tab drop indicator
+// =========================================================================
+
+void AstraSplitView::ShowDropIndicator(AstraSplitPane pane, bool valid) {
+  drop_indicator_visible_ = true;
+  drop_indicator_pane_ = pane;
+  drop_valid_ = valid;
+
+  if (!drop_indicator_) {
+    drop_indicator_ = AddChildView(std::make_unique<AstraSplitDropIndicator>());
+  }
+
+  drop_indicator_->SetDropValid(valid);
+  drop_indicator_->ShowForPane(GetPaneBounds(pane));
+
+  // Bring the indicator to the front.
+  ReorderChildView(drop_indicator_, GetIndexOf(drop_indicator_).value_or(-1));
+}
+
+void AstraSplitView::HideDropIndicator() {
+  if (!drop_indicator_visible_) {
+    return;
+  }
+  drop_indicator_visible_ = false;
+  if (drop_indicator_) {
+    drop_indicator_->Hide();
+  }
+}
+
+bool AstraSplitView::IsDropIndicatorVisible() const {
+  return drop_indicator_visible_;
+}
+
+void AstraSplitView::LayoutDropIndicator() {
+  if (!drop_indicator_visible_ || !drop_indicator_) {
+    return;
+  }
+  drop_indicator_->ShowForPane(GetPaneBounds(drop_indicator_pane_));
+}
+
+// =========================================================================
+// Divider context menu
+// =========================================================================
+
+void AstraSplitView::ShowDividerContextMenu(const gfx::Point& screen_point) {
+  // TODO(astra): Implement using views::MenuRunner.
+  //   The context menu should include:
+  //     - Toggle orientation
+  //     - Layout presets (50/50, 70/30, etc.)
+  //     - Toggle pane headers
+  //     - Toggle minimap
+  //     - Maximize/restore pane
+  //   Chromium owner: views::MenuRunner (ui/views/controls/menu/menu_runner.h)
+  //
+  // For now, this is a no-op placeholder.
+  DLOG(INFO) << "Divider context menu requested at "
+             << screen_point.ToString();
+}
+
+// =========================================================================
+// Snap points visual feedback
+// =========================================================================
+
+void AstraSplitView::SetShowSnapIndicators(bool show) {
+  if (show_snap_indicators_ == show) {
+    return;
+  }
+  show_snap_indicators_ = show;
+  SchedulePaint();
+}
+
+void AstraSplitView::SetSnapPoints(const std::vector<double>& points) {
+  snap_points_ = points;
+  std::sort(snap_points_.begin(), snap_points_.end());
+  if (show_snap_indicators_) {
+    SchedulePaint();
+  }
+}
+
+void AstraSplitView::ResetSnapPointsToDefaults() {
+  snap_points_ = {0.25, 1.0 / 3.0, 0.5, 2.0 / 3.0, 0.75};
+  if (show_snap_indicators_) {
+    SchedulePaint();
+  }
+}
+
+void AstraSplitView::PaintSnapIndicators(gfx::Canvas* canvas) {
+  if (!show_snap_indicators_ || snap_points_.empty() || !divider_) {
+    return;
+  }
+
+  gfx::Rect bounds = GetLocalBounds();
+  if (bounds.IsEmpty()) {
+    return;
+  }
+
+  SkColor indicator_color = SK_ColorLTGRAY;
+  if (GetColorProvider()) {
+    indicator_color = GetColorProvider()->GetColor(ui::kColorSeparator);
+  }
+
+  cc::PaintFlags flags;
+  flags.setColor(indicator_color);
+  flags.setStyle(cc::PaintFlags::kStroke_Style);
+  flags.setStrokeWidth(1);
+  flags.setAntiAlias(true);
+
+  if (orientation_ == SplitViewOrientation::kHorizontal) {
+    // Horizontal split — snap indicators are vertical lines on the top and
+    // bottom edges, aligned with each snap point.
+    const int kIndicatorLength = 8;
+    for (double snap : snap_points_) {
+      int x = static_cast<int>(bounds.width() * snap);
+      // Top indicator.
+      canvas->DrawLine(
+          gfx::Point(x, 0),
+          gfx::Point(x, kIndicatorLength),
+          flags);
+      // Bottom indicator.
+      canvas->DrawLine(
+          gfx::Point(x, bounds.height() - kIndicatorLength),
+          gfx::Point(x, bounds.height()),
+          flags);
+    }
+  } else {
+    // Vertical split — snap indicators are horizontal lines on left and
+    // right edges.
+    const int kIndicatorLength = 8;
+    for (double snap : snap_points_) {
+      int y = static_cast<int>(bounds.height() * snap);
+      // Left indicator.
+      canvas->DrawLine(
+          gfx::Point(0, y),
+          gfx::Point(kIndicatorLength, y),
+          flags);
+      // Right indicator.
+      canvas->DrawLine(
+          gfx::Point(bounds.width() - kIndicatorLength, y),
+          gfx::Point(bounds.width(), y),
+          flags);
+    }
+  }
+}
+
+// =========================================================================
+// Pane action buttons
+// =========================================================================
+
+void AstraSplitView::SetShowPaneActionButtons(bool show) {
+  if (show_pane_action_buttons_ == show) {
+    return;
+  }
+  show_pane_action_buttons_ = show;
+  // TODO(astra): Create/destroy action buttons on pane headers.
+  //   Buttons would include: swap, maximize, close, new tab in pane.
+  //   For now, we just update the flag.
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Smooth resizing animations
+// =========================================================================
+
+void AstraSplitView::SetAnimateResizing(bool animate) {
+  animate_resizing_ = animate;
+}
+
+void AstraSplitView::SetAnimationDurationMs(int duration_ms) {
+  if (duration_ms < 0) {
+    duration_ms = 0;
+  }
+  animation_duration_ms_ = duration_ms;
+}
+
+// =========================================================================
+// Focus indicator painting
+// =========================================================================
+
+void AstraSplitView::PaintFocusIndicator(gfx::Canvas* canvas) {
+  if (!show_focus_indicator_) {
+    return;
+  }
+
+  gfx::Rect pane_bounds = GetPaneBounds(
+      focused_pane_ == AstraSplitPane::kPrimary ? AstraSplitPane::kPrimary
+                                                 : AstraSplitPane::kSecondary);
+  if (pane_bounds.IsEmpty()) {
+    return;
+  }
+
+  // Draw a focus ring around the active pane.
+  SkColor focus_color = SK_ColorBLUE;
+  if (GetColorProvider()) {
+    focus_color = GetColorProvider()->GetColor(ui::kColorFocusableBorderFocused);
+  }
+
+  cc::PaintFlags flags;
+  flags.setColor(focus_color);
+  flags.setStyle(cc::PaintFlags::kStroke_Style);
+  flags.setStrokeWidth(2);
+  flags.setAntiAlias(true);
+
+  // Inset by 1 pixel so the border is fully inside the bounds.
+  gfx::Rect inset_bounds = pane_bounds;
+  inset_bounds.Inset(gfx::Insets::VH(1, 1));
+  canvas->DrawRect(inset_bounds, flags);
+}
+
+// =========================================================================
 // Accessibility
 // =========================================================================
 
@@ -1836,6 +2385,8 @@ void AstraSplitView::Layout() {
     LayoutPaneHeaders();
     LayoutDividerToolbar();
     LayoutMinimap();
+    LayoutEmptyPanes();
+    LayoutDropIndicator();
     return;
   }
 
@@ -1900,6 +2451,62 @@ void AstraSplitView::Layout() {
   LayoutDividerToolbar();
 
   LayoutMinimap();
+
+  // Layout empty pane placeholders and drop indicator.
+  LayoutEmptyPanes();
+  LayoutDropIndicator();
+}
+
+// =========================================================================
+// Pane bounds helper
+// =========================================================================
+
+gfx::Rect AstraSplitView::GetPaneBounds(AstraSplitPane pane) const {
+  gfx::Rect bounds = GetLocalBounds();
+  if (bounds.IsEmpty()) {
+    return gfx::Rect();
+  }
+
+  const int kHeaderHeight = 28;
+  int header_offset = show_pane_headers_ ? kHeaderHeight : 0;
+  int divider_thickness = show_handle_ ? divider_width_ : 0;
+
+  if (orientation_ == SplitViewOrientation::kHorizontal) {
+    int primary_width = static_cast<int>(bounds.width() * ratio_);
+    if (pane == AstraSplitPane::kPrimary) {
+      return gfx::Rect(0, header_offset, primary_width,
+                       bounds.height() - header_offset);
+    } else {
+      int secondary_x = primary_width + divider_thickness;
+      return gfx::Rect(secondary_x, header_offset,
+                       bounds.width() - secondary_x,
+                       bounds.height() - header_offset);
+    }
+  } else {
+    int primary_height = static_cast<int>(bounds.height() * ratio_);
+    if (pane == AstraSplitPane::kPrimary) {
+      return gfx::Rect(0, header_offset, bounds.width(),
+                       primary_height - header_offset);
+    } else {
+      int secondary_y = primary_height + divider_thickness;
+      return gfx::Rect(0, secondary_y, bounds.width(),
+                       bounds.height() - secondary_y);
+    }
+  }
+}
+
+// =========================================================================
+// Custom painting
+// =========================================================================
+
+void AstraSplitView::OnPaint(gfx::Canvas* canvas) {
+  views::View::OnPaint(canvas);
+
+  // Paint snap point indicators (visual guides).
+  PaintSnapIndicators(canvas);
+
+  // Paint focus indicator around the active pane.
+  PaintFocusIndicator(canvas);
 }
 
 gfx::Size AstraSplitView::CalculatePreferredSize(

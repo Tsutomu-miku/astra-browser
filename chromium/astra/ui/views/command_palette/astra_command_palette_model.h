@@ -93,6 +93,7 @@ enum class AstraCommandCategory {
   kTools,
   kSettings,
   kHelp,
+  kExtensions,
 };
 
 // Returns a human-readable group label for a category.
@@ -108,7 +109,7 @@ const char16_t* GetCommandTypeName(AstraCommandType type);
 
 // Returns the total number of categories.
 constexpr size_t GetCategoryCount() {
-  return static_cast<size_t>(AstraCommandCategory::kHelp) + 1;
+  return static_cast<size_t>(AstraCommandCategory::kExtensions) + 1;
 }
 
 // =========================================================================
@@ -174,6 +175,31 @@ struct AstraCommandItem {
   // True if this is a dynamically-generated workspace command
   // (e.g. "Switch to Workspace 3").  (execution)
   bool is_dynamic_workspace = false;
+
+  // Alternative search names for this command.  Used during search so
+  // users can find commands by different names.  (search)
+  // Example: "New Tab" might have aliases ["open tab", "create tab"].
+  std::vector<std::u16string> aliases;
+
+  // Whether this command is pinned / favorited.  Pinned commands
+  // appear at the top of the results when the query is empty and
+  // get a small ranking boost during search.  (display, search)
+  bool is_pinned = false;
+
+  // Whether this is a context-aware command.  Context commands only
+  // appear in results when the current context matches (e.g. the
+  // active tab has a certain feature available).  (search)
+  bool is_context_command = false;
+
+  // Group label for sub-grouping within a category.  Commands with
+  // the same non-empty group_label are visually grouped together
+  // with a separator between groups.  (display)
+  std::u16string group_label;
+
+  // Subtitle / secondary description shown below the title.
+  // Kept for backward compatibility with "description" but also
+  // used as a subtitle in the item view.  (display, search)
+  // (Already present as |description| above.)
 };
 
 // =========================================================================
@@ -209,6 +235,16 @@ class AstraCommandPaletteObserver : public base::CheckedObserver {
   // Called when the model is shutting down.  Observers should drop their
   // reference to the model when this is called.
   virtual void OnCommandPaletteModelShutdown(AstraCommandPaletteModel* model) {}
+
+  // Called when the set of pinned / favorite commands changes.
+  virtual void OnPinnedCommandsChanged(AstraCommandPaletteModel* model) {}
+
+  // Called when suggested ("did you mean") commands are computed
+  // for a query that had no exact matches.
+  virtual void OnSuggestedCommandsChanged(AstraCommandPaletteModel* model) {}
+
+  // Called when context-aware commands are updated.
+  virtual void OnContextCommandsChanged(AstraCommandPaletteModel* model) {}
 
  protected:
   ~AstraCommandPaletteObserver() override = default;
@@ -256,6 +292,15 @@ class AstraCommandPaletteModelObserver : public base::CheckedObserver {
   // Called after a command has been successfully executed.
   // (OnCommandExecutionRequested fires *before* execution; this fires after.)
   virtual void OnCommandExecuted(int command_id, bool is_astra) {}
+
+  // Called when pinned / favorite commands change.
+  virtual void OnPinnedCommandsChanged() {}
+
+  // Called when suggested ("did you mean") commands are updated.
+  virtual void OnSuggestedCommandsChanged() {}
+
+  // Called when context-aware commands are updated.
+  virtual void OnContextCommandsChanged() {}
 
  protected:
   ~AstraCommandPaletteModelObserver() override = default;
@@ -327,6 +372,66 @@ class AstraCommandPaletteModel {
   // Clears the recently used commands list.
   void ClearRecentCommands();
 
+  // -- Pinned / favorite commands ----------------------------------------
+
+  // Returns the list of pinned / favorite commands.
+  std::vector<AstraCommandItem> GetPinnedCommands() const;
+
+  // Pins a command (adds to favorites).  Returns true if the command
+  // was found and pinned.  Notifies observers with OnPinnedCommandsChanged.
+  bool PinCommand(int command_id);
+
+  // Unpins a command (removes from favorites).  Returns true if the
+  // command was found and unpinned.
+  bool UnpinCommand(int command_id);
+
+  // Returns true if the command is pinned.
+  bool IsCommandPinned(int command_id) const;
+
+  // Toggles the pinned state of a command.  Returns the new pinned state.
+  bool ToggleCommandPinned(int command_id);
+
+  // Returns the number of pinned commands.
+  size_t GetPinnedCommandCount() const;
+
+  // -- Suggested commands ("did you mean") -------------------------------
+
+  // Returns suggested commands for a query that had no or few exact matches.
+  // Uses fuzzy matching to find commands that are "close" to the query
+  // (e.g. typos, alternate spellings).
+  std::vector<AstraCommandItem> GetSuggestedCommands(
+      const std::u16string& query) const;
+
+  // Returns the currently computed suggestions (cached from last search).
+  const std::vector<AstraCommandItem>& suggestions() const {
+    return suggestions_;
+  }
+
+  // -- Context-aware commands --------------------------------------------
+
+  // Updates the set of context-aware commands based on the current
+  // context (active tab URL, etc.).  Context commands only appear
+  // when the context matches.
+  void UpdateContextCommands(
+      const std::vector<AstraCommandItem>& context_commands);
+
+  // Clears all context-aware commands.
+  void ClearContextCommands();
+
+  // Returns whether context commands are currently visible.
+  bool has_context_commands() const { return has_context_commands_; }
+
+  // -- Command aliases ---------------------------------------------------
+
+  // Adds an alias for a command.  Returns false if the command was not found.
+  bool AddCommandAlias(int command_id, const std::u16string& alias);
+
+  // Returns all aliases for a command.
+  std::vector<std::u16string> GetAliasesForCommand(int command_id) const;
+
+  // Removes an alias from a command.  Returns false if not found.
+  bool RemoveCommandAlias(int command_id, const std::u16string& alias);
+
   // -- Default commands --------------------------------------------------
 
   // Returns the default commands shown when there is no query.
@@ -391,6 +496,13 @@ class AstraCommandPaletteModel {
   // Moves selection to the first item in the previous category group.
   // Wraps around at the first group to the last group.
   void SelectPrevGroup();
+
+  // Moves selection up by one "page" (approximately a full view of results).
+  // Default page size is 10 items.
+  void SelectPageUp();
+
+  // Moves selection down by one "page".
+  void SelectPageDown();
 
   // -- Workspace commands ------------------------------------------------
 
@@ -462,6 +574,26 @@ class AstraCommandPaletteModel {
   // result.  Default: false.
   bool auto_execute_single_result() const { return auto_execute_single_result_; }
   void set_auto_execute_single_result(bool auto_execute);
+
+  // Whether to show number hints (1-9) next to results for quick selection.
+  // Default: true.
+  bool show_number_hints() const { return show_number_hints_; }
+  void set_show_number_hints(bool show);
+
+  // Whether to show the pinned / favorites section when the query is empty.
+  // Default: true.
+  bool show_pinned_section() const { return show_pinned_section_; }
+  void set_show_pinned_section(bool show);
+
+  // Whether context-aware commands are enabled.
+  // Default: true.
+  bool enable_context_commands() const { return enable_context_commands_; }
+  void set_enable_context_commands(bool enable);
+
+  // Whether to show "did you mean" suggestions when no exact matches found.
+  // Default: true.
+  bool show_suggestions() const { return show_suggestions_; }
+  void set_show_suggestions(bool show);
 
   // -- Legacy presentation settings (kept for backward compatibility) ---
 
@@ -590,6 +722,16 @@ class AstraCommandPaletteModel {
   // Returns -1 if the group index is invalid.
   int GetFirstResultInGroup(int group_index) const;
 
+  // Recomputes "did you mean" suggestions based on the current query.
+  // Called internally when results are empty and show_suggestions_ is true.
+  void UpdateSuggestions() const;
+
+  // Applies pinned status to all commands based on pinned_command_ids_.
+  void ApplyPinnedStatus();
+
+  // Returns the index of |command_id| in pinned_command_ids_, or -1.
+  int FindPinnedIndex(int command_id) const;
+
   // -- Static command sources (Chrome + Astra) ---------------------------
 
   // Populates the Chrome command entries.
@@ -656,6 +798,25 @@ class AstraCommandPaletteModel {
 
   // Whether to auto-execute single-result queries.
   bool auto_execute_single_result_ = false;
+
+  // New presentation and behavior settings.
+  bool show_number_hints_ = true;
+  bool show_pinned_section_ = true;
+  bool enable_context_commands_ = true;
+  bool show_suggestions_ = true;
+
+  // Page size for page-up / page-down navigation.
+  size_t page_size_ = 10;
+
+  // Pinned / favorite command IDs.
+  std::vector<int> pinned_command_ids_;
+
+  // Cached "did you mean" suggestions from the last search.
+  mutable std::vector<AstraCommandItem> suggestions_;
+
+  // Context-aware commands (dynamic, based on current tab/context).
+  std::vector<AstraCommandItem> context_commands_;
+  bool has_context_commands_ = false;
 
   // -- Observers ---------------------------------------------------------
 

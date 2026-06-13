@@ -1,6 +1,7 @@
 #ifndef ASTRA_UI_VIEWS_SPLIT_VIEW_ASTRA_SPLIT_VIEW_MODEL_H_
 #define ASTRA_UI_VIEWS_SPLIT_VIEW_ASTRA_SPLIT_VIEW_MODEL_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,8 @@ namespace astra {
 //   - kThreePaneVertical:   Three panes stacked (top/middle/bottom).
 //   - kGridTwoByTwo:  2x2 grid of four panes.
 //   - kGridThreeByTwo: 3x2 grid of six panes.
+//   - kPictureInPicture: Small floating pane over a main content pane.
+//   - kTabShift: One main pane with a narrow tab-shift sidebar pane.
 enum class AstraSplitLayoutMode {
   kTwoPaneHorizontal,
   kTwoPaneVertical,
@@ -29,6 +32,8 @@ enum class AstraSplitLayoutMode {
   kThreePaneVertical,
   kGridTwoByTwo,
   kGridThreeByTwo,
+  kPictureInPicture,
+  kTabShift,
 };
 
 // =========================================================================
@@ -140,6 +145,36 @@ class AstraSplitViewModelObserver : public base::CheckedObserver {
   // Called when the resize behavior changes.
   virtual void OnSplitResizeBehaviorChanged(
       AstraSplitResizeBehavior behavior) {}
+
+  // Called when pane header visibility changes.
+  virtual void OnSplitPaneHeadersVisibilityChanged(bool visible) {}
+
+  // Called when pane toolbar visibility changes.
+  virtual void OnSplitPaneToolbarsVisibilityChanged(bool visible) {}
+
+  // Called when the workspace association changes.
+  virtual void OnSplitWorkspaceIdChanged(const std::string& workspace_id) {}
+
+  // Called when a named layout preset is saved.
+  virtual void OnSplitLayoutPresetSaved(const std::string& preset_name) {}
+
+  // Called when a named layout preset is loaded/applied.
+  virtual void OnSplitLayoutPresetLoaded(const std::string& preset_name) {}
+
+  // Called when a tab is converted into a split pane (tab-to-split).
+  virtual void OnSplitTabToSplitConverted(AstraSplitPaneId pane_id) {}
+
+  // Called when a split pane is converted back to a regular tab (split-to-tab).
+  virtual void OnSplitSplitToTabConverted(AstraSplitPaneId pane_id) {}
+
+  // Called when snap-to-points behavior is toggled.
+  virtual void OnSplitSnapEnabledChanged(bool enabled) {}
+
+  // Called when a pane is maximized (takes nearly all available space).
+  virtual void OnSplitPaneMaximized(AstraSplitPaneId pane_id) {}
+
+  // Called when a pane is restored from maximized state.
+  virtual void OnSplitPaneRestored(AstraSplitPaneId pane_id) {}
 
   // Called when the model is about to be destroyed.
   virtual void OnSplitViewModelDestroyed() {}
@@ -322,6 +357,107 @@ class AstraSplitViewModel {
   // Deserialize state from a string.  Returns true on success.
   bool DeserializeFromString(const std::string& state);
 
+  // -- Pane headers -------------------------------------------------------
+
+  // Set whether pane header bars are shown.
+  // Header bars contain the tab title and a close button.
+  void SetShowPaneHeaders(bool show);
+  bool show_pane_headers() const { return show_pane_headers_; }
+
+  // -- Pane toolbars ------------------------------------------------------
+
+  // Set whether per-pane toolbars are shown (back/forward/reload buttons).
+  void SetShowPaneToolbars(bool show);
+  bool show_pane_toolbars() const { return show_pane_toolbars_; }
+
+  // -- Workspace association ----------------------------------------------
+
+  // Associate this split layout with a workspace ID.
+  // Workspace association allows split state to be saved/restored per workspace.
+  void SetWorkspaceId(const std::string& workspace_id);
+  const std::string& workspace_id() const { return workspace_id_; }
+
+  // Returns true if this split layout is associated with a workspace.
+  bool HasWorkspaceAssociation() const;
+
+  // -- Saved layout presets -----------------------------------------------
+
+  // Save the current layout state as a named preset.
+  // Presets are stored in memory and can be applied later.
+  // TODO(astra): Persist presets to PrefService for cross-session storage.
+  //   Chromium owner: PrefService (components/prefs/pref_service.h)
+  void SaveLayoutPreset(const std::string& name);
+
+  // Load and apply a named preset.  Returns true if the preset was found.
+  bool LoadLayoutPreset(const std::string& name);
+
+  // Delete a saved preset.  Returns true if the preset existed.
+  bool DeleteLayoutPreset(const std::string& name);
+
+  // Returns true if a preset with the given name exists.
+  bool HasLayoutPreset(const std::string& name) const;
+
+  // Get a list of all saved preset names.
+  std::vector<std::string> GetLayoutPresetNames() const;
+
+  // Number of built-in and saved presets.
+  size_t GetPresetCount() const;
+
+  // -- Snap points --------------------------------------------------------
+
+  // Enable or disable snap-to-points during divider drag.
+  void SetSnapEnabled(bool enabled);
+  bool snap_enabled() const { return snap_enabled_; }
+
+  // Get the list of snap points (as ratios).
+  // Default snap points: 0.25, 0.333, 0.5, 0.667, 0.75.
+  const std::vector<double>& snap_points() const { return snap_points_; }
+
+  // Set custom snap points.  Each value is a ratio [0.0, 1.0].
+  void SetSnapPoints(const std::vector<double>& points);
+
+  // Reset snap points to the default set.
+  void ResetSnapPointsToDefaults();
+
+  // Snap a ratio to the nearest snap point if within |tolerance|.
+  // Returns the snapped ratio, or the original if no snap point is close enough.
+  double SnapToNearestPoint(double ratio, double tolerance = 0.02) const;
+
+  // -- Pane maximize / restore --------------------------------------------
+
+  // Maximize a specific pane (reduces other panes to minimum size).
+  void MaximizePane(AstraSplitPaneId pane_id);
+
+  // Restore from maximized state back to the previous layout.
+  void RestoreFromMaximized();
+
+  // Returns true if any pane is currently maximized.
+  bool IsPaneMaximized() const;
+
+  // Returns the maximized pane, or nullopt if no pane is maximized.
+  absl::optional<AstraSplitPaneId> GetMaximizedPane() const;
+
+  // Toggle maximize state for the focused pane.
+  void ToggleFocusedPaneMaximized();
+
+  // -- Tab-to-split / split-to-tab conversion -----------------------------
+
+  // Notify that a regular tab has been converted into a split pane.
+  // This is a semantic notification — the actual tab manipulation is
+  // handled by the controller via TabStripModel.
+  void NotifyTabToSplitConverted(AstraSplitPaneId pane_id);
+
+  // Notify that a split pane has been converted back to a regular tab.
+  void NotifySplitToTabConverted(AstraSplitPaneId pane_id);
+
+  // -- Cycle helpers ------------------------------------------------------
+
+  // Cycle to the next layout mode.
+  void CycleNextLayoutMode();
+
+  // Cycle to the previous layout mode.
+  void CyclePreviousLayoutMode();
+
  private:
   // Initialize divider ratios based on the current layout mode.
   void InitializeDividers();
@@ -374,6 +510,30 @@ class AstraSplitViewModel {
   // Notify observers that the resize behavior changed.
   void NotifyResizeBehaviorChanged();
 
+  // Notify observers that pane header visibility changed.
+  void NotifyPaneHeadersVisibilityChanged();
+
+  // Notify observers that pane toolbar visibility changed.
+  void NotifyPaneToolbarsVisibilityChanged();
+
+  // Notify observers that the workspace ID changed.
+  void NotifyWorkspaceIdChanged();
+
+  // Notify observers that a layout preset was saved.
+  void NotifyLayoutPresetSaved(const std::string& name);
+
+  // Notify observers that a layout preset was loaded.
+  void NotifyLayoutPresetLoaded(const std::string& name);
+
+  // Notify observers that snap-to-points was toggled.
+  void NotifySnapEnabledChanged();
+
+  // Notify observers that a pane was maximized.
+  void NotifyPaneMaximized(AstraSplitPaneId pane_id);
+
+  // Notify observers that a pane was restored from maximized.
+  void NotifyPaneRestored(AstraSplitPaneId pane_id);
+
   // Notify all observers that the model is being destroyed.
   void NotifyDestroyed();
 
@@ -398,6 +558,31 @@ class AstraSplitViewModel {
   // Drag state.
   bool is_dragging_ = false;
   int dragged_divider_index_ = -1;
+
+  // Whether pane header bars are shown.
+  bool show_pane_headers_ = false;
+
+  // Whether per-pane toolbars are shown.
+  bool show_pane_toolbars_ = false;
+
+  // Workspace association ID (empty if not associated).
+  std::string workspace_id_;
+
+  // Saved layout presets: name -> serialized state string.
+  std::map<std::string, std::string> saved_presets_;
+
+  // Whether divider snap points are enabled.
+  bool snap_enabled_ = false;
+
+  // List of snap point ratios.
+  std::vector<double> snap_points_;
+
+  // Maximized pane state.
+  bool is_pane_maximized_ = false;
+  AstraSplitPaneId maximized_pane_ = AstraSplitPaneId::kPane0;
+
+  // Saved divider ratios before maximization (for restore).
+  std::vector<double> pre_maximize_ratios_;
 
   // Observers.
   base::ObserverList<AstraSplitViewModelObserver> observers_;
