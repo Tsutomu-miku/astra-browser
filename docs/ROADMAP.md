@@ -180,3 +180,89 @@ Exit criteria:
 - No Electron dependency in production build.
 - Release artifacts are Chromium-built Astra packages.
 - All tests run against Chromium test infrastructure.
+
+---
+
+## Current Priorities
+
+Derived from the architecture audit, tech debt inventory, and completeness matrix.
+These are the top items to tackle next, in priority order.
+
+### P0 — Critical
+
+1. **Working Chromium build with Astra overlay**
+   - Bootstrap a real Chromium checkout
+   - Sync `//astra` overlay, apply patches
+   - Get `autoninja -C out/astra_Debug chrome` to compile and link
+   - *Effort: 2-4 weeks*
+
+2. **Sidebar integration end-to-end**
+   - `AstraSidebarView` showing inside `BrowserView` with real tab data
+   - `TabStripModelObserver` fires correctly and updates sidebar
+   - *Effort: 1-2 weeks, depends on #1*
+
+### P1 — High
+
+3. **Workspace service validation + TabStripModel projection**
+   - `AstraWorkspaceService` persists correctly through `PrefService`
+   - Sidebar correctly projects tabs by workspace
+   - Workspace switching is a projection change (no tab reparenting)
+   - *Effort: 1-2 weeks, depends on #1, #2*
+
+4. **Fix browser → ui/color dependency issue**
+   - Move `AstraThemeService` to `astra/ui/color/`, OR
+   - Move color types needed by browser down to `astra/common`
+   - *Effort: 0.5-1 day*
+
+5. **Session restore metadata persistence**
+   - Patch 0006 validated and working
+   - `AstraSessionMetadata` serialization/deserialization
+   - Workspace assignment and favorite state survive restarts
+   - *Effort: 3-5 days, depends on #1*
+
+6. **Keyed service factory registration pipeline**
+   - Wire all Astra `ProfileKeyedServiceFactory` instances into Chromium
+   - All 10+ factory classes registered at profile creation
+   - *Effort: 2-3 days, depends on #1*
+
+7. **Command system end-to-end**
+   - Patches 0003, 0007, 0008 validated
+   - Keyboard shortcuts work: toggle sidebar, next/prev workspace, etc.
+   - *Effort: 2-3 days, depends on #1, #2*
+
+### P2 — Medium
+
+8. **Color system integration**
+   - Integrate `AstraColorMixer` into Chromium's ColorProvider (patch 0012)
+   - All `kColorAstra*` color IDs registered
+   - *Effort: 1-2 days, depends on #1*
+
+9. **Unit test validation and expansion**
+   - All existing tests compile and pass in Chromium's `unit_tests` suite
+   - Tests added for color system and views layer
+   - *Effort: 1-2 weeks, depends on #1*
+
+10. **Split view implementation**
+    - `AstraSplitView` renders two WebContents side by side
+    - Resizable divider, layout modes
+    - *Effort: 4-7 days, depends on #1, #2*
+
+### Quick Wins (Low Effort, High Impact)
+
+- **QW-1:** Replace static counters with `base::UnguessableToken` for stable IDs
+- **QW-2:** Add `static_assert` for command ID upper bound
+- **QW-3:** Convert buildflags to proper `buildflag_header.gni`
+- **QW-4:** Add CI with architecture check (GitHub Actions)
+- **QW-5:** Clean up empty test targets
+- **QW-6:** Add `astra/common` to `astra/browser` public_deps explicitly
+- **QW-7:** Document accessibility layer in architecture diagram
+
+### Sequencing
+
+```
+Sprint 1 (2 weeks): #1 (working build) + #4 (dep fix) + QW-3, QW-4
+Sprint 2 (2 weeks): #2 (sidebar integration) + #6 (service registration) + #7 (command system)
+Sprint 3 (2 weeks): #3 (workspace projection) + #5 (session restore metadata)
+Sprint 4 (2 weeks): #9 (test validation) + #8 (color system) + all QW items
+Sprint 5+ (2+ weeks): #10 (split view) + feature parity work
+```
