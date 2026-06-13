@@ -241,6 +241,18 @@ source_set("views") {
     "autofill_popup/astra_autofill_popup_view.h",
     "toolbar/astra_toolbar_view.cc",
     "toolbar/astra_toolbar_view.h",
+    "history_page/astra_history_page_model.cc",
+    "history_page/astra_history_page_model.h",
+    "history_page/astra_history_page_view.cc",
+    "history_page/astra_history_page_view.h",
+    "bookmarks_manager/astra_bookmarks_manager_model.cc",
+    "bookmarks_manager/astra_bookmarks_manager_model.h",
+    "bookmarks_manager/astra_bookmarks_manager_view.cc",
+    "bookmarks_manager/astra_bookmarks_manager_view.h",
+    "downloads_page/astra_downloads_page_model.cc",
+    "downloads_page/astra_downloads_page_model.h",
+    "downloads_page/astra_downloads_page_view.cc",
+    "downloads_page/astra_downloads_page_view.h",
   ]
 
   public_deps = [
@@ -347,6 +359,9 @@ source_set("astra_ui_views_tests") {
     "omnibox_popup/astra_omnibox_popup_views_unittest.cc",
     "autofill_popup/astra_autofill_popup_views_unittest.cc",
     "toolbar/astra_toolbar_views_unittest.cc",
+    "history_page/astra_history_page_views_unittest.cc",
+    "bookmarks_manager/astra_bookmarks_manager_views_unittest.cc",
+    "downloads_page/astra_downloads_page_views_unittest.cc",
   ]
 
   deps = [
