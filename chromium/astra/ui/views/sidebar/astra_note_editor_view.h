@@ -99,6 +99,7 @@ class AstraNoteEditorView : public views::View,
   gfx::Size CalculatePreferredSize(
       const views::SizeBounds& available_size) const override;
   void OnThemeChanged() override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
   // -- TextfieldController -----------------------------------------------
 
@@ -127,6 +128,9 @@ class AstraNoteEditorView : public views::View,
   // Update the selected color button visual state.
   void UpdateSelectedColorButton();
 
+  // Update the character count label.
+  void UpdateCharacterCount();
+
   // Get the current title from the text field (as UTF-8).
   std::string GetTitleText() const;
 
@@ -150,6 +154,7 @@ class AstraNoteEditorView : public views::View,
   raw_ptr<views::Textfield> title_field_ = nullptr;
   raw_ptr<views::Textfield> content_field_ = nullptr;
   raw_ptr<views::View> color_picker_row_ = nullptr;
+  raw_ptr<views::Label> char_count_label_ = nullptr;
   raw_ptr<views::LabelButton> save_button_ = nullptr;
   raw_ptr<views::LabelButton> cancel_button_ = nullptr;
   raw_ptr<views::LabelButton> delete_button_ = nullptr;

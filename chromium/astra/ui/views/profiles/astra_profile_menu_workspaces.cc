@@ -148,6 +148,56 @@ void AstraProfileMenuWorkspaces::SetReorderHandlesVisible(bool visible) {
 }
 
 // ---------------------------------------------------------------------------
+// Show more / expand all
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuWorkspaces::SetShowMoreButtonVisible(bool visible) {
+  if (show_more_button_visible_ == visible) {
+    return;
+  }
+  show_more_button_visible_ = visible;
+  UpdateShowMoreButton();
+  PreferredSizeChanged();
+}
+
+void AstraProfileMenuWorkspaces::ToggleShowMore() {
+  is_showing_all_ = !is_showing_all_;
+  UpdateItemVisibility();
+  UpdateShowMoreButton();
+  PreferredSizeChanged();
+}
+
+// ---------------------------------------------------------------------------
+// Empty state
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuWorkspaces::SetEmptyStateVisible(bool visible) {
+  if (empty_state_visible_ == visible) {
+    return;
+  }
+  empty_state_visible_ = visible;
+  if (empty_state_view_) {
+    empty_state_view_->SetVisible(visible);
+  }
+  PreferredSizeChanged();
+}
+
+// ---------------------------------------------------------------------------
+// Context menu
+// ---------------------------------------------------------------------------
+
+bool AstraProfileMenuWorkspaces::ShowContextMenuForWorkspace(
+    size_t index, const gfx::Point& point) {
+  if (index >= workspace_items_.size()) {
+    return false;
+  }
+  // TODO(astra): Implement context menu with rename, delete, reorder options.
+  //   For now this is a stub that returns false.
+  //   Chromium owner: MenuRunner (ui/views/controls/menu/menu_runner.h)
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // Keyboard navigation
 // ---------------------------------------------------------------------------
 
@@ -417,6 +467,42 @@ void AstraProfileMenuWorkspaces::RebuildWorkspaceList() {
   action_separator_ = AddChildView(std::make_unique<views::Separator>());
   action_separator_->SetColorId(ui::kColorSeparator);
 
+  // --- Empty state view (hidden by default) ---
+  auto empty_state = std::make_unique<views::View>();
+  auto* empty_layout = empty_state->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical,
+          gfx::Insets::VH(16, kActionHorizontalPadding), 0));
+  empty_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  auto empty_label = std::make_unique<views::Label>();
+  empty_label->SetText(u"No workspaces yet");
+  empty_label->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  empty_label->SetAutoColorReadabilityEnabled(false);
+  empty_label->SetFontList(
+      empty_label->font_list().Derive(
+          -1, gfx::Font::NORMAL, gfx::Font::Weight::NORMAL));
+  empty_state_label_ = empty_label.get();
+  empty_state->AddChildView(std::move(empty_label));
+
+  empty_state_view_ = AddChildView(std::move(empty_state));
+  empty_state_view_->SetVisible(false);
+
+  // --- "Show more" button (hidden by default) ---
+  show_more_button_ = AddChildView(
+      std::make_unique<views::LabelButton>(
+          base::BindRepeating(
+              &AstraProfileMenuWorkspaces::OnShowMoreClicked,
+              base::Unretained(this)),
+          u"Show more workspaces"));
+  show_more_button_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  show_more_button_->SetBorder(views::CreateEmptyBorder(
+      gfx::Insets::VH(0, kActionHorizontalPadding)));
+  show_more_button_->SetMinSize(gfx::Size(0, kActionRowHeight));
+  show_more_button_->SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+  show_more_button_->SetVisible(false);
+
   // --- "New workspace" button ---
   new_workspace_button_ = AddChildView(
       std::make_unique<views::LabelButton>(
@@ -516,6 +602,59 @@ int AstraProfileMenuWorkspaces::GetFocusedItemIndex() const {
 
 int AstraProfileMenuWorkspaces::GetItemCount() const {
   return static_cast<int>(workspace_items_.size());
+}
+
+// ---------------------------------------------------------------------------
+// Show more / expand all helpers
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuWorkspaces::OnShowMoreClicked() {
+  ToggleShowMore();
+}
+
+void AstraProfileMenuWorkspaces::UpdateEmptyState() {
+  if (!empty_state_view_) {
+    return;
+  }
+  bool show_empty = empty_state_visible_ || workspace_items_.empty();
+  empty_state_view_->SetVisible(show_empty);
+}
+
+void AstraProfileMenuWorkspaces::UpdateShowMoreButton() {
+  if (!show_more_button_) {
+    return;
+  }
+
+  int total = static_cast<int>(workspace_items_.size());
+  int max_shown = max_list_height_ > 0 ?
+      (max_list_height_ / 40) : total;  // 40px per item approx.
+
+  bool should_show = show_more_button_visible_ && total > max_shown;
+  show_more_button_->SetVisible(should_show);
+
+  if (should_show) {
+    if (is_showing_all_) {
+      show_more_button_->SetText(u"Show fewer workspaces");
+    } else {
+      show_more_button_->SetText(u"Show more workspaces");
+    }
+  }
+}
+
+void AstraProfileMenuWorkspaces::UpdateItemVisibility() {
+  if (is_showing_all_ || max_list_height_ <= 0) {
+    // Show all items.
+    for (auto* item : workspace_items_) {
+      item->SetVisible(true);
+    }
+    return;
+  }
+
+  // Show only up to max visible items.
+  int max_shown = max_list_height_ / 40;  // 40px per item approx.
+  for (size_t i = 0; i < workspace_items_.size(); ++i) {
+    workspace_items_[i]->SetVisible(static_cast<int>(i) < max_shown);
+  }
 }
 
 }  // namespace astra

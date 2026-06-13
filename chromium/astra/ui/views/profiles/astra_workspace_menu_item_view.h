@@ -125,6 +125,23 @@ class AstraWorkspaceMenuItemView : public views::Button {
     reorder_callback_ = std::move(callback);
   }
 
+  // -- Menu button (more options) -----------------------------------------
+
+  // Sets whether the "more options" menu button is visible.
+  void SetMenuButtonVisible(bool visible);
+  bool menu_button_visible() const { return menu_button_visible_; }
+
+  // Callback invoked when the menu button is clicked.
+  using MenuButtonCallback = base::RepeatingClosure;
+  void set_menu_button_callback(MenuButtonCallback callback) {
+    menu_button_callback_ = std::move(callback);
+  }
+
+  // -- Tooltip ------------------------------------------------------------
+
+  // Sets the tooltip text for the item.
+  void SetTooltip(const std::u16string& tooltip);
+
   // -- views::Button ------------------------------------------------------
 
   void OnThemeChanged() override;
@@ -177,6 +194,7 @@ class AstraWorkspaceMenuItemView : public views::Button {
   raw_ptr<views::Label> name_label_ = nullptr;
   raw_ptr<views::Label> tab_count_label_ = nullptr;
   raw_ptr<views::View> checkmark_indicator_ = nullptr;
+  raw_ptr<views::View> menu_button_ = nullptr;
 
   // Display state.
   std::u16string workspace_name_;
@@ -192,12 +210,16 @@ class AstraWorkspaceMenuItemView : public views::Button {
   // Reorder handle visibility.
   bool reorder_handle_visible_ = false;
 
+  // Menu button visibility.
+  bool menu_button_visible_ = false;
+
   // Hover state.
   bool is_hovered_ = false;
 
   // Callbacks.
   ActivatedCallback activated_callback_;
   ReorderCallback reorder_callback_;
+  MenuButtonCallback menu_button_callback_;
 };
 
 }  // namespace astra

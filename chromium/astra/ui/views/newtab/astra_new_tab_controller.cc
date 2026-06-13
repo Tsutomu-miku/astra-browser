@@ -443,4 +443,244 @@ void AstraNewTabController::OnBackgroundStyleChanged(int style) {
   SetBackgroundStyle(static_cast<AstraNtpBackgroundStyle>(style));
 }
 
+// =========================================================================
+// Additional settings toggles
+// =========================================================================
+
+void AstraNewTabController::ToggleSuggestedContent() {
+  model_.set_show_suggested_content(!model_.show_suggested_content());
+  SaveToPrefs();
+}
+
+void AstraNewTabController::ToggleShortcutTitles() {
+  model_.set_show_shortcut_titles(!model_.show_shortcut_titles());
+  SaveToPrefs();
+}
+
+void AstraNewTabController::ToggleSeconds() {
+  model_.set_show_seconds(!model_.show_seconds());
+  SaveToPrefs();
+}
+
+void AstraNewTabController::ToggleDate() {
+  model_.set_show_date(!model_.show_date());
+  SaveToPrefs();
+}
+
+void AstraNewTabController::ToggleSearchEngine() {
+  model_.set_show_search_engine(!model_.show_search_engine());
+  SaveToPrefs();
+}
+
+// =========================================================================
+// Additional settings setters
+// =========================================================================
+
+void AstraNewTabController::SetThemeMode(AstraNtpThemeMode mode) {
+  model_.set_theme_mode(mode);
+  SaveToPrefs();
+}
+
+void AstraNewTabController::SetLayoutDensity(AstraNtpLayoutDensity density) {
+  model_.set_layout_density(density);
+  SaveToPrefs();
+}
+
+void AstraNewTabController::SetShortcutIconSize(AstraNtpShortcutIconSize size) {
+  model_.set_shortcut_icon_size(size);
+  SaveToPrefs();
+}
+
+void AstraNewTabController::SetClockFormat(AstraNtpClockFormat format) {
+  model_.set_clock_format(format);
+  SaveToPrefs();
+}
+
+void AstraNewTabController::SetSearchBarStyle(AstraNtpSearchBarStyle style) {
+  model_.set_search_bar_style(style);
+  SaveToPrefs();
+}
+
+void AstraNewTabController::SetAccentColor(SkColor color) {
+  model_.set_accent_color(color);
+  SaveToPrefs();
+}
+
+void AstraNewTabController::SetGradientSettings(
+    const AstraNtpGradientSettings& settings) {
+  model_.set_gradient_settings(settings);
+  SaveToPrefs();
+}
+
+void AstraNewTabController::SetGreetingName(const std::u16string& name) {
+  model_.set_greeting_name(name);
+  SaveToPrefs();
+}
+
+void AstraNewTabController::SetSearchEngineName(const std::string& name) {
+  model_.set_search_engine_name(name);
+  SaveToPrefs();
+}
+
+// =========================================================================
+// Import / Export
+// =========================================================================
+
+base::Value::Dict AstraNewTabController::ExportSettings() const {
+  return model_.ExportSettings();
+}
+
+bool AstraNewTabController::ImportSettings(const base::Value::Dict& settings) {
+  bool result = model_.ImportSettings(settings);
+  if (result) {
+    SaveToPrefs();
+    UpdateViewFromModel();
+  }
+  return result;
+}
+
+void AstraNewTabController::ResetSettingsToDefaults() {
+  model_.ResetSettingsToDefaults();
+  SaveToPrefs();
+  UpdateViewFromModel();
+}
+
+void AstraNewTabController::ResetAllToDefaults() {
+  model_.ResetAllToDefaults();
+  SaveToPrefs();
+  UpdateViewFromModel();
+}
+
+// =========================================================================
+// Focus management
+// =========================================================================
+
+void AstraNewTabController::FocusSearchBar() {
+  // Search bar is in the bubble view, not directly in the NTP content view.
+  // TODO(astra): Wire up search bar focus from controller to bubble.
+  if (view_) {
+    view_->RequestFocus();
+  }
+}
+
+void AstraNewTabController::FocusFirstShortcut() {
+  // TODO(astra): Implement focus delegation to first shortcut view.
+  // The controller would need to traverse the view hierarchy and find
+  // the first focusable shortcut tile.
+}
+
+void AstraNewTabController::FocusNextSection() {
+  // TODO(astra): Implement section-based focus navigation.
+  // Cycle through greeting -> search -> workspaces -> shortcuts -> recent -> actions.
+  current_focus_section_ = (current_focus_section_ + 1) % 6;
+}
+
+void AstraNewTabController::FocusPreviousSection() {
+  // TODO(astra): Implement reverse section focus navigation.
+  current_focus_section_ = (current_focus_section_ + 5) % 6;
+}
+
+// =========================================================================
+// Animation control
+// =========================================================================
+
+void AstraNewTabController::PlayEntranceAnimations() {
+  if (animations_skipped_ || entrance_animations_played_) {
+    return;
+  }
+  entrance_animations_played_ = true;
+  // TODO(astra): Implement staggered entrance animations for each section.
+  // Chromium pattern: Use ui::LayerAnimator with delays per child view.
+}
+
+void AstraNewTabController::SkipAnimationsForTesting() {
+  animations_skipped_ = true;
+  entrance_animations_played_ = true;
+}
+
+// =========================================================================
+// Extended model observer methods
+// =========================================================================
+
+void AstraNewTabController::OnSuggestedContentChanged() {
+  if (view_) {
+    UpdateViewSuggestedContent();
+  }
+}
+
+void AstraNewTabController::OnLayoutDensityChanged() {
+  if (view_) {
+    view_->UpdateFromSettings();
+  }
+}
+
+void AstraNewTabController::OnAccentColorChanged() {
+  if (view_) {
+    view_->OnThemeChanged();
+  }
+}
+
+void AstraNewTabController::OnClockFormatChanged() {
+  if (view_) {
+    // TODO(astra): Update clock display in greeting section.
+  }
+}
+
+void AstraNewTabController::OnSearchBarStyleChanged() {
+  if (view_) {
+    // Search bar style change would affect the bubble's search field.
+    // TODO(astra): Propagate search bar style to bubble.
+  }
+}
+
+void AstraNewTabController::OnGreetingNameChanged() {
+  if (view_) {
+    // TODO(astra): Update greeting text to include user name.
+  }
+}
+
+void AstraNewTabController::OnSuggestedContentSettingsChanged() {
+  if (view_) {
+    view_->UpdateFromSettings();
+  }
+}
+
+// =========================================================================
+// Fine-grained view updates
+// =========================================================================
+
+void AstraNewTabController::UpdateViewShortcuts() {
+  if (view_) {
+    // Shortcut updates are handled via RefreshContent() for now.
+    // TODO(astra): Implement fine-grained shortcut updates.
+    view_->RefreshContent();
+  }
+}
+
+void AstraNewTabController::UpdateViewWorkspaces() {
+  if (view_) {
+    view_->RefreshContent();
+  }
+}
+
+void AstraNewTabController::UpdateViewQuickActions() {
+  if (view_) {
+    view_->RefreshContent();
+  }
+}
+
+void AstraNewTabController::UpdateViewRecentlyClosed() {
+  if (view_) {
+    view_->RefreshContent();
+  }
+}
+
+void AstraNewTabController::UpdateViewSuggestedContent() {
+  // TODO(astra): Add suggested content section update when the view
+  // has a dedicated suggested content area.
+  if (view_) {
+    view_->RefreshContent();
+  }
+}
+
 }  // namespace astra

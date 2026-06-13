@@ -873,4 +873,728 @@ std::string AstraNewTabModel::ColorToHex(SkColor color) {
   return std::string(buf);
 }
 
+// =========================================================================
+// Suggested content management
+// =========================================================================
+
+const AstraNtpSuggestedContent* AstraNewTabModel::GetSuggestedContentAt(
+    size_t index) const {
+  if (index >= suggested_content_.size()) {
+    return nullptr;
+  }
+  return &suggested_content_[index];
+}
+
+int AstraNewTabModel::FindSuggestedContentById(const std::string& id) const {
+  for (size_t i = 0; i < suggested_content_.size(); ++i) {
+    if (suggested_content_[i].id == id) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+void AstraNewTabModel::AddSuggestedContent(
+    const AstraNtpSuggestedContent& item) {
+  // Check for duplicate by ID.
+  if (FindSuggestedContentById(item.id) >= 0) {
+    return;
+  }
+  suggested_content_.push_back(item);
+  // Enforce max items.
+  if (suggested_content_.size() > kMaxSuggestedContentItems) {
+    suggested_content_.resize(kMaxSuggestedContentItems);
+  }
+  NotifySuggestedContentChanged();
+}
+
+bool AstraNewTabModel::RemoveSuggestedContent(const std::string& id) {
+  int index = FindSuggestedContentById(id);
+  if (index < 0) {
+    return false;
+  }
+  suggested_content_.erase(suggested_content_.begin() + index);
+  NotifySuggestedContentChanged();
+  return true;
+}
+
+void AstraNewTabModel::SetSuggestedContent(
+    std::vector<AstraNtpSuggestedContent> items) {
+  suggested_content_ = std::move(items);
+  // Enforce max items.
+  if (suggested_content_.size() > kMaxSuggestedContentItems) {
+    suggested_content_.resize(kMaxSuggestedContentItems);
+  }
+  NotifySuggestedContentChanged();
+}
+
+void AstraNewTabModel::ClearSuggestedContent() {
+  if (!suggested_content_.empty()) {
+    suggested_content_.clear();
+    NotifySuggestedContentChanged();
+  }
+}
+
+// =========================================================================
+// Suggested content categories
+// =========================================================================
+
+void AstraNewTabModel::SetEnabledSuggestedCategories(
+    std::vector<AstraNtpSuggestedCategory> categories) {
+  enabled_suggested_categories_ = std::move(categories);
+  NotifySuggestedContentSettingsChanged();
+}
+
+void AstraNewTabModel::AddEnabledSuggestedCategory(
+    AstraNtpSuggestedCategory category) {
+  if (IsSuggestedCategoryEnabled(category)) {
+    return;
+  }
+  enabled_suggested_categories_.push_back(category);
+  NotifySuggestedContentSettingsChanged();
+}
+
+void AstraNewTabModel::RemoveEnabledSuggestedCategory(
+    AstraNtpSuggestedCategory category) {
+  auto it = std::find(enabled_suggested_categories_.begin(),
+                      enabled_suggested_categories_.end(), category);
+  if (it == enabled_suggested_categories_.end()) {
+    return;
+  }
+  enabled_suggested_categories_.erase(it);
+  NotifySuggestedContentSettingsChanged();
+}
+
+bool AstraNewTabModel::IsSuggestedCategoryEnabled(
+    AstraNtpSuggestedCategory category) const {
+  return std::find(enabled_suggested_categories_.begin(),
+                   enabled_suggested_categories_.end(),
+                   category) != enabled_suggested_categories_.end();
+}
+
+// =========================================================================
+// Theme settings
+// =========================================================================
+
+void AstraNewTabModel::set_theme_mode(AstraNtpThemeMode mode) {
+  if (theme_mode_ != mode) {
+    theme_mode_ = mode;
+    NotifyThemeChanged();
+    NotifyNtpSettingsChanged();
+  }
+}
+
+void AstraNewTabModel::set_accent_color(SkColor color) {
+  if (accent_color_ != color) {
+    accent_color_ = color;
+    NotifyAccentColorChanged();
+    NotifyNtpSettingsChanged();
+  }
+}
+
+void AstraNewTabModel::set_gradient_settings(
+    const AstraNtpGradientSettings& settings) {
+  if (!(gradient_settings_ == settings)) {
+    gradient_settings_ = settings;
+    NotifyNtpSettingsChanged();
+  }
+}
+
+// =========================================================================
+// Layout density
+// =========================================================================
+
+void AstraNewTabModel::set_layout_density(AstraNtpLayoutDensity density) {
+  if (layout_density_ != density) {
+    layout_density_ = density;
+    NotifyLayoutDensityChanged();
+    NotifyNtpSettingsChanged();
+  }
+}
+
+// =========================================================================
+// Shortcut display options
+// =========================================================================
+
+void AstraNewTabModel::set_shortcut_icon_size(AstraNtpShortcutIconSize size) {
+  if (shortcut_icon_size_ != size) {
+    shortcut_icon_size_ = size;
+    NotifyNtpSettingsChanged();
+  }
+}
+
+void AstraNewTabModel::set_show_shortcut_titles(bool show) {
+  if (show_shortcut_titles_ != show) {
+    show_shortcut_titles_ = show;
+    NotifyNtpSettingsChanged();
+  }
+}
+
+// =========================================================================
+// Clock / date settings
+// =========================================================================
+
+void AstraNewTabModel::set_clock_format(AstraNtpClockFormat format) {
+  if (clock_format_ != format) {
+    clock_format_ = format;
+    NotifyClockFormatChanged();
+    NotifyNtpSettingsChanged();
+  }
+}
+
+void AstraNewTabModel::set_show_seconds(bool show) {
+  if (show_seconds_ != show) {
+    show_seconds_ = show;
+    NotifyClockFormatChanged();
+  }
+}
+
+void AstraNewTabModel::set_show_date(bool show) {
+  if (show_date_ != show) {
+    show_date_ = show;
+    NotifyClockFormatChanged();
+  }
+}
+
+std::u16string AstraNewTabModel::FormatClockTime(base::Time now) const {
+  base::Time::Exploded exploded;
+  now.LocalExplode(&exploded);
+
+  int hour = exploded.hour;
+  int minute = exploded.minute;
+  int second = exploded.second;
+
+  // Determine if we should use 12-hour format.
+  bool use_12_hour = false;
+  switch (clock_format_) {
+    case AstraNtpClockFormat::k12Hour:
+      use_12_hour = true;
+      break;
+    case AstraNtpClockFormat::k24Hour:
+      use_12_hour = false;
+      break;
+    case AstraNtpClockFormat::kSystem:
+      // Default to 24-hour for system locale (simplified).
+      // TODO(astra): Use actual system locale to determine 12/24 hour format.
+      // Chromium pattern: base::TimeFormat::GetHourClockType().
+      use_12_hour = false;
+      break;
+  }
+
+  std::u16string result;
+  char buf[32];
+  if (use_12_hour) {
+    int display_hour = hour % 12;
+    if (display_hour == 0) {
+      display_hour = 12;
+    }
+    if (show_seconds_) {
+      base::snprintf(buf, sizeof(buf), "%d:%02d:%02d %s",
+                     display_hour, minute, second,
+                     hour < 12 ? "AM" : "PM");
+    } else {
+      base::snprintf(buf, sizeof(buf), "%d:%02d %s",
+                     display_hour, minute,
+                     hour < 12 ? "AM" : "PM");
+    }
+  } else {
+    if (show_seconds_) {
+      base::snprintf(buf, sizeof(buf), "%02d:%02d:%02d", hour, minute, second);
+    } else {
+      base::snprintf(buf, sizeof(buf), "%02d:%02d", hour, minute);
+    }
+  }
+  return base::UTF8ToUTF16(buf);
+}
+
+std::u16string AstraNewTabModel::FormatDate(base::Time now) const {
+  base::Time::Exploded exploded;
+  now.LocalExplode(&exploded);
+
+  char buf[64];
+  base::snprintf(buf, sizeof(buf), "%04d-%02d-%02d",
+                 exploded.year, exploded.month, exploded.day_of_month);
+  // TODO(astra): Use proper date formatting (base::TimeFormat).
+  return base::UTF8ToUTF16(buf);
+}
+
+// =========================================================================
+// Search bar settings
+// =========================================================================
+
+void AstraNewTabModel::set_search_bar_style(AstraNtpSearchBarStyle style) {
+  if (search_bar_style_ != style) {
+    search_bar_style_ = style;
+    NotifySearchBarStyleChanged();
+    NotifyNtpSettingsChanged();
+  }
+}
+
+void AstraNewTabModel::set_show_search_engine(bool show) {
+  if (show_search_engine_ != show) {
+    show_search_engine_ = show;
+    NotifySearchBarStyleChanged();
+  }
+}
+
+void AstraNewTabModel::set_search_engine_name(const std::string& name) {
+  if (search_engine_name_ != name) {
+    search_engine_name_ = name;
+    NotifySearchBarStyleChanged();
+  }
+}
+
+// =========================================================================
+// Greeting customization
+// =========================================================================
+
+void AstraNewTabModel::set_greeting_name(const std::u16string& name) {
+  if (greeting_name_ != name) {
+    greeting_name_ = name;
+    NotifyGreetingNameChanged();
+    NotifyNtpSettingsChanged();
+  }
+}
+
+// =========================================================================
+// Suggested content visibility
+// =========================================================================
+
+void AstraNewTabModel::set_show_suggested_content(bool show) {
+  if (show_suggested_content_ != show) {
+    show_suggested_content_ = show;
+    NotifySuggestedContentSettingsChanged();
+    NotifyNtpSettingsChanged();
+  }
+}
+
+// =========================================================================
+// Workspace window count helper
+// =========================================================================
+
+bool AstraNewTabModel::SetWorkspaceWindowCount(const std::string& id,
+                                               int window_count) {
+  int index = FindWorkspaceCardById(id);
+  if (index < 0) {
+    return false;
+  }
+  if (workspace_cards_[static_cast<size_t>(index)].window_count == window_count) {
+    return false;
+  }
+  workspace_cards_[static_cast<size_t>(index)].window_count = window_count;
+  NotifyWorkspacesChanged();
+  return true;
+}
+
+// =========================================================================
+// Import / Export
+// =========================================================================
+
+base::Value::Dict AstraNewTabModel::ExportSettings() const {
+  base::Value::Dict dict;
+
+  // Visibility settings.
+  dict.Set("show_greeting", show_greeting_);
+  dict.Set("show_search_bar", show_search_bar_);
+  dict.Set("show_workspace_cards", show_workspace_cards_);
+  dict.Set("show_shortcuts", show_shortcuts_);
+  dict.Set("show_recently_closed", show_recently_closed_);
+  dict.Set("show_quick_actions", show_quick_actions_);
+  dict.Set("show_suggested_content", show_suggested_content_);
+
+  // Layout settings.
+  dict.Set("shortcut_columns", shortcut_columns_);
+  dict.Set("max_workspaces_shown", max_workspaces_shown_);
+  dict.Set("max_recently_closed_shown", max_recently_closed_shown_);
+
+  // Layout modes.
+  dict.Set("shortcut_layout_mode", static_cast<int>(shortcut_layout_mode_));
+  dict.Set("workspace_card_style", static_cast<int>(workspace_card_style_));
+  dict.Set("background_style", static_cast<int>(background_style_));
+  dict.Set("theme_mode", static_cast<int>(theme_mode_));
+  dict.Set("layout_density", static_cast<int>(layout_density_));
+  dict.Set("greeting_style", static_cast<int>(greeting_style_));
+  dict.Set("clock_format", static_cast<int>(clock_format_));
+  dict.Set("search_bar_style", static_cast<int>(search_bar_style_));
+  dict.Set("shortcut_icon_size", static_cast<int>(shortcut_icon_size_));
+
+  // Other settings.
+  dict.Set("custom_background_url", custom_background_url_);
+  dict.Set("show_most_visited", show_most_visited_);
+  dict.Set("show_shortcut_titles", show_shortcut_titles_);
+  dict.Set("show_seconds", show_seconds_);
+  dict.Set("show_date", show_date_);
+  dict.Set("show_search_engine", show_search_engine_);
+  dict.Set("search_engine_name", search_engine_name_);
+  dict.Set("greeting_name", base::UTF16ToUTF8(greeting_name_));
+  dict.Set("accent_color", ColorToHex(accent_color_));
+
+  // Gradient settings.
+  base::Value::Dict gradient_dict;
+  gradient_dict.Set("start_color", ColorToHex(gradient_settings_.start_color));
+  gradient_dict.Set("end_color", ColorToHex(gradient_settings_.end_color));
+  gradient_dict.Set("angle", gradient_settings_.angle);
+  dict.Set("gradient_settings", std::move(gradient_dict));
+
+  // Custom shortcuts.
+  base::Value::List shortcut_list;
+  for (const auto& shortcut : shortcuts_) {
+    if (shortcut.is_custom) {
+      shortcut_list.Append(ShortcutToDict(shortcut));
+    }
+  }
+  dict.Set("custom_shortcuts", std::move(shortcut_list));
+
+  // Quick action order (just IDs).
+  base::Value::List action_list;
+  for (const auto& action : quick_actions_) {
+    action_list.Append(action.id);
+  }
+  dict.Set("quick_actions", std::move(action_list));
+
+  return dict;
+}
+
+bool AstraNewTabModel::ImportSettings(const base::Value::Dict& settings) {
+  bool any_imported = false;
+
+  // Visibility settings.
+  if (auto* show_greeting = settings.FindBool("show_greeting")) {
+    show_greeting_ = *show_greeting;
+    any_imported = true;
+  }
+  if (auto* show_search_bar = settings.FindBool("show_search_bar")) {
+    show_search_bar_ = *show_search_bar;
+    any_imported = true;
+  }
+  if (auto* show_workspace = settings.FindBool("show_workspace_cards")) {
+    show_workspace_cards_ = *show_workspace;
+    any_imported = true;
+  }
+  if (auto* show_shortcuts = settings.FindBool("show_shortcuts")) {
+    show_shortcuts_ = *show_shortcuts;
+    any_imported = true;
+  }
+  if (auto* show_recent = settings.FindBool("show_recently_closed")) {
+    show_recently_closed_ = *show_recent;
+    any_imported = true;
+  }
+  if (auto* show_actions = settings.FindBool("show_quick_actions")) {
+    show_quick_actions_ = *show_actions;
+    any_imported = true;
+  }
+  if (auto* show_suggested = settings.FindBool("show_suggested_content")) {
+    show_suggested_content_ = *show_suggested;
+    any_imported = true;
+  }
+
+  // Layout settings.
+  if (auto* columns = settings.FindInt("shortcut_columns")) {
+    shortcut_columns_ = ClampInt(*columns, kMinShortcutColumns,
+                                  kMaxShortcutColumns);
+    any_imported = true;
+  }
+  if (auto* max_ws = settings.FindInt("max_workspaces_shown")) {
+    max_workspaces_shown_ = ClampInt(*max_ws, kMinMaxWorkspacesShown,
+                                      kMaxMaxWorkspacesShown);
+    any_imported = true;
+  }
+  if (auto* max_rc = settings.FindInt("max_recently_closed_shown")) {
+    max_recently_closed_shown_ = ClampInt(*max_rc, kMinMaxRecentlyClosedShown,
+                                           kMaxMaxRecentlyClosedShown);
+    any_imported = true;
+  }
+
+  // Layout modes.
+  if (auto* sc_mode = settings.FindInt("shortcut_layout_mode")) {
+    shortcut_layout_mode_ = static_cast<AstraNtpShortcutLayoutMode>(
+        std::max(0, std::min(1, *sc_mode)));
+    any_imported = true;
+  }
+  if (auto* ws_style = settings.FindInt("workspace_card_style")) {
+    workspace_card_style_ = static_cast<AstraNtpWorkspaceCardStyle>(
+        std::max(0, std::min(2, *ws_style)));
+    any_imported = true;
+  }
+  if (auto* bg_style = settings.FindInt("background_style")) {
+    background_style_ = static_cast<AstraNtpBackgroundStyle>(
+        std::max(0, std::min(3, *bg_style)));
+    any_imported = true;
+  }
+  if (auto* theme = settings.FindInt("theme_mode")) {
+    theme_mode_ = static_cast<AstraNtpThemeMode>(
+        std::max(0, std::min(2, *theme)));
+    any_imported = true;
+  }
+  if (auto* density = settings.FindInt("layout_density")) {
+    layout_density_ = static_cast<AstraNtpLayoutDensity>(
+        std::max(0, std::min(2, *density)));
+    any_imported = true;
+  }
+  if (auto* g_style = settings.FindInt("greeting_style")) {
+    greeting_style_ = static_cast<AstraNtpGreetingStyle>(
+        std::max(0, std::min(2, *g_style)));
+    any_imported = true;
+  }
+  if (auto* clock = settings.FindInt("clock_format")) {
+    clock_format_ = static_cast<AstraNtpClockFormat>(
+        std::max(0, std::min(2, *clock)));
+    any_imported = true;
+  }
+  if (auto* sb_style = settings.FindInt("search_bar_style")) {
+    search_bar_style_ = static_cast<AstraNtpSearchBarStyle>(
+        std::max(0, std::min(2, *sb_style)));
+    any_imported = true;
+  }
+  if (auto* icon_size = settings.FindInt("shortcut_icon_size")) {
+    shortcut_icon_size_ = static_cast<AstraNtpShortcutIconSize>(
+        std::max(0, std::min(2, *icon_size)));
+    any_imported = true;
+  }
+
+  // String settings.
+  if (auto* bg_url = settings.FindString("custom_background_url")) {
+    custom_background_url_ = *bg_url;
+    any_imported = true;
+  }
+  if (auto* se_name = settings.FindString("search_engine_name")) {
+    search_engine_name_ = *se_name;
+    any_imported = true;
+  }
+  if (auto* g_name = settings.FindString("greeting_name")) {
+    greeting_name_ = base::UTF8ToUTF16(*g_name);
+    any_imported = true;
+  }
+  if (auto* accent_hex = settings.FindString("accent_color")) {
+    accent_color_ = ParseHexColor(*accent_hex);
+    any_imported = true;
+  }
+
+  // Bool settings.
+  if (auto* most_visited = settings.FindBool("show_most_visited")) {
+    show_most_visited_ = *most_visited;
+    any_imported = true;
+  }
+  if (auto* show_titles = settings.FindBool("show_shortcut_titles")) {
+    show_shortcut_titles_ = *show_titles;
+    any_imported = true;
+  }
+  if (auto* show_sec = settings.FindBool("show_seconds")) {
+    show_seconds_ = *show_sec;
+    any_imported = true;
+  }
+  if (auto* show_dt = settings.FindBool("show_date")) {
+    show_date_ = *show_dt;
+    any_imported = true;
+  }
+  if (auto* show_se = settings.FindBool("show_search_engine")) {
+    show_search_engine_ = *show_se;
+    any_imported = true;
+  }
+
+  // Gradient settings.
+  if (auto* gradient_dict = settings.FindDict("gradient_settings")) {
+    if (auto* start = gradient_dict->FindString("start_color")) {
+      gradient_settings_.start_color = ParseHexColor(*start);
+    }
+    if (auto* end = gradient_dict->FindString("end_color")) {
+      gradient_settings_.end_color = ParseHexColor(*end);
+    }
+    if (auto* angle = gradient_dict->FindInt("angle")) {
+      gradient_settings_.angle = *angle;
+    }
+    any_imported = true;
+  }
+
+  // Custom shortcuts.
+  if (auto* shortcut_list = settings.FindList("custom_shortcuts")) {
+    shortcuts_.clear();
+    for (const auto& entry : *shortcut_list) {
+      if (entry.is_dict()) {
+        shortcuts_.push_back(ShortcutFromDict(entry.GetDict()));
+      }
+    }
+    any_imported = true;
+  }
+
+  // Quick action IDs.
+  if (auto* action_list = settings.FindList("quick_actions")) {
+    quick_actions_.clear();
+    for (size_t i = 0; i < action_list->size(); ++i) {
+      const std::string* id = (*action_list)[i].GetIfString();
+      if (id) {
+        AstraNtpQuickAction action;
+        action.id = *id;
+        action.order_index = static_cast<int>(i);
+        action.is_enabled = true;
+        quick_actions_.push_back(action);
+      }
+    }
+    any_imported = true;
+  }
+
+  if (any_imported) {
+    NotifyShortcutsChanged();
+    NotifyQuickActionsChanged();
+    NotifyNtpSettingsChanged();
+    NotifyThemeChanged();
+    NotifyLayoutDensityChanged();
+  }
+
+  return any_imported;
+}
+
+// =========================================================================
+// Reset to defaults
+// =========================================================================
+
+void AstraNewTabModel::ResetSettingsToDefaults() {
+  show_greeting_ = true;
+  show_search_bar_ = true;
+  show_workspace_cards_ = true;
+  show_shortcuts_ = true;
+  show_recently_closed_ = true;
+  show_quick_actions_ = true;
+  show_suggested_content_ = kDefaultShowSuggestedContent;
+
+  shortcut_columns_ = kDefaultShortcutColumns;
+  max_workspaces_shown_ = kDefaultMaxWorkspacesShown;
+  max_recently_closed_shown_ = kDefaultMaxRecentlyClosedShown;
+
+  shortcut_layout_mode_ = AstraNtpShortcutLayoutMode::kGrid;
+  workspace_card_style_ = AstraNtpWorkspaceCardStyle::kFull;
+  background_style_ = AstraNtpBackgroundStyle::kSimple;
+  theme_mode_ = kDefaultThemeMode;
+  layout_density_ = kDefaultLayoutDensity;
+  greeting_style_ = AstraNtpGreetingStyle::kFormal;
+  clock_format_ = kDefaultClockFormat;
+  search_bar_style_ = kDefaultSearchBarStyle;
+  shortcut_icon_size_ = kDefaultShortcutIconSize;
+
+  custom_background_url_.clear();
+  show_most_visited_ = true;
+  show_shortcut_titles_ = kDefaultShowShortcutTitles;
+  show_seconds_ = kDefaultShowSeconds;
+  show_date_ = kDefaultShowDate;
+  show_search_engine_ = kDefaultShowSearchEngine;
+  search_engine_name_ = "Google";
+  greeting_name_.clear();
+  accent_color_ = SK_ColorTRANSPARENT;
+  gradient_settings_ = AstraNtpGradientSettings();
+
+  NotifyNtpSettingsChanged();
+  NotifyThemeChanged();
+  NotifyLayoutDensityChanged();
+  NotifyClockFormatChanged();
+  NotifySearchBarStyleChanged();
+}
+
+void AstraNewTabModel::ResetAllToDefaults() {
+  ResetSettingsToDefaults();
+
+  shortcuts_.clear();
+  quick_actions_.clear();
+  recently_closed_.clear();
+  suggested_content_.clear();
+  enabled_suggested_categories_.clear();
+
+  NotifyShortcutsChanged();
+  NotifyWorkspacesChanged();
+  NotifyQuickActionsChanged();
+  NotifyRecentlyClosedChanged();
+  NotifySuggestedContentChanged();
+}
+
+// =========================================================================
+// Extended notification helpers
+// =========================================================================
+
+void AstraNewTabModel::NotifySuggestedContentChanged() {
+  for (auto& observer : observers_) {
+    observer.OnSuggestedContentChanged();
+  }
+}
+
+void AstraNewTabModel::NotifyLayoutDensityChanged() {
+  for (auto& observer : observers_) {
+    observer.OnLayoutDensityChanged();
+  }
+}
+
+void AstraNewTabModel::NotifyAccentColorChanged() {
+  for (auto& observer : observers_) {
+    observer.OnAccentColorChanged();
+  }
+}
+
+void AstraNewTabModel::NotifyClockFormatChanged() {
+  for (auto& observer : observers_) {
+    observer.OnClockFormatChanged();
+  }
+}
+
+void AstraNewTabModel::NotifySearchBarStyleChanged() {
+  for (auto& observer : observers_) {
+    observer.OnSearchBarStyleChanged();
+  }
+}
+
+void AstraNewTabModel::NotifyGreetingNameChanged() {
+  for (auto& observer : observers_) {
+    observer.OnGreetingNameChanged();
+  }
+}
+
+void AstraNewTabModel::NotifySuggestedContentSettingsChanged() {
+  for (auto& observer : observers_) {
+    observer.OnSuggestedContentSettingsChanged();
+  }
+}
+
+// =========================================================================
+// Serialization helpers
+// =========================================================================
+
+// static
+base::Value::Dict AstraNewTabModel::SuggestedContentToDict(
+    const AstraNtpSuggestedContent& item) {
+  base::Value::Dict dict;
+  dict.Set("id", item.id);
+  dict.Set("title", base::UTF16ToUTF8(item.title));
+  dict.Set("source", base::UTF16ToUTF8(item.source));
+  dict.Set("url", item.url.spec());
+  dict.Set("image_url", item.image_url.spec());
+  dict.Set("category", static_cast<int>(item.category));
+  dict.Set("publish_time",
+           static_cast<double>(item.publish_time.ToDeltaSinceWindowsEpoch()
+                                   .InMicroseconds()));
+  return dict;
+}
+
+// static
+AstraNtpSuggestedContent AstraNewTabModel::SuggestedContentFromDict(
+    const base::Value::Dict& dict) {
+  AstraNtpSuggestedContent item;
+  const std::string* id_str = dict.FindString("id").value_or(&std::string());
+  item.id = *id_str;
+  const std::string* title_str =
+      dict.FindString("title").value_or(&std::string());
+  item.title = base::UTF8ToUTF16(*title_str);
+  const std::string* source_str =
+      dict.FindString("source").value_or(&std::string());
+  item.source = base::UTF8ToUTF16(*source_str);
+  const std::string* url_str = dict.FindString("url").value_or(&std::string());
+  item.url = GURL(*url_str);
+  const std::string* img_str =
+      dict.FindString("image_url").value_or(&std::string());
+  item.image_url = GURL(*img_str);
+  int cat = dict.FindInt("category").value_or(0);
+  item.category = static_cast<AstraNtpSuggestedCategory>(
+      std::max(0, std::min(5, cat)));
+  double pub_time = dict.FindDouble("publish_time").value_or(0.0);
+  item.publish_time = base::Time::FromDeltaSinceWindowsEpoch(
+      base::Microseconds(static_cast<int64_t>(pub_time)));
+  return item;
+}
+
 }  // namespace astra

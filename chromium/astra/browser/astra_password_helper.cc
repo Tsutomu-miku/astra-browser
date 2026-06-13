@@ -233,6 +233,121 @@ AstraPasswordHealthStats AstraPasswordHelper::GetPasswordHealthStats() const {
   return stats;
 }
 
+std::vector<AstraPasswordEntry> AstraPasswordHelper::GetDisplayPasswords(
+    size_t max_count) const {
+  // Get all saved passwords and apply filter + sort based on current settings.
+  // TODO(astra): In a real implementation, we'd query the store and apply
+  //   sorting/filtering. For the overlay, we return what GetSavedPasswords
+  //   returns (which is empty) since there's no real store.
+  auto entries = GetSavedPasswords(max_count);
+
+  // Apply filter.
+  AstraPasswordFilter filter = GetFilter();
+  if (filter != AstraPasswordFilter::kAll) {
+    std::vector<AstraPasswordEntry> filtered;
+    for (const auto& entry : entries) {
+      switch (filter) {
+        case AstraPasswordFilter::kCompromised:
+          if (entry.is_compromised) filtered.push_back(entry);
+          break;
+        case AstraPasswordFilter::kWeak:
+          if (entry.is_weak) filtered.push_back(entry);
+          break;
+        case AstraPasswordFilter::kReused:
+          if (entry.is_reused) filtered.push_back(entry);
+          break;
+        default:
+          filtered.push_back(entry);
+          break;
+      }
+    }
+    entries = std::move(filtered);
+  }
+
+  // Apply sort.
+  AstraPasswordSortOrder sort_order = GetSortOrder();
+  switch (sort_order) {
+    case AstraPasswordSortOrder::kAlphabetical:
+      std::sort(entries.begin(), entries.end(),
+                [](const AstraPasswordEntry& a, const AstraPasswordEntry& b) {
+                  return a.site_display_name < b.site_display_name;
+                });
+      break;
+    case AstraPasswordSortOrder::kLastUsed:
+      std::sort(entries.begin(), entries.end(),
+                [](const AstraPasswordEntry& a, const AstraPasswordEntry& b) {
+                  return a.last_used_time > b.last_used_time;
+                });
+      break;
+    case AstraPasswordSortOrder::kDateCreated:
+      std::sort(entries.begin(), entries.end(),
+                [](const AstraPasswordEntry& a, const AstraPasswordEntry& b) {
+                  return a.date_created > b.date_created;
+                });
+      break;
+  }
+
+  // Cap result size.
+  if (max_count > 0 && entries.size() > max_count) {
+    entries.resize(max_count);
+  }
+
+  return entries;
+}
+
+std::vector<AstraPasswordEntry> AstraPasswordHelper::GetPasswordsForURL(
+    const GURL& url,
+    size_t max_count) const {
+  // TODO(astra): Query PasswordStore for passwords matching this URL.
+  //   In Chromium, this would use PasswordStore::GetLoginsForUrl() or
+  //   similar. For the overlay, we filter from the full list.
+  auto all = GetSavedPasswords(0);
+  if (!url.is_valid()) {
+    return all;
+  }
+
+  std::vector<AstraPasswordEntry> matches;
+  std::u16string host = base::UTF8ToUTF16(url.host());
+  for (const auto& entry : all) {
+    if (entry.url.host() == url.host()) {
+      matches.push_back(entry);
+    }
+    if (max_count > 0 && matches.size() >= max_count) {
+      break;
+    }
+  }
+  return matches;
+}
+
+absl::optional<AstraPasswordEntry> AstraPasswordHelper::GetPasswordById(
+    const std::string& id) const {
+  // TODO(astra): Look up by ID in PasswordStore.
+  //   For the overlay, iterate the saved passwords.
+  auto all = GetSavedPasswords(0);
+  for (const auto& entry : all) {
+    if (entry.id == id) {
+      return entry;
+    }
+  }
+  return absl::nullopt;
+}
+
+size_t AstraPasswordHelper::GetFilteredPasswordCount() const {
+  // Returns the count after applying the current filter.
+  AstraPasswordFilter filter = GetFilter();
+  switch (filter) {
+    case AstraPasswordFilter::kAll:
+      return GetPasswordCount();
+    case AstraPasswordFilter::kCompromised:
+      return GetCompromisedPasswordsCount();
+    case AstraPasswordFilter::kWeak:
+      return GetWeakPasswordsCount();
+    case AstraPasswordFilter::kReused:
+      return GetReusedPasswordsCount();
+  }
+  return GetPasswordCount();
+}
+
 // =========================================================================
 // Password strength
 // =========================================================================
@@ -356,6 +471,28 @@ std::u16string AstraPasswordHelper::GetPasswordStrengthLabel(
       return u"Very Strong";
   }
   return u"";
+}
+
+SkColor AstraPasswordHelper::GetPasswordStrengthColor(
+    AstraPasswordStrength strength) {
+  // Color hints for password strength display.
+  // These are placeholder colors — in a real Chromium build, use
+  // color IDs from the color provider system.
+  // TODO(astra): Use proper color IDs from ui/color/color_id.h
+  //   or astra/ui/color/astra_color_ids.h.
+  switch (strength) {
+    case AstraPasswordStrength::kVeryWeak:
+      return SK_ColorRED;
+    case AstraPasswordStrength::kWeak:
+      return SkColorSetRGB(0xFF, 0x6B, 0x6B);  // Light red
+    case AstraPasswordStrength::kMedium:
+      return SkColorSetRGB(0xFF, 0xC1, 0x07);  // Amber/yellow
+    case AstraPasswordStrength::kStrong:
+      return SkColorSetRGB(0x34, 0xD3, 0x99);  // Green-ish
+    case AstraPasswordStrength::kVeryStrong:
+      return SkColorSetRGB(0x1E, 0x8E, 0x3E);  // Dark green
+  }
+  return SK_ColorGRAY;
 }
 
 // =========================================================================
@@ -485,6 +622,27 @@ bool AstraPasswordHelper::CopyPasswordToClipboard(
   return false;
 }
 
+bool AstraPasswordHelper::CopyUsernameToClipboard(
+    const AstraPasswordEntry& entry) const {
+  // Copy the username to the system clipboard.
+  //
+  // TODO(astra): Implement real username copy using Chromium's clipboard
+  //   system. The username is not sensitive in the same way as the password,
+  //   but we still use the standard clipboard API for consistency.
+  //
+  //   In the full Chromium build:
+  //     ui::Clipboard::GetForCurrentThread()->WriteText(
+  //         ui::ClipboardBuffer::kCopyPaste,
+  //         base::UTF16ToUTF8(entry.username));
+  //
+  // Placeholder: return false for now.
+  // The UI will show appropriate feedback when implemented.
+  if (entry.username.empty()) {
+    return false;
+  }
+  return false;
+}
+
 void AstraPasswordHelper::OpenPasswordSettings(Profile* profile) const {
   if (!profile) {
     return;
@@ -559,6 +717,239 @@ bool AstraPasswordHelper::ExportPasswords(
   //
   // In the overlay, return false as a stub.
   return false;
+}
+
+// =========================================================================
+// Sort order settings
+// =========================================================================
+
+AstraPasswordSortOrder AstraPasswordHelper::GetSortOrder() const {
+  PrefService* prefs = GetPrefs();
+  if (!prefs) {
+    return AstraPasswordSortOrder::kAlphabetical;
+  }
+  std::string order = prefs->GetString(prefs::kPrefPasswordSortOrder);
+  if (order == "last_used") {
+    return AstraPasswordSortOrder::kLastUsed;
+  }
+  if (order == "date_created") {
+    return AstraPasswordSortOrder::kDateCreated;
+  }
+  return AstraPasswordSortOrder::kAlphabetical;
+}
+
+void AstraPasswordHelper::SetSortOrder(AstraPasswordSortOrder order) {
+  PrefService* prefs = GetPrefs();
+  if (!prefs) {
+    return;
+  }
+
+  std::string order_str;
+  switch (order) {
+    case AstraPasswordSortOrder::kAlphabetical:
+      order_str = "alphabetical";
+      break;
+    case AstraPasswordSortOrder::kLastUsed:
+      order_str = "last_used";
+      break;
+    case AstraPasswordSortOrder::kDateCreated:
+      order_str = "date_created";
+      break;
+  }
+
+  if (prefs->GetString(prefs::kPrefPasswordSortOrder) == order_str) {
+    return;
+  }
+
+  prefs->SetString(prefs::kPrefPasswordSortOrder, order_str);
+  NotifyPasswordSettingsChanged();
+}
+
+AstraPasswordSortOrder AstraPasswordHelper::CycleSortOrder() {
+  AstraPasswordSortOrder current = GetSortOrder();
+  AstraPasswordSortOrder next;
+  switch (current) {
+    case AstraPasswordSortOrder::kAlphabetical:
+      next = AstraPasswordSortOrder::kLastUsed;
+      break;
+    case AstraPasswordSortOrder::kLastUsed:
+      next = AstraPasswordSortOrder::kDateCreated;
+      break;
+    case AstraPasswordSortOrder::kDateCreated:
+      next = AstraPasswordSortOrder::kAlphabetical;
+      break;
+  }
+  SetSortOrder(next);
+  return GetSortOrder();
+}
+
+// =========================================================================
+// Filter settings
+// =========================================================================
+
+AstraPasswordFilter AstraPasswordHelper::GetFilter() const {
+  PrefService* prefs = GetPrefs();
+  if (!prefs) {
+    return AstraPasswordFilter::kAll;
+  }
+  std::string filter = prefs->GetString(prefs::kPrefPasswordFilter);
+  if (filter == "compromised") {
+    return AstraPasswordFilter::kCompromised;
+  }
+  if (filter == "weak") {
+    return AstraPasswordFilter::kWeak;
+  }
+  if (filter == "reused") {
+    return AstraPasswordFilter::kReused;
+  }
+  return AstraPasswordFilter::kAll;
+}
+
+void AstraPasswordHelper::SetFilter(AstraPasswordFilter filter) {
+  PrefService* prefs = GetPrefs();
+  if (!prefs) {
+    return;
+  }
+
+  std::string filter_str;
+  switch (filter) {
+    case AstraPasswordFilter::kAll:
+      filter_str = "all";
+      break;
+    case AstraPasswordFilter::kCompromised:
+      filter_str = "compromised";
+      break;
+    case AstraPasswordFilter::kWeak:
+      filter_str = "weak";
+      break;
+    case AstraPasswordFilter::kReused:
+      filter_str = "reused";
+      break;
+  }
+
+  if (prefs->GetString(prefs::kPrefPasswordFilter) == filter_str) {
+    return;
+  }
+
+  prefs->SetString(prefs::kPrefPasswordFilter, filter_str);
+  NotifyPasswordSettingsChanged();
+}
+
+AstraPasswordFilter AstraPasswordHelper::CycleFilter() {
+  AstraPasswordFilter current = GetFilter();
+  AstraPasswordFilter next;
+  switch (current) {
+    case AstraPasswordFilter::kAll:
+      next = AstraPasswordFilter::kCompromised;
+      break;
+    case AstraPasswordFilter::kCompromised:
+      next = AstraPasswordFilter::kWeak;
+      break;
+    case AstraPasswordFilter::kWeak:
+      next = AstraPasswordFilter::kReused;
+      break;
+    case AstraPasswordFilter::kReused:
+      next = AstraPasswordFilter::kAll;
+      break;
+  }
+  SetFilter(next);
+  return GetFilter();
+}
+
+// =========================================================================
+// Grouping settings
+// =========================================================================
+
+AstraPasswordGroupBy AstraPasswordHelper::GetGroupBy() const {
+  PrefService* prefs = GetPrefs();
+  if (!prefs) {
+    return AstraPasswordGroupBy::kNone;
+  }
+  std::string group_by = prefs->GetString(prefs::kPrefPasswordGroupBy);
+  if (group_by == "site") {
+    return AstraPasswordGroupBy::kSite;
+  }
+  if (group_by == "account") {
+    return AstraPasswordGroupBy::kAccount;
+  }
+  return AstraPasswordGroupBy::kNone;
+}
+
+void AstraPasswordHelper::SetGroupBy(AstraPasswordGroupBy group_by) {
+  PrefService* prefs = GetPrefs();
+  if (!prefs) {
+    return;
+  }
+
+  std::string group_str;
+  switch (group_by) {
+    case AstraPasswordGroupBy::kNone:
+      group_str = "none";
+      break;
+    case AstraPasswordGroupBy::kSite:
+      group_str = "site";
+      break;
+    case AstraPasswordGroupBy::kAccount:
+      group_str = "account";
+      break;
+  }
+
+  if (prefs->GetString(prefs::kPrefPasswordGroupBy) == group_str) {
+    return;
+  }
+
+  prefs->SetString(prefs::kPrefPasswordGroupBy, group_str);
+  NotifyPasswordSettingsChanged();
+}
+
+AstraPasswordGroupBy AstraPasswordHelper::CycleGroupBy() {
+  AstraPasswordGroupBy current = GetGroupBy();
+  AstraPasswordGroupBy next;
+  switch (current) {
+    case AstraPasswordGroupBy::kNone:
+      next = AstraPasswordGroupBy::kSite;
+      break;
+    case AstraPasswordGroupBy::kSite:
+      next = AstraPasswordGroupBy::kAccount;
+      break;
+    case AstraPasswordGroupBy::kAccount:
+      next = AstraPasswordGroupBy::kNone;
+      break;
+  }
+  SetGroupBy(next);
+  return GetGroupBy();
+}
+
+// =========================================================================
+// Password visibility settings
+// =========================================================================
+
+bool AstraPasswordHelper::GetHidePasswordsByDefault() const {
+  PrefService* prefs = GetPrefs();
+  if (!prefs) {
+    return prefs::kDefaultPasswordHideByDefault;
+  }
+  return prefs->GetBoolean(prefs::kPrefPasswordHideByDefault);
+}
+
+void AstraPasswordHelper::SetHidePasswordsByDefault(bool hide) {
+  PrefService* prefs = GetPrefs();
+  if (!prefs) {
+    return;
+  }
+
+  if (prefs->GetBoolean(prefs::kPrefPasswordHideByDefault) == hide) {
+    return;
+  }
+
+  prefs->SetBoolean(prefs::kPrefPasswordHideByDefault, hide);
+  NotifyPasswordSettingsChanged();
+}
+
+bool AstraPasswordHelper::ToggleHidePasswordsByDefault() {
+  bool new_state = !GetHidePasswordsByDefault();
+  SetHidePasswordsByDefault(new_state);
+  return GetHidePasswordsByDefault();
 }
 
 // =========================================================================

@@ -9,8 +9,11 @@
 
 #include "astra/browser/astra_workspace_service.h"
 #include "astra/ui/color/astra_color_ids.h"
+#include "base/functional/bind.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/single_thread_task_runner.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "ui/color/color_id.h"
 #include "ui/color/color_provider.h"
 #include "ui/gfx/geometry/insets.h"
@@ -51,6 +54,10 @@ constexpr int kAccentBadgeSizeLarge = 10;
 constexpr int kNotificationBadgeSizeSmall = 14;
 constexpr int kNotificationBadgeSizeMedium = 18;
 constexpr int kNotificationBadgeSizeLarge = 22;
+
+constexpr int kWindowBadgeSizeSmall = 12;
+constexpr int kWindowBadgeSizeMedium = 14;
+constexpr int kWindowBadgeSizeLarge = 16;
 
 constexpr int kTextSpacingSmall = 4;
 constexpr int kTextSpacingMedium = 6;
@@ -185,6 +192,56 @@ void AstraWorkspaceAvatarButton::SetNotificationBadgeVisible(bool visible) {
 }
 
 // ---------------------------------------------------------------------------
+// Window count badge
+// ---------------------------------------------------------------------------
+
+void AstraWorkspaceAvatarButton::SetWindowCount(int count) {
+  if (window_count_ == count) {
+    return;
+  }
+  window_count_ = count;
+  UpdateWindowBadge();
+  UpdateTooltip();
+}
+
+void AstraWorkspaceAvatarButton::SetWindowBadgeVisible(bool visible) {
+  if (window_badge_visible_ == visible) {
+    return;
+  }
+  window_badge_visible_ = visible;
+  UpdateWindowBadge();
+}
+
+// ---------------------------------------------------------------------------
+// Animation
+// ---------------------------------------------------------------------------
+
+void AstraWorkspaceAvatarButton::PlaySwitchAnimation() {
+  if (!animations_enabled_ || is_animating_) {
+    return;
+  }
+  is_animating_ = true;
+  UpdateAnimationState();
+
+  // Simple "pulse" animation using a deferred callback to reset.
+  // TODO(astra): Use proper gfx::Animation or views::Animation for smooth
+  //   transitions.  For now we use a simple state toggle with a timer.
+  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
+      FROM_HERE,
+      base::BindOnce(&AstraWorkspaceAvatarButton::OnSwitchAnimationComplete,
+                     weak_factory_.GetWeakPtr()),
+      base::Milliseconds(200));
+}
+
+void AstraWorkspaceAvatarButton::SetAnimationsEnabled(bool enabled) {
+  animations_enabled_ = enabled;
+  if (!enabled && is_animating_) {
+    is_animating_ = false;
+    UpdateAnimationState();
+  }
+}
+
+// ---------------------------------------------------------------------------
 // views::Button overrides
 // ---------------------------------------------------------------------------
 
@@ -205,6 +262,7 @@ void AstraWorkspaceAvatarButton::OnThemeChanged() {
   UpdateAvatarVisuals();
   UpdateAccentBadge();
   UpdateNotificationBadge();
+  UpdateWindowBadge();
 }
 
 gfx::Size AstraWorkspaceAvatarButton::CalculatePreferredSize(
@@ -255,6 +313,14 @@ void AstraWorkspaceAvatarButton::GetAccessibleNodeData(
                     u" notifications";
   }
 
+  // Add window count if badge is visible and count > 1.
+  if (window_badge_visible_ && window_count_ > 1) {
+    if (!description.empty()) {
+      description += u", ";
+    }
+    description += base::NumberToString16(window_count_) + u" windows";
+  }
+
   if (!description.empty()) {
     node_data->SetDescription(description);
   }
@@ -284,6 +350,15 @@ void AstraWorkspaceAvatarButton::Layout() {
     int y = -badge_size.height() / 4;
     notification_badge_->SetBounds(x, y, badge_size.width(),
                                     badge_size.height());
+  }
+
+  // Position the window badge at bottom-left of avatar container.
+  if (window_badge_ && avatar_container_) {
+    gfx::Size badge_size = window_badge_->GetPreferredSize();
+    int x = -badge_size.width() / 4;
+    int y = avatar_container_->height() - badge_size.height() / 2;
+    window_badge_->SetBounds(x, y, badge_size.width(),
+                             badge_size.height());
   }
 }
 
@@ -345,6 +420,13 @@ void AstraWorkspaceAvatarButton::UpdateTooltip() {
     }
     tooltip += base::NumberToString16(notification_count_) +
                u" notifications";
+  }
+
+  if (window_badge_visible_ && window_count_ > 1) {
+    if (!tooltip.empty()) {
+      tooltip += u"\n";
+    }
+    tooltip += base::NumberToString16(window_count_) + u" windows";
   }
 
   if (!tooltip.empty()) {
@@ -443,6 +525,49 @@ void AstraWorkspaceAvatarButton::UpdateNotificationBadge() {
   SchedulePaint();
 }
 
+void AstraWorkspaceAvatarButton::UpdateWindowBadge() {
+  if (!window_badge_ || !window_badge_label_) {
+    return;
+  }
+
+  bool show_badge = window_badge_visible_ && window_count_ > 1;
+  window_badge_->SetVisible(show_badge);
+
+  if (show_badge) {
+    int badge_size = GetWindowBadgeSize();
+    window_badge_->SetPreferredSize(
+        gfx::Size(badge_size, badge_size));
+
+    // Blue background for window count badge.
+    window_badge_->SetBackground(
+        views::CreateRoundedRectBackground(SK_ColorBLUE, badge_size / 2));
+
+    // Show count.
+    window_badge_label_->SetText(base::NumberToString16(window_count_));
+    window_badge_label_->SetEnabledColor(SK_ColorWHITE);
+  }
+
+  SchedulePaint();
+}
+
+void AstraWorkspaceAvatarButton::UpdateAnimationState() {
+  if (is_animating_) {
+    // Slightly scale up or highlight during animation.
+    // TODO(astra): Use proper transform animation.
+    SetBackground(views::CreateRoundedRectBackground(
+        accent_color_, 16));  // Subtle pulse effect.
+  } else {
+    // Reset to default.
+    SetBackground(nullptr);
+  }
+  SchedulePaint();
+}
+
+void AstraWorkspaceAvatarButton::OnSwitchAnimationComplete() {
+  is_animating_ = false;
+  UpdateAnimationState();
+}
+
 int AstraWorkspaceAvatarButton::GetAvatarSize() const {
   switch (size_variant_) {
     case AstraAvatarButtonSize::kSmall:
@@ -477,6 +602,18 @@ int AstraWorkspaceAvatarButton::GetNotificationBadgeSize() const {
       return kNotificationBadgeSizeLarge;
   }
   return kNotificationBadgeSizeMedium;
+}
+
+int AstraWorkspaceAvatarButton::GetWindowBadgeSize() const {
+  switch (size_variant_) {
+    case AstraAvatarButtonSize::kSmall:
+      return kWindowBadgeSizeSmall;
+    case AstraAvatarButtonSize::kMedium:
+      return kWindowBadgeSizeMedium;
+    case AstraAvatarButtonSize::kLarge:
+      return kWindowBadgeSizeLarge;
+  }
+  return kWindowBadgeSizeMedium;
 }
 
 int AstraWorkspaceAvatarButton::GetButtonHeight() const {
@@ -574,6 +711,27 @@ void AstraWorkspaceAvatarButton::UpdateSizeVariant() {
 
   notification_badge_ = notification_badge.get();
   avatar_container->AddChildView(std::move(notification_badge));
+
+  // Window count badge (bottom-right of avatar, different from notification).
+  auto window_badge = std::make_unique<views::View>();
+  int win_badge_size = GetWindowBadgeSize();
+  window_badge->SetPreferredSize(
+      gfx::Size(win_badge_size, win_badge_size));
+  window_badge->SetLayoutManager(
+      std::make_unique<views::FillLayout>());
+
+  auto win_badge_label = std::make_unique<views::Label>();
+  win_badge_label->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  win_badge_label->SetVerticalAlignment(gfx::ALIGN_MIDDLE);
+  win_badge_label->SetAutoColorReadabilityEnabled(false);
+  win_badge_label->SetFontList(
+      win_badge_label->font_list().Derive(
+          -2, gfx::Font::NORMAL, gfx::Font::Weight::BOLD));
+  window_badge_label_ = win_badge_label.get();
+  window_badge->AddChildView(std::move(win_badge_label));
+
+  window_badge_ = window_badge.get();
+  avatar_container->AddChildView(std::move(window_badge));
 
   avatar_container_ = AddChildView(std::move(avatar_container));
 

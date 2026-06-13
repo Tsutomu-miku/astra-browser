@@ -191,6 +191,24 @@ source_set("views") {
     "devtools/astra_devtools_toolbar.h",
     "devtools/astra_devtools_workspace_panel.cc",
     "devtools/astra_devtools_workspace_panel.h",
+    "downloads/astra_downloads_bubble_item_view.cc",
+    "downloads/astra_downloads_bubble_item_view.h",
+    "downloads/astra_downloads_bubble_model.cc",
+    "downloads/astra_downloads_bubble_model.h",
+    "downloads/astra_downloads_bubble_view.cc",
+    "downloads/astra_downloads_bubble_view.h",
+    "downloads/astra_downloads_toolbar_button.cc",
+    "downloads/astra_downloads_toolbar_button.h",
+    "bookmarks_bar/astra_bookmarks_bar_item_view.cc",
+    "bookmarks_bar/astra_bookmarks_bar_item_view.h",
+    "bookmarks_bar/astra_bookmarks_bar_model.cc",
+    "bookmarks_bar/astra_bookmarks_bar_model.h",
+    "bookmarks_bar/astra_bookmarks_bar_view.cc",
+    "bookmarks_bar/astra_bookmarks_bar_view.h",
+    "downloads_shelf/astra_downloads_shelf_item_view.cc",
+    "downloads_shelf/astra_downloads_shelf_item_view.h",
+    "downloads_shelf/astra_downloads_shelf_view.cc",
+    "downloads_shelf/astra_downloads_shelf_view.h",
   ]
 
   public_deps = [
@@ -282,6 +300,9 @@ source_set("astra_ui_views_tests") {
     "workspace/astra_workspace_overview_controller_unittest.cc",
     "workspace/astra_workspace_overview_view_unittest.cc",
     "devtools/astra_devtools_unittest.cc",
+    "downloads/astra_downloads_bubble_views_unittest.cc",
+    "bookmarks_bar/astra_bookmarks_bar_views_unittest.cc",
+    "downloads_shelf/astra_downloads_shelf_views_unittest.cc",
   ]
 
   deps = [

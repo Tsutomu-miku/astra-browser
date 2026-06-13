@@ -116,6 +116,8 @@ void AstraNoteEditorView::LoadNote(const std::string& note_id,
   if (delete_button_) {
     delete_button_->SetVisible(true);
   }
+
+  UpdateCharacterCount();
 }
 
 void AstraNoteEditorView::ClearEditor() {
@@ -136,6 +138,7 @@ void AstraNoteEditorView::ClearEditor() {
     delete_button_->SetVisible(false);
   }
   UpdateSelectedColorButton();
+  UpdateCharacterCount();
 }
 
 void AstraNoteEditorView::BuildLayout() {
@@ -176,6 +179,13 @@ void AstraNoteEditorView::BuildLayout() {
   // TODO(astra): Use a proper Textarea / multi-line text view.
   // Chromium owner: views::Textfield with multi-line or a dedicated
   // Textarea view (ui/views/controls/textfield/).
+
+  // Character count label.
+  char_count_label_ = AddChildView(std::make_unique<views::Label>());
+  char_count_label_->SetHorizontalAlignment(gfx::ALIGN_RIGHT);
+  char_count_label_->SetAutoColorReadabilityEnabled(false);
+  char_count_label_->SetFontList(
+      char_count_label_->font_list().DeriveWithSizeDelta(-2));
 
   // Color picker row.
   BuildColorPicker();
@@ -353,6 +363,7 @@ void AstraNoteEditorView::ContentsChanged(views::Textfield* sender,
   // and call delegate_->OnNoteEditorSave(...) after a short delay.
   //
   // Chromium pattern: base::OneShotTimer + Start(FROM_HERE, delay, ...)
+  UpdateCharacterCount();
 }
 
 // =========================================================================
@@ -377,8 +388,34 @@ void AstraNoteEditorView::OnThemeChanged() {
         color_provider->GetColor(kEditorHeaderColorId));
   }
 
+  if (char_count_label_) {
+    char_count_label_->SetEnabledColor(
+        color_provider->GetColor(kColorAstraSidebarItemSecondaryText));
+  }
+
   // TODO(astra): Style text fields with proper ColorProvider colors.
   // The default Textfield styling should work with the native theme.
+}
+
+void AstraNoteEditorView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  views::View::GetAccessibleNodeData(node_data);
+  node_data->role = ax::mojom::Role::kDialog;
+  node_data->SetName(mode_ == Mode::kNew ? "New note" : "Edit note");
+  node_data->AddState(ax::mojom::State::kEditable);
+}
+
+// =========================================================================
+// Character count
+// =========================================================================
+
+void AstraNoteEditorView::UpdateCharacterCount() {
+  if (!char_count_label_) {
+    return;
+  }
+
+  size_t total = GetTitleText().length() + GetContentText().length();
+  char_count_label_->SetText(
+      base::NumberToString16(total) + u" characters");
 }
 
 }  // namespace astra

@@ -270,6 +270,128 @@ bool AstraProfileMenuController::IsProfileMenuShowing() const {
 }
 
 // ---------------------------------------------------------------------------
+// Menu re-anchoring
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuController::ReanchorMenu(views::View* new_anchor) {
+  if (!menu_widget_ || !new_anchor || !bubble_delegate_) {
+    return;
+  }
+  bubble_delegate_->SetAnchorView(new_anchor);
+  // TODO(astra): Update arrow position if needed based on menu_position_.
+}
+
+// ---------------------------------------------------------------------------
+// Focus management
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuController::FocusFirstElement() {
+  if (!menu_widget_) {
+    return;
+  }
+  views::View* first = GetFirstFocusableView();
+  if (first) {
+    first->RequestFocus();
+  }
+}
+
+void AstraProfileMenuController::FocusLastElement() {
+  if (!menu_widget_) {
+    return;
+  }
+  views::View* last = GetLastFocusableView();
+  if (last) {
+    last->RequestFocus();
+  }
+}
+
+bool AstraProfileMenuController::HasFocus() const {
+  if (!menu_widget_) {
+    return false;
+  }
+  return menu_widget_->IsActive() &&
+         menu_widget_->GetFocusManager() &&
+         menu_widget_->GetFocusManager()->GetFocusedView();
+}
+
+// ---------------------------------------------------------------------------
+// Keyboard navigation
+// ---------------------------------------------------------------------------
+
+bool AstraProfileMenuController::HandleKeyEvent(const ui::KeyEvent& event) {
+  // ESC to close — handled by bubble delegate, but we also handle here
+  // for completeness.
+  if (event.key_code() == ui::VKEY_ESCAPE) {
+    HideProfileMenu();
+    return true;
+  }
+
+  // Tab key for focus cycling.
+  if (event.key_code() == ui::VKEY_TAB) {
+    return HandleTabKey(event.IsShiftDown());
+  }
+
+  // Arrow keys for navigating the workspaces list.
+  if (workspaces_view_ && workspaces_view_->GetVisible()) {
+    if (event.key_code() == ui::VKEY_DOWN ||
+        event.key_code() == ui::VKEY_UP ||
+        event.key_code() == ui::VKEY_HOME ||
+        event.key_code() == ui::VKEY_RETURN ||
+        event.key_code() == ui::VKEY_SPACE) {
+      if (workspaces_view_->OnKeyPressed(event)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Animation
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuController::SetAnimationsEnabled(bool enabled) {
+  animations_enabled_ = enabled;
+  // TODO(astra): Apply animation config to bubble delegate if widget exists.
+}
+
+// ---------------------------------------------------------------------------
+// Widget bounds change
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuController::OnWidgetBoundsChanged(views::Widget* widget,
+                                                      const gfx::Rect& new_bounds) {
+  // Menu bounds changed — could be used for positioning updates.
+  // TODO(astra): Adjust layout if needed.
+}
+
+// ---------------------------------------------------------------------------
+// Accessibility
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuController::AnnounceForAccessibility(
+    const std::u16string& message) {
+  if (!menu_widget_ || !menu_widget_->GetFocusManager()) {
+    return;
+  }
+  // Use Chromium has accessibility announcements via FocusManager.
+  menu_widget_->GetFocusManager()->OnAccessibilityEvent(
+      menu_widget_->GetRootView(), ax::mojom::Event::kAlert);
+  // TODO(astra): Use proper accessibility live region for announcements.
+}
+
+std::u16string AstraProfileMenuController::GetAccessibleMenuName() const {
+  std::u16string name = u"Profile menu";
+  if (model_) {
+    if (!model_->profile_info().name.empty()) {
+      name = model_->profile_info().name + u" profile menu";
+    }
+  }
+  return name;
+}
+
+// ---------------------------------------------------------------------------
 // Avatar button
 // ---------------------------------------------------------------------------
 
@@ -757,8 +879,17 @@ void AstraProfileMenuController::ApplyModelSettingsToViews() {
 
   // Avatar button.
   if (avatar_button_) {
-    // Avatar button doesn't directly use all model settings, but some
-    // settings could affect it in the future.
+    // Apply compact mode to avatar button size.
+    if (model_->compact_mode()) {
+      avatar_button_->SetSizeVariant(AstraAvatarButtonSize::kSmall);
+    } else {
+      avatar_button_->SetSizeVariant(AstraAvatarButtonSize::kMedium);
+    }
+  }
+
+  // Footer view: manage workspaces visibility.
+  if (footer_view_) {
+    // TODO(astra): Wire up manage workspaces visibility in footer.
   }
 }
 
@@ -816,6 +947,155 @@ void AstraProfileMenuController::SyncWorkspacesToModel() {
 
   model_->SetWorkspaces(workspace_infos);
   model_->SetActiveWorkspaceId(service->active_workspace_id());
+}
+
+// ---------------------------------------------------------------------------
+// Private focus / keyboard helpers
+// ---------------------------------------------------------------------------
+
+views::View* AstraProfileMenuController::GetFirstFocusableView() {
+  // Find the first focusable view in the menu content.
+  if (!bubble_delegate_) {
+    return nullptr;
+  }
+  // Walk children to find first focusable.
+  // Priority: workspaces list first, then footer buttons.
+  if (workspaces_view_ && workspaces_view_->GetVisible()) {
+    // The first workspace item is typically focusable.
+    if (workspaces_view_->children().size() > 0) {
+      for (auto* child : workspaces_view_->children()) {
+        if (child->IsFocusable()) {
+          return child;
+        }
+      }
+    }
+  }
+  if (footer_view_) {
+    // Check manage workspaces button first.
+    for (auto* child : footer_view_->children()) {
+      if (child->IsFocusable()) {
+        return child;
+      }
+    }
+  }
+  if (header_view_ && header_view_->IsFocusable()) {
+    return header_view_;
+  }
+  return nullptr;
+}
+
+views::View* AstraProfileMenuController::GetLastFocusableView() {
+  // Find the last focusable view in the menu.
+  // Priority: footer buttons last.
+  if (footer_view_) {
+    // Walk children in reverse to find last focusable.
+    const auto& children = footer_view_->children();
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+      if ((*it)->IsFocusable()) {
+        return *it;
+      }
+    }
+  }
+  if (workspaces_view_ && workspaces_view_->GetVisible()) {
+    const auto& children = workspaces_view_->children();
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+      if ((*it)->IsFocusable()) {
+        return *it;
+      }
+    }
+  }
+  if (header_view_ && header_view_->IsFocusable()) {
+    return header_view_;
+  }
+  return nullptr;
+}
+
+bool AstraProfileMenuController::HandleTabKey(bool reverse) {
+  if (!menu_widget_ || !menu_widget_->GetFocusManager()) {
+    return false;
+  }
+
+  views::FocusManager* focus_manager = menu_widget_->GetFocusManager();
+  views::View* focused = focus_manager->GetFocusedView();
+
+  if (reverse) {
+    // Shift+Tab: if at first element, wrap to last.
+    views::View* first = GetFirstFocusableView();
+    if (focused == first) {
+      views::View* last = GetLastFocusableView();
+      if (last) {
+        last->RequestFocus();
+        return true;
+      }
+    }
+  } else {
+    // Tab: if at last element, wrap to first.
+    views::View* last = GetLastFocusableView();
+    if (focused == last) {
+      views::View* first = GetFirstFocusableView();
+      if (first) {
+        first->RequestFocus();
+        return true;
+      }
+    }
+  }
+
+  // Let default focus manager handle it.
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Profile info projection
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuController::UpdateProfileInfoFromProfile() {
+  if (!model_ || !profile_) {
+    return;
+  }
+
+  AstraMenuProfileInfo info;
+  info.name = base::UTF8ToUTF16(profile_->GetProfileUserName());
+  if (info.name.empty()) {
+    info.name = u"User";
+  }
+  info.email = u"user@astra.local";
+  info.is_guest = profile_->IsGuestSession();
+  info.is_managed = false;  // TODO(astra): Check managed status from Profile.
+
+  model_->SetProfileInfo(info);
+
+  // Also update header view if it exists.
+  if (header_view_) {
+    header_view_->SetProfileName(info.name);
+    header_view_->SetProfileEmail(info.email);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Compact mode
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuController::ApplyCompactMode() {
+  if (!model_) {
+    return;
+  }
+
+  bool compact = model_->compact_mode();
+
+  // Apply compact sizing to workspace items via workspaces view.
+  if (workspaces_view_) {
+    AstraWorkspaceItemSize size = compact ? AstraWorkspaceItemSize::kSmall
+                                          : AstraWorkspaceItemSize::kMedium;
+    // Workspaces view doesn't directly expose item size, but we could
+    // pass it through. TODO(astra): Add SetItemSize to workspaces view.
+  }
+
+  // Adjust avatar button size for compact mode.
+  if (avatar_button_) {
+    AstraAvatarButtonSize size = compact ? AstraAvatarButtonSize::kSmall
+                                         : AstraAvatarButtonSize::kMedium;
+    avatar_button_->SetSizeVariant(size);
+  }
 }
 
 // ---------------------------------------------------------------------------

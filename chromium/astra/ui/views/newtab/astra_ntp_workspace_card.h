@@ -91,8 +91,17 @@ class AstraNtpWorkspaceCard : public views::View {
   void SetTabCount(int tab_count);
   int tab_count() const { return tab_count_; }
 
+  void SetWindowCount(int window_count);
+  int window_count() const { return window_count_; }
+
+  void SetLastActiveTime(base::Time time);
+  base::Time last_active_time() const { return last_active_time_; }
+
   void SetIsActive(bool is_active);
   bool is_active() const { return is_active_; }
+
+  void SetIsSelected(bool is_selected);
+  bool is_selected() const { return is_selected_; }
 
   // Marks this card as the "new workspace" action card (plus icon).
   void SetIsNewWorkspaceCard(bool is_new_card);
@@ -100,6 +109,10 @@ class AstraNtpWorkspaceCard : public views::View {
 
   // Sets whether the drag handle is visible.
   void SetShowDragHandle(bool show);
+
+  // Sets the card layout style (compact, full, grid).
+  void SetCardStyle(AstraNtpWorkspaceCardStyle style);
+  AstraNtpWorkspaceCardStyle card_style() const { return card_style_; }
 
   // -- Callbacks ---------------------------------------------------------
 
@@ -130,6 +143,12 @@ class AstraNtpWorkspaceCard : public views::View {
   // Build the "new workspace" card variant layout.
   void BuildNewWorkspaceLayout();
 
+  // Build the compact layout variant.
+  void BuildCompactLayout();
+
+  // Build the grid layout variant.
+  void BuildGridLayout();
+
   // Updates visual state based on hover, active, and focus flags.
   void UpdateVisualState();
 
@@ -141,6 +160,12 @@ class AstraNtpWorkspaceCard : public views::View {
 
   // Updates the tab count badge display.
   void UpdateTabCountBadge();
+
+  // Updates the last active time display.
+  void UpdateLastActiveLabel();
+
+  // Formats the last active time as a human-readable string.
+  std::u16string FormatLastActiveTime() const;
 
   // Handler for the menu button press.
   void OnMenuButtonPressed();
@@ -157,6 +182,9 @@ class AstraNtpWorkspaceCard : public views::View {
   // Paints the drag handle.
   void PaintDragHandle(gfx::Canvas* canvas);
 
+  // Paints the selected state indicator.
+  void PaintSelectionIndicator(gfx::Canvas* canvas);
+
   // Starts a drag operation.
   void StartDrag(const ui::LocatedEvent& event);
 
@@ -165,13 +193,17 @@ class AstraNtpWorkspaceCard : public views::View {
   std::u16string workspace_name_;
   std::string accent_color_hex_;
   int tab_count_ = 0;
+  int window_count_ = 0;
+  base::Time last_active_time_;
   bool is_active_ = false;
+  bool is_selected_ = false;
   bool is_hovered_ = false;
   bool is_pressed_ = false;
   bool is_focused_ = false;
   bool is_dragging_ = false;
   bool is_new_workspace_card_ = false;
   bool show_drag_handle_ = false;
+  AstraNtpWorkspaceCardStyle card_style_ = AstraNtpWorkspaceCardStyle::kFull;
 
   // Point where drag started.
   gfx::Point drag_start_point_;
@@ -188,6 +220,7 @@ class AstraNtpWorkspaceCard : public views::View {
   raw_ptr<views::Label> name_label_ = nullptr;
   raw_ptr<views::Label> tab_count_label_ = nullptr;
   raw_ptr<views::View> tab_count_badge_ = nullptr;
+  raw_ptr<views::Label> last_active_label_ = nullptr;
   raw_ptr<views::ImageButton> menu_button_ = nullptr;
   raw_ptr<views::View> drag_handle_ = nullptr;
 

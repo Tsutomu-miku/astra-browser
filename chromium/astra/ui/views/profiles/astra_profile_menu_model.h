@@ -74,6 +74,17 @@ enum class AstraSyncStatus {
   kPaused,        // Sync is paused.
 };
 
+// Profile info struct — lightweight projection of Chromium Profile data
+// for menu display.  The model stores a copy so views can query it
+// without hitting the Profile directly.
+struct AstraMenuProfileInfo {
+  std::u16string name;
+  std::u16string email;
+  std::string avatar_url;
+  bool is_guest = false;
+  bool is_managed = false;
+};
+
 // Workspace info struct — lightweight projection of workspace data
 // for menu display.  The model stores a copy so it can answer questions
 // about workspace ordering and visibility without hitting the service.
@@ -82,8 +93,27 @@ struct AstraMenuWorkspaceInfo {
   std::u16string name;
   SkColor accent_color = SK_ColorBLUE;
   int tab_count = 0;
+  int window_count = 0;
   bool is_active = false;
   int order_index = 0;
+};
+
+// Multi-profile entry — represents a profile in the multi-profile switcher.
+struct AstraMenuProfileEntry {
+  std::string profile_path;   // Profile path / identifier.
+  std::u16string name;        // Profile display name.
+  std::u16string email;       // Profile email / subtitle.
+  std::string avatar_url;     // Avatar image URL (optional).
+  bool is_guest = false;      // Whether this is a guest profile.
+  bool is_managed = false;    // Whether this is a managed profile.
+  bool is_current = false;    // Whether this is the currently active profile.
+};
+
+// Menu size variant — controls overall menu dimensions.
+enum class AstraProfileMenuSize {
+  kCompact,   // Narrower menu, smaller items.
+  kNormal,    // Standard size (default).
+  kLarge,     // Wider menu, larger items.
 };
 
 // =========================================================================
@@ -131,6 +161,37 @@ class AstraProfileMenuModelObserver : public base::CheckedObserver {
   // Called when sync status changes.
   virtual void OnSyncStatusChanged(AstraSyncStatus status) {}
 
+  // Called when profile info (name, email, etc.) changes.
+  virtual void OnProfileInfoChanged() {}
+
+  // Called when a workspace color changes.
+  virtual void OnWorkspaceColorChanged(const std::string& workspace_id) {}
+
+  // Called when the menu size variant changes.
+  virtual void OnMenuSizeChanged() {}
+
+  // Called when guest mode is toggled.
+  virtual void OnGuestModeToggled(bool is_guest) {}
+
+  // Called when profile info (name, email, etc.) is set / updated.
+  virtual void OnProfileInfoSet(const AstraMenuProfileInfo& info) {}
+
+  // Called when the profile list changes (add/remove/reorder).
+  virtual void OnProfileListChanged() {}
+
+  // Called when workspace color changes.
+  virtual void OnWorkspaceColorChanged(const std::string& workspace_id,
+                                       SkColor new_color) {}
+
+  // Called when dividers visibility changes.
+  virtual void OnShowDividersChanged(bool show) {}
+
+  // Called when tab counts visibility changes.
+  virtual void OnShowTabCountsChanged(bool show) {}
+
+  // Called when compact mode changes.
+  virtual void OnCompactModeChanged(bool compact) {}
+
  protected:
   ~AstraProfileMenuModelObserver() override = default;
 };
@@ -145,6 +206,14 @@ class AstraProfileMenuModel {
   static constexpr int kMinMaxWorkspaces = 3;
   static constexpr int kMaxMaxWorkspaces = 10;
   static constexpr int kDefaultMaxWorkspaces = 6;
+
+  // Menu width constants (in DIPs).
+  static constexpr int kMenuWidthCompact = 240;
+  static constexpr int kMenuWidthNormal = 280;
+  static constexpr int kMenuWidthLarge = 340;
+  static constexpr int kMinMenuWidth = 200;
+  static constexpr int kMaxMenuWidth = 500;
+  static constexpr int kDefaultMenuWidth = kMenuWidthNormal;
 
   AstraProfileMenuModel();
   ~AstraProfileMenuModel();
@@ -274,6 +343,75 @@ class AstraProfileMenuModel {
   bool show_sign_in_promo() const { return show_sign_in_promo_; }
   void set_show_sign_in_promo(bool show);
 
+  // -- Profile info --------------------------------------------------------
+
+  // Sets the current profile info (name, email, avatar, etc.).
+  // Notifies observers with OnProfileInfoSet if the info changed.
+  void SetProfileInfo(const AstraMenuProfileInfo& info);
+  const AstraMenuProfileInfo& profile_info() const { return profile_info_; }
+
+  // -- Multi-profile list --------------------------------------------------
+
+  // Sets the full list of profiles for multi-profile switching.
+  void SetProfileList(const std::vector<AstraMenuProfileEntry>& profiles);
+  const std::vector<AstraMenuProfileEntry>& profile_list() const {
+    return profile_list_;
+  }
+  size_t GetProfileListSize() const { return profile_list_.size(); }
+  const AstraMenuProfileEntry* GetProfileEntryAt(size_t index) const;
+  const AstraMenuProfileEntry* GetCurrentProfileEntry() const;
+
+  // -- Guest mode ----------------------------------------------------------
+
+  // Enables or disables guest mode.
+  void SetGuestMode(bool enabled);
+  bool is_guest_mode() const { return is_guest_mode_; }
+
+  // -- Workspace color customization --------------------------------------
+
+  // Sets the accent color of a workspace by ID.
+  // Returns true if the workspace was found and color changed.
+  bool SetWorkspaceColor(const std::string& workspace_id, SkColor color);
+
+  // -- Menu size variant ---------------------------------------------------
+
+  // Sets the menu size variant (compact, normal, large).
+  void set_menu_size(AstraProfileMenuSize size);
+  AstraProfileMenuSize menu_size() const { return menu_size_; }
+
+  // -- Menu width ----------------------------------------------------------
+
+  // Sets a custom menu width in DIPs.  0 means use the size variant default.
+  void set_custom_menu_width(int width);
+  int custom_menu_width() const { return custom_menu_width_; }
+
+  // Returns the effective menu width, considering custom width and size variant.
+  int GetEffectiveMenuWidth() const;
+
+  // -- Additional presentation settings ------------------------------------
+
+  // Whether to show dividers between menu sections.
+  bool show_dividers() const { return show_dividers_; }
+  void set_show_dividers(bool show);
+
+  // Whether to show tab counts on workspace items.
+  bool show_tab_counts() const { return show_tab_counts_; }
+  void set_show_tab_counts(bool show);
+
+  // Whether the menu uses compact layout.
+  bool compact_mode() const { return compact_mode_; }
+  void set_compact_mode(bool compact);
+
+  // Whether to show the "Manage workspaces" link.
+  bool show_manage_workspaces() const { return show_manage_workspaces_; }
+  void set_show_manage_workspaces(bool show);
+
+  // Whether to show the "New workspace" button.
+  bool show_new_workspace_button() const {
+    return show_new_workspace_button_;
+  }
+  void set_show_new_workspace_button(bool show);
+
   // -- Sync status ---------------------------------------------------------
 
   // Sets the current sync status.  Notifies OnSyncStatusChanged if changed.
@@ -344,6 +482,28 @@ class AstraProfileMenuModel {
   AstraProfileMenuPosition menu_position_ = AstraProfileMenuPosition::kRight;
   bool show_recently_closed_ = true;
   bool show_sign_in_promo_ = true;
+
+  // -- Additional presentation settings ------------------------------------
+
+  bool show_dividers_ = true;
+  bool show_tab_counts_ = true;
+  bool compact_mode_ = false;
+  AstraProfileMenuSize menu_size_ = AstraProfileMenuSize::kNormal;
+  int custom_menu_width_ = 0;
+  bool show_manage_workspaces_ = true;
+  bool show_new_workspace_button_ = true;
+
+  // -- Profile info --------------------------------------------------------
+
+  AstraMenuProfileInfo profile_info_;
+
+  // -- Multi-profile list --------------------------------------------------
+
+  std::vector<AstraMenuProfileEntry> profile_list_;
+
+  // -- Guest mode ----------------------------------------------------------
+
+  bool is_guest_mode_ = false;
 
   // -- Sync status ---------------------------------------------------------
 

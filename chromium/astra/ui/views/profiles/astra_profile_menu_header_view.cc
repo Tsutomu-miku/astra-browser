@@ -38,6 +38,13 @@ constexpr int kNotificationBadgeSize = 18;
 constexpr int kNotificationBadgeOffset = 6;
 constexpr int kNotificationBadgeFontSizeDelta = -2;
 
+// Workspace badge constants.
+constexpr int kWorkspaceBadgeHeight = 20;
+constexpr int kWorkspaceBadgeDotSize = 8;
+constexpr int kWorkspaceBadgeSpacing = 4;
+constexpr int kWorkspaceBadgeHorizontalPadding = 6;
+constexpr int kWorkspaceBadgeFontSizeDelta = -1;
+
 // Font styles.
 constexpr gfx::Font::Weight kNameFontWeight = gfx::Font::Weight::MEDIUM;
 constexpr gfx::Font::Weight kSyncFontWeight = gfx::Font::Weight::NORMAL;
@@ -61,7 +68,7 @@ AstraProfileMenuHeaderView::AstraProfileMenuHeaderView(Delegate* delegate)
   SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
   SetFocusRingColorId(kColorAstraWorkspaceAccent);
 
-  // Horizontal layout: [avatar+badge] | [text stack] | [sync status]
+  // Horizontal layout: [avatar+badge] | [text stack] | [workspace badge]
   auto* layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::Orientation::kHorizontal,
       gfx::Insets::VH(kHeaderVerticalPadding, kHeaderHorizontalPadding),
@@ -174,6 +181,37 @@ AstraProfileMenuHeaderView::AstraProfileMenuHeaderView(Delegate* delegate)
 
   text_container_ = AddChildView(std::move(text_container));
 
+  // --- Workspace badge (right side, color dot + name) ---
+  auto workspace_badge = std::make_unique<views::View>();
+  workspace_badge->SetVisible(false);  // Hidden by default.
+  auto* badge_layout = workspace_badge->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(0, kWorkspaceBadgeHorizontalPadding),
+          kWorkspaceBadgeSpacing));
+  badge_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  badge_layout->set_minimum_cross_axis_size(kWorkspaceBadgeHeight);
+
+  auto badge_dot = std::make_unique<views::View>();
+  badge_dot->SetPreferredSize(
+      gfx::Size(kWorkspaceBadgeDotSize, kWorkspaceBadgeDotSize));
+  workspace_badge_dot_ = badge_dot.get();
+  workspace_badge->AddChildView(std::move(badge_dot));
+
+  auto badge_label = std::make_unique<views::Label>();
+  badge_label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  badge_label->SetAutoColorReadabilityEnabled(false);
+  badge_label->SetElideBehavior(gfx::ELIDE_MIDDLE);
+  badge_label->SetFontList(
+      badge_label->font_list().Derive(
+          kWorkspaceBadgeFontSizeDelta, gfx::Font::NORMAL,
+          gfx::Font::Weight::MEDIUM));
+  workspace_badge_label_ = badge_label.get();
+  workspace_badge->AddChildView(std::move(badge_label));
+
+  workspace_badge_ = AddChildView(std::move(workspace_badge));
+
   // Initialize visibility states.
   SetSyncStatusVisible(false);
   SetNotificationBadgeVisible(false);
@@ -279,6 +317,28 @@ void AstraProfileMenuHeaderView::SetAvatarVisible(bool visible) {
 }
 
 // ---------------------------------------------------------------------------
+// Workspace badge
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuHeaderView::SetWorkspaceBadgeVisible(bool visible) {
+  if (workspace_badge_visible_ == visible) {
+    return;
+  }
+  workspace_badge_visible_ = visible;
+  if (workspace_badge_) {
+    workspace_badge_->SetVisible(visible);
+  }
+  PreferredSizeChanged();
+}
+
+void AstraProfileMenuHeaderView::SetWorkspaceBadge(const std::u16string& name,
+                                                  SkColor color) {
+  workspace_badge_name_ = name;
+  workspace_badge_color_ = color;
+  UpdateWorkspaceBadge();
+}
+
+// ---------------------------------------------------------------------------
 // views::View overrides
 // ---------------------------------------------------------------------------
 
@@ -295,6 +355,7 @@ void AstraProfileMenuHeaderView::OnThemeChanged() {
   UpdateHoverState();
   UpdateSyncStatusVisuals();
   UpdateNotificationBadge();
+  UpdateWorkspaceBadge();
 }
 
 gfx::Size AstraProfileMenuHeaderView::CalculatePreferredSize(
@@ -378,6 +439,16 @@ void AstraProfileMenuHeaderView::GetAccessibleNodeData(
       desc += u", ";
     }
     desc += base::NumberToString16(notification_count_) + u" notifications";
+    node_data->SetDescription(desc);
+  }
+
+  // Add workspace info if badge is visible.
+  if (workspace_badge_visible_ && !workspace_badge_name_.empty()) {
+    std::u16string desc = node_data->GetDescription();
+    if (!desc.empty()) {
+      desc += u", ";
+    }
+    desc += u"Workspace: " + workspace_badge_name_;
     node_data->SetDescription(desc);
   }
 }
@@ -517,6 +588,25 @@ void AstraProfileMenuHeaderView::UpdateNotificationBadge() {
       badge_text = base::NumberToString16(notification_count_);
     }
     notification_badge_label_->SetText(badge_text);
+  }
+}
+
+void AstraProfileMenuHeaderView::UpdateWorkspaceBadge() {
+  if (!workspace_badge_dot_ || !workspace_badge_label_) {
+    return;
+  }
+
+  // Color dot.
+  workspace_badge_dot_->SetBackground(views::CreateRoundedRectBackground(
+      workspace_badge_color_, kWorkspaceBadgeDotSize / 2));
+
+  // Label.
+  workspace_badge_label_->SetText(workspace_badge_name_);
+
+  const auto* color_provider = GetColorProvider();
+  if (color_provider) {
+    workspace_badge_label_->SetEnabledColor(
+        color_provider->GetColor(ui::kColorLabelForegroundSecondary));
   }
 }
 

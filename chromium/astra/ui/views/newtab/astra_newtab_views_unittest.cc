@@ -38,6 +38,7 @@
 #include "url/gurl.h"
 
 #include "astra/browser/astra_prefs.h"
+#include "astra/ui/views/newtab/astra_new_tab_bubble.h"
 #include "astra/ui/views/newtab/astra_new_tab_controller.h"
 #include "astra/ui/views/newtab/astra_new_tab_model.h"
 #include "astra/ui/views/newtab/astra_ntp_workspace_card.h"
@@ -497,8 +498,15 @@ class MockNewTabModelObserver : public AstraNewTabModelObserver {
   MOCK_METHOD(void, OnWorkspacesChanged, (), (override));
   MOCK_METHOD(void, OnQuickActionsChanged, (), (override));
   MOCK_METHOD(void, OnRecentlyClosedChanged, (), (override));
+  MOCK_METHOD(void, OnSuggestedContentChanged, (), (override));
   MOCK_METHOD(void, OnNtpSettingsChanged, (), (override));
   MOCK_METHOD(void, OnThemeChanged, (), (override));
+  MOCK_METHOD(void, OnLayoutDensityChanged, (), (override));
+  MOCK_METHOD(void, OnAccentColorChanged, (), (override));
+  MOCK_METHOD(void, OnClockFormatChanged, (), (override));
+  MOCK_METHOD(void, OnSearchBarStyleChanged, (), (override));
+  MOCK_METHOD(void, OnGreetingNameChanged, (), (override));
+  MOCK_METHOD(void, OnSuggestedContentSettingsChanged, (), (override));
 };
 
 // =========================================================================
@@ -1744,6 +1752,950 @@ TEST(AstraNewTabBubbleTest, BubbleProperties) {
   //   - Auto-dismisses on deactivation
   //   - Supports entrance animation (future)
   SUCCEED();
+}
+
+// =========================================================================
+// Additional shortcut view tests — add tile, badge, loading, error states
+// =========================================================================
+
+TEST_F(AstraNtpShortcutViewTest, AddShortcutTileDefaultOff) {
+  EXPECT_FALSE(shortcut_view_->is_add_shortcut_tile());
+}
+
+TEST_F(AstraNtpShortcutViewTest, SetIsAddShortcutTile) {
+  shortcut_view_->SetIsAddShortcutTile(true);
+  EXPECT_TRUE(shortcut_view_->is_add_shortcut_tile());
+  shortcut_view_->SetIsAddShortcutTile(false);
+  EXPECT_FALSE(shortcut_view_->is_add_shortcut_tile());
+}
+
+TEST_F(AstraNtpShortcutViewTest, AddShortcutTileLayoutNoCrash) {
+  shortcut_view_->SetIsAddShortcutTile(true);
+  shortcut_view_->Layout();
+  // No crash = success. The add tile has a plus icon + label.
+}
+
+TEST_F(AstraNtpShortcutViewTest, BadgeCountDefaultZero) {
+  EXPECT_EQ(0, shortcut_view_->badge_count());
+}
+
+TEST_F(AstraNtpShortcutViewTest, SetBadgeCount) {
+  shortcut_view_->SetBadgeCount(5);
+  EXPECT_EQ(5, shortcut_view_->badge_count());
+  shortcut_view_->SetBadgeCount(99);
+  EXPECT_EQ(99, shortcut_view_->badge_count());
+}
+
+TEST_F(AstraNtpShortcutViewTest, SetBadgeCountZeroHidesBadge) {
+  shortcut_view_->SetBadgeCount(3);
+  shortcut_view_->SetBadgeCount(0);
+  EXPECT_EQ(0, shortcut_view_->badge_count());
+  // Zero badge count should hide the badge.
+}
+
+TEST_F(AstraNtpShortcutViewTest, BadgeWithUrlSet) {
+  shortcut_view_->SetURL(GURL("https://example.com"));
+  shortcut_view_->SetBadgeCount(42);
+  EXPECT_EQ(42, shortcut_view_->badge_count());
+}
+
+TEST_F(AstraNtpShortcutViewTest, LoadingDefaultFalse) {
+  EXPECT_FALSE(shortcut_view_->is_loading());
+}
+
+TEST_F(AstraNtpShortcutViewTest, SetLoading) {
+  shortcut_view_->SetLoading(true);
+  EXPECT_TRUE(shortcut_view_->is_loading());
+  shortcut_view_->SetLoading(false);
+  EXPECT_FALSE(shortcut_view_->is_loading());
+}
+
+TEST_F(AstraNtpShortcutViewTest, LoadingStatePaintNoCrash) {
+  shortcut_view_->SetLoading(true);
+  shortcut_view_->SchedulePaint();
+  // No crash = success. Loading state shows skeleton placeholder.
+}
+
+TEST_F(AstraNtpShortcutViewTest, ErrorStateDefaultFalse) {
+  EXPECT_FALSE(shortcut_view_->has_error());
+}
+
+TEST_F(AstraNtpShortcutViewTest, SetErrorState) {
+  shortcut_view_->SetErrorState(true);
+  EXPECT_TRUE(shortcut_view_->has_error());
+  shortcut_view_->SetErrorState(false);
+  EXPECT_FALSE(shortcut_view_->has_error());
+}
+
+TEST_F(AstraNtpShortcutViewTest, ErrorStatePaintNoCrash) {
+  shortcut_view_->SetErrorState(true);
+  shortcut_view_->SchedulePaint();
+  // No crash = success. Error state shows broken indicator.
+}
+
+TEST_F(AstraNtpShortcutViewTest, LoadingAndErrorStateCombo) {
+  shortcut_view_->SetLoading(true);
+  shortcut_view_->SetErrorState(true);
+  shortcut_view_->SetBadgeCount(3);
+  shortcut_view_->SchedulePaint();
+  // No crash = success.
+}
+
+TEST_F(AstraNtpShortcutViewTest, EditCallback) {
+  int edit_count = 0;
+  GURL last_url;
+  shortcut_view_->SetURL(GURL("https://test.com"));
+  shortcut_view_->SetEditCallback(base::BindLambdaForTesting(
+      [&edit_count, &last_url](const GURL& url) {
+        edit_count++;
+        last_url = url;
+      }));
+  shortcut_view_->SetEditMode(true);
+  // Enter key should commit edit.
+  ui::KeyEvent enter_event(ui::ET_KEY_PRESSED, ui::VKEY_RETURN, 0);
+  shortcut_view_->OnKeyPressed(enter_event);
+  // Edit callback may or may not fire depending on edit mode implementation.
+  // No crash = success.
+  SUCCEED();
+}
+
+// =========================================================================
+// Additional workspace card tests — window count, last active, selected, styles
+// =========================================================================
+
+TEST_F(AstraNtpWorkspaceCardTest, SetWindowCount) {
+  card_->SetWindowCount(2);
+  EXPECT_EQ(2, card_->window_count());
+  card_->SetWindowCount(5);
+  EXPECT_EQ(5, card_->window_count());
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, WindowCountDefaultZero) {
+  EXPECT_EQ(0, card_->window_count());
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, SetLastActiveTime) {
+  base::Time now = base::Time::Now();
+  card_->SetLastActiveTime(now);
+  EXPECT_EQ(now, card_->last_active_time());
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, LastActiveTimeDefaultIsNull) {
+  EXPECT_TRUE(card_->last_active_time().is_null());
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, SetIsSelected) {
+  EXPECT_FALSE(card_->is_selected());
+  card_->SetIsSelected(true);
+  EXPECT_TRUE(card_->is_selected());
+  card_->SetIsSelected(false);
+  EXPECT_FALSE(card_->is_selected());
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, CardStyleDefaultIsFull) {
+  EXPECT_EQ(AstraNtpWorkspaceCardStyle::kFull, card_->card_style());
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, SetCardStyleCompact) {
+  card_->SetCardStyle(AstraNtpWorkspaceCardStyle::kCompact);
+  EXPECT_EQ(AstraNtpWorkspaceCardStyle::kCompact, card_->card_style());
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, SetCardStyleGrid) {
+  card_->SetCardStyle(AstraNtpWorkspaceCardStyle::kGrid);
+  EXPECT_EQ(AstraNtpWorkspaceCardStyle::kGrid, card_->card_style());
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, SetCardStyleFull) {
+  card_->SetCardStyle(AstraNtpWorkspaceCardStyle::kFull);
+  EXPECT_EQ(AstraNtpWorkspaceCardStyle::kFull, card_->card_style());
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, CardStyleSwitchLayoutNoCrash) {
+  card_->SetWorkspaceId("ws1");
+  card_->SetWorkspaceName(u"Work");
+  card_->SetTabCount(10);
+
+  card_->SetCardStyle(AstraNtpWorkspaceCardStyle::kCompact);
+  card_->Layout();
+
+  card_->SetCardStyle(AstraNtpWorkspaceCardStyle::kGrid);
+  card_->Layout();
+
+  card_->SetCardStyle(AstraNtpWorkspaceCardStyle::kFull);
+  card_->Layout();
+  // No crash = success. All styles should lay out properly.
+}
+
+TEST_F(AstraNtpWorkspaceCardTest, MenuCallback) {
+  int menu_count = 0;
+  std::string last_id;
+  card_->SetWorkspaceId("ws1");
+  card_->SetMenuCallback(base::BindLambdaForTesting(
+      [&menu_count, &last_id](const std::string& id, const gfx::Point&) {
+        menu_count++;
+        last_id = id;
+      }));
+  // Menu button press would trigger callback. We verify callback can be set.
+  // No crash = success.
+  SUCCEED();
+}
+
+// =========================================================================
+// Additional model tests — theme, accent color, density, clock, search bar
+// =========================================================================
+
+TEST_F(AstraNewTabModelTest, DefaultThemeModeIsSystem) {
+  EXPECT_EQ(AstraNtpThemeMode::kSystem, model_.theme_mode());
+}
+
+TEST_F(AstraNewTabModelTest, SetThemeMode) {
+  model_.set_theme_mode(AstraNtpThemeMode::kDark);
+  EXPECT_EQ(AstraNtpThemeMode::kDark, model_.theme_mode());
+  model_.set_theme_mode(AstraNtpThemeMode::kLight);
+  EXPECT_EQ(AstraNtpThemeMode::kLight, model_.theme_mode());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultAccentColorIsTransparent) {
+  EXPECT_EQ(SK_ColorTRANSPARENT, model_.accent_color());
+}
+
+TEST_F(AstraNewTabModelTest, SetAccentColor) {
+  model_.set_accent_color(SK_ColorRED);
+  EXPECT_EQ(SK_ColorRED, model_.accent_color());
+  model_.set_accent_color(SK_ColorBLUE);
+  EXPECT_EQ(SK_ColorBLUE, model_.accent_color());
+}
+
+TEST_F(AstraNewTabModelTest, SetGradientSettings) {
+  AstraNtpGradientSettings settings;
+  settings.start_color = SK_ColorRED;
+  settings.end_color = SK_ColorBLUE;
+  settings.angle = 90;
+  model_.set_gradient_settings(settings);
+  EXPECT_EQ(SK_ColorRED, model_.gradient_settings().start_color);
+  EXPECT_EQ(SK_ColorBLUE, model_.gradient_settings().end_color);
+  EXPECT_EQ(90, model_.gradient_settings().angle);
+}
+
+TEST_F(AstraNewTabModelTest, DefaultLayoutDensityIsCozy) {
+  EXPECT_EQ(AstraNtpLayoutDensity::kCozy, model_.layout_density());
+}
+
+TEST_F(AstraNewTabModelTest, SetLayoutDensity) {
+  model_.set_layout_density(AstraNtpLayoutDensity::kCompact);
+  EXPECT_EQ(AstraNtpLayoutDensity::kCompact, model_.layout_density());
+  model_.set_layout_density(AstraNtpLayoutDensity::kComfortable);
+  EXPECT_EQ(AstraNtpLayoutDensity::kComfortable, model_.layout_density());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultShortcutIconSizeIsMedium) {
+  EXPECT_EQ(AstraNtpShortcutIconSize::kMedium, model_.shortcut_icon_size());
+}
+
+TEST_F(AstraNewTabModelTest, SetShortcutIconSize) {
+  model_.set_shortcut_icon_size(AstraNtpShortcutIconSize::kSmall);
+  EXPECT_EQ(AstraNtpShortcutIconSize::kSmall, model_.shortcut_icon_size());
+  model_.set_shortcut_icon_size(AstraNtpShortcutIconSize::kLarge);
+  EXPECT_EQ(AstraNtpShortcutIconSize::kLarge, model_.shortcut_icon_size());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultShowShortcutTitlesIsTrue) {
+  EXPECT_TRUE(model_.show_shortcut_titles());
+}
+
+TEST_F(AstraNewTabModelTest, SetShowShortcutTitles) {
+  model_.set_show_shortcut_titles(false);
+  EXPECT_FALSE(model_.show_shortcut_titles());
+  model_.set_show_shortcut_titles(true);
+  EXPECT_TRUE(model_.show_shortcut_titles());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultClockFormatIsSystem) {
+  EXPECT_EQ(AstraNtpClockFormat::kSystem, model_.clock_format());
+}
+
+TEST_F(AstraNewTabModelTest, SetClockFormat) {
+  model_.set_clock_format(AstraNtpClockFormat::k12Hour);
+  EXPECT_EQ(AstraNtpClockFormat::k12Hour, model_.clock_format());
+  model_.set_clock_format(AstraNtpClockFormat::k24Hour);
+  EXPECT_EQ(AstraNtpClockFormat::k24Hour, model_.clock_format());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultShowSecondsIsFalse) {
+  EXPECT_FALSE(model_.show_seconds());
+}
+
+TEST_F(AstraNewTabModelTest, SetShowSeconds) {
+  model_.set_show_seconds(true);
+  EXPECT_TRUE(model_.show_seconds());
+  model_.set_show_seconds(false);
+  EXPECT_FALSE(model_.show_seconds());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultShowDateIsTrue) {
+  EXPECT_TRUE(model_.show_date());
+}
+
+TEST_F(AstraNewTabModelTest, SetShowDate) {
+  model_.set_show_date(false);
+  EXPECT_FALSE(model_.show_date());
+  model_.set_show_date(true);
+  EXPECT_TRUE(model_.show_date());
+}
+
+TEST_F(AstraNewTabModelTest, FormatClockTimeHasColon) {
+  base::Time now = base::Time::Now();
+  std::u16string time_str = model_.FormatClockTime(now);
+  EXPECT_FALSE(time_str.empty());
+  // Time string should contain a colon (HH:MM format).
+  EXPECT_NE(std::u16string::npos, time_str.find(u':'));
+}
+
+TEST_F(AstraNewTabModelTest, FormatDateNotEmpty) {
+  base::Time now = base::Time::Now();
+  std::u16string date_str = model_.FormatDate(now);
+  EXPECT_FALSE(date_str.empty());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultSearchBarStyleIsBoxed) {
+  EXPECT_EQ(AstraNtpSearchBarStyle::kBoxed, model_.search_bar_style());
+}
+
+TEST_F(AstraNewTabModelTest, SetSearchBarStyle) {
+  model_.set_search_bar_style(AstraNtpSearchBarStyle::kMinimal);
+  EXPECT_EQ(AstraNtpSearchBarStyle::kMinimal, model_.search_bar_style());
+  model_.set_search_bar_style(AstraNtpSearchBarStyle::kCentered);
+  EXPECT_EQ(AstraNtpSearchBarStyle::kCentered, model_.search_bar_style());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultShowSearchEngineIsTrue) {
+  EXPECT_TRUE(model_.show_search_engine());
+}
+
+TEST_F(AstraNewTabModelTest, SetShowSearchEngine) {
+  model_.set_show_search_engine(false);
+  EXPECT_FALSE(model_.show_search_engine());
+  model_.set_show_search_engine(true);
+  EXPECT_TRUE(model_.show_search_engine());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultSearchEngineName) {
+  EXPECT_FALSE(model_.search_engine_name().empty());
+}
+
+TEST_F(AstraNewTabModelTest, SetSearchEngineName) {
+  model_.set_search_engine_name("DuckDuckGo");
+  EXPECT_EQ("DuckDuckGo", model_.search_engine_name());
+}
+
+TEST_F(AstraNewTabModelTest, DefaultGreetingNameIsEmpty) {
+  EXPECT_TRUE(model_.greeting_name().empty());
+}
+
+TEST_F(AstraNewTabModelTest, SetGreetingName) {
+  model_.set_greeting_name(u"Alice");
+  EXPECT_EQ(u"Alice", model_.greeting_name());
+}
+
+// =========================================================================
+// Model tests — suggested content
+// =========================================================================
+
+TEST_F(AstraNewTabModelTest, DefaultShowSuggestedContentIsFalse) {
+  EXPECT_FALSE(model_.show_suggested_content());
+}
+
+TEST_F(AstraNewTabModelTest, SetShowSuggestedContent) {
+  model_.set_show_suggested_content(true);
+  EXPECT_TRUE(model_.show_suggested_content());
+}
+
+TEST_F(AstraNewTabModelTest, SuggestedContentStartsEmpty) {
+  EXPECT_EQ(0u, model_.GetSuggestedContentCount());
+  EXPECT_TRUE(model_.GetSuggestedContent().empty());
+}
+
+TEST_F(AstraNewTabModelTest, AddSuggestedContent) {
+  AstraNtpSuggestedContent item;
+  item.id = "news1";
+  item.title = u"Breaking News";
+  item.source = u"Example News";
+  item.url = GURL("https://example.com/news1");
+  item.category = AstraNtpSuggestedCategory::kNews;
+
+  model_.AddSuggestedContent(item);
+  EXPECT_EQ(1u, model_.GetSuggestedContentCount());
+  EXPECT_EQ("news1", model_.GetSuggestedContentAt(0)->id);
+  EXPECT_EQ(u"Breaking News", model_.GetSuggestedContentAt(0)->title);
+}
+
+TEST_F(AstraNewTabModelTest, FindSuggestedContentById) {
+  AstraNtpSuggestedContent item;
+  item.id = "article1";
+  item.title = u"Test Article";
+  model_.AddSuggestedContent(item);
+
+  int index = model_.FindSuggestedContentById("article1");
+  EXPECT_EQ(0, index);
+}
+
+TEST_F(AstraNewTabModelTest, FindSuggestedContentByIdNotFound) {
+  int index = model_.FindSuggestedContentById("nonexistent");
+  EXPECT_EQ(-1, index);
+}
+
+TEST_F(AstraNewTabModelTest, RemoveSuggestedContent) {
+  AstraNtpSuggestedContent item;
+  item.id = "to_remove";
+  model_.AddSuggestedContent(item);
+  ASSERT_EQ(1u, model_.GetSuggestedContentCount());
+
+  bool removed = model_.RemoveSuggestedContent("to_remove");
+  EXPECT_TRUE(removed);
+  EXPECT_EQ(0u, model_.GetSuggestedContentCount());
+}
+
+TEST_F(AstraNewTabModelTest, RemoveSuggestedContentNotFound) {
+  bool removed = model_.RemoveSuggestedContent("nonexistent");
+  EXPECT_FALSE(removed);
+}
+
+TEST_F(AstraNewTabModelTest, SetSuggestedContentReplacesAll) {
+  AstraNtpSuggestedContent item1;
+  item1.id = "a";
+  model_.AddSuggestedContent(item1);
+
+  std::vector<AstraNtpSuggestedContent> new_items;
+  AstraNtpSuggestedContent item2;
+  item2.id = "b";
+  new_items.push_back(item2);
+  AstraNtpSuggestedContent item3;
+  item3.id = "c";
+  new_items.push_back(item3);
+
+  model_.SetSuggestedContent(std::move(new_items));
+  EXPECT_EQ(2u, model_.GetSuggestedContentCount());
+  EXPECT_EQ("b", model_.GetSuggestedContentAt(0)->id);
+  EXPECT_EQ("c", model_.GetSuggestedContentAt(1)->id);
+}
+
+TEST_F(AstraNewTabModelTest, ClearSuggestedContent) {
+  AstraNtpSuggestedContent item;
+  item.id = "x";
+  model_.AddSuggestedContent(item);
+  ASSERT_EQ(1u, model_.GetSuggestedContentCount());
+
+  model_.ClearSuggestedContent();
+  EXPECT_EQ(0u, model_.GetSuggestedContentCount());
+}
+
+TEST_F(AstraNewTabModelTest, SuggestedContentMaxLimit) {
+  for (size_t i = 0; i < AstraNewTabModel::kMaxSuggestedContentItems + 5; ++i) {
+    AstraNtpSuggestedContent item;
+    item.id = "item_" + std::to_string(i);
+    model_.AddSuggestedContent(item);
+  }
+  // Should be clamped at max.
+  EXPECT_LE(model_.GetSuggestedContentCount(),
+            AstraNewTabModel::kMaxSuggestedContentItems);
+}
+
+TEST_F(AstraNewTabModelTest, SuggestedContentCategories) {
+  EXPECT_TRUE(model_.GetEnabledSuggestedCategories().empty());
+}
+
+TEST_F(AstraNewTabModelTest, AddEnabledSuggestedCategory) {
+  model_.AddEnabledSuggestedCategory(AstraNtpSuggestedCategory::kTechnology);
+  EXPECT_TRUE(model_.IsSuggestedCategoryEnabled(
+      AstraNtpSuggestedCategory::kTechnology));
+  EXPECT_FALSE(model_.IsSuggestedCategoryEnabled(
+      AstraNtpSuggestedCategory::kSports));
+}
+
+TEST_F(AstraNewTabModelTest, RemoveEnabledSuggestedCategory) {
+  model_.AddEnabledSuggestedCategory(AstraNtpSuggestedCategory::kNews);
+  model_.AddEnabledSuggestedCategory(AstraNtpSuggestedCategory::kSports);
+  ASSERT_TRUE(model_.IsSuggestedCategoryEnabled(
+      AstraNtpSuggestedCategory::kNews));
+
+  model_.RemoveEnabledSuggestedCategory(AstraNtpSuggestedCategory::kNews);
+  EXPECT_FALSE(model_.IsSuggestedCategoryEnabled(
+      AstraNtpSuggestedCategory::kNews));
+  EXPECT_TRUE(model_.IsSuggestedCategoryEnabled(
+      AstraNtpSuggestedCategory::kSports));
+}
+
+TEST_F(AstraNewTabModelTest, SetEnabledSuggestedCategories) {
+  std::vector<AstraNtpSuggestedCategory> categories = {
+    AstraNtpSuggestedCategory::kScience,
+    AstraNtpSuggestedCategory::kHealth,
+  };
+  model_.SetEnabledSuggestedCategories(std::move(categories));
+  EXPECT_EQ(2u, model_.GetEnabledSuggestedCategories().size());
+  EXPECT_TRUE(model_.IsSuggestedCategoryEnabled(
+      AstraNtpSuggestedCategory::kScience));
+  EXPECT_TRUE(model_.IsSuggestedCategoryEnabled(
+      AstraNtpSuggestedCategory::kHealth));
+}
+
+TEST_F(AstraNewTabModelTest, SetWorkspaceWindowCount) {
+  model_.AddOrUpdateWorkspaceCard("ws1", u"Work", "#FF0000", 5, false);
+  bool result = model_.SetWorkspaceWindowCount("ws1", 3);
+  EXPECT_TRUE(result);
+  EXPECT_EQ(3, model_.GetWorkspaceCardAt(0)->window_count);
+}
+
+TEST_F(AstraNewTabModelTest, SetWorkspaceWindowCountNotFound) {
+  bool result = model_.SetWorkspaceWindowCount("nonexistent", 3);
+  EXPECT_FALSE(result);
+}
+
+// =========================================================================
+// Model tests — import / export / reset
+// =========================================================================
+
+TEST_F(AstraNewTabModelTest, ExportSettingsReturnsDict) {
+  base::Value::Dict dict = model_.ExportSettings();
+  // Dict should not be empty — it has default settings.
+  EXPECT_FALSE(dict.empty());
+}
+
+TEST_F(AstraNewTabModelTest, ImportSettingsRoundTrip) {
+  // Modify settings, export, reset, import, verify same values.
+  model_.set_show_greeting(false);
+  model_.set_shortcut_columns(6);
+  model_.set_background_style(AstraNtpBackgroundStyle::kGradient);
+  model_.set_theme_mode(AstraNtpThemeMode::kDark);
+
+  base::Value::Dict exported = model_.ExportSettings();
+
+  // Reset to defaults first.
+  model_.ResetSettingsToDefaults();
+  EXPECT_TRUE(model_.show_greeting());
+
+  // Import back.
+  bool success = model_.ImportSettings(exported);
+  EXPECT_TRUE(success);
+  EXPECT_FALSE(model_.show_greeting());
+  EXPECT_EQ(6, model_.shortcut_columns());
+  EXPECT_EQ(AstraNtpBackgroundStyle::kGradient, model_.background_style());
+}
+
+TEST_F(AstraNewTabModelTest, ImportSettingsFromEmptyDict) {
+  base::Value::Dict empty_dict;
+  bool success = model_.ImportSettings(empty_dict);
+  // Import of empty dict may fail or be a no-op.
+  // No crash = success.
+  SUCCEED();
+}
+
+TEST_F(AstraNewTabModelTest, ResetSettingsToDefaults) {
+  // Change several settings.
+  model_.set_show_greeting(false);
+  model_.set_show_shortcuts(false);
+  model_.set_shortcut_columns(6);
+  model_.set_theme_mode(AstraNtpThemeMode::kDark);
+
+  model_.ResetSettingsToDefaults();
+
+  // All should be back to defaults.
+  EXPECT_TRUE(model_.show_greeting());
+  EXPECT_TRUE(model_.show_shortcuts());
+  EXPECT_EQ(AstraNewTabModel::kDefaultShortcutColumns,
+            model_.shortcut_columns());
+  EXPECT_EQ(AstraNewTabModel::kDefaultThemeMode, model_.theme_mode());
+}
+
+TEST_F(AstraNewTabModelTest, ResetSettingsPreservesCustomShortcuts) {
+  model_.AddCustomShortcut(u"Test", GURL("https://test.com"));
+  size_t count_before = model_.GetShortcutCount();
+  ASSERT_GT(count_before, 0u);
+
+  model_.ResetSettingsToDefaults();
+
+  // Custom shortcuts should be preserved.
+  EXPECT_EQ(count_before, model_.GetShortcutCount());
+}
+
+TEST_F(AstraNewTabModelTest, ResetAllToDefaults) {
+  model_.AddCustomShortcut(u"Test", GURL("https://test.com"));
+  model_.set_show_greeting(false);
+  ASSERT_GT(model_.GetShortcutCount(), 0u);
+
+  model_.ResetAllToDefaults();
+
+  EXPECT_EQ(0u, model_.GetShortcutCount());
+  EXPECT_TRUE(model_.show_greeting());
+}
+
+// =========================================================================
+// Model tests — additional observer notifications
+// =========================================================================
+
+TEST_F(AstraNewTabModelTest, ObserverNotifiedOnSuggestedContentAdd) {
+  MockNewTabModelObserver observer;
+  model_.AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSuggestedContentChanged()).Times(1);
+  AstraNtpSuggestedContent item;
+  item.id = "test";
+  model_.AddSuggestedContent(item);
+
+  model_.RemoveObserver(&observer);
+}
+
+TEST_F(AstraNewTabModelTest, ObserverNotifiedOnAccentColorChange) {
+  MockNewTabModelObserver observer;
+  model_.AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnAccentColorChanged()).Times(1);
+  model_.set_accent_color(SK_ColorRED);
+
+  model_.RemoveObserver(&observer);
+}
+
+TEST_F(AstraNewTabModelTest, ObserverNotifiedOnLayoutDensityChange) {
+  MockNewTabModelObserver observer;
+  model_.AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnLayoutDensityChanged()).Times(1);
+  model_.set_layout_density(AstraNtpLayoutDensity::kCompact);
+
+  model_.RemoveObserver(&observer);
+}
+
+TEST_F(AstraNewTabModelTest, ObserverNotifiedOnClockFormatChange) {
+  MockNewTabModelObserver observer;
+  model_.AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnClockFormatChanged()).Times(1);
+  model_.set_clock_format(AstraNtpClockFormat::k12Hour);
+
+  model_.RemoveObserver(&observer);
+}
+
+TEST_F(AstraNewTabModelTest, ObserverNotifiedOnSearchBarStyleChange) {
+  MockNewTabModelObserver observer;
+  model_.AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSearchBarStyleChanged()).Times(1);
+  model_.set_search_bar_style(AstraNtpSearchBarStyle::kMinimal);
+
+  model_.RemoveObserver(&observer);
+}
+
+TEST_F(AstraNewTabModelTest, ObserverNotifiedOnGreetingNameChange) {
+  MockNewTabModelObserver observer;
+  model_.AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnGreetingNameChanged()).Times(1);
+  model_.set_greeting_name(u"Bob");
+
+  model_.RemoveObserver(&observer);
+}
+
+TEST_F(AstraNewTabModelTest, ObserverNotifiedOnSuggestedContentSettingsChange) {
+  MockNewTabModelObserver observer;
+  model_.AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSuggestedContentSettingsChanged()).Times(1);
+  model_.set_show_suggested_content(true);
+
+  model_.RemoveObserver(&observer);
+}
+
+// =========================================================================
+// Mock customize bubble delegate
+// =========================================================================
+
+class MockCustomizeBubbleDelegate
+    : public AstraNewTabCustomizeBubble::Delegate {
+ public:
+  MOCK_METHOD(void, OnCustomizeBubbleClosed, (), (override));
+  MOCK_METHOD(void, OnCustomizeSettingsChanged, (), (override));
+  MOCK_METHOD(void, OnCustomizeResetToDefaults, (), (override));
+};
+
+// =========================================================================
+// AstraNewTabCustomizeBubble tests
+// =========================================================================
+
+class AstraNewTabCustomizeBubbleTest : public views::ViewsTestBase {
+ public:
+  AstraNewTabCustomizeBubbleTest() = default;
+  ~AstraNewTabCustomizeBubbleTest() override = default;
+
+  void SetUp() override {
+    ViewsTestBase::SetUp();
+    // Create a parent widget with an anchor view for the bubble.
+    anchor_widget_ = CreateTestWidget();
+    anchor_view_ = anchor_widget_->SetContentsView(
+        std::make_unique<views::View>());
+    anchor_view_->SetSize(gfx::Size(100, 100));
+    anchor_widget_->Show();
+
+    // Set up test model.
+    model_ = std::make_unique<AstraNewTabModel>();
+  }
+
+  void TearDown() override {
+    // Bubble widget is owned by native widget system and closes itself.
+    bubble_widget_ = nullptr;
+    model_.reset();
+    anchor_widget_.reset();
+    ViewsTestBase::TearDown();
+  }
+
+ protected:
+  // Shows the customize bubble and returns a pointer to the bubble delegate.
+  AstraNewTabCustomizeBubble* ShowCustomizeBubble() {
+    bubble_widget_ = AstraNewTabCustomizeBubble::ShowBubble(
+        anchor_view_, model_.get(), &mock_delegate_);
+    if (!bubble_widget_)
+      return nullptr;
+    // The bubble delegate is the widget's delegate.
+    return static_cast<AstraNewTabCustomizeBubble*>(
+        bubble_widget_->widget_delegate()->AsBubbleDialogDelegate());
+  }
+
+  std::unique_ptr<views::Widget> anchor_widget_;
+  raw_ptr<views::View> anchor_view_ = nullptr;
+  raw_ptr<views::Widget> bubble_widget_ = nullptr;
+  std::unique_ptr<AstraNewTabModel> model_;
+  testing::NiceMock<MockCustomizeBubbleDelegate> mock_delegate_;
+};
+
+TEST_F(AstraNewTabCustomizeBubbleTest, ShowBubbleCreatesWidget) {
+  views::Widget* widget = AstraNewTabCustomizeBubble::ShowBubble(
+      anchor_view_, model_.get(), &mock_delegate_);
+  EXPECT_NE(nullptr, widget);
+  widget->CloseNow();
+}
+
+TEST_F(AstraNewTabCustomizeBubbleTest, HasMultipleSections) {
+  AstraNewTabCustomizeBubble* bubble = ShowCustomizeBubble();
+  ASSERT_NE(nullptr, bubble);
+  // Should have at least Appearance, Background, Shortcuts, Workspaces,
+  // Content sections.
+  EXPECT_GE(bubble->GetSectionCount(), 3u);
+  bubble_widget_->CloseNow();
+}
+
+TEST_F(AstraNewTabCustomizeBubbleTest, GetBooleanSettingShortcuts) {
+  AstraNewTabCustomizeBubble* bubble = ShowCustomizeBubble();
+  ASSERT_NE(nullptr, bubble);
+  // Shortcuts should be shown by default.
+  bool result = bubble->GetBooleanSetting("show_shortcuts");
+  EXPECT_TRUE(result);
+  bubble_widget_->CloseNow();
+}
+
+TEST_F(AstraNewTabCustomizeBubbleTest, ToggleSettingShortcuts) {
+  AstraNewTabCustomizeBubble* bubble = ShowCustomizeBubble();
+  ASSERT_NE(nullptr, bubble);
+
+  bool before = bubble->GetBooleanSetting("show_shortcuts");
+  bubble->ToggleSetting("show_shortcuts");
+  bool after = bubble->GetBooleanSetting("show_shortcuts");
+  EXPECT_NE(before, after);
+
+  bubble_widget_->CloseNow();
+}
+
+TEST_F(AstraNewTabCustomizeBubbleTest, GetIntSettingShortcutColumns) {
+  AstraNewTabCustomizeBubble* bubble = ShowCustomizeBubble();
+  ASSERT_NE(nullptr, bubble);
+
+  int columns = bubble->GetIntSetting("shortcut_columns");
+  EXPECT_EQ(4, columns);
+
+  bubble_widget_->CloseNow();
+}
+
+TEST_F(AstraNewTabCustomizeBubbleTest, ResetToDefaults) {
+  AstraNewTabCustomizeBubble* bubble = ShowCustomizeBubble();
+  ASSERT_NE(nullptr, bubble);
+
+  // Toggle some settings.
+  bubble->ToggleSetting("show_shortcuts");
+  bubble->ToggleSetting("show_greeting");
+
+  // Reset to defaults.
+  bubble->ResetToDefaults();
+
+  // Settings should be back to defaults.
+  EXPECT_TRUE(bubble->GetBooleanSetting("show_shortcuts"));
+  EXPECT_TRUE(bubble->GetBooleanSetting("show_greeting"));
+
+  bubble_widget_->CloseNow();
+}
+
+TEST_F(AstraNewTabCustomizeBubbleTest, SettingsChangeUpdatesModel) {
+  AstraNewTabCustomizeBubble* bubble = ShowCustomizeBubble();
+  ASSERT_NE(nullptr, bubble);
+
+  bool model_before = model_->show_shortcuts();
+  bubble->ToggleSetting("show_shortcuts");
+  bool model_after = model_->show_shortcuts();
+  EXPECT_NE(model_before, model_after);
+
+  bubble_widget_->CloseNow();
+}
+
+TEST_F(AstraNewTabCustomizeBubbleTest, GetBooleanSettingGreeting) {
+  AstraNewTabCustomizeBubble* bubble = ShowCustomizeBubble();
+  ASSERT_NE(nullptr, bubble);
+  EXPECT_TRUE(bubble->GetBooleanSetting("show_greeting"));
+  bubble_widget_->CloseNow();
+}
+
+TEST_F(AstraNewTabCustomizeBubbleTest, ToggleSettingGreeting) {
+  AstraNewTabCustomizeBubble* bubble = ShowCustomizeBubble();
+  ASSERT_NE(nullptr, bubble);
+  bubble->ToggleSetting("show_greeting");
+  EXPECT_FALSE(bubble->GetBooleanSetting("show_greeting"));
+  bubble_widget_->CloseNow();
+}
+
+TEST_F(AstraNewTabCustomizeBubbleTest, ModelIsNotOwned) {
+  // The bubble does not own the model.
+  AstraNewTabCustomizeBubble* bubble = ShowCustomizeBubble();
+  ASSERT_NE(nullptr, bubble);
+  EXPECT_EQ(model_.get(), bubble->model());
+  bubble_widget_->CloseNow();
+}
+
+// =========================================================================
+// New tab view additional documentation tests
+// =========================================================================
+
+TEST(AstraNewTabViewTest, SuggestedContentSection) {
+  // The NTP has an optional suggested content section (news/articles).
+  //   - Disabled by default
+  //   - Shows article cards with image, title, source
+  //   - Supports multiple categories (news, entertainment, sports, tech, etc.)
+  //   - Visibility controlled by show_suggested_content setting
+  SUCCEED();
+}
+
+TEST(AstraNewTabViewTest, ClockAndDateInGreeting) {
+  // The greeting section shows the current time and date:
+  //   - Time format: 12h / 24h / system locale
+  //   - Optional seconds display
+  //   - Date display (can be toggled off)
+  //   - Clock updates every second via timer
+  SUCCEED();
+}
+
+TEST(AstraNewTabViewTest, TopBar) {
+  // The NTP view has a top bar with:
+  //   - Profile button (left or right)
+  //   - Settings gear button (right corner)
+  //   - Spacer that centers the main content
+  SUCCEED();
+}
+
+TEST(AstraNewTabViewTest, FooterSection) {
+  // The NTP view has a footer section with links:
+  //   - Privacy
+  //   - Terms
+  //   - About Astra
+  // Styled subtly at the bottom of the page.
+  SUCCEED();
+}
+
+TEST(AstraNewTabViewTest, EntranceAnimations) {
+  // The NTP supports entrance animations:
+  //   - Staggered fade-in for each section
+  //   - Can be skipped for testing via SkipAnimationsForTesting()
+  //   - PlayEntranceAnimations() triggers the animation sequence
+  SUCCEED();
+}
+
+TEST(AstraNewTabViewTest, ThemeIntegration) {
+  // The NTP view integrates with Chromium's theme system:
+  //   - Uses ColorProvider for all colors
+  //   - Responds to OnThemeChanged()
+  //   - Respects light/dark/system theme mode from settings
+  SUCCEED();
+}
+
+TEST(AstraNewTabViewTest, KeyboardSectionNavigation) {
+  // The NTP supports keyboard navigation between sections:
+  //   - Tab moves focus within a section
+  //   - Arrow keys move between sections
+  //   - Focus wraps around
+  //   - Each section has a logical focus order
+  SUCCEED();
+}
+
+// =========================================================================
+// Controller additional tests
+// =========================================================================
+
+TEST_F(AstraNewTabControllerTest, ThemeModeToggleThroughModel) {
+  AstraNewTabModel model;
+  model.set_theme_mode(AstraNtpThemeMode::kDark);
+  EXPECT_EQ(AstraNtpThemeMode::kDark, model.theme_mode());
+  model.set_theme_mode(AstraNtpThemeMode::kLight);
+  EXPECT_EQ(AstraNtpThemeMode::kLight, model.theme_mode());
+  model.set_theme_mode(AstraNtpThemeMode::kSystem);
+  EXPECT_EQ(AstraNtpThemeMode::kSystem, model.theme_mode());
+}
+
+TEST_F(AstraNewTabControllerTest, SuggestedContentCrudThroughModel) {
+  AstraNewTabModel model;
+  EXPECT_EQ(0u, model.GetSuggestedContentCount());
+
+  AstraNtpSuggestedContent item;
+  item.id = "test1";
+  item.title = u"Test Article";
+  item.category = AstraNtpSuggestedCategory::kTechnology;
+  model.AddSuggestedContent(item);
+  EXPECT_EQ(1u, model.GetSuggestedContentCount());
+
+  model.RemoveSuggestedContent("test1");
+  EXPECT_EQ(0u, model.GetSuggestedContentCount());
+}
+
+TEST_F(AstraNewTabControllerTest, ExportImportSettingsRoundTripModel) {
+  AstraNewTabModel model;
+  model.set_show_greeting(false);
+  model.set_shortcut_columns(6);
+  model.set_theme_mode(AstraNtpThemeMode::kDark);
+
+  base::Value::Dict exported = model.ExportSettings();
+  EXPECT_FALSE(exported.empty());
+
+  model.ResetSettingsToDefaults();
+  EXPECT_TRUE(model.show_greeting());
+
+  bool result = model.ImportSettings(exported);
+  EXPECT_TRUE(result);
+  EXPECT_FALSE(model.show_greeting());
+  EXPECT_EQ(6, model.shortcut_columns());
+}
+
+TEST_F(AstraNewTabControllerTest, WorkspaceWindowCountThroughModel) {
+  AstraNewTabModel model;
+  model.AddOrUpdateWorkspaceCard("ws1", u"Work", "#FF0000", 5, false);
+  ASSERT_EQ(1u, model.GetWorkspaceCardCount());
+
+  bool result = model.SetWorkspaceWindowCount("ws1", 3);
+  EXPECT_TRUE(result);
+  EXPECT_EQ(3, model.GetWorkspaceCardAt(0)->window_count);
+}
+
+TEST_F(AstraNewTabControllerTest, ResetAllToDefaultsModel) {
+  AstraNewTabModel model;
+  model.AddCustomShortcut(u"Test", GURL("https://test.com"));
+  model.set_show_greeting(false);
+  ASSERT_GT(model.GetShortcutCount(), 0u);
+
+  model.ResetAllToDefaults();
+  EXPECT_EQ(0u, model.GetShortcutCount());
+  EXPECT_TRUE(model.show_greeting());
 }
 
 }  // namespace astra

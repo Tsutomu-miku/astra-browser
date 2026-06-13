@@ -85,6 +85,23 @@ constexpr int kFocusRingOutset = 2;
 // Drag threshold (pixels before drag starts).
 constexpr int kDragThresholdPixels = 8;
 
+// Badge.
+constexpr int kBadgeSize = 16;
+constexpr int kBadgeMinWidth = 16;
+constexpr int kBadgeHPadding = 4;
+constexpr int kBadgeFontSizeDelta = -3;
+constexpr SkColor kBadgeBackgroundColor = SkColorSetRGB(0xEA, 0x43, 0x35);
+constexpr SkColor kBadgeTextColor = SK_ColorWHITE;
+constexpr int kBadgeTopInset = 4;
+constexpr int kBadgeRightInset = 4;
+
+// Loading skeleton.
+constexpr SkColor kSkeletonBaseColor = SkColorSetRGB(0xF0, 0xF0, 0xF0);
+constexpr SkColor kSkeletonHighlightColor = SkColorSetRGB(0xF8, 0xF8, 0xF8);
+
+// Error state.
+constexpr SkColor kErrorIconColor = SkColorSetRGB(0xEA, 0x43, 0x35);
+
 }  // namespace
 
 // =========================================================================
@@ -507,12 +524,40 @@ void AstraNtpShortcutView::OnPaintBackground(gfx::Canvas* canvas) {
   canvas->DrawRoundRect(border_rect, kTileCornerRadius, border_flags);
 
   // Draw the icon (behind children, so remove button appears on top).
-  if (icon_view_ && icon_url_.is_empty()) {
+  if (icon_view_ && icon_url_.is_empty() && !is_add_shortcut_tile_ && !is_loading_) {
     PaintIcon(canvas);
   }
 
+  // Draw plus icon for add shortcut tile.
+  if (is_add_shortcut_tile_ && icon_view_) {
+    gfx::Rect icon_bounds = icon_view_->bounds();
+    gfx::Point center = icon_bounds.CenterPoint();
+    int line_length = GetIconSize() / 4;
+    int line_thickness = 3;
+
+    cc::PaintFlags plus_flags;
+    plus_flags.setColor(SkColorSetRGB(0x99, 0x99, 0x99));
+    plus_flags.setStyle(cc::PaintFlags::kFill_Style);
+    plus_flags.setAntiAlias(true);
+
+    // Horizontal line.
+    gfx::RectF h_line(center.x() - line_length, center.y() - line_thickness / 2.0f,
+                      line_length * 2, line_thickness);
+    canvas->DrawRoundRect(h_line, line_thickness / 2.0f, plus_flags);
+
+    // Vertical line.
+    gfx::RectF v_line(center.x() - line_thickness / 2.0f, center.y() - line_length,
+                      line_thickness, line_length * 2);
+    canvas->DrawRoundRect(v_line, line_thickness / 2.0f, plus_flags);
+  }
+
+  // Draw loading skeleton.
+  if (is_loading_) {
+    PaintLoadingSkeleton(canvas);
+  }
+
   // Draw drag handle if visible.
-  if (drag_handle_ && drag_handle_->GetVisible()) {
+  if (drag_handle_ && drag_handle_->GetVisible() && !is_add_shortcut_tile_) {
     PaintDragHandle(canvas);
   }
 }
@@ -523,6 +568,16 @@ void AstraNtpShortcutView::OnPaint(gfx::Canvas* canvas) {
   // Paint focus ring on top of everything.
   if (is_focused_) {
     PaintFocusRing(canvas);
+  }
+
+  // Paint badge on top.
+  if (badge_count_ > 0 && !is_add_shortcut_tile_ && !is_loading_) {
+    PaintBadge(canvas);
+  }
+
+  // Paint error indicator on top.
+  if (has_error_ && !is_add_shortcut_tile_ && !is_loading_) {
+    PaintErrorIndicator(canvas);
   }
 }
 
@@ -727,6 +782,213 @@ gfx::Size AstraNtpShortcutView::GetTileSize() const {
       return gfx::Size(kLargeTileWidth, kLargeTileHeight);
   }
   return gfx::Size(kTileWidth, kTileHeight);
+}
+
+// =========================================================================
+// Add shortcut tile variant
+// =========================================================================
+
+void AstraNtpShortcutView::SetIsAddShortcutTile(bool is_add_tile) {
+  if (is_add_shortcut_tile_ == is_add_tile) {
+    return;
+  }
+  is_add_shortcut_tile_ = is_add_tile;
+
+  if (is_add_tile) {
+    BuildAddShortcutLayout();
+  } else {
+    RemoveAllChildViews();
+    icon_view_ = nullptr;
+    title_label_ = nullptr;
+    title_textfield_ = nullptr;
+    remove_button_ = nullptr;
+    drag_handle_ = nullptr;
+    BuildLayout();
+    SetTitle(title_);
+    SetURL(url_);
+    SetIconURL(icon_url_);
+  }
+  InvalidateLayout();
+}
+
+void AstraNtpShortcutView::BuildAddShortcutLayout() {
+  RemoveAllChildViews();
+  icon_view_ = nullptr;
+  title_label_ = nullptr;
+  title_textfield_ = nullptr;
+  remove_button_ = nullptr;
+  drag_handle_ = nullptr;
+
+  auto* layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kVertical,
+      gfx::Insets::TLBR(kIconTopPadding, 0, kTitleBottomPadding, 0),
+      kTitlePadding));
+  layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kStart);
+
+  // Plus icon view.
+  auto plus_icon = std::make_unique<views::View>();
+  plus_icon->SetPreferredSize(gfx::Size(GetIconSize(), GetIconSize()));
+  plus_icon->SetPaintToLayer();
+  plus_icon->layer()->SetFillsBoundsOpaquely(false);
+  icon_view_ = plus_icon.get();
+  AddChildView(std::move(plus_icon));
+
+  // "Add shortcut" label.
+  if (size_ != AstraNtpShortcutSize::kSmall) {
+    auto title_label = std::make_unique<views::Label>(u"Add shortcut");
+    title_label->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+    title_label->SetAutoColorReadabilityEnabled(false);
+    title_label->SetEnabledColor(kTitleTextColor);
+    title_label->SetFontList(title_label->font_list().Derive(
+        -1, gfx::Font::NORMAL, gfx::Font::Weight::NORMAL));
+    title_label_ = title_label.get();
+    AddChildView(std::move(title_label));
+  }
+
+  SetPreferredSize(GetTileSize());
+  SetAccessibleName(u"Add shortcut");
+  SetTooltipText(u"Add shortcut");
+
+  UpdateVisualState();
+}
+
+// =========================================================================
+// Badge
+// =========================================================================
+
+void AstraNtpShortcutView::SetBadgeCount(int count) {
+  if (badge_count_ == count) {
+    return;
+  }
+  badge_count_ = count;
+  SchedulePaint();
+}
+
+void AstraNtpShortcutView::PaintBadge(gfx::Canvas* canvas) {
+  if (badge_count_ <= 0) {
+    return;
+  }
+
+  // Format badge text.
+  std::u16string badge_text;
+  if (badge_count_ > 99) {
+    badge_text = u"99+";
+  } else {
+    badge_text = base::NumberToString16(badge_count_);
+  }
+
+  // Calculate badge size.
+  gfx::FontList font_list;
+  font_list = font_list.Derive(kBadgeFontSizeDelta, gfx::Font::NORMAL,
+                               gfx::Font::Weight::BOLD);
+  int text_width = canvas->GetStringWidth(badge_text, font_list);
+  int badge_width = std::max(kBadgeMinWidth, text_width + kBadgeHPadding * 2);
+  int badge_height = kBadgeSize;
+
+  // Position at top-right of tile.
+  int x = width() - badge_width - kBadgeRightInset;
+  int y = kBadgeTopInset;
+
+  // Draw badge background.
+  cc::PaintFlags badge_flags;
+  badge_flags.setColor(kBadgeBackgroundColor);
+  badge_flags.setStyle(cc::PaintFlags::kFill_Style);
+  badge_flags.setAntiAlias(true);
+
+  gfx::RectF badge_rect(x, y, badge_width, badge_height);
+  canvas->DrawRoundRect(badge_rect, badge_height / 2.0f, badge_flags);
+
+  // Draw badge text.
+  gfx::Rect text_bounds(x, y, badge_width, badge_height);
+  canvas->DrawStringRect(
+      badge_text, font_list, kBadgeTextColor, text_bounds,
+      gfx::ALIGN_CENTER, gfx::ALIGN_MIDDLE);
+}
+
+// =========================================================================
+// Loading state
+// =========================================================================
+
+void AstraNtpShortcutView::SetLoading(bool loading) {
+  if (is_loading_ == loading) {
+    return;
+  }
+  is_loading_ = loading;
+  SchedulePaint();
+}
+
+void AstraNtpShortcutView::PaintLoadingSkeleton(gfx::Canvas* canvas) {
+  if (!is_loading_) {
+    return;
+  }
+
+  // Draw skeleton for icon.
+  gfx::Rect icon_bounds = icon_view_ ? icon_view_->bounds() :
+      gfx::Rect((width() - GetIconSize()) / 2, kIconTopPadding,
+                GetIconSize(), GetIconSize());
+
+  cc::PaintFlags skeleton_flags;
+  skeleton_flags.setColor(kSkeletonBaseColor);
+  skeleton_flags.setStyle(cc::PaintFlags::kFill_Style);
+  skeleton_flags.setAntiAlias(true);
+  canvas->DrawRoundRect(gfx::RectF(icon_bounds), kIconCornerRadius,
+                        skeleton_flags);
+
+  // Draw skeleton for title.
+  if (title_label_ && size_ != AstraNtpShortcutSize::kSmall) {
+    gfx::Rect title_bounds = title_label_->bounds();
+    int title_skeleton_width = title_bounds.width() * 3 / 4;
+    gfx::Rect title_skeleton(
+        title_bounds.x() + (title_bounds.width() - title_skeleton_width) / 2,
+        title_bounds.y(),
+        title_skeleton_width,
+        title_bounds.height());
+    canvas->DrawRoundRect(gfx::RectF(title_skeleton), 4, skeleton_flags);
+  }
+}
+
+// =========================================================================
+// Error state
+// =========================================================================
+
+void AstraNtpShortcutView::SetErrorState(bool error) {
+  if (has_error_ == error) {
+    return;
+  }
+  has_error_ = error;
+  SchedulePaint();
+}
+
+void AstraNtpShortcutView::PaintErrorIndicator(gfx::Canvas* canvas) {
+  if (!has_error_ || !icon_view_) {
+    return;
+  }
+
+  // Draw a small error indicator (exclamation mark triangle) in the corner.
+  gfx::Rect icon_bounds = icon_view_->bounds();
+  int indicator_size = 14;
+  int x = icon_bounds.right() - indicator_size + 2;
+  int y = icon_bounds.bottom() - indicator_size + 2;
+
+  cc::PaintFlags error_flags;
+  error_flags.setColor(kErrorIconColor);
+  error_flags.setStyle(cc::PaintFlags::kFill_Style);
+  error_flags.setAntiAlias(true);
+
+  // Draw small circle as error indicator background.
+  gfx::RectF indicator_rect(x, y, indicator_size, indicator_size);
+  canvas->DrawCircle(indicator_rect.CenterPoint(), indicator_size / 2.0f,
+                     error_flags);
+
+  // Draw exclamation mark.
+  gfx::FontList font_list;
+  font_list = font_list.Derive(-2, gfx::Font::NORMAL, gfx::Font::Weight::BOLD);
+  canvas->DrawStringRect(
+      u"!", font_list, SK_ColorWHITE, gfx::Rect(x, y, indicator_size, indicator_size),
+      gfx::ALIGN_CENTER, gfx::ALIGN_MIDDLE);
 }
 
 }  // namespace astra

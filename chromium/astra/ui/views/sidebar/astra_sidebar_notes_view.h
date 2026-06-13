@@ -24,6 +24,34 @@ class View;
 
 namespace astra {
 
+// Delegate interface for AstraSidebarNotesView actions.
+// Implemented by the parent sidebar view or controller to handle browser-
+// level operations (opening URLs, navigating, etc.).
+//
+// The notes view is pure presentation — it never mutates note state or
+// performs browser navigation directly. All side effects go through this
+// delegate or through AstraNoteService API calls.
+class AstraSidebarNotesDelegate {
+ public:
+  virtual ~AstraSidebarNotesDelegate() = default;
+
+  // Called when a note item is clicked (primary action: open/edit the note).
+  virtual void OnNoteClicked(const std::string& note_id) = 0;
+
+  // Called when a note linked to a URL should navigate to that URL.
+  // |open_in_new_tab| controls whether to open in a new tab or current tab.
+  virtual void OnNoteNavigateToUrl(const GURL& url, bool open_in_new_tab) = 0;
+
+  // Called when the user requests creation of a new note.
+  virtual void OnNewNoteRequested() = 0;
+
+  // Called when the user requests deletion of a note.
+  virtual void OnNoteDeleteRequested(const std::string& note_id) = 0;
+
+  // Called when the user searches notes.
+  virtual void OnNoteSearchQueryChanged(const std::string& query) = 0;
+};
+
 // =========================================================================
 // AstraSidebarNotesView
 // =========================================================================
@@ -86,6 +114,42 @@ class AstraSidebarNotesView : public views::View,
   void SetExpanded(bool expanded);
   bool expanded() const { return expanded_; }
 
+  // -- Delegate ------------------------------------------------------------
+
+  // Set the action delegate.  Not owned.
+  void set_delegate(AstraSidebarNotesDelegate* delegate) { delegate_ = delegate; }
+  AstraSidebarNotesDelegate* delegate() const { return delegate_; }
+
+  // -- Sorting -------------------------------------------------------------
+
+  // Set the sort order for notes.
+  void SetSortOrder(NoteSortOrder order);
+  NoteSortOrder GetSortOrder() const { return sort_order_; }
+
+  // -- Workspace filter ----------------------------------------------------
+
+  // Filter notes to show only those in the given workspace.
+  // Empty string means show all notes (no workspace filter).
+  void SetWorkspaceFilter(const std::string& workspace_id);
+  const std::string& GetWorkspaceFilter() const { return workspace_filter_; }
+
+  // -- Loading / empty state -----------------------------------------------
+
+  // Show or hide the loading state indicator.
+  void SetLoading(bool loading);
+  bool IsLoading() const { return is_loading_; }
+
+  // Get the total number of notes in the current view.
+  int GetNoteCount() const;
+
+  // Get the number of page notes for the current URL.
+  int GetPageNoteCount() const;
+
+  // -- Search --------------------------------------------------------------
+
+  // Get the current search query text.
+  std::string GetSearchQuery() const;
+
   // -- AstraNoteServiceObserver -------------------------------------------
 
   void OnNoteAdded(const AstraNote& note) override;
@@ -146,6 +210,18 @@ class AstraSidebarNotesView : public views::View,
   // Handle the header click (toggle expand/collapse).
   void OnHeaderClicked();
 
+  // Update empty state visibility based on current data.
+  void UpdateEmptyStates();
+
+  // Update loading state visibility.
+  void UpdateLoadingState();
+
+  // Get sorted and filtered notes for the all notes section.
+  std::vector<AstraNote> GetFilteredAllNotes() const;
+
+  // Action delegate for user-initiated operations.
+  raw_ptr<AstraSidebarNotesDelegate> delegate_ = nullptr;
+
   raw_ptr<AstraNoteService> note_service_ = nullptr;
 
   // Observation of the note service for reactive UI updates.
@@ -161,6 +237,15 @@ class AstraSidebarNotesView : public views::View,
   // Whether we're currently showing the editor (true) or the list (false).
   bool showing_editor_ = false;
 
+  // Current sort order for notes.
+  NoteSortOrder sort_order_ = NoteSortOrder::kDateDescending;
+
+  // Workspace filter (empty = no filter, show all).
+  std::string workspace_filter_;
+
+  // Whether we're in loading state.
+  bool is_loading_ = false;
+
   // Child views (owned by the view hierarchy).
   raw_ptr<views::View> header_row_ = nullptr;
   raw_ptr<views::Label> header_label_ = nullptr;
@@ -172,8 +257,13 @@ class AstraSidebarNotesView : public views::View,
   raw_ptr<views::View> page_notes_section_ = nullptr;
   raw_ptr<views::Label> page_notes_label_ = nullptr;
   raw_ptr<views::View> page_notes_container_ = nullptr;
+  raw_ptr<views::Label> page_notes_empty_label_ = nullptr;
   raw_ptr<views::Label> all_notes_label_ = nullptr;
   raw_ptr<views::View> all_notes_container_ = nullptr;
+  raw_ptr<views::Label> all_notes_empty_label_ = nullptr;
+
+  // Loading state view.
+  raw_ptr<views::View> loading_view_ = nullptr;
 
   // Note editor view (shown inline when editing).
   raw_ptr<AstraNoteEditorView> note_editor_ = nullptr;

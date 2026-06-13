@@ -53,6 +53,24 @@ int DisplayModeToInt(AstraWorkspaceDisplayMode mode) {
   return static_cast<int>(mode);
 }
 
+// Helper: convert int to menu size enum.
+AstraProfileMenuSize MenuSizeFromInt(int value) {
+  switch (value) {
+    case 0:
+      return AstraProfileMenuSize::kCompact;
+    case 1:
+    default:
+      return AstraProfileMenuSize::kNormal;
+    case 2:
+      return AstraProfileMenuSize::kLarge;
+  }
+}
+
+// Helper: menu size enum to int.
+int MenuSizeToInt(AstraProfileMenuSize size) {
+  return static_cast<int>(size);
+}
+
 }  // namespace
 
 // ---------------------------------------------------------------------------
@@ -364,6 +382,212 @@ void AstraProfileMenuModel::set_show_sign_in_promo(bool show) {
 }
 
 // ---------------------------------------------------------------------------
+// Profile info
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuModel::SetProfileInfo(const AstraMenuProfileInfo& info) {
+  // Compare relevant fields to detect change.
+  bool changed = (profile_info_.name != info.name) ||
+                 (profile_info_.email != info.email) ||
+                 (profile_info_.avatar_url != info.avatar_url) ||
+                 (profile_info_.is_guest != info.is_guest) ||
+                 (profile_info_.is_managed != info.is_managed);
+
+  if (!changed) {
+    return;
+  }
+
+  profile_info_ = info;
+
+  for (auto& observer : observers_) {
+    observer.OnProfileInfoSet(profile_info_);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Multi-profile list
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuModel::SetProfileList(
+    const std::vector<AstraMenuProfileEntry>& profiles) {
+  profile_list_ = profiles;
+  // Update profile count.
+  profile_count_ = static_cast<int>(profiles.size());
+  // Clamp selected index.
+  if (selected_profile_index_ >= profile_count_) {
+    selected_profile_index_ = std::max(0, profile_count_ - 1);
+  }
+  // Update current profile flag and profile info.
+  for (size_t i = 0; i < profile_list_.size(); ++i) {
+    if (profile_list_[i].is_current) {
+      selected_profile_index_ = static_cast<int>(i);
+      // Sync profile info from the current entry.
+      profile_info_.name = profile_list_[i].name;
+      profile_info_.email = profile_list_[i].email;
+      profile_info_.avatar_url = profile_list_[i].avatar_url;
+      profile_info_.is_guest = profile_list_[i].is_guest;
+      profile_info_.is_managed = profile_list_[i].is_managed;
+      break;
+    }
+  }
+
+  for (auto& observer : observers_) {
+    observer.OnProfileListChanged();
+  }
+}
+
+const AstraMenuProfileEntry* AstraProfileMenuModel::GetProfileEntryAt(
+    size_t index) const {
+  if (index >= profile_list_.size()) {
+    return nullptr;
+  }
+  return &profile_list_[index];
+}
+
+const AstraMenuProfileEntry* AstraProfileMenuModel::GetCurrentProfileEntry()
+    const {
+  for (const auto& entry : profile_list_) {
+    if (entry.is_current) {
+      return &entry;
+    }
+  }
+  return nullptr;
+}
+
+// ---------------------------------------------------------------------------
+// Guest mode
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuModel::SetGuestMode(bool enabled) {
+  if (is_guest_mode_ == enabled) {
+    return;
+  }
+  is_guest_mode_ = enabled;
+  profile_info_.is_guest = enabled;
+
+  for (auto& observer : observers_) {
+    observer.OnGuestModeToggled(is_guest_mode_);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Workspace color customization
+// ---------------------------------------------------------------------------
+
+bool AstraProfileMenuModel::SetWorkspaceColor(const std::string& workspace_id,
+                                              SkColor color) {
+  for (auto& ws : workspaces_) {
+    if (ws.id == workspace_id) {
+      if (ws.accent_color == color) {
+        return false;  // No change.
+      }
+      ws.accent_color = color;
+      for (auto& observer : observers_) {
+        observer.OnWorkspaceColorChanged(workspace_id, color);
+      }
+      return true;
+    }
+  }
+  return false;  // Not found.
+}
+
+// ---------------------------------------------------------------------------
+// Menu size variant
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuModel::set_menu_size(AstraProfileMenuSize size) {
+  if (menu_size_ == size) {
+    return;
+  }
+  menu_size_ = size;
+  NotifySettingsChanged();
+  for (auto& observer : observers_) {
+    observer.OnMenuSizeChanged();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Menu width
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuModel::set_custom_menu_width(int width) {
+  int clamped = std::clamp(width, 0, kMaxMenuWidth);
+  if (custom_menu_width_ == clamped) {
+    return;
+  }
+  custom_menu_width_ = clamped;
+  NotifySettingsChanged();
+}
+
+int AstraProfileMenuModel::GetEffectiveMenuWidth() const {
+  if (custom_menu_width_ > 0) {
+    return custom_menu_width_;
+  }
+  switch (menu_size_) {
+    case AstraProfileMenuSize::kCompact:
+      return kMenuWidthCompact;
+    case AstraProfileMenuSize::kNormal:
+      return kMenuWidthNormal;
+    case AstraProfileMenuSize::kLarge:
+      return kMenuWidthLarge;
+  }
+  return kDefaultMenuWidth;
+}
+
+// ---------------------------------------------------------------------------
+// Additional presentation settings
+// ---------------------------------------------------------------------------
+
+void AstraProfileMenuModel::set_show_dividers(bool show) {
+  if (show_dividers_ == show) {
+    return;
+  }
+  show_dividers_ = show;
+  NotifySettingsChanged();
+  for (auto& observer : observers_) {
+    observer.OnShowDividersChanged(show_dividers_);
+  }
+}
+
+void AstraProfileMenuModel::set_show_tab_counts(bool show) {
+  if (show_tab_counts_ == show) {
+    return;
+  }
+  show_tab_counts_ = show;
+  NotifySettingsChanged();
+  for (auto& observer : observers_) {
+    observer.OnShowTabCountsChanged(show_tab_counts_);
+  }
+}
+
+void AstraProfileMenuModel::set_compact_mode(bool compact) {
+  if (compact_mode_ == compact) {
+    return;
+  }
+  compact_mode_ = compact;
+  NotifySettingsChanged();
+  for (auto& observer : observers_) {
+    observer.OnCompactModeChanged(compact_mode_);
+  }
+}
+
+void AstraProfileMenuModel::set_show_manage_workspaces(bool show) {
+  if (show_manage_workspaces_ == show) {
+    return;
+  }
+  show_manage_workspaces_ = show;
+  NotifySettingsChanged();
+}
+
+void AstraProfileMenuModel::set_show_new_workspace_button(bool show) {
+  if (show_new_workspace_button_ == show) {
+    return;
+  }
+  show_new_workspace_button_ = show;
+  NotifySettingsChanged();
+}
+
+// ---------------------------------------------------------------------------
 // Sync status
 // ---------------------------------------------------------------------------
 
@@ -399,6 +623,18 @@ void AstraProfileMenuModel::LoadFromPrefs(PrefService* prefs) {
       prefs->GetBoolean(prefs::kPrefProfileMenuShowRecentlyClosed);
   show_sign_in_promo_ =
       prefs->GetBoolean(prefs::kPrefProfileMenuShowSignInPromo);
+  show_dividers_ = prefs->GetBoolean(prefs::kPrefProfileMenuShowDividers);
+  show_tab_counts_ = prefs->GetBoolean(prefs::kPrefProfileMenuShowTabCounts);
+  compact_mode_ = prefs->GetBoolean(prefs::kPrefProfileMenuCompactMode);
+  menu_size_ = MenuSizeFromInt(prefs->GetInteger(prefs::kPrefProfileMenuSize));
+  custom_menu_width_ =
+      std::clamp(prefs->GetInteger(prefs::kPrefProfileMenuCustomWidth),
+                 0, kMaxMenuWidth);
+  is_guest_mode_ = prefs->GetBoolean(prefs::kPrefProfileMenuGuestMode);
+  show_manage_workspaces_ =
+      prefs->GetBoolean(prefs::kPrefProfileMenuShowManageWorkspaces);
+  show_new_workspace_button_ =
+      prefs->GetBoolean(prefs::kPrefProfileMenuShowNewWorkspaceButton);
 }
 
 void AstraProfileMenuModel::SaveToPrefs(PrefService* prefs) const {
@@ -419,6 +655,16 @@ void AstraProfileMenuModel::SaveToPrefs(PrefService* prefs) const {
                     show_recently_closed_);
   prefs->SetBoolean(prefs::kPrefProfileMenuShowSignInPromo,
                     show_sign_in_promo_);
+  prefs->SetBoolean(prefs::kPrefProfileMenuShowDividers, show_dividers_);
+  prefs->SetBoolean(prefs::kPrefProfileMenuShowTabCounts, show_tab_counts_);
+  prefs->SetBoolean(prefs::kPrefProfileMenuCompactMode, compact_mode_);
+  prefs->SetInteger(prefs::kPrefProfileMenuSize, MenuSizeToInt(menu_size_));
+  prefs->SetInteger(prefs::kPrefProfileMenuCustomWidth, custom_menu_width_);
+  prefs->SetBoolean(prefs::kPrefProfileMenuGuestMode, is_guest_mode_);
+  prefs->SetBoolean(prefs::kPrefProfileMenuShowManageWorkspaces,
+                    show_manage_workspaces_);
+  prefs->SetBoolean(prefs::kPrefProfileMenuShowNewWorkspaceButton,
+                    show_new_workspace_button_);
 }
 
 void AstraProfileMenuModel::ResetToDefaults() {
@@ -430,6 +676,14 @@ void AstraProfileMenuModel::ResetToDefaults() {
   menu_position_ = AstraProfileMenuPosition::kRight;
   show_recently_closed_ = true;
   show_sign_in_promo_ = true;
+  show_dividers_ = true;
+  show_tab_counts_ = true;
+  compact_mode_ = false;
+  menu_size_ = AstraProfileMenuSize::kNormal;
+  custom_menu_width_ = 0;
+  is_guest_mode_ = false;
+  show_manage_workspaces_ = true;
+  show_new_workspace_button_ = true;
   NotifySettingsChanged();
 }
 

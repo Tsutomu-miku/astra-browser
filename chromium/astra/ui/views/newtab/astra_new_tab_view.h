@@ -155,6 +155,7 @@ class AstraNewTabView : public views::View {
   void SetShortcutsVisible(bool visible);
   void SetRecentlyClosedVisible(bool visible);
   void SetQuickActionsVisible(bool visible);
+  void SetSuggestedContentVisible(bool visible);
 
   // -- Drag and drop --
 
@@ -166,6 +167,14 @@ class AstraNewTabView : public views::View {
 
   // Called when drag ends (reorder).
   void OnShortcutDragEnded(const gfx::Point& screen_point);
+
+  // -- Animation --
+
+  // Play entrance animations for all sections (staggered).
+  void PlayEntranceAnimations();
+
+  // Skip animations (for testing).
+  void SkipAnimationsForTesting();
 
   // -- views::View --
 
@@ -181,6 +190,9 @@ class AstraNewTabView : public views::View {
   // Update greeting based on time of day.
   void UpdateGreeting();
 
+  // Update clock/time display.
+  void UpdateClock();
+
   // Populate workspace cards section.
   void UpdateWorkspaceSection();
 
@@ -192,6 +204,9 @@ class AstraNewTabView : public views::View {
 
   // Populate quick actions section.
   void UpdateQuickActionsSection();
+
+  // Populate suggested content section.
+  void UpdateSuggestedContentSection();
 
   // Recompute layout based on current width (responsive adaptation).
   void UpdateResponsiveLayout();
@@ -205,6 +220,10 @@ class AstraNewTabView : public views::View {
       const std::string& action_id,
       const std::u16string& label,
       char16_t icon_char);
+
+  // Helper: create a suggested content card.
+  std::unique_ptr<views::View> CreateSuggestedContentCard(
+      const AstraNtpSuggestedContent& item);
 
   // Callback from shortcut click.
   void OnShortcutClicked(const GURL& url);
@@ -231,8 +250,14 @@ class AstraNewTabView : public views::View {
   // Callback from recently closed item click.
   void OnRecentlyClosedClicked(int session_id);
 
+  // Callback from suggested content click.
+  void OnSuggestedContentClicked(const GURL& url);
+
   // Callback from settings gear button.
   void OnSettingsGearPressed();
+
+  // Callback from profile button.
+  void OnProfileButtonPressed();
 
   // Gets the current number of shortcut columns based on width.
   int GetCurrentShortcutColumns() const;
@@ -240,22 +265,31 @@ class AstraNewTabView : public views::View {
   // Rebuilds the shortcut grid with the given number of columns.
   void RebuildShortcutGrid(int columns);
 
+  // Timer callback for clock updates.
+  void OnClockTick();
+
   raw_ptr<Browser> browser_;
   raw_ptr<Profile> profile_;
   raw_ptr<Delegate> delegate_ = nullptr;
   raw_ptr<AstraNewTabModel> model_ = nullptr;
 
-  // Settings gear button.
+  // Top bar buttons.
   raw_ptr<views::ImageButton> settings_gear_button_ = nullptr;
+  raw_ptr<views::ImageButton> profile_button_ = nullptr;
 
   // Section containers (owned by view hierarchy).
+  raw_ptr<views::View> top_bar_ = nullptr;
   raw_ptr<views::View> greeting_section_ = nullptr;
   raw_ptr<views::Label> greeting_label_ = nullptr;
+  raw_ptr<views::Label> clock_label_ = nullptr;
+  raw_ptr<views::Label> date_label_ = nullptr;
   raw_ptr<views::View> workspace_section_ = nullptr;
   raw_ptr<views::View> shortcut_section_ = nullptr;
   raw_ptr<views::View> shortcut_grid_ = nullptr;
   raw_ptr<views::View> recent_section_ = nullptr;
   raw_ptr<views::View> quick_actions_section_ = nullptr;
+  raw_ptr<views::View> suggested_content_section_ = nullptr;
+  raw_ptr<views::View> footer_section_ = nullptr;
 
   // Container for horizontally scrollable recently closed items.
   raw_ptr<views::ScrollView> recent_scroll_view_ = nullptr;
@@ -270,6 +304,9 @@ class AstraNewTabView : public views::View {
   // Quick action buttons (owned by quick_actions_section_).
   std::vector<raw_ptr<views::View>> quick_action_buttons_;
 
+  // Suggested content views.
+  std::vector<raw_ptr<views::View>> suggested_content_views_;
+
   // Current content width for responsive layout.
   int current_content_width_ = 0;
 
@@ -279,6 +316,10 @@ class AstraNewTabView : public views::View {
   // Drag state.
   raw_ptr<AstraNtpShortcutView> dragged_shortcut_ = nullptr;
   int drag_drop_index_ = -1;
+
+  // Animation state.
+  bool animations_skipped_ = false;
+  bool entrance_animations_played_ = false;
 
   base::WeakPtrFactory<AstraNewTabView> weak_factory_{this};
 };

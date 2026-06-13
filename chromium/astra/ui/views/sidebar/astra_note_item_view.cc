@@ -79,7 +79,19 @@ void AstraNoteItemView::BuildLayout() {
       gfx::RoundedCornersF(kColorBarWidth / 2.0f));
   UpdateColorIndicator();
 
-  // Delete button (shown on hover) — add to trailing container.
+  // Action buttons (shown on hover) — add to trailing container.
+
+  // Edit button.
+  edit_button_ = trailing_container()->AddChildView(
+      std::make_unique<views::ImageButton>(
+          base::BindRepeating(&AstraNoteItemView::OnEditButtonPressed,
+                              base::Unretained(this))));
+  edit_button_->SetPreferredSize(
+      gfx::Size(kActionButtonSize, kActionButtonSize));
+  edit_button_->SetTooltipText(u"Edit note");
+  edit_button_->SetVisible(false);
+
+  // Delete button.
   delete_button_ = trailing_container()->AddChildView(
       std::make_unique<views::ImageButton>(
           base::BindRepeating(&AstraNoteItemView::OnDeleteButtonPressed,
@@ -269,8 +281,17 @@ std::u16string AstraNoteItemView::FormatModifiedTime() const {
 // =========================================================================
 
 void AstraNoteItemView::UpdateActionButtonsVisibility() {
+  if (edit_button_) {
+    edit_button_->SetVisible(is_hovered_internal_);
+  }
   if (delete_button_) {
     delete_button_->SetVisible(is_hovered_internal_);
+  }
+}
+
+void AstraNoteItemView::OnEditButtonPressed() {
+  if (delegate_) {
+    delegate_->OnNoteItemClicked(note_id_);
   }
 }
 
@@ -377,6 +398,19 @@ void AstraNoteItemView::OnThemeChanged() {
   if (time_label_) {
     time_label_->SetEnabledColor(
         color_provider->GetColor(kNoteItemTimeColorId));
+  }
+}
+
+void AstraNoteItemView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  AstraSidebarItemView::GetAccessibleNodeData(node_data);
+  node_data->role = ax::mojom::Role::kListItem;
+  if (!note_id_.empty()) {
+    node_data->AddStringAttribute(
+        ax::mojom::StringAttribute::kDescription,
+        "Note: " + note_id_);
+  }
+  if (is_pinned_) {
+    node_data->AddState(ax::mojom::State::kPinned);
   }
 }
 

@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "ui/views/controls/button/button.h"
 #include "ui/views/view.h"
@@ -140,6 +141,26 @@ class AstraWorkspaceAvatarButton : public views::Button {
   void SetNotificationBadgeVisible(bool visible);
   bool notification_badge_visible() const { return notification_badge_visible_; }
 
+  // -- Window count badge -------------------------------------------------
+
+  // Sets the window count shown on the badge.
+  // A count of 0 or 1 hides the badge.
+  void SetWindowCount(int count);
+  int window_count() const { return window_count_; }
+
+  // Sets whether the window count badge is visible.
+  void SetWindowBadgeVisible(bool visible);
+  bool window_badge_visible() const { return window_badge_visible_; }
+
+  // -- Animation ----------------------------------------------------------
+
+  // Triggers a switch animation (used when workspace changes).
+  void PlaySwitchAnimation();
+
+  // Sets whether animations are enabled for this button.
+  void SetAnimationsEnabled(bool enabled);
+  bool animations_enabled() const { return animations_enabled_; }
+
   // -- views::Button ------------------------------------------------------
 
   void OnThemeChanged() override;
@@ -186,6 +207,15 @@ class AstraWorkspaceAvatarButton : public views::Button {
   // Returns the button height based on size variant.
   int GetButtonHeight() const;
 
+  // Updates the window count badge.
+  void UpdateWindowBadge();
+
+  // Updates the switch animation state.
+  void UpdateAnimationState();
+
+  // Callback for when switch animation completes.
+  void OnSwitchAnimationComplete();
+
   raw_ptr<AstraWorkspaceService> workspace_service_;
   raw_ptr<Delegate> delegate_;
 
@@ -207,6 +237,14 @@ class AstraWorkspaceAvatarButton : public views::Button {
   int notification_count_ = 0;
   bool notification_badge_visible_ = false;
 
+  // Window count badge state.
+  int window_count_ = 1;
+  bool window_badge_visible_ = false;
+
+  // Animation state.
+  bool animations_enabled_ = true;
+  bool is_animating_ = false;
+
   // Hover state.
   bool is_hovered_ = false;
 
@@ -216,7 +254,11 @@ class AstraWorkspaceAvatarButton : public views::Button {
   raw_ptr<views::View> accent_badge_ = nullptr;
   raw_ptr<views::View> notification_badge_ = nullptr;
   raw_ptr<views::Label> notification_badge_label_ = nullptr;
+  raw_ptr<views::View> window_badge_ = nullptr;
+  raw_ptr<views::Label> window_badge_label_ = nullptr;
   raw_ptr<views::Label> workspace_name_label_ = nullptr;
+
+  base::WeakPtrFactory<AstraWorkspaceAvatarButton> weak_factory_{this};
 };
 
 }  // namespace astra

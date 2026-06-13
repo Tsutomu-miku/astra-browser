@@ -142,6 +142,11 @@ class AstraNewTabController : public AstraNewTabModelObserver,
   void ToggleRecentlyClosed();
   void ToggleQuickActions();
   void ToggleMostVisited();
+  void ToggleSuggestedContent();
+  void ToggleShortcutTitles();
+  void ToggleSeconds();
+  void ToggleDate();
+  void ToggleSearchEngine();
 
   void SetShortcutColumns(int columns);
   void SetMaxWorkspacesShown(int max);
@@ -152,6 +157,31 @@ class AstraNewTabController : public AstraNewTabModelObserver,
   void SetBackgroundStyle(AstraNtpBackgroundStyle style);
   void SetCustomBackgroundUrl(const std::string& url);
   void SetGreetingStyle(AstraNtpGreetingStyle style);
+  void SetThemeMode(AstraNtpThemeMode mode);
+  void SetLayoutDensity(AstraNtpLayoutDensity density);
+  void SetShortcutIconSize(AstraNtpShortcutIconSize size);
+  void SetClockFormat(AstraNtpClockFormat format);
+  void SetSearchBarStyle(AstraNtpSearchBarStyle style);
+  void SetAccentColor(SkColor color);
+  void SetGradientSettings(const AstraNtpGradientSettings& settings);
+  void SetGreetingName(const std::u16string& name);
+  void SetSearchEngineName(const std::string& name);
+
+  // Import/export.
+  base::Value::Dict ExportSettings() const;
+  bool ImportSettings(const base::Value::Dict& settings);
+  void ResetSettingsToDefaults();
+  void ResetAllToDefaults();
+
+  // Focus management.
+  void FocusSearchBar();
+  void FocusFirstShortcut();
+  void FocusNextSection();
+  void FocusPreviousSection();
+
+  // Animation control.
+  void PlayEntranceAnimations();
+  void SkipAnimationsForTesting();
 
   // -- AstraNewTabView::Delegate ------------------------------------------
   // (View delegate interface — implemented by controller to receive
@@ -182,8 +212,15 @@ class AstraNewTabController : public AstraNewTabModelObserver,
   void OnWorkspacesChanged() override;
   void OnQuickActionsChanged() override;
   void OnRecentlyClosedChanged() override;
+  void OnSuggestedContentChanged() override;
   void OnNtpSettingsChanged() override;
   void OnThemeChanged() override;
+  void OnLayoutDensityChanged() override;
+  void OnAccentColorChanged() override;
+  void OnClockFormatChanged() override;
+  void OnSearchBarStyleChanged() override;
+  void OnGreetingNameChanged() override;
+  void OnSuggestedContentSettingsChanged() override;
 
  private:
   // Load shortcuts from services into the model.
@@ -204,6 +241,21 @@ class AstraNewTabController : public AstraNewTabModelObserver,
   // Update the view from the current model state.
   void UpdateViewFromModel();
 
+  // Update only the shortcut section of the view.
+  void UpdateViewShortcuts();
+
+  // Update only the workspace section of the view.
+  void UpdateViewWorkspaces();
+
+  // Update only the quick actions section.
+  void UpdateViewQuickActions();
+
+  // Update only the recently closed section.
+  void UpdateViewRecentlyClosed();
+
+  // Update only the suggested content section.
+  void UpdateViewSuggestedContent();
+
   // Raw pointers to services (not owned).
   raw_ptr<Browser> browser_ = nullptr;
   raw_ptr<Profile> profile_ = nullptr;
@@ -219,6 +271,13 @@ class AstraNewTabController : public AstraNewTabModelObserver,
 
   // The delegate (not owned — handles actions outside the controller).
   raw_ptr<Delegate> delegate_ = nullptr;
+
+  // Animation state.
+  bool animations_skipped_ = false;
+  bool entrance_animations_played_ = false;
+
+  // Current focus section index (for keyboard navigation between sections).
+  int current_focus_section_ = 0;
 
   base::WeakPtrFactory<AstraNewTabController> weak_factory_{this};
 };

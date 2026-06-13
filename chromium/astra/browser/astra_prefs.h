@@ -1401,6 +1401,30 @@ inline constexpr char kPrefPasswordMaxSidebarPasswords[] =
 inline constexpr char kPrefPasswordBreachDetected[] =
     "astra.password.breach_detected";
 
+// Sort order for passwords in the sidebar.
+// Values: "alphabetical", "last_used", "date_created".
+// Default: "alphabetical".
+inline constexpr char kPrefPasswordSortOrder[] =
+    "astra.password.sort_order";
+
+// Filter for passwords in the sidebar.
+// Values: "all", "compromised", "weak", "reused".
+// Default: "all".
+inline constexpr char kPrefPasswordFilter[] =
+    "astra.password.filter";
+
+// How passwords are grouped in the sidebar.
+// Values: "none", "site", "account".
+// Default: "none".
+inline constexpr char kPrefPasswordGroupBy[] =
+    "astra.password.group_by";
+
+// Whether passwords are shown hidden (dots) by default in the sidebar.
+// When true, passwords display as dots and require a click/tap to reveal.
+// Default: true — hide passwords by default for privacy.
+inline constexpr char kPrefPasswordHideByDefault[] =
+    "astra.password.hide_by_default";
+
 // -- Safety helper pref keys -----------------------------------------------
 //
 // IMPORTANT: Safe browsing state and security decisions are fully owned by
@@ -2601,6 +2625,10 @@ inline constexpr bool kDefaultPasswordShowHealth = true;
 inline constexpr bool kDefaultPasswordBreachAlertsEnabled = true;
 inline constexpr int kDefaultPasswordMaxSidebarPasswords = 20;
 inline constexpr bool kDefaultPasswordBreachDetected = false;
+inline constexpr char kDefaultPasswordSortOrder[] = "alphabetical";
+inline constexpr char kDefaultPasswordFilter[] = "all";
+inline constexpr char kDefaultPasswordGroupBy[] = "none";
+inline constexpr bool kDefaultPasswordHideByDefault = true;
 
 // Safety helper defaults
 inline constexpr bool kDefaultSafeBrowsingEnabled = true;
@@ -2850,6 +2878,59 @@ inline constexpr char kPrefProfileMenuShowRecentlyClosed[] =
 inline constexpr char kPrefProfileMenuShowSignInPromo[] =
     "astra.profile_menu.show_sign_in_promo";
 
+// Whether to show dividers between menu sections (bool).
+// When true, separator lines are drawn between the header, workspaces,
+// and footer sections of the profile menu.
+// Default: true — dividers improve visual separation.
+inline constexpr char kPrefProfileMenuShowDividers[] =
+    "astra.profile_menu.show_dividers";
+
+// Whether to show tab counts on workspace items (bool).
+// When true, each workspace row shows the number of open tabs.
+// Default: true — tab counts help with workspace identification.
+inline constexpr char kPrefProfileMenuShowTabCounts[] =
+    "astra.profile_menu.show_tab_counts";
+
+// Whether the menu uses compact layout (bool).
+// When true, menu items use smaller padding and tighter spacing.
+// Default: false — standard density is more comfortable.
+inline constexpr char kPrefProfileMenuCompactMode[] =
+    "astra.profile_menu.compact_mode";
+
+// Menu size variant (int).
+// 0 = compact — narrower menu, smaller items
+// 1 = normal — standard size (default)
+// 2 = large — wider menu, larger items
+// Default: 1 = normal.
+inline constexpr char kPrefProfileMenuSize[] =
+    "astra.profile_menu.menu_size";
+
+// Custom menu width in DIPs (int).
+// Overrides the size variant's default width when set to a non-zero value.
+// Clamped between 200 and 500 DIPs.
+// Default: 0 — use size variant default width.
+inline constexpr char kPrefProfileMenuCustomWidth[] =
+    "astra.profile_menu.custom_width";
+
+// Whether guest mode is enabled (bool).
+// When true, the menu shows a "Guest mode" option and the current
+// profile may be a guest profile.
+// Default: false — guest mode is opt-in.
+inline constexpr char kPrefProfileMenuGuestMode[] =
+    "astra.profile_menu.guest_mode";
+
+// Whether to show the "Manage workspaces" link (bool).
+// When true, the workspace section includes a link to manage workspaces.
+// Default: true — management access is important for workspace users.
+inline constexpr char kPrefProfileMenuShowManageWorkspaces[] =
+    "astra.profile_menu.show_manage_workspaces";
+
+// Whether to show the "New workspace" button (bool).
+// When true, the workspace section includes a button to create new workspaces.
+// Default: true — quick creation is a core feature.
+inline constexpr char kPrefProfileMenuShowNewWorkspaceButton[] =
+    "astra.profile_menu.show_new_workspace_button";
+
 // Profile menu defaults
 inline constexpr bool kDefaultProfileMenuShowWorkspaces = true;
 inline constexpr int kDefaultProfileMenuMaxWorkspaces = 6;
@@ -2859,6 +2940,14 @@ inline constexpr int kDefaultProfileMenuWorkspaceDisplayMode = 2;  // icons_and_
 inline constexpr char kDefaultProfileMenuPosition[] = "right";
 inline constexpr bool kDefaultProfileMenuShowRecentlyClosed = true;
 inline constexpr bool kDefaultProfileMenuShowSignInPromo = true;
+inline constexpr bool kDefaultProfileMenuShowDividers = true;
+inline constexpr bool kDefaultProfileMenuShowTabCounts = true;
+inline constexpr bool kDefaultProfileMenuCompactMode = false;
+inline constexpr int kDefaultProfileMenuSize = 1;  // normal
+inline constexpr int kDefaultProfileMenuCustomWidth = 0;
+inline constexpr bool kDefaultProfileMenuGuestMode = false;
+inline constexpr bool kDefaultProfileMenuShowManageWorkspaces = true;
+inline constexpr bool kDefaultProfileMenuShowNewWorkspaceButton = true;
 
 // -- New tab page (NTP) pref keys ------------------------------------------
 //

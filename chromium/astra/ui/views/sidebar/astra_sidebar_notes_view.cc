@@ -176,6 +176,16 @@ void AstraSidebarNotesView::BuildLayout() {
   page_items_layout->set_cross_axis_alignment(
       views::BoxLayout::CrossAxisAlignment::kStretch);
 
+  // Page notes empty state.
+  page_notes_empty_label_ = page_notes_section_->AddChildView(
+      std::make_unique<views::Label>(kNoPageNotesLabel));
+  page_notes_empty_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  page_notes_empty_label_->SetAutoColorReadabilityEnabled(false);
+  page_notes_empty_label_->SetBorder(views::CreateEmptyBorder(
+      gfx::Insets::VH(kSubHeaderVerticalPadding,
+                      kSubHeaderHorizontalPadding + 8)));
+  page_notes_empty_label_->SetVisible(false);
+
   // All notes section.
   auto* all_notes_section =
       list_container_->AddChildView(std::make_unique<views::View>());
@@ -205,6 +215,30 @@ void AstraSidebarNotesView::BuildLayout() {
           kNotesItemSpacing));
   all_items_layout->set_cross_axis_alignment(
       views::BoxLayout::CrossAxisAlignment::kStretch);
+
+  // All notes empty state.
+  all_notes_empty_label_ = all_notes_section->AddChildView(
+      std::make_unique<views::Label>(kNoNotesLabel));
+  all_notes_empty_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  all_notes_empty_label_->SetAutoColorReadabilityEnabled(false);
+  all_notes_empty_label_->SetBorder(views::CreateEmptyBorder(
+      gfx::Insets::VH(kSubHeaderVerticalPadding,
+                      kSubHeaderHorizontalPadding + 8)));
+  all_notes_empty_label_->SetVisible(false);
+
+  // -- Loading state (hidden by default) --
+
+  loading_view_ = AddChildView(std::make_unique<views::View>());
+  auto* loading_layout = loading_view_->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical,
+          gfx::Insets::VH(16, kNotesHeaderHorizontalPadding), 0));
+  loading_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  auto* loading_label = loading_view_->AddChildView(
+      std::make_unique<views::Label>(u"Loading notes..."));
+  loading_label->SetAutoColorReadabilityEnabled(false);
+  loading_view_->SetVisible(false);
 
   // -- Note editor (hidden by default) --
 
@@ -245,8 +279,6 @@ void AstraSidebarNotesView::UpdateFromService() {
   } else {
     // Search mode: show matching notes in the all notes section,
     // hide page notes section.
-    // TODO(astra): Show search results with proper section headers.
-    // For simplicity, search results populate the "All notes" container.
     auto results = note_service_->SearchNotes(search_text);
     for (const auto& note : results) {
       all_notes_container_->AddChildView(CreateNoteItemView(note));
@@ -262,6 +294,9 @@ void AstraSidebarNotesView::UpdateFromService() {
   // there are page notes or we're not in search mode.
   bool has_current_url = current_url_.is_valid();
   page_notes_section_->SetVisible(has_current_url && search_text.empty());
+
+  // Update empty states.
+  UpdateEmptyStates();
 
   InvalidateLayout();
 }
@@ -282,7 +317,7 @@ void AstraSidebarNotesView::PopulateAllNotes() {
     return;
   }
 
-  auto notes = note_service_->GetAllNotes();
+  auto notes = GetFilteredAllNotes();
   for (const auto& note : notes) {
     all_notes_container_->AddChildView(CreateNoteItemView(note));
   }
@@ -474,10 +509,6 @@ void AstraSidebarNotesView::SetExpanded(bool expanded) {
 // Event handlers
 // =========================================================================
 
-void AstraSidebarNotesView::OnNewNoteButtonPressed() {
-  ShowNewNoteEditor(/*link_to_current_url=*/true);
-}
-
 void AstraSidebarNotesView::OnHeaderClicked() {
   SetExpanded(!expanded_);
 }
@@ -511,10 +542,16 @@ void AstraSidebarNotesView::OnNotesReloaded() {
 // =========================================================================
 
 void AstraSidebarNotesView::OnNoteItemClicked(const std::string& note_id) {
+  if (delegate_) {
+    delegate_->OnNoteClicked(note_id);
+  }
   ShowNoteEditor(note_id);
 }
 
 void AstraSidebarNotesView::OnNoteDeleteRequested(const std::string& note_id) {
+  if (delegate_) {
+    delegate_->OnNoteDeleteRequested(note_id);
+  }
   if (note_service_) {
     note_service_->DeleteNote(note_id);
     // UI updates via OnNoteRemoved observer.
@@ -594,6 +631,9 @@ void AstraSidebarNotesView::ContentsChanged(views::Textfield* sender,
                                              const std::u16string& new_contents) {
   // TODO(astra): Debounce search input with a timer to avoid excessive
   // rebuilds while typing. For now, update on every keystroke.
+  if (delegate_) {
+    delegate_->OnNoteSearchQueryChanged(base::UTF16ToUTF8(new_contents));
+  }
   UpdateFromService();
 }
 
@@ -625,6 +665,8 @@ void AstraSidebarNotesView::OnThemeChanged() {
       color_provider->GetColor(kNotesHeaderTextColorId);
   SkColor sub_header_color =
       color_provider->GetColor(kNotesSubHeaderTextColorId);
+  SkColor empty_text_color =
+      color_provider->GetColor(kNotesEmptyTextColorId);
 
   if (header_label_) {
     header_label_->SetEnabledColor(header_color);
@@ -635,6 +677,161 @@ void AstraSidebarNotesView::OnThemeChanged() {
   if (all_notes_label_) {
     all_notes_label_->SetEnabledColor(sub_header_color);
   }
+  if (page_notes_empty_label_) {
+    page_notes_empty_label_->SetEnabledColor(empty_text_color);
+  }
+  if (all_notes_empty_label_) {
+    all_notes_empty_label_->SetEnabledColor(empty_text_color);
+  }
+}
+
+// =========================================================================
+// Sorting
+// =========================================================================
+
+void AstraSidebarNotesView::SetSortOrder(NoteSortOrder order) {
+  if (sort_order_ == order) {
+    return;
+  }
+  sort_order_ = order;
+  if (note_service_ && !showing_editor_ && expanded_) {
+    UpdateFromService();
+  }
+}
+
+// =========================================================================
+// Workspace filter
+// =========================================================================
+
+void AstraSidebarNotesView::SetWorkspaceFilter(
+    const std::string& workspace_id) {
+  if (workspace_filter_ == workspace_id) {
+    return;
+  }
+  workspace_filter_ = workspace_id;
+  if (note_service_ && !showing_editor_ && expanded_) {
+    UpdateFromService();
+  }
+}
+
+std::vector<AstraNote> AstraSidebarNotesView::GetFilteredAllNotes() const {
+  if (!note_service_) {
+    return std::vector<AstraNote>();
+  }
+
+  std::vector<AstraNote> notes;
+
+  if (!workspace_filter_.empty()) {
+    notes = note_service_->GetNotesByWorkspace(workspace_filter_);
+  } else {
+    notes = note_service_->GetAllNotes();
+  }
+
+  // Apply sort order if different from default.
+  if (sort_order_ != NoteSortOrder::kDateDescending) {
+    notes = note_service_->GetNotesSortedBy(sort_order_);
+    // Re-filter by workspace if needed.
+    if (!workspace_filter_.empty()) {
+      std::vector<AstraNote> filtered;
+      for (const auto& note : notes) {
+        if (note.workspace_id == workspace_filter_) {
+          filtered.push_back(note);
+        }
+      }
+      notes = std::move(filtered);
+    }
+  } else if (!workspace_filter_.empty()) {
+    // Already filtered by workspace above.
+  }
+
+  return notes;
+}
+
+// =========================================================================
+// Loading state
+// =========================================================================
+
+void AstraSidebarNotesView::SetLoading(bool loading) {
+  if (is_loading_ == loading) {
+    return;
+  }
+  is_loading_ = loading;
+  UpdateLoadingState();
+}
+
+void AstraSidebarNotesView::UpdateLoadingState() {
+  if (loading_view_) {
+    loading_view_->SetVisible(is_loading_ && expanded_);
+  }
+  if (list_container_) {
+    list_container_->SetVisible(!is_loading_ && expanded_ && !showing_editor_);
+  }
+}
+
+// =========================================================================
+// Empty states
+// =========================================================================
+
+void AstraSidebarNotesView::UpdateEmptyStates() {
+  if (!page_notes_container_ || !all_notes_container_) {
+    return;
+  }
+
+  size_t page_count = page_notes_container_->children().size();
+  size_t all_count = all_notes_container_->children().size();
+
+  if (page_notes_empty_label_) {
+    page_notes_empty_label_->SetVisible(page_count == 0 &&
+                                        current_url_.is_valid() &&
+                                        !showing_editor_ &&
+                                        search_field_ &&
+                                        search_field_->GetText().empty());
+  }
+
+  if (all_notes_empty_label_) {
+    all_notes_empty_label_->SetVisible(all_count == 0 &&
+                                       !is_loading_ &&
+                                       !showing_editor_);
+  }
+}
+
+// =========================================================================
+// Count and query helpers
+// =========================================================================
+
+int AstraSidebarNotesView::GetNoteCount() const {
+  if (!all_notes_container_) {
+    return 0;
+  }
+  return static_cast<int>(all_notes_container_->children().size());
+}
+
+int AstraSidebarNotesView::GetPageNoteCount() const {
+  if (!page_notes_container_) {
+    return 0;
+  }
+  return static_cast<int>(page_notes_container_->children().size());
+}
+
+std::string AstraSidebarNotesView::GetSearchQuery() const {
+  if (!search_field_) {
+    return std::string();
+  }
+  return base::UTF16ToUTF8(search_field_->GetText());
+}
+
+// =========================================================================
+// Delegate-forwarded actions
+// =========================================================================
+//
+// These methods augment the service-based actions with delegate notifications
+// so that the parent view (sidebar) can handle browser-level operations.
+
+void AstraSidebarNotesView::OnNewNoteButtonPressed() {
+  if (delegate_) {
+    delegate_->OnNewNoteRequested();
+  }
+  ShowNewNoteEditor(/*link_to_current_url=*/true);
 }
 
 }  // namespace astra

@@ -292,6 +292,51 @@ class AstraReadingListObserver : public base::CheckedObserver {
 };
 
 // =========================================================================
+// AstraReadingListServiceObserver
+// =========================================================================
+//
+// Extended observer interface with full entry data in notifications.
+// This provides richer notifications for UI that needs the full entry
+// struct rather than just the URL.
+//
+// All methods have empty default implementations so observers can override
+// only the events they care about.
+//
+// Follows the same pattern as AstraNoteServiceObserver for consistency.
+// =========================================================================
+
+class AstraReadingListServiceObserver : public base::CheckedObserver {
+ public:
+  // Called after a new entry is added to the reading list.
+  virtual void OnReadingListEntryAdded(const AstraReadingListEntry& entry) {}
+
+  // Called after an entry is removed from the reading list.
+  virtual void OnReadingListEntryRemoved(const GURL& url) {}
+
+  // Called after an entry's state is updated.
+  virtual void OnReadingListEntryUpdated(const AstraReadingListEntry& entry) {}
+
+  // Called when the read status of an entry changes.
+  // OnReadingListEntryUpdated also fires — this is a convenience event.
+  virtual void OnReadingListEntryStatusChanged(const GURL& url,
+                                               bool is_read) {}
+
+  // Called when the reading list model has finished loading.
+  virtual void OnReadingListModelLoaded() {}
+
+  // Called when the overall ordering or filter changes (e.g., sort order,
+  // bulk operations).  Observers should do a full rebuild.
+  virtual void OnReadingListReordered() {}
+
+  // Called when the entire reading list has been reloaded (e.g., after
+  // sync or import).  Observers should do a full rebuild.
+  virtual void OnReadingListReloaded() {}
+
+ protected:
+  ~AstraReadingListServiceObserver() override = default;
+};
+
+// =========================================================================
 // AstraReadingListService
 // =========================================================================
 //
@@ -432,6 +477,9 @@ class AstraReadingListService final : public KeyedService {
 
   void AddObserver(AstraReadingListObserver* observer);
   void RemoveObserver(AstraReadingListObserver* observer);
+
+  void AddServiceObserver(AstraReadingListServiceObserver* observer);
+  void RemoveServiceObserver(AstraReadingListServiceObserver* observer);
 
   // -- Entry queries -----------------------------------------------------
 
@@ -767,6 +815,15 @@ class AstraReadingListService final : public KeyedService {
   void NotifyReadingListChanged();
   void NotifyServiceShutdown();
 
+  // Service observer notification helpers.
+  void NotifyServiceEntryAdded(const AstraReadingListEntry& entry);
+  void NotifyServiceEntryRemoved(const GURL& url);
+  void NotifyServiceEntryUpdated(const AstraReadingListEntry& entry);
+  void NotifyServiceEntryStatusChanged(const GURL& url, bool is_read);
+  void NotifyServiceModelLoaded();
+  void NotifyServiceReordered();
+  void NotifyServiceReloaded();
+
   // -- Data members ------------------------------------------------------
 
   raw_ptr<Profile> profile_;
@@ -816,6 +873,7 @@ class AstraReadingListService final : public KeyedService {
   mutable AstraReadingListFolder cached_folder_;
 
   base::ObserverList<AstraReadingListObserver> observers_;
+  base::ObserverList<AstraReadingListServiceObserver> service_observers_;
 };
 
 }  // namespace astra

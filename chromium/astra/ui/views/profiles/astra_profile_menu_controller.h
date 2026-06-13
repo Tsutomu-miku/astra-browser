@@ -192,6 +192,32 @@ class AstraProfileMenuController
   // Returns true if the profile menu bubble / widget is currently shown.
   bool IsProfileMenuShowing() const;
 
+  // Re-anchors the menu to a new view.  No-op if menu is not showing.
+  void ReanchorMenu(views::View* new_anchor);
+
+  // -- Focus management ----------------------------------------------------
+
+  // Moves focus to the first focusable element in the menu.
+  void FocusFirstElement();
+
+  // Moves focus to the last focusable element in the menu.
+  void FocusLastElement();
+
+  // Returns true if the menu or any of its children has focus.
+  bool HasFocus() const;
+
+  // -- Keyboard navigation -------------------------------------------------
+
+  // Handles a key event while the menu is open.
+  // Returns true if the event was handled.
+  bool HandleKeyEvent(const ui::KeyEvent& event);
+
+  // -- Animation -----------------------------------------------------------
+
+  // Sets whether the menu uses show/hide animations.
+  void SetAnimationsEnabled(bool enabled);
+  bool animations_enabled() const { return animations_enabled_; }
+
   // -- Avatar button ------------------------------------------------------
 
   // Creates and returns the workspace avatar button.
@@ -283,6 +309,16 @@ class AstraProfileMenuController
 
   void OnWidgetDestroying(views::Widget* widget) override;
   void OnWidgetVisibilityChanged(views::Widget* widget, bool visible) override;
+  void OnWidgetBoundsChanged(views::Widget* widget,
+                             const gfx::Rect& new_bounds) override;
+
+  // -- Accessibility ------------------------------------------------------
+
+  // Announces a message to accessibility.
+  void AnnounceForAccessibility(const std::u16string& message);
+
+  // Returns the accessible name for the menu.
+  std::u16string GetAccessibleMenuName() const;
 
  private:
   // Returns the workspace service for the browser's profile.
@@ -331,6 +367,21 @@ class AstraProfileMenuController
   // Notifies observers that the menu has been hidden.
   void NotifyMenuHidden();
 
+  // Helper: gets the first focusable view in the menu content.
+  views::View* GetFirstFocusableView();
+
+  // Helper: gets the last focusable view in the menu content.
+  views::View* GetLastFocusableView();
+
+  // Helper: handles Tab key for focus cycling within the menu.
+  bool HandleTabKey(bool reverse);
+
+  // Helper: updates profile info in the model from the profile.
+  void UpdateProfileInfoFromProfile();
+
+  // Helper: applies compact mode to all menu views.
+  void ApplyCompactMode();
+
   raw_ptr<Browser> browser_;
   raw_ptr<Profile> profile_;
 
@@ -362,6 +413,9 @@ class AstraProfileMenuController
 
   // Tracks whether we're currently observing the theme service.
   bool observing_theme_service_ = false;
+
+  // Whether show/hide animations are enabled.
+  bool animations_enabled_ = true;
 
   // Workspace counter for generating new workspace IDs.
   // TODO(astra): Replace with a proper ID generation strategy.

@@ -35,6 +35,7 @@ const char AstraSidebarModel::kSectionDownloads[] = "downloads";
 const char AstraSidebarModel::kSectionPasswords[] = "passwords";
 const char AstraSidebarModel::kSectionExtensions[] = "extensions";
 const char AstraSidebarModel::kSectionDevTools[] = "devtools";
+const char AstraSidebarModel::kSectionSettings[] = "settings";
 
 namespace {
 
@@ -199,6 +200,11 @@ void AstraSidebarModel::SetActiveSection(const std::string& section_id) {
   }
   active_section_id_ = section_id;
 
+  // Update the is_active flag on all sections.
+  for (auto& section : sections_) {
+    section.is_active = (section.id == section_id);
+  }
+
   // Persist as last active section if remember_last_section is enabled.
   if (remember_last_section() && pref_service_) {
     pref_service_->SetString(prefs::kPrefSidebarLastActiveSection, section_id);
@@ -250,6 +256,10 @@ bool AstraSidebarModel::SetSectionVisible(const std::string& section_id,
   }
   if (it->is_visible == visible) {
     return true;
+  }
+  // Check if the section can be hidden.
+  if (!visible && !it->can_hide) {
+    return false;
   }
   it->is_visible = visible;
 
@@ -319,6 +329,9 @@ bool AstraSidebarModel::MoveSection(const std::string& section_id,
                                      int new_position) {
   auto it = FindSectionById(&sections_, section_id);
   if (it == sections_.end()) {
+    return false;
+  }
+  if (!it->reorderable) {
     return false;
   }
 
@@ -391,12 +404,38 @@ size_t AstraSidebarModel::GetVisibleSectionCount() const {
   return count;
 }
 
+std::vector<AstraSidebarSection> AstraSidebarModel::GetSectionsInGroup(
+    AstraSidebarSectionGroup group) const {
+  std::vector<AstraSidebarSection> group_sections;
+  for (const auto& section : sections_) {
+    if (section.group == group) {
+      group_sections.push_back(section);
+    }
+  }
+  return group_sections;
+}
+
+size_t AstraSidebarModel::GetSectionCountInGroup(
+    AstraSidebarSectionGroup group) const {
+  size_t count = 0;
+  for (const auto& section : sections_) {
+    if (section.group == group) {
+      ++count;
+    }
+  }
+  return count;
+}
+
 // -- Bulk operations -------------------------------------------------------
 
 void AstraSidebarModel::SetAllSectionsVisible(bool visible) {
   bool changed = false;
   for (auto& section : sections_) {
     if (section.is_visible != visible) {
+      // Only change if the section can be hidden.
+      if (!visible && !section.can_hide) {
+        continue;
+      }
       section.is_visible = visible;
       changed = true;
     }
@@ -425,6 +464,14 @@ void AstraSidebarModel::SetAllSectionsVisible(bool visible) {
   for (const auto& section : sections_) {
     NotifySectionVisibilityChanged(section.id, visible);
   }
+}
+
+void AstraSidebarModel::ShowAllSections() {
+  SetAllSectionsVisible(true);
+}
+
+void AstraSidebarModel::HideAllSections() {
+  SetAllSectionsVisible(false);
 }
 
 void AstraSidebarModel::ToggleMultipleSections(
@@ -508,6 +555,7 @@ void AstraSidebarModel::ResetAllSettings() {
   SyncSectionVisibilityWithPrefs();
 
   NotifySidebarSettingsChanged();
+  NotifySidebarLayoutChanged();
 }
 
 void AstraSidebarModel::ResetSectionsToDefaults() {
@@ -521,6 +569,7 @@ void AstraSidebarModel::ResetSectionsToDefaults() {
     NotifySectionVisibilityChanged(section.id, section.is_visible);
     NotifySectionCollapsedChanged(section.id, section.is_collapsed);
   }
+  NotifySidebarLayoutChanged();
 }
 
 // -- Presentation settings -------------------------------------------------
@@ -568,6 +617,11 @@ void AstraSidebarModel::SetCompactMode(bool enabled) {
   }
   pref_service_->SetBoolean(prefs::kPrefSidebarCompactMode, enabled);
   NotifySidebarSettingsChanged();
+  NotifyCompactModeChanged(enabled);
+}
+
+void AstraSidebarModel::ToggleCompactMode() {
+  SetCompactMode(!compact_mode());
 }
 
 bool AstraSidebarModel::auto_hide_on_tab_click() const {
@@ -675,6 +729,28 @@ void AstraSidebarModel::SetLastActiveSection(const std::string& section_id) {
   NotifySidebarSettingsChanged();
 }
 
+// -- Compact mode config ---------------------------------------------------
+
+int AstraSidebarModel::GetEffectiveIconSize() const {
+  return compact_mode() ? compact_mode_config_.icon_size
+                        : compact_mode_config_.normal_icon_size;
+}
+
+int AstraSidebarModel::GetEffectiveItemSpacing() const {
+  return compact_mode() ? compact_mode_config_.item_spacing
+                        : compact_mode_config_.normal_item_spacing;
+}
+
+int AstraSidebarModel::GetEffectiveItemHeight() const {
+  return compact_mode() ? compact_mode_config_.item_height
+                        : compact_mode_config_.normal_item_height;
+}
+
+int AstraSidebarModel::GetEffectiveHorizontalPadding() const {
+  return compact_mode() ? compact_mode_config_.horizontal_padding
+                        : compact_mode_config_.normal_horizontal_padding;
+}
+
 // -- Section visibility settings -------------------------------------------
 
 bool AstraSidebarModel::show_tab_groups_section() const {
@@ -766,11 +842,180 @@ void AstraSidebarModel::SetShowExtensionsSection(bool show) {
   SetSectionVisible(kSectionExtensions, show);
 }
 
+// -- Layout import/export --------------------------------------------------
+
+AstraSidebarLayoutData AstraSidebarModel::ExportLayout() const {
+  AstraSidebarLayoutData layout;
+
+  layout.position = position();
+  layout.width = width();
+  layout.pinned = is_pinned();
+  layout.visible = is_visible();
+  layout.compact_mode = compact_mode();
+  layout.show_icons = show_section_icons();
+  layout.show_labels = show_section_labels();
+  layout.animation_enabled = animation_enabled();
+  layout.auto_hide_on_tab_click = auto_hide_on_tab_click();
+  layout.show_tab_count_badges = show_tab_count_badges();
+  layout.show_workspace_badge = show_workspace_badge();
+  layout.remember_last_section = remember_last_section();
+  layout.default_active_section = default_active_section();
+
+  // Section order.
+  for (const auto& section : sections_) {
+    layout.section_order.push_back(section.id);
+  }
+
+  // Section visibility.
+  for (const auto& section : sections_) {
+    layout.section_visibility.push_back({section.id, section.is_visible});
+  }
+
+  // Collapsed sections.
+  for (const auto& section : sections_) {
+    if (section.is_collapsed) {
+      layout.collapsed_sections.push_back(section.id);
+    }
+  }
+
+  return layout;
+}
+
+bool AstraSidebarModel::ImportLayout(const AstraSidebarLayoutData& layout) {
+  if (layout.IsEmpty()) {
+    return false;
+  }
+
+  bool changed = false;
+
+  // Apply position.
+  if (layout.position != position()) {
+    SetPosition(layout.position);
+    changed = true;
+  }
+
+  // Apply width.
+  if (layout.width != width()) {
+    SetWidth(layout.width);
+    changed = true;
+  }
+
+  // Apply pinned.
+  if (layout.pinned != is_pinned()) {
+    SetPinned(layout.pinned);
+    changed = true;
+  }
+
+  // Apply visible.
+  if (layout.visible != is_visible()) {
+    SetVisible(layout.visible);
+    changed = true;
+  }
+
+  // Apply compact mode.
+  if (layout.compact_mode != compact_mode()) {
+    SetCompactMode(layout.compact_mode);
+    changed = true;
+  }
+
+  // Apply show icons.
+  if (layout.show_icons != show_section_icons()) {
+    SetShowSectionIcons(layout.show_icons);
+    changed = true;
+  }
+
+  // Apply show labels.
+  if (layout.show_labels != show_section_labels()) {
+    SetShowSectionLabels(layout.show_labels);
+    changed = true;
+  }
+
+  // Apply animation enabled.
+  if (layout.animation_enabled != animation_enabled()) {
+    SetAnimationEnabled(layout.animation_enabled);
+    changed = true;
+  }
+
+  // Apply auto hide on tab click.
+  if (layout.auto_hide_on_tab_click != auto_hide_on_tab_click()) {
+    SetAutoHideOnTabClick(layout.auto_hide_on_tab_click);
+    changed = true;
+  }
+
+  // Apply show tab count badges.
+  if (layout.show_tab_count_badges != show_tab_count_badges()) {
+    SetShowTabCountBadges(layout.show_tab_count_badges);
+    changed = true;
+  }
+
+  // Apply show workspace badge.
+  if (layout.show_workspace_badge != show_workspace_badge()) {
+    SetShowWorkspaceBadge(layout.show_workspace_badge);
+    changed = true;
+  }
+
+  // Apply remember last section.
+  if (layout.remember_last_section != remember_last_section()) {
+    SetRememberLastSection(layout.remember_last_section);
+    changed = true;
+  }
+
+  // Apply default active section.
+  if (!layout.default_active_section.empty() &&
+      layout.default_active_section != default_active_section()) {
+    SetDefaultActiveSection(layout.default_active_section);
+    changed = true;
+  }
+
+  // Apply section order.
+  if (!layout.section_order.empty()) {
+    // Only apply if all section IDs are valid.
+    bool all_valid = true;
+    for (const auto& id : layout.section_order) {
+      if (FindSectionByIdConst(sections_, id) == sections_.end()) {
+        all_valid = false;
+        break;
+      }
+    }
+    if (all_valid) {
+      ReorderSections(layout.section_order);
+      changed = true;
+    }
+  }
+
+  // Apply section visibility.
+  for (const auto& [id, visible] : layout.section_visibility) {
+    if (FindSectionByIdConst(sections_, id) != sections_.end()) {
+      SetSectionVisible(id, visible);
+      changed = true;
+    }
+  }
+
+  // Apply collapsed sections.
+  if (!layout.collapsed_sections.empty()) {
+    // First expand all.
+    ExpandAllSections();
+    // Then collapse the specified ones.
+    for (const auto& id : layout.collapsed_sections) {
+      SetSectionCollapsed(id, true);
+    }
+    changed = true;
+  }
+
+  if (changed) {
+    NotifySidebarLayoutChanged();
+  }
+
+  return changed;
+}
+
 // -- Utility methods -------------------------------------------------------
 
 // static
 std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
   std::vector<AstraSidebarSection> sections;
+
+  // ---- Top group sections (primary navigation) ----
 
   sections.push_back({
       .id = kSectionWorkspaces,
@@ -780,6 +1025,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 0,
       .is_collapsible = false,
       .is_collapsed = false,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = false,
+      .can_hide = false,
   });
 
   sections.push_back({
@@ -790,6 +1038,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 1,
       .is_collapsible = true,
       .is_collapsed = false,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = false,
   });
 
   sections.push_back({
@@ -800,6 +1051,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 2,
       .is_collapsible = true,
       .is_collapsed = false,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = false,
   });
 
   sections.push_back({
@@ -810,6 +1064,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 3,
       .is_collapsible = true,
       .is_collapsed = false,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = false,
   });
 
   sections.push_back({
@@ -820,6 +1077,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 4,
       .is_collapsible = true,
       .is_collapsed = false,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
   });
 
   sections.push_back({
@@ -830,6 +1090,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 5,
       .is_collapsible = true,
       .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
   });
 
   sections.push_back({
@@ -840,6 +1103,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 6,
       .is_collapsible = true,
       .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
   });
 
   sections.push_back({
@@ -850,6 +1116,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 7,
       .is_collapsible = true,
       .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
   });
 
   sections.push_back({
@@ -860,6 +1129,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 8,
       .is_collapsible = true,
       .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
   });
 
   sections.push_back({
@@ -870,6 +1142,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 9,
       .is_collapsible = true,
       .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
   });
 
   sections.push_back({
@@ -880,6 +1155,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 10,
       .is_collapsible = true,
       .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
   });
 
   sections.push_back({
@@ -890,6 +1168,9 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 11,
       .is_collapsible = true,
       .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
   });
 
   sections.push_back({
@@ -900,7 +1181,12 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 12,
       .is_collapsible = true,
       .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kTop,
+      .reorderable = true,
+      .can_hide = true,
   });
+
+  // ---- Bottom group sections (utility) ----
 
   sections.push_back({
       .id = kSectionDevTools,
@@ -910,6 +1196,22 @@ std::vector<AstraSidebarSection> AstraSidebarModel::GetDefaultSections() {
       .position = 13,
       .is_collapsible = true,
       .is_collapsed = true,
+      .group = AstraSidebarSectionGroup::kBottom,
+      .reorderable = false,
+      .can_hide = true,
+  });
+
+  sections.push_back({
+      .id = kSectionSettings,
+      .name = u"Settings",
+      .icon_id = "settings",
+      .is_visible = true,
+      .position = 14,
+      .is_collapsible = false,
+      .is_collapsed = false,
+      .group = AstraSidebarSectionGroup::kBottom,
+      .reorderable = false,
+      .can_hide = false,
   });
 
   UpdatePositions(sections);
@@ -1116,6 +1418,18 @@ void AstraSidebarModel::NotifySidebarPositionChanged(
 void AstraSidebarModel::NotifySidebarSettingsChanged() {
   for (auto& observer : observers_) {
     observer.OnSidebarSettingsChanged();
+  }
+}
+
+void AstraSidebarModel::NotifyCompactModeChanged(bool compact) {
+  for (auto& observer : observers_) {
+    observer.OnCompactModeChanged(compact);
+  }
+}
+
+void AstraSidebarModel::NotifySidebarLayoutChanged() {
+  for (auto& observer : observers_) {
+    observer.OnSidebarLayoutChanged();
   }
 }
 

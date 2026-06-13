@@ -57,6 +57,8 @@
 #include "astra/ui/views/sidebar/astra_sidebar_stack_tab_item_view.h"
 #include "astra/ui/views/sidebar/astra_sidebar_stack_view.h"
 
+#include "astra/ui/views/sidebar/astra_sidebar_passwords_view.h"
+
 #include "astra/ui/views/sidebar/astra_sidebar_section_view.h"
 #include "astra/ui/views/sidebar/astra_sidebar_bookmarks_view.h"
 #include "astra/ui/views/sidebar/astra_sidebar_history_view.h"
@@ -113,6 +115,10 @@ class MockSidebarModelObserver : public AstraSidebarModelObserver {
   MOCK_METHOD(void, OnSidebarPositionChanged,
               (AstraSidebarPosition position), (override));
   MOCK_METHOD(void, OnSidebarSettingsChanged, (), (override));
+  MOCK_METHOD(void, OnCompactModeChanged, (bool compact), (override));
+  MOCK_METHOD(void, OnSidebarLayoutChanged, (), (override));
+  MOCK_METHOD(void, OnSectionDragDropCompleted,
+              (const std::string& section_id, int new_position), (override));
 };
 
 // =========================================================================
@@ -195,11 +201,15 @@ class MockNoteItemDelegate : public AstraNoteItemDelegate {
 class MockPasswordItemDelegate : public AstraPasswordItemDelegate {
  public:
   MOCK_METHOD(void, OnPasswordItemClicked,
-              (const std::u16string & site, const std::u16string& username),
-              (override));
+              (const AstraPasswordEntry& entry), (override));
   MOCK_METHOD(void, OnPasswordCopyRequested,
-              (const std::u16string & site, const std::u16string& username),
-              (override));
+              (const AstraPasswordEntry& entry), (override));
+  MOCK_METHOD(void, OnUsernameCopyRequested,
+              (const AstraPasswordEntry& entry), (override));
+  MOCK_METHOD(void, OnPasswordRevealToggled,
+              (const AstraPasswordEntry& entry, bool revealed), (override));
+  MOCK_METHOD(void, OnPasswordOpenInNewTab,
+              (const AstraPasswordEntry& entry), (override));
 };
 
 class MockExtensionIconDelegate : public AstraExtensionIconDelegate {
@@ -767,13 +777,13 @@ TEST_F(AstraSidebarModelTest, DefaultStateWithPrefs) {
 // Test 3: Default sections count.
 TEST_F(AstraSidebarModelNoPrefsTest, DefaultSectionsCount) {
   auto sections = model_->GetAllSections();
-  EXPECT_EQ(sections.size(), 14u);
+  EXPECT_EQ(sections.size(), 15u);
 }
 
 // Test 4: GetDefaultSections returns the same as model's initial sections.
 TEST(AstraSidebarStaticTest, GetDefaultSectionsMatchesStatic) {
   auto default_sections = AstraSidebarModel::GetDefaultSections();
-  EXPECT_EQ(default_sections.size(), 14u);
+  EXPECT_EQ(default_sections.size(), 15u);
 
   bool found_workspaces = false;
   bool found_favorites = false;
@@ -783,6 +793,7 @@ TEST(AstraSidebarStaticTest, GetDefaultSectionsMatchesStatic) {
   bool found_passwords = false;
   bool found_extensions = false;
   bool found_devtools = false;
+  bool found_settings = false;
 
   for (const auto& s : default_sections) {
     if (s.id == AstraSidebarModel::kSectionWorkspaces) found_workspaces = true;
@@ -793,6 +804,7 @@ TEST(AstraSidebarStaticTest, GetDefaultSectionsMatchesStatic) {
     if (s.id == AstraSidebarModel::kSectionPasswords) found_passwords = true;
     if (s.id == AstraSidebarModel::kSectionExtensions) found_extensions = true;
     if (s.id == AstraSidebarModel::kSectionDevTools) found_devtools = true;
+    if (s.id == AstraSidebarModel::kSectionSettings) found_settings = true;
   }
 
   EXPECT_TRUE(found_workspaces);
@@ -803,6 +815,7 @@ TEST(AstraSidebarStaticTest, GetDefaultSectionsMatchesStatic) {
   EXPECT_TRUE(found_passwords);
   EXPECT_TRUE(found_extensions);
   EXPECT_TRUE(found_devtools);
+  EXPECT_TRUE(found_settings);
 }
 
 // Test 5: All default sections have valid position indices.
@@ -2120,6 +2133,389 @@ TEST_F(AstraSidebarModelTest, ActiveSectionChangeDoesNotTriggerSettingsChanged) 
 }
 
 // =========================================================================
+// Extended model tests: section groups, compact mode, drag-drop, layout
+// =========================================================================
+
+// Test 106: Default sections count is 15.
+TEST_F(AstraSidebarModelNoPrefsTest, DefaultSectionsCountIsFifteen) {
+  auto sections = model_->GetAllSections();
+  EXPECT_EQ(sections.size(), 15u);
+}
+
+// Test 107: GetSectionsInGroup returns correct top group sections.
+TEST_F(AstraSidebarModelNoPrefsTest, GetSectionsInGroupTop) {
+  auto top_sections = model_->GetSectionsInGroup(AstraSidebarSectionGroup::kTop);
+  EXPECT_EQ(top_sections.size(), 13u);
+
+  bool found_workspaces = false;
+  bool found_favorites = false;
+  bool found_tabs = false;
+  bool found_history = false;
+  bool found_downloads = false;
+  bool found_passwords = false;
+  bool found_extensions = false;
+
+  for (const auto& s : top_sections) {
+    EXPECT_EQ(s.group, AstraSidebarSectionGroup::kTop);
+    if (s.id == AstraSidebarModel::kSectionWorkspaces) found_workspaces = true;
+    if (s.id == AstraSidebarModel::kSectionFavorites) found_favorites = true;
+    if (s.id == AstraSidebarModel::kSectionOpenTabs) found_tabs = true;
+    if (s.id == AstraSidebarModel::kSectionHistory) found_history = true;
+    if (s.id == AstraSidebarModel::kSectionDownloads) found_downloads = true;
+    if (s.id == AstraSidebarModel::kSectionPasswords) found_passwords = true;
+    if (s.id == AstraSidebarModel::kSectionExtensions) found_extensions = true;
+  }
+
+  EXPECT_TRUE(found_workspaces);
+  EXPECT_TRUE(found_favorites);
+  EXPECT_TRUE(found_tabs);
+  EXPECT_TRUE(found_history);
+  EXPECT_TRUE(found_downloads);
+  EXPECT_TRUE(found_passwords);
+  EXPECT_TRUE(found_extensions);
+}
+
+// Test 108: GetSectionsInGroup returns correct bottom group sections.
+TEST_F(AstraSidebarModelNoPrefsTest, GetSectionsInGroupBottom) {
+  auto bottom_sections =
+      model_->GetSectionsInGroup(AstraSidebarSectionGroup::kBottom);
+  EXPECT_EQ(bottom_sections.size(), 2u);
+
+  bool found_devtools = false;
+  bool found_settings = false;
+
+  for (const auto& s : bottom_sections) {
+    EXPECT_EQ(s.group, AstraSidebarSectionGroup::kBottom);
+    if (s.id == AstraSidebarModel::kSectionDevTools) found_devtools = true;
+    if (s.id == AstraSidebarModel::kSectionSettings) found_settings = true;
+  }
+
+  EXPECT_TRUE(found_devtools);
+  EXPECT_TRUE(found_settings);
+}
+
+// Test 109: GetSectionCountInGroup for top group.
+TEST_F(AstraSidebarModelNoPrefsTest, GetSectionCountInGroupTop) {
+  size_t count = model_->GetSectionCountInGroup(AstraSidebarSectionGroup::kTop);
+  EXPECT_EQ(count, 13u);
+}
+
+// Test 110: GetSectionCountInGroup for bottom group.
+TEST_F(AstraSidebarModelNoPrefsTest, GetSectionCountInGroupBottom) {
+  size_t count =
+      model_->GetSectionCountInGroup(AstraSidebarSectionGroup::kBottom);
+  EXPECT_EQ(count, 2u);
+}
+
+// Test 111: Settings section exists with correct properties.
+TEST_F(AstraSidebarModelNoPrefsTest, SettingsSectionExists) {
+  auto section = model_->GetSectionById(AstraSidebarModel::kSectionSettings);
+  ASSERT_TRUE(section.has_value());
+  EXPECT_EQ(section->name, u"Settings");
+  EXPECT_EQ(section->group, AstraSidebarSectionGroup::kBottom);
+  EXPECT_FALSE(section->reorderable);
+  EXPECT_FALSE(section->can_hide);
+  EXPECT_FALSE(section->is_collapsible);
+}
+
+// Test 112: Workspaces section cannot be hidden or reordered.
+TEST_F(AstraSidebarModelNoPrefsTest, WorkspacesSectionNotHideableOrReorderable) {
+  auto section = model_->GetSectionById(AstraSidebarModel::kSectionWorkspaces);
+  ASSERT_TRUE(section.has_value());
+  EXPECT_FALSE(section->can_hide);
+  EXPECT_FALSE(section->reorderable);
+}
+
+// Test 113: Settings section cannot be hidden or reordered.
+TEST_F(AstraSidebarModelNoPrefsTest, SettingsSectionNotHideableOrReorderable) {
+  auto section = model_->GetSectionById(AstraSidebarModel::kSectionSettings);
+  ASSERT_TRUE(section.has_value());
+  EXPECT_FALSE(section->can_hide);
+  EXPECT_FALSE(section->reorderable);
+}
+
+// Test 114: History section is hideable and reorderable.
+TEST_F(AstraSidebarModelNoPrefsTest, HistorySectionHideableAndReorderable) {
+  auto section = model_->GetSectionById(AstraSidebarModel::kSectionHistory);
+  ASSERT_TRUE(section.has_value());
+  EXPECT_TRUE(section->can_hide);
+  EXPECT_TRUE(section->reorderable);
+}
+
+// Test 115: ShowAllSections makes all sections visible.
+TEST_F(AstraSidebarModelTest, ShowAllSections) {
+  model_->SetSectionVisible(AstraSidebarModel::kSectionHistory, false);
+  model_->SetSectionVisible(AstraSidebarModel::kSectionDownloads, false);
+
+  EXPECT_LT(model_->GetVisibleSectionCount(), model_->GetSectionCount());
+
+  model_->ShowAllSections();
+
+  EXPECT_EQ(model_->GetVisibleSectionCount(), model_->GetSectionCount());
+}
+
+// Test 116: HideAllSections hides only hideable sections.
+TEST_F(AstraSidebarModelTest, HideAllSectionsRespectsCanHide) {
+  model_->HideAllSections();
+
+  auto workspaces = model_->GetSectionById(AstraSidebarModel::kSectionWorkspaces);
+  auto settings = model_->GetSectionById(AstraSidebarModel::kSectionSettings);
+  ASSERT_TRUE(workspaces.has_value());
+  ASSERT_TRUE(settings.has_value());
+  EXPECT_TRUE(workspaces->is_visible);
+  EXPECT_TRUE(settings->is_visible);
+
+  auto history = model_->GetSectionById(AstraSidebarModel::kSectionHistory);
+  auto passwords = model_->GetSectionById(AstraSidebarModel::kSectionPasswords);
+  ASSERT_TRUE(history.has_value());
+  ASSERT_TRUE(passwords.has_value());
+  EXPECT_FALSE(history->is_visible);
+  EXPECT_FALSE(passwords->is_visible);
+
+  EXPECT_GE(model_->GetVisibleSectionCount(), 2u);
+}
+
+// Test 117: HideAllSections then ShowAllSections roundtrip.
+TEST_F(AstraSidebarModelTest, HideAllThenShowAllRoundtrip) {
+  model_->HideAllSections();
+  size_t hidden_count = model_->GetVisibleSectionCount();
+
+  model_->ShowAllSections();
+  size_t all_count = model_->GetVisibleSectionCount();
+
+  EXPECT_GT(all_count, hidden_count);
+  EXPECT_EQ(all_count, model_->GetSectionCount());
+}
+
+// Test 118: Compact mode config has sensible defaults.
+TEST_F(AstraSidebarModelNoPrefsTest, CompactModeConfigDefaults) {
+  const auto& config = model_->compact_mode_config();
+  EXPECT_EQ(config.icon_size, 20);
+  EXPECT_EQ(config.normal_icon_size, 24);
+  EXPECT_EQ(config.item_spacing, 2);
+  EXPECT_EQ(config.normal_item_spacing, 4);
+  EXPECT_EQ(config.item_height, 36);
+  EXPECT_EQ(config.normal_item_height, 40);
+  EXPECT_EQ(config.horizontal_padding, 4);
+  EXPECT_EQ(config.normal_horizontal_padding, 8);
+  EXPECT_TRUE(config.hide_labels);
+  EXPECT_TRUE(config.smaller_badges);
+}
+
+// Test 119: GetEffectiveIconSize returns normal size when compact mode off.
+TEST_F(AstraSidebarModelNoPrefsTest, EffectiveIconSizeNormalMode) {
+  EXPECT_FALSE(model_->compact_mode());
+  EXPECT_EQ(model_->GetEffectiveIconSize(), 24);
+}
+
+// Test 120: GetEffectiveIconSize returns compact size when compact mode on.
+TEST_F(AstraSidebarModelTest, EffectiveIconSizeCompactMode) {
+  model_->SetCompactMode(true);
+  EXPECT_EQ(model_->GetEffectiveIconSize(), 20);
+}
+
+// Test 121: GetEffectiveItemSpacing normal vs compact mode.
+TEST_F(AstraSidebarModelTest, EffectiveItemSpacing) {
+  EXPECT_EQ(model_->GetEffectiveItemSpacing(), 4);
+  model_->SetCompactMode(true);
+  EXPECT_EQ(model_->GetEffectiveItemSpacing(), 2);
+}
+
+// Test 122: GetEffectiveItemHeight normal vs compact mode.
+TEST_F(AstraSidebarModelTest, EffectiveItemHeight) {
+  EXPECT_EQ(model_->GetEffectiveItemHeight(), 40);
+  model_->SetCompactMode(true);
+  EXPECT_EQ(model_->GetEffectiveItemHeight(), 36);
+}
+
+// Test 123: GetEffectiveHorizontalPadding normal vs compact mode.
+TEST_F(AstraSidebarModelTest, EffectiveHorizontalPadding) {
+  EXPECT_EQ(model_->GetEffectiveHorizontalPadding(), 8);
+  model_->SetCompactMode(true);
+  EXPECT_EQ(model_->GetEffectiveHorizontalPadding(), 4);
+}
+
+// Test 124: ToggleCompactMode toggles the state.
+TEST_F(AstraSidebarModelTest, ToggleCompactMode) {
+  EXPECT_FALSE(model_->compact_mode());
+  model_->ToggleCompactMode();
+  EXPECT_TRUE(model_->compact_mode());
+  model_->ToggleCompactMode();
+  EXPECT_FALSE(model_->compact_mode());
+}
+
+// Test 125: Compact mode change notifies both settings and compact observers.
+TEST_F(AstraSidebarModelTest, CompactModeNotifiesObservers) {
+  MockSidebarModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSidebarSettingsChanged()).Times(1);
+  EXPECT_CALL(observer, OnCompactModeChanged(true)).Times(1);
+
+  model_->SetCompactMode(true);
+
+  model_->RemoveObserver(&observer);
+}
+
+// Test 126: Drag-drop config has sensible defaults.
+TEST_F(AstraSidebarModelNoPrefsTest, DragDropConfigDefaults) {
+  const auto& config = model_->drag_drop_config();
+  EXPECT_TRUE(config.section_reorder_enabled);
+  EXPECT_TRUE(config.item_drag_enabled);
+  EXPECT_TRUE(config.cross_section_drop_enabled);
+  EXPECT_TRUE(config.show_drag_preview);
+  EXPECT_EQ(config.drag_threshold_pixels, 5);
+}
+
+// Test 127: section_reorder_enabled getter and setter.
+TEST_F(AstraSidebarModelNoPrefsTest, SectionReorderEnabledGetterSetter) {
+  EXPECT_TRUE(model_->section_reorder_enabled());
+  model_->set_section_reorder_enabled(false);
+  EXPECT_FALSE(model_->section_reorder_enabled());
+  model_->set_section_reorder_enabled(true);
+  EXPECT_TRUE(model_->section_reorder_enabled());
+}
+
+// Test 128: item_drag_enabled getter and setter.
+TEST_F(AstraSidebarModelNoPrefsTest, ItemDragEnabledGetterSetter) {
+  EXPECT_TRUE(model_->item_drag_enabled());
+  model_->set_item_drag_enabled(false);
+  EXPECT_FALSE(model_->item_drag_enabled());
+}
+
+// Test 129: ExportLayout returns valid layout data.
+TEST_F(AstraSidebarModelTest, ExportLayoutReturnsValidData) {
+  auto layout = model_->ExportLayout();
+
+  EXPECT_EQ(layout.position, AstraSidebarPosition::kLeft);
+  EXPECT_EQ(layout.width, 280);
+  EXPECT_TRUE(layout.pinned);
+  EXPECT_TRUE(layout.visible);
+  EXPECT_FALSE(layout.compact_mode);
+  EXPECT_TRUE(layout.show_icons);
+  EXPECT_TRUE(layout.show_labels);
+  EXPECT_TRUE(layout.animation_enabled);
+  EXPECT_TRUE(layout.show_tab_count_badges);
+  EXPECT_TRUE(layout.remember_last_section);
+  EXPECT_FALSE(layout.IsEmpty());
+}
+
+// Test 130: ExportLayout includes section order.
+TEST_F(AstraSidebarModelTest, ExportLayoutIncludesSectionOrder) {
+  auto layout = model_->ExportLayout();
+  EXPECT_EQ(layout.section_order.size(), 15u);
+  EXPECT_EQ(layout.section_order[0], AstraSidebarModel::kSectionWorkspaces);
+  EXPECT_EQ(layout.section_order[14], AstraSidebarModel::kSectionSettings);
+}
+
+// Test 131: ExportLayout includes section visibility.
+TEST_F(AstraSidebarModelTest, ExportLayoutIncludesSectionVisibility) {
+  model_->SetSectionVisible(AstraSidebarModel::kSectionHistory, false);
+
+  auto layout = model_->ExportLayout();
+  EXPECT_EQ(layout.section_visibility.size(), 15u);
+
+  bool found_history_visible = true;
+  for (const auto& pair : layout.section_visibility) {
+    if (pair.first == AstraSidebarModel::kSectionHistory) {
+      found_history_visible = pair.second;
+      break;
+    }
+  }
+  EXPECT_FALSE(found_history_visible);
+}
+
+// Test 132: ImportLayout applies settings.
+TEST_F(AstraSidebarModelTest, ImportLayoutAppliesSettings) {
+  AstraSidebarLayoutData layout;
+  layout.position = AstraSidebarPosition::kRight;
+  layout.width = 350;
+  layout.pinned = false;
+  layout.compact_mode = true;
+  layout.show_icons = false;
+  layout.show_tab_count_badges = false;
+  layout.remember_last_section = false;
+
+  EXPECT_TRUE(model_->ImportLayout(layout));
+
+  EXPECT_EQ(model_->position(), AstraSidebarPosition::kRight);
+  EXPECT_EQ(model_->width(), 350);
+  EXPECT_FALSE(model_->is_pinned());
+  EXPECT_TRUE(model_->compact_mode());
+  EXPECT_FALSE(model_->show_section_icons());
+  EXPECT_FALSE(model_->show_tab_count_badges());
+  EXPECT_FALSE(model_->remember_last_section());
+}
+
+// Test 133: ImportLayout notifies layout changed.
+TEST_F(AstraSidebarModelTest, ImportLayoutNotifiesObserver) {
+  MockSidebarModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSidebarLayoutChanged()).Times(AtLeast(1));
+
+  AstraSidebarLayoutData layout;
+  layout.width = 350;
+  model_->ImportLayout(layout);
+
+  model_->RemoveObserver(&observer);
+}
+
+// Test 134: Export then import roundtrip preserves state.
+TEST_F(AstraSidebarModelTest, ExportImportRoundtrip) {
+  model_->SetCompactMode(true);
+  model_->SetWidth(320);
+  model_->SetPosition(AstraSidebarPosition::kRight);
+  model_->SetSectionVisible(AstraSidebarModel::kSectionNotes, false);
+
+  auto exported = model_->ExportLayout();
+
+  model_->ResetAllSettings();
+  model_->ResetSectionsToDefaults();
+
+  EXPECT_TRUE(model_->ImportLayout(exported));
+
+  EXPECT_TRUE(model_->compact_mode());
+  EXPECT_EQ(model_->width(), 320);
+  EXPECT_EQ(model_->position(), AstraSidebarPosition::kRight);
+
+  auto notes = model_->GetSectionById(AstraSidebarModel::kSectionNotes);
+  ASSERT_TRUE(notes.has_value());
+  EXPECT_FALSE(notes->is_visible);
+}
+
+// Test 135: Section badge text default is empty.
+TEST_F(AstraSidebarModelNoPrefsTest, SectionBadgeTextDefaultEmpty) {
+  auto section = model_->GetSectionById(AstraSidebarModel::kSectionDownloads);
+  ASSERT_TRUE(section.has_value());
+  EXPECT_TRUE(section->badge_text.empty());
+}
+
+// Test 136: Only one section is active by default.
+TEST_F(AstraSidebarModelNoPrefsTest, OnlyOneSectionActiveByDefault) {
+  auto sections = model_->GetAllSections();
+  int active_count = 0;
+  for (const auto& s : sections) {
+    if (s.is_active) active_count++;
+  }
+  EXPECT_EQ(active_count, 1);
+}
+
+// Test 137: Favorites section cannot be hidden.
+TEST_F(AstraSidebarModelNoPrefsTest, FavoritesSectionCannotBeHidden) {
+  auto section = model_->GetSectionById(AstraSidebarModel::kSectionFavorites);
+  ASSERT_TRUE(section.has_value());
+  EXPECT_FALSE(section->can_hide);
+}
+
+// Test 138: Pinned tabs section cannot be hidden.
+TEST_F(AstraSidebarModelNoPrefsTest, PinnedTabsSectionCannotBeHidden) {
+  auto section = model_->GetSectionById(AstraSidebarModel::kSectionPinnedTabs);
+  ASSERT_TRUE(section.has_value());
+  EXPECT_FALSE(section->can_hide);
+}
+
+// =========================================================================
 // Base item view tests
 // =========================================================================
 
@@ -3232,6 +3628,172 @@ TEST_F(AstraPasswordItemViewTest, BlockedPasswordDisabled) {
 TEST_F(AstraPasswordItemViewTest, CompromisedStillEnabled) {
   password_view_->SetCompromised(true);
   EXPECT_TRUE(password_view_->IsEnabled());
+}
+
+// Test 238b: Entry-based constructor creates a valid view.
+TEST_F(AstraPasswordItemViewTest, EntryConstructor) {
+  AstraPasswordEntry entry;
+  entry.site_display_name = u"mysite.com";
+  entry.username = u"testuser";
+  entry.is_compromised = true;
+  entry.strength = AstraPasswordStrength::kStrong;
+  entry.strength_percent = 90;
+
+  auto entry_view = std::make_unique<AstraPasswordItemView>(entry);
+  widget_->SetContentsView(std::move(entry_view));
+  widget_->Show();
+
+  auto* view = static_cast<AstraPasswordItemView*>(widget_->GetContentsView());
+  EXPECT_EQ(view->GetSite(), u"mysite.com");
+  EXPECT_EQ(view->GetUsername(), u"testuser");
+  EXPECT_TRUE(view->IsCompromised());
+  EXPECT_EQ(view->GetStrength(), AstraPasswordStrength::kStrong);
+  EXPECT_EQ(view->GetStrengthPercent(), 90);
+}
+
+// Test 238c: SetPasswordEntry updates all fields at once.
+TEST_F(AstraPasswordItemViewTest, SetPasswordEntryUpdatesAll) {
+  AstraPasswordEntry entry;
+  entry.site_display_name = u"newsite.org";
+  entry.username = u"admin@newsite.org";
+  entry.is_compromised = false;
+  entry.is_blocked = false;
+  entry.strength = AstraPasswordStrength::kVeryStrong;
+  entry.strength_percent = 95;
+
+  password_view_->SetPasswordEntry(entry);
+
+  EXPECT_EQ(password_view_->GetSite(), u"newsite.org");
+  EXPECT_EQ(password_view_->GetUsername(), u"admin@newsite.org");
+  EXPECT_FALSE(password_view_->IsCompromised());
+  EXPECT_FALSE(password_view_->IsBlocked());
+  EXPECT_EQ(password_view_->GetStrength(), AstraPasswordStrength::kVeryStrong);
+  EXPECT_EQ(password_view_->GetStrengthPercent(), 95);
+}
+
+// Test 238d: entry() returns the projected entry data.
+TEST_F(AstraPasswordItemViewTest, EntryGetterReturnsProjectedData) {
+  const auto& entry = password_view_->entry();
+  EXPECT_EQ(entry.site_display_name, u"example.com");
+  EXPECT_EQ(entry.username, u"user@example.com");
+}
+
+// Test 238e: Warning type defaults to kNone.
+TEST_F(AstraPasswordItemViewTest, WarningTypeDefaultIsNone) {
+  EXPECT_EQ(password_view_->GetWarningType(), AstraPasswordWarningType::kNone);
+}
+
+// Test 238f: SetWarningType to compromised.
+TEST_F(AstraPasswordItemViewTest, SetWarningTypeCompromised) {
+  password_view_->SetWarningType(AstraPasswordWarningType::kCompromised);
+  EXPECT_EQ(password_view_->GetWarningType(), AstraPasswordWarningType::kCompromised);
+}
+
+// Test 238g: SetWarningType to weak.
+TEST_F(AstraPasswordItemViewTest, SetWarningTypeWeak) {
+  password_view_->SetWarningType(AstraPasswordWarningType::kWeak);
+  EXPECT_EQ(password_view_->GetWarningType(), AstraPasswordWarningType::kWeak);
+}
+
+// Test 238h: SetWarningType to reused.
+TEST_F(AstraPasswordItemViewTest, SetWarningTypeReused) {
+  password_view_->SetWarningType(AstraPasswordWarningType::kReused);
+  EXPECT_EQ(password_view_->GetWarningType(), AstraPasswordWarningType::kReused);
+}
+
+// Test 238i: Password is hidden by default.
+TEST_F(AstraPasswordItemViewTest, PasswordHiddenByDefault) {
+  EXPECT_FALSE(password_view_->IsPasswordRevealed());
+}
+
+// Test 238j: SetPasswordRevealed toggles the reveal state.
+TEST_F(AstraPasswordItemViewTest, SetPasswordRevealed) {
+  EXPECT_FALSE(password_view_->IsPasswordRevealed());
+  password_view_->SetPasswordRevealed(true);
+  EXPECT_TRUE(password_view_->IsPasswordRevealed());
+  password_view_->SetPasswordRevealed(false);
+  EXPECT_FALSE(password_view_->IsPasswordRevealed());
+}
+
+// Test 238k: TogglePasswordRevealed flips the state.
+TEST_F(AstraPasswordItemViewTest, TogglePasswordRevealed) {
+  bool initial = password_view_->IsPasswordRevealed();
+  password_view_->TogglePasswordRevealed();
+  EXPECT_EQ(password_view_->IsPasswordRevealed(), !initial);
+  password_view_->TogglePasswordRevealed();
+  EXPECT_EQ(password_view_->IsPasswordRevealed(), initial);
+}
+
+// Test 238l: Strength indicator is visible by default.
+TEST_F(AstraPasswordItemViewTest, StrengthIndicatorVisibleByDefault) {
+  EXPECT_TRUE(password_view_->IsStrengthIndicatorVisible());
+}
+
+// Test 238m: SetStrengthIndicatorVisible toggles visibility.
+TEST_F(AstraPasswordItemViewTest, SetStrengthIndicatorVisible) {
+  password_view_->SetStrengthIndicatorVisible(false);
+  EXPECT_FALSE(password_view_->IsStrengthIndicatorVisible());
+  password_view_->SetStrengthIndicatorVisible(true);
+  EXPECT_TRUE(password_view_->IsStrengthIndicatorVisible());
+}
+
+// Test 238n: SetStrength updates the strength level.
+TEST_F(AstraPasswordItemViewTest, SetStrengthUpdatesLevel) {
+  password_view_->SetStrength(AstraPasswordStrength::kWeak);
+  EXPECT_EQ(password_view_->GetStrength(), AstraPasswordStrength::kWeak);
+
+  password_view_->SetStrength(AstraPasswordStrength::kVeryStrong);
+  EXPECT_EQ(password_view_->GetStrength(), AstraPasswordStrength::kVeryStrong);
+}
+
+// Test 238o: SetStrengthPercent updates the percentage.
+TEST_F(AstraPasswordItemViewTest, SetStrengthPercent) {
+  password_view_->SetStrengthPercent(75);
+  EXPECT_EQ(password_view_->GetStrengthPercent(), 75);
+
+  password_view_->SetStrengthPercent(0);
+  EXPECT_EQ(password_view_->GetStrengthPercent(), 0);
+
+  password_view_->SetStrengthPercent(100);
+  EXPECT_EQ(password_view_->GetStrengthPercent(), 100);
+}
+
+// Test 238p: Last used label defaults to empty.
+TEST_F(AstraPasswordItemViewTest, LastUsedLabelDefaultEmpty) {
+  EXPECT_TRUE(password_view_->GetLastUsedLabel().empty());
+}
+
+// Test 238q: SetLastUsedLabel updates the label text.
+TEST_F(AstraPasswordItemViewTest, SetLastUsedLabel) {
+  password_view_->SetLastUsedLabel(u"Last used 2 hours ago");
+  EXPECT_EQ(password_view_->GetLastUsedLabel(), u"Last used 2 hours ago");
+}
+
+// Test 238r: SetLastUsedVisible toggles visibility.
+TEST_F(AstraPasswordItemViewTest, SetLastUsedVisible) {
+  EXPECT_TRUE(password_view_->IsLastUsedVisible());
+  password_view_->SetLastUsedVisible(false);
+  EXPECT_FALSE(password_view_->IsLastUsedVisible());
+  password_view_->SetLastUsedVisible(true);
+  EXPECT_TRUE(password_view_->IsLastUsedVisible());
+}
+
+// Test 238s: Blocked state is reflected in entry data.
+TEST_F(AstraPasswordItemViewTest, BlockedStateUpdatesEntry) {
+  password_view_->SetIsBlocked(true);
+  EXPECT_TRUE(password_view_->entry().is_blocked);
+
+  password_view_->SetIsBlocked(false);
+  EXPECT_FALSE(password_view_->entry().is_blocked);
+}
+
+// Test 238t: Compromised state is reflected in entry data.
+TEST_F(AstraPasswordItemViewTest, CompromisedStateUpdatesEntry) {
+  password_view_->SetCompromised(true);
+  EXPECT_TRUE(password_view_->entry().is_compromised);
+
+  password_view_->SetCompromised(false);
+  EXPECT_FALSE(password_view_->entry().is_compromised);
 }
 
 // =========================================================================
@@ -10024,12 +10586,257 @@ TEST_F(AstraSidebarStackViewTest, SwitchSortModeBackToManual) {
 }
 
 // =========================================================================
+// Sidebar passwords view tests
+// =========================================================================
+
+// Mock delegate for AstraSidebarPasswordsView tests.
+class MockSidebarPasswordsDelegate : public AstraSidebarPasswordsView::Delegate {
+ public:
+  MOCK_METHOD(void, OpenPasswordURL, (const GURL& url, bool in_new_tab),
+              (override));
+  MOCK_METHOD(void, OpenPasswordSettings, (), (override));
+  MOCK_METHOD(void, OpenPasswordCheck, (), (override));
+  MOCK_METHOD(void, OnPasswordSelected, (const AstraPasswordEntry& entry),
+              (override));
+  MOCK_METHOD(void, OnShowMorePasswords, (), (override));
+};
+
+// Test fixture for sidebar passwords view tests.
+class AstraSidebarPasswordsViewTest : public views::ViewsTestBase {
+ public:
+  AstraSidebarPasswordsViewTest() = default;
+  ~AstraSidebarPasswordsViewTest() override = default;
+  AstraSidebarPasswordsViewTest(const AstraSidebarPasswordsViewTest&) = delete;
+  AstraSidebarPasswordsViewTest& operator=(
+      const AstraSidebarPasswordsViewTest&) = delete;
+
+ protected:
+  void SetUp() override {
+    ViewsTestBase::SetUp();
+    widget_ = CreateTestWidget();
+    passwords_view_ = widget_->SetContentsView(
+        std::make_unique<AstraSidebarPasswordsView>(nullptr));
+    widget_->Show();
+  }
+
+  void TearDown() override {
+    passwords_view_ = nullptr;
+    widget_.reset();
+    ViewsTestBase::TearDown();
+  }
+
+  std::unique_ptr<views::Widget> widget_;
+  raw_ptr<AstraSidebarPasswordsView> passwords_view_ = nullptr;
+};
+
+// Test 829: Passwords view construction succeeds.
+TEST_F(AstraSidebarPasswordsViewTest, Construction) {
+  EXPECT_NE(passwords_view_, nullptr);
+}
+
+// Test 830: Delegate is null by default.
+TEST_F(AstraSidebarPasswordsViewTest, DelegateNullByDefault) {
+  EXPECT_EQ(passwords_view_->delegate(), nullptr);
+}
+
+// Test 831: Delegate can be set.
+TEST_F(AstraSidebarPasswordsViewTest, DelegateCanBeSet) {
+  MockSidebarPasswordsDelegate delegate;
+  passwords_view_->set_delegate(&delegate);
+  EXPECT_EQ(passwords_view_->delegate(), &delegate);
+}
+
+// Test 832: Max items defaults to 20.
+TEST_F(AstraSidebarPasswordsViewTest, MaxItemsDefault) {
+  EXPECT_EQ(passwords_view_->max_items(), 20u);
+}
+
+// Test 833: set_max_items updates the limit.
+TEST_F(AstraSidebarPasswordsViewTest, SetMaxItems) {
+  passwords_view_->set_max_items(50);
+  EXPECT_EQ(passwords_view_->max_items(), 50u);
+
+  passwords_view_->set_max_items(5);
+  EXPECT_EQ(passwords_view_->max_items(), 5u);
+}
+
+// Test 834: Item count is zero by default (no data).
+TEST_F(AstraSidebarPasswordsViewTest, ItemCountZeroByDefault) {
+  EXPECT_EQ(passwords_view_->GetItemCount(), 0u);
+}
+
+// Test 835: Search field exists and is accessible.
+TEST_F(AstraSidebarPasswordsViewTest, SearchFieldExists) {
+  EXPECT_NE(passwords_view_->search_field(), nullptr);
+}
+
+// Test 836: Count badge exists and is accessible.
+TEST_F(AstraSidebarPasswordsViewTest, CountBadgeExists) {
+  EXPECT_NE(passwords_view_->count_badge(), nullptr);
+}
+
+// Test 837: Settings link exists and is accessible.
+TEST_F(AstraSidebarPasswordsViewTest, SettingsLinkExists) {
+  EXPECT_NE(passwords_view_->settings_link(), nullptr);
+}
+
+// Test 838: Items container exists.
+TEST_F(AstraSidebarPasswordsViewTest, ItemsContainerExists) {
+  EXPECT_NE(passwords_view_->items_container(), nullptr);
+}
+
+// Test 839: Show more is not visible by default.
+TEST_F(AstraSidebarPasswordsViewTest, ShowMoreNotVisibleByDefault) {
+  EXPECT_FALSE(passwords_view_->IsShowMoreVisible());
+}
+
+// Test 840: SetShowMoreVisible toggles visibility.
+TEST_F(AstraSidebarPasswordsViewTest, SetShowMoreVisible) {
+  passwords_view_->SetShowMoreVisible(true);
+  EXPECT_TRUE(passwords_view_->IsShowMoreVisible());
+
+  passwords_view_->SetShowMoreVisible(false);
+  EXPECT_FALSE(passwords_view_->IsShowMoreVisible());
+}
+
+// Test 841: Empty state label exists.
+TEST_F(AstraSidebarPasswordsViewTest, EmptyStateLabelExists) {
+  EXPECT_NE(passwords_view_->empty_state_label(), nullptr);
+}
+
+// Test 842: Loading label exists.
+TEST_F(AstraSidebarPasswordsViewTest, LoadingLabelExists) {
+  EXPECT_NE(passwords_view_->loading_label(), nullptr);
+}
+
+// Test 843: ShowLoadingState shows the loading indicator.
+TEST_F(AstraSidebarPasswordsViewTest, ShowLoadingState) {
+  passwords_view_->ShowLoadingState();
+  SUCCEED();
+}
+
+// Test 844: HideLoadingState hides the loading indicator.
+TEST_F(AstraSidebarPasswordsViewTest, HideLoadingState) {
+  passwords_view_->HideLoadingState();
+  SUCCEED();
+}
+
+// Test 845: ShowEmptyState shows the empty message.
+TEST_F(AstraSidebarPasswordsViewTest, ShowEmptyState) {
+  passwords_view_->ShowEmptyState();
+  SUCCEED();
+}
+
+// Test 846: HideEmptyState hides the empty message.
+TEST_F(AstraSidebarPasswordsViewTest, HideEmptyState) {
+  passwords_view_->HideEmptyState();
+  SUCCEED();
+}
+
+// Test 847: Sort order defaults to alphabetical.
+TEST_F(AstraSidebarPasswordsViewTest, SortOrderDefault) {
+  EXPECT_EQ(passwords_view_->GetSortOrder(), AstraPasswordSortOrder::kAlphabetical);
+}
+
+// Test 848: SetSortOrder updates the sort order.
+TEST_F(AstraSidebarPasswordsViewTest, SetSortOrder) {
+  passwords_view_->SetSortOrder(AstraPasswordSortOrder::kLastUsed);
+  EXPECT_EQ(passwords_view_->GetSortOrder(), AstraPasswordSortOrder::kLastUsed);
+
+  passwords_view_->SetSortOrder(AstraPasswordSortOrder::kDateCreated);
+  EXPECT_EQ(passwords_view_->GetSortOrder(), AstraPasswordSortOrder::kDateCreated);
+}
+
+// Test 849: Filter defaults to all.
+TEST_F(AstraSidebarPasswordsViewTest, FilterDefault) {
+  EXPECT_EQ(passwords_view_->GetFilter(), AstraPasswordFilter::kAll);
+}
+
+// Test 850: SetFilter updates the filter.
+TEST_F(AstraSidebarPasswordsViewTest, SetFilter) {
+  passwords_view_->SetFilter(AstraPasswordFilter::kCompromised);
+  EXPECT_EQ(passwords_view_->GetFilter(), AstraPasswordFilter::kCompromised);
+
+  passwords_view_->SetFilter(AstraPasswordFilter::kWeak);
+  EXPECT_EQ(passwords_view_->GetFilter(), AstraPasswordFilter::kWeak);
+
+  passwords_view_->SetFilter(AstraPasswordFilter::kReused);
+  EXPECT_EQ(passwords_view_->GetFilter(), AstraPasswordFilter::kReused);
+}
+
+// Test 851: Group by defaults to none.
+TEST_F(AstraSidebarPasswordsViewTest, GroupByDefault) {
+  EXPECT_EQ(passwords_view_->GetGroupBy(), AstraPasswordGroupBy::kNone);
+}
+
+// Test 852: SetGroupBy updates the grouping mode.
+TEST_F(AstraSidebarPasswordsViewTest, SetGroupBy) {
+  passwords_view_->SetGroupBy(AstraPasswordGroupBy::kSite);
+  EXPECT_EQ(passwords_view_->GetGroupBy(), AstraPasswordGroupBy::kSite);
+
+  passwords_view_->SetGroupBy(AstraPasswordGroupBy::kAccount);
+  EXPECT_EQ(passwords_view_->GetGroupBy(), AstraPasswordGroupBy::kAccount);
+}
+
+// Test 853: All revealed defaults to false.
+TEST_F(AstraSidebarPasswordsViewTest, AllRevealedDefaultFalse) {
+  EXPECT_FALSE(passwords_view_->AreAllRevealed());
+}
+
+// Test 854: SetAllRevealed toggles the state.
+TEST_F(AstraSidebarPasswordsViewTest, SetAllRevealed) {
+  passwords_view_->SetAllRevealed(true);
+  EXPECT_TRUE(passwords_view_->AreAllRevealed());
+
+  passwords_view_->SetAllRevealed(false);
+  EXPECT_FALSE(passwords_view_->AreAllRevealed());
+}
+
+// Test 855: Health summary is not visible by default.
+TEST_F(AstraSidebarPasswordsViewTest, HealthSummaryNotVisibleByDefault) {
+  EXPECT_FALSE(passwords_view_->IsHealthSummaryVisible());
+}
+
+// Test 856: SetHealthSummaryVisible toggles visibility.
+TEST_F(AstraSidebarPasswordsViewTest, SetHealthSummaryVisible) {
+  passwords_view_->SetHealthSummaryVisible(true);
+  EXPECT_TRUE(passwords_view_->IsHealthSummaryVisible());
+
+  passwords_view_->SetHealthSummaryVisible(false);
+  EXPECT_FALSE(passwords_view_->IsHealthSummaryVisible());
+}
+
+// Test 857: GetItemAt with index 0 returns null when empty.
+TEST_F(AstraSidebarPasswordsViewTest, GetItemAtEmptyReturnsNull) {
+  EXPECT_EQ(passwords_view_->GetItemAt(0), nullptr);
+}
+
+// Test 858: Preferred size is valid.
+TEST_F(AstraSidebarPasswordsViewTest, PreferredSizeValid) {
+  gfx::Size size = passwords_view_->GetPreferredSize();
+  EXPECT_GT(size.height(), 0);
+  EXPECT_GE(size.width(), 0);
+}
+
+// Test 859: Refresh doesn't crash with null profile.
+TEST_F(AstraSidebarPasswordsViewTest, RefreshNoCrashWithNullProfile) {
+  passwords_view_->Refresh();
+  SUCCEED();
+}
+
+// Test 860: Theme change doesn't crash.
+TEST_F(AstraSidebarPasswordsViewTest, OnThemeChangedNoCrash) {
+  passwords_view_->OnThemeChanged();
+  SUCCEED();
+}
+
+// =========================================================================
 // Total test count verification
 // =========================================================================
 
-// Note: Total test count through Test 828, covering tab stack views
+// Note: Total test count through Test 860, covering tab stack views
 // (stack view, header view, tab item view, child view) plus struct/enum
-// tests and edge case tests = 154 tests for tab stack views.
+// tests, edge case tests, and sidebar passwords view tests.
 
 }  // namespace
 }  // namespace astra

@@ -1757,6 +1757,46 @@ void RegisterProfilePrefs(PrefRegistrySimple* registry) {
   registry->RegisterBooleanPref(kPrefProfileMenuShowSignInPromo,
                                 kDefaultProfileMenuShowSignInPromo);
 
+  // Whether to show dividers between menu sections.
+  // Default: true — dividers improve visual separation.
+  registry->RegisterBooleanPref(kPrefProfileMenuShowDividers,
+                                kDefaultProfileMenuShowDividers);
+
+  // Whether to show tab counts on workspace items.
+  // Default: true — tab counts help with workspace identification.
+  registry->RegisterBooleanPref(kPrefProfileMenuShowTabCounts,
+                                kDefaultProfileMenuShowTabCounts);
+
+  // Whether the menu uses compact layout.
+  // Default: false — standard density is more comfortable.
+  registry->RegisterBooleanPref(kPrefProfileMenuCompactMode,
+                                kDefaultProfileMenuCompactMode);
+
+  // Menu size variant (0=compact, 1=normal, 2=large).
+  // Default: 1 = normal.
+  registry->RegisterIntegerPref(kPrefProfileMenuSize,
+                                kDefaultProfileMenuSize);
+
+  // Custom menu width in DIPs (0 = use size variant default).
+  // Default: 0.
+  registry->RegisterIntegerPref(kPrefProfileMenuCustomWidth,
+                                kDefaultProfileMenuCustomWidth);
+
+  // Whether guest mode is enabled.
+  // Default: false — guest mode is opt-in.
+  registry->RegisterBooleanPref(kPrefProfileMenuGuestMode,
+                                kDefaultProfileMenuGuestMode);
+
+  // Whether to show the "Manage workspaces" link.
+  // Default: true.
+  registry->RegisterBooleanPref(kPrefProfileMenuShowManageWorkspaces,
+                                kDefaultProfileMenuShowManageWorkspaces);
+
+  // Whether to show the "New workspace" button.
+  // Default: true.
+  registry->RegisterBooleanPref(kPrefProfileMenuShowNewWorkspaceButton,
+                                kDefaultProfileMenuShowNewWorkspaceButton);
+
   // -- New tab page (NTP) --------------------------------------------------
   //
   // Presentation and behavior settings for the Astra new tab page.

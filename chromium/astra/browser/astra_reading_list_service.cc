@@ -198,6 +198,16 @@ void AstraReadingListService::RemoveObserver(AstraReadingListObserver* observer)
   observers_.RemoveObserver(observer);
 }
 
+void AstraReadingListService::AddServiceObserver(
+    AstraReadingListServiceObserver* observer) {
+  service_observers_.AddObserver(observer);
+}
+
+void AstraReadingListService::RemoveServiceObserver(
+    AstraReadingListServiceObserver* observer) {
+  service_observers_.RemoveObserver(observer);
+}
+
 // =========================================================================
 // Entry queries
 // =========================================================================
@@ -1751,6 +1761,55 @@ void AstraReadingListService::NotifyReadingListChanged() {
 void AstraReadingListService::NotifyServiceShutdown() {
   for (auto& observer : observers_) {
     observer.OnReadingListServiceShutdown(this);
+  }
+}
+
+// =========================================================================
+// Service observer notification helpers
+// =========================================================================
+
+void AstraReadingListService::NotifyServiceEntryAdded(
+    const AstraReadingListEntry& entry) {
+  for (auto& observer : service_observers_) {
+    observer.OnReadingListEntryAdded(entry);
+  }
+}
+
+void AstraReadingListService::NotifyServiceEntryRemoved(const GURL& url) {
+  for (auto& observer : service_observers_) {
+    observer.OnReadingListEntryRemoved(url);
+  }
+}
+
+void AstraReadingListService::NotifyServiceEntryUpdated(
+    const AstraReadingListEntry& entry) {
+  for (auto& observer : service_observers_) {
+    observer.OnReadingListEntryUpdated(entry);
+  }
+}
+
+void AstraReadingListService::NotifyServiceEntryStatusChanged(
+    const GURL& url, bool is_read) {
+  for (auto& observer : service_observers_) {
+    observer.OnReadingListEntryStatusChanged(url, is_read);
+  }
+}
+
+void AstraReadingListService::NotifyServiceModelLoaded() {
+  for (auto& observer : service_observers_) {
+    observer.OnReadingListModelLoaded();
+  }
+}
+
+void AstraReadingListService::NotifyServiceReordered() {
+  for (auto& observer : service_observers_) {
+    observer.OnReadingListReordered();
+  }
+}
+
+void AstraReadingListService::NotifyServiceReloaded() {
+  for (auto& observer : service_observers_) {
+    observer.OnReadingListReloaded();
   }
 }
 

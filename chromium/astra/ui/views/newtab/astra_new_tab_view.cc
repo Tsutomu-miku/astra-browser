@@ -45,11 +45,21 @@ constexpr int kContentHorizontalPadding = 48;
 constexpr int kContentTopPadding = 16;
 constexpr int kContentBottomPadding = 32;
 
+// Top bar.
+constexpr int kTopBarHeight = 48;
+constexpr int kTopButtonSize = 28;
+
 // Greeting section.
 constexpr int kGreetingFontSizeDelta = 10;
 constexpr int kGreetingSubtitleFontSizeDelta = 0;
 constexpr SkColor kGreetingTextColor = SkColorSetRGB(0x20, 0x20, 0x20);
 constexpr SkColor kGreetingSubtitleColor = SkColorSetRGB(0x66, 0x66, 0x66);
+
+// Clock / date.
+constexpr int kClockFontSizeDelta = 6;
+constexpr SkColor kClockTextColor = SkColorSetRGB(0x20, 0x20, 0x20);
+constexpr SkColor kDateTextColor = SkColorSetRGB(0x66, 0x66, 0x66);
+constexpr int kClockDateSpacing = 2;
 
 // Section header.
 constexpr int kSectionHeaderFontSizeDelta = 3;
@@ -86,6 +96,21 @@ constexpr SkColor kQuickActionTextColor = SkColorSetRGB(0x33, 0x33, 0x33);
 constexpr SkColor kNtpBackgroundColor = SkColorSetRGB(0xF8, 0xF9, 0xFA);
 constexpr SkColor kSectionCardBackgroundColor = SK_ColorWHITE;
 constexpr SkColor kDividerColor = SkColorSetRGB(0xE8, 0xE8, 0xE8);
+
+// Suggested content.
+constexpr int kSuggestedCardWidth = 200;
+constexpr int kSuggestedCardHeight = 160;
+constexpr int kSuggestedCardSpacing = 16;
+constexpr SkColor kSuggestedCardBgColor = SK_ColorWHITE;
+constexpr SkColor kSuggestedCardBorderColor = SkColorSetRGB(0xE0, 0xE0, 0xE0);
+constexpr SkColor kSuggestedTitleColor = SkColorSetRGB(0x33, 0x33, 0x33);
+constexpr SkColor kSuggestedSourceColor = SkColorSetRGB(0x99, 0x99, 0x99);
+
+// Footer.
+constexpr int kFooterHeight = 32;
+constexpr SkColor kFooterTextColor = SkColorSetRGB(0x99, 0x99, 0x99);
+constexpr int kFooterFontSizeDelta = -2;
+constexpr int kFooterSpacing = 16;
 
 // Settings gear button.
 constexpr int kSettingsGearSize = 24;
@@ -220,6 +245,200 @@ class QuickActionButton : public views::View {
   ClickCallback click_callback_;
 };
 
+// =========================================================================
+// SuggestedContentCard — card for suggested content items
+// =========================================================================
+class SuggestedContentCard : public views::View {
+ public:
+  using ClickCallback = base::RepeatingCallback<void(const GURL&)>;
+
+  SuggestedContentCard() {
+    SetPreferredSize(gfx::Size(kSuggestedCardWidth, kSuggestedCardHeight));
+    SetBackground(views::Background::CreateRoundedRectBackground(
+        kSuggestedCardBgColor, 12));
+    SetBorder(views::CreateRoundedRectBorder(
+        /*thickness=*/1, /*corner_radius=*/12, kSuggestedCardBorderColor));
+    SetPaintToLayer();
+    layer()->SetFillsBoundsOpaquely(false);
+    SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+
+    auto* layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
+        views::BoxLayout::Orientation::kVertical,
+        gfx::Insets::VH(12, 12),
+        /*between_child_spacing=*/8));
+    layout->set_cross_axis_alignment(
+        views::BoxLayout::CrossAxisAlignment::kStretch);
+
+    // Image placeholder area.
+    auto image_placeholder = std::make_unique<views::View>();
+    image_placeholder->SetPreferredSize(
+        gfx::Size(kSuggestedCardWidth - 24, 80));
+    image_placeholder->SetBackground(
+        views::Background::CreateSolidBackground(
+            SkColorSetRGB(0xF0, 0xF0, 0xF0)));
+    image_placeholder->SetPaintToLayer();
+    image_placeholder->layer()->SetFillsBoundsOpaquely(false);
+    image_view_ = image_placeholder.get();
+    AddChildView(std::move(image_placeholder));
+
+    // Title label.
+    auto title_label = std::make_unique<views::Label>();
+    title_label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+    title_label->SetAutoColorReadabilityEnabled(false);
+    title_label->SetEnabledColor(kSuggestedTitleColor);
+    title_label->SetFontList(title_label->font_list().Derive(
+        0, gfx::Font::NORMAL, gfx::Font::Weight::MEDIUM));
+    title_label->SetElideBehavior(gfx::ELIDE_TAIL);
+    title_label->SetMultiLine(true);
+    title_label->SetMaxLines(2);
+    title_label_ = title_label.get();
+    AddChildView(std::move(title_label));
+
+    // Source label.
+    auto source_label = std::make_unique<views::Label>();
+    source_label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+    source_label->SetAutoColorReadabilityEnabled(false);
+    source_label->SetEnabledColor(kSuggestedSourceColor);
+    source_label->SetFontList(source_label->font_list().Derive(
+        -1, gfx::Font::NORMAL, gfx::Font::Weight::NORMAL));
+    source_label->SetElideBehavior(gfx::ELIDE_TAIL);
+    source_label_ = source_label.get();
+    AddChildView(std::move(source_label));
+  }
+
+  ~SuggestedContentCard() override = default;
+
+  void SetTitle(const std::u16string& title) {
+    if (title_label_) {
+      title_label_->SetText(title);
+    }
+    SetAccessibleName(title);
+  }
+
+  void SetSource(const std::u16string& source) {
+    if (source_label_) {
+      source_label_->SetText(source);
+    }
+  }
+
+  void SetUrl(const GURL& url) { url_ = url; }
+
+  void SetClickCallback(ClickCallback callback) {
+    click_callback_ = std::move(callback);
+  }
+
+  // views::View:
+  bool OnMousePressed(const ui::MouseEvent& event) override {
+    if (event.IsOnlyLeftMouseButton()) {
+      is_pressed_ = true;
+      is_hovered_ = true;
+      SchedulePaint();
+      return true;
+    }
+    return views::View::OnMousePressed(event);
+  }
+
+  void OnMouseReleased(const ui::MouseEvent& event) override {
+    if (is_pressed_ && event.IsOnlyLeftMouseButton()) {
+      is_pressed_ = false;
+      if (HitTestPoint(event.location()) && click_callback_) {
+        click_callback_.Run(url_);
+      }
+      SchedulePaint();
+    }
+    views::View::OnMouseReleased(event);
+  }
+
+  void OnMouseEntered(const ui::MouseEvent& event) override {
+    is_hovered_ = true;
+    SchedulePaint();
+    views::View::OnMouseEntered(event);
+  }
+
+  void OnMouseExited(const ui::MouseEvent& event) override {
+    is_hovered_ = false;
+    is_pressed_ = false;
+    SchedulePaint();
+    views::View::OnMouseExited(event);
+  }
+
+  void OnFocus() override {
+    is_focused_ = true;
+    SchedulePaint();
+    views::View::OnFocus();
+  }
+
+  void OnBlur() override {
+    is_focused_ = false;
+    SchedulePaint();
+    views::View::OnBlur();
+  }
+
+  bool OnKeyPressed(const ui::KeyEvent& event) override {
+    if (event.key_code() == ui::VKEY_SPACE ||
+        event.key_code() == ui::VKEY_RETURN) {
+      if (click_callback_) {
+        click_callback_.Run(url_);
+      }
+      return true;
+    }
+    return views::View::OnKeyPressed(event);
+  }
+
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override {
+    views::View::GetAccessibleNodeData(node_data);
+    node_data->role = ax::mojom::Role::kButton;
+  }
+
+  void OnPaintBackground(gfx::Canvas* canvas) override {
+    SkColor bg_color = kSuggestedCardBgColor;
+    if (is_pressed_) {
+      bg_color = SkColorSetRGB(0xF0, 0xF0, 0xF0);
+    } else if (is_hovered_) {
+      bg_color = SkColorSetRGB(0xFA, 0xFA, 0xFA);
+    }
+
+    cc::PaintFlags flags;
+    flags.setColor(bg_color);
+    flags.setStyle(cc::PaintFlags::kFill_Style);
+    flags.setAntiAlias(true);
+    canvas->DrawRoundRect(GetLocalBounds(), 12, flags);
+
+    // Subtle shadow on hover.
+    if (is_hovered_) {
+      cc::PaintFlags shadow_flags;
+      shadow_flags.setColor(SkColorSetARGB(0x20, 0x00, 0x00, 0x00));
+      shadow_flags.setStyle(cc::PaintFlags::kFill_Style);
+      shadow_flags.setAntiAlias(true);
+      gfx::RectF shadow_rect(GetLocalBounds());
+      shadow_rect.Offset(0, 2);
+      canvas->DrawRoundRect(shadow_rect, 12, shadow_flags);
+    }
+
+    // Focus ring.
+    if (is_focused_) {
+      cc::PaintFlags focus_flags;
+      focus_flags.setColor(SkColorSetRGB(0x5B, 0x8F, 0xF9));
+      focus_flags.setStyle(cc::PaintFlags::kStroke_Style);
+      focus_flags.setStrokeWidth(2);
+      focus_flags.setAntiAlias(true);
+      gfx::RectF focus_rect(GetLocalBounds());
+      focus_rect.Inset(-1.0f, -1.0f);
+      canvas->DrawRoundRect(focus_rect, 14, focus_flags);
+    }
+  }
+
+ private:
+  raw_ptr<views::View> image_view_ = nullptr;
+  raw_ptr<views::Label> title_label_ = nullptr;
+  raw_ptr<views::Label> source_label_ = nullptr;
+  GURL url_;
+  bool is_hovered_ = false;
+  bool is_pressed_ = false;
+  bool is_focused_ = false;
+  ClickCallback click_callback_;
+};
+
 }  // namespace
 
 // =========================================================================
@@ -249,10 +468,12 @@ void AstraNewTabView::SetModel(AstraNewTabModel* model) {
 
 void AstraNewTabView::RefreshContent() {
   UpdateGreeting();
+  UpdateClock();
   UpdateWorkspaceSection();
   UpdateShortcutsSection();
   UpdateRecentlyClosedSection();
   UpdateQuickActionsSection();
+  UpdateSuggestedContentSection();
 }
 
 void AstraNewTabView::UpdateFromSettings() {
@@ -266,6 +487,7 @@ void AstraNewTabView::UpdateFromSettings() {
   SetShortcutsVisible(model_->show_shortcuts());
   SetRecentlyClosedVisible(model_->show_recently_closed());
   SetQuickActionsVisible(model_->show_quick_actions());
+  SetSuggestedContentVisible(model_->show_suggested_content());
 
   // Update shortcut columns if needed.
   int columns = model_->shortcut_columns();
@@ -316,6 +538,13 @@ void AstraNewTabView::SetRecentlyClosedVisible(bool visible) {
 void AstraNewTabView::SetQuickActionsVisible(bool visible) {
   if (quick_actions_section_) {
     quick_actions_section_->SetVisible(visible);
+    InvalidateLayout();
+  }
+}
+
+void AstraNewTabView::SetSuggestedContentVisible(bool visible) {
+  if (suggested_content_section_) {
+    suggested_content_section_->SetVisible(visible);
     InvalidateLayout();
   }
 }
@@ -444,7 +673,46 @@ void AstraNewTabView::BuildLayout() {
   set_background(
       views::Background::CreateSolidBackground(kNtpBackgroundColor));
 
-  // Settings gear button (top-right corner).
+  // ---- Top bar ----
+  top_bar_ = AddChildView(std::make_unique<views::View>());
+  top_bar_->SetPreferredSize(gfx::Size(kNtpMaxWidth, kTopBarHeight));
+  auto* top_bar_layout = top_bar_->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(0, 0),
+          /*between_child_spacing=*/0));
+  top_bar_layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kSpaceBetween);
+  top_bar_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  // Left side of top bar: empty spacer (left-aligned items would go here).
+  auto* top_left = top_bar_->AddChildView(std::make_unique<views::View>());
+  top_left->SetPreferredSize(gfx::Size(kTopButtonSize, kTopButtonSize));
+  top_bar_layout->SetFlexForView(top_left, 0);
+
+  // Right side: profile + settings gear.
+  auto* top_right = top_bar_->AddChildView(std::make_unique<views::View>());
+  auto* top_right_layout = top_right->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(0, 0),
+          /*between_child_spacing=*/8));
+  top_right_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  // Profile button.
+  auto profile_btn = std::make_unique<views::ImageButton>(
+      base::BindRepeating(&AstraNewTabView::OnProfileButtonPressed,
+                          base::Unretained(this)));
+  profile_btn->SetPreferredSize(gfx::Size(kTopButtonSize, kTopButtonSize));
+  profile_btn->SetTooltipText(u"Profile");
+  profile_btn->SetAccessibleName(u"Profile");
+  profile_btn->SetHasInkDrop(true);
+  profile_button_ = profile_btn.get();
+  top_right->AddChildView(std::move(profile_btn));
+
+  // Settings gear button.
   auto gear_button = std::make_unique<views::ImageButton>(
       base::BindRepeating(&AstraNewTabView::OnSettingsGearPressed,
                           base::Unretained(this)));
@@ -454,17 +722,17 @@ void AstraNewTabView::BuildLayout() {
   gear_button->SetAccessibleName(u"Customize new tab page");
   gear_button->SetHasInkDrop(true);
   settings_gear_button_ = gear_button.get();
-  AddChildView(std::move(gear_button));
+  top_right->AddChildView(std::move(gear_button));
 
   // ---- Greeting section ----
   greeting_section_ = AddChildView(std::make_unique<views::View>());
-  greeting_section_->SetPreferredSize(gfx::Size(kNtpMaxWidth, 72));
+  greeting_section_->SetPreferredSize(gfx::Size(kNtpMaxWidth, 96));
   auto* greeting_layout = greeting_section_->SetLayoutManager(
       std::make_unique<views::BoxLayout>(
           views::BoxLayout::Orientation::kVertical));
   greeting_layout->set_cross_axis_alignment(
       views::BoxLayout::CrossAxisAlignment::kStart);
-  greeting_layout->set_between_child_spacing(4);
+  greeting_layout->set_between_child_spacing(kClockDateSpacing);
 
   greeting_label_ =
       greeting_section_->AddChildView(std::make_unique<views::Label>());
@@ -474,6 +742,28 @@ void AstraNewTabView::BuildLayout() {
   greeting_label_->SetFontList(greeting_label_->font_list().Derive(
       kGreetingFontSizeDelta, gfx::Font::NORMAL, gfx::Font::Weight::BOLD));
 
+  // Clock label.
+  clock_label_ =
+      greeting_section_->AddChildView(std::make_unique<views::Label>());
+  clock_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  clock_label_->SetAutoColorReadabilityEnabled(false);
+  clock_label_->SetEnabledColor(kClockTextColor);
+  clock_label_->SetFontList(clock_label_->font_list().Derive(
+      kClockFontSizeDelta, gfx::Font::NORMAL, gfx::Font::Weight::MEDIUM));
+  clock_label_->SetText(u"--:--");
+
+  // Date label.
+  date_label_ =
+      greeting_section_->AddChildView(std::make_unique<views::Label>());
+  date_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  date_label_->SetAutoColorReadabilityEnabled(false);
+  date_label_->SetEnabledColor(kDateTextColor);
+  date_label_->SetFontList(date_label_->font_list().Derive(
+      kGreetingSubtitleFontSizeDelta, gfx::Font::NORMAL,
+      gfx::Font::Weight::NORMAL));
+  date_label_->SetText(u"");
+
+  // Subtitle / "What's going on today"
   auto* subtitle_label =
       greeting_section_->AddChildView(std::make_unique<views::Label>());
   subtitle_label->SetText(u"Here's what's going on today");
@@ -611,6 +901,86 @@ void AstraNewTabView::BuildLayout() {
       kActionDownloads, u"Downloads", kQuickActionDownloadsIcon));
   qa_row->AddChildView(CreateQuickActionButton(
       kActionBookmarks, u"Bookmarks", kQuickActionBookmarksIcon));
+
+  // ---- Suggested content section ----
+  suggested_content_section_ = AddChildView(std::make_unique<views::View>());
+  auto* sc_layout = suggested_content_section_->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical));
+  sc_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kStretch);
+  sc_layout->set_between_child_spacing(kSectionHeaderSpacing);
+
+  suggested_content_section_->AddChildView(
+      CreateSectionLabel(u"Suggested for you"));
+
+  // Suggested content cards row (horizontal scroll).
+  auto* sc_scroll_view = suggested_content_section_->AddChildView(
+      std::make_unique<views::ScrollView>());
+  sc_scroll_view->SetBackgroundColor(SK_ColorTRANSPARENT);
+  sc_scroll_view->SetPaintToLayer();
+  sc_scroll_view->layer()->SetFillsBoundsOpaquely(false);
+  sc_scroll_view->SetHorizontalScrollBarMode(
+      views::ScrollView::ScrollBarMode::kDisabled);
+  sc_scroll_view->SetVerticalScrollBarMode(
+      views::ScrollView::ScrollBarMode::kDisabled);
+
+  auto sc_cards_row = std::make_unique<views::View>();
+  auto* sc_cards_layout = sc_cards_row->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal));
+  sc_cards_layout->set_between_child_spacing(kSuggestedCardSpacing);
+  sc_cards_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kStretch);
+  sc_cards_row->SetPaintToLayer();
+  sc_cards_row->layer()->SetFillsBoundsOpaquely(false);
+
+  // Create placeholder suggested content cards.
+  for (int i = 0; i < 4; ++i) {
+    auto card = std::make_unique<SuggestedContentCard>();
+    card->SetTitle(
+        base::UTF8ToUTF16("Suggested article " + base::NumberToString(i + 1)));
+    card->SetSource(
+        base::UTF8ToUTF16("Source " + base::NumberToString(i + 1)));
+    card->SetUrl(GURL("https://example.com/article/" +
+                      base::NumberToString(i + 1)));
+    card->SetClickCallback(base::BindRepeating(
+        &AstraNewTabView::OnSuggestedContentClicked,
+        weak_factory_.GetWeakPtr()));
+    raw_ptr<views::View> ptr = sc_cards_row->AddChildView(std::move(card));
+    suggested_content_views_.push_back(ptr);
+  }
+
+  sc_scroll_view->SetContents(std::move(sc_cards_row));
+
+  // ---- Footer ----
+  footer_section_ = AddChildView(std::make_unique<views::View>());
+  footer_section_->SetPreferredSize(gfx::Size(kNtpMaxWidth, kFooterHeight));
+  auto* footer_layout = footer_section_->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(8, 0),
+          /*between_child_spacing=*/kFooterSpacing));
+  footer_layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kCenter);
+  footer_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  const char* kFooterLinks[] = {"Privacy", "Terms", "About Astra"};
+  for (const char* link : kFooterLinks) {
+    auto link_label = std::make_unique<views::Label>(
+        base::UTF8ToUTF16(link));
+    link_label->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+    link_label->SetAutoColorReadabilityEnabled(false);
+    link_label->SetEnabledColor(kFooterTextColor);
+    link_label->SetFontList(link_label->font_list().Derive(
+        kFooterFontSizeDelta, gfx::Font::NORMAL,
+        gfx::Font::Weight::NORMAL));
+    link_label->SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+    link_label->SetAccessibleName(base::UTF8ToUTF16(link));
+    link_label->SetTooltipText(base::UTF8ToUTF16(link));
+    footer_section_->AddChildView(std::move(link_label));
+  }
 }
 
 // =========================================================================
@@ -833,6 +1203,86 @@ void AstraNewTabView::UpdateQuickActionsSection() {
   // Quick action buttons are static — created once in BuildLayout().
 }
 
+void AstraNewTabView::UpdateSuggestedContentSection() {
+  if (!model_) {
+    return;
+  }
+
+  // Update suggested content cards from model data.
+  size_t count = suggested_content_views_.size();
+  if (model_) {
+    count = std::min(count, model_->GetSuggestedContentCount());
+  }
+
+  for (size_t i = 0; i < suggested_content_views_.size(); ++i) {
+    auto* card = static_cast<SuggestedContentCard*>(
+        suggested_content_views_[i].get());
+    if (i < count && model_->GetSuggestedContentAt(i)) {
+      const auto* item = model_->GetSuggestedContentAt(i);
+      card->SetTitle(item->title);
+      card->SetSource(item->source);
+      card->SetUrl(item->url);
+      card->SetVisible(true);
+    } else {
+      // Placeholder data for cards beyond model count.
+      card->SetVisible(i < 4);  // Keep first 4 as placeholders
+    }
+  }
+}
+
+// =========================================================================
+// Clock
+// =========================================================================
+
+void AstraNewTabView::UpdateClock() {
+  if (!clock_label_) {
+    return;
+  }
+
+  base::Time now = base::Time::Now();
+  if (model_) {
+    clock_label_->SetText(model_->FormatClockTime(now));
+    if (date_label_) {
+      if (model_->show_date()) {
+        date_label_->SetVisible(true);
+        date_label_->SetText(model_->FormatDate(now));
+      } else {
+        date_label_->SetVisible(false);
+      }
+    }
+  } else {
+    // Simple fallback time.
+    base::Time::Exploded exploded;
+    now.LocalExplode(&exploded);
+    char buf[16];
+    base::snprintf(buf, sizeof(buf), "%02d:%02d",
+                   exploded.hour, exploded.minute);
+    clock_label_->SetText(base::UTF8ToUTF16(buf));
+  }
+}
+
+void AstraNewTabView::OnClockTick() {
+  UpdateClock();
+}
+
+// =========================================================================
+// Animation
+// =========================================================================
+
+void AstraNewTabView::PlayEntranceAnimations() {
+  if (animations_skipped_ || entrance_animations_played_) {
+    return;
+  }
+  entrance_animations_played_ = true;
+  // TODO(astra): Implement staggered entrance animations.
+  // Each section would fade in with a small delay.
+}
+
+void AstraNewTabView::SkipAnimationsForTesting() {
+  animations_skipped_ = true;
+  entrance_animations_played_ = true;
+}
+
 void AstraNewTabView::UpdateResponsiveLayout() {
   // TODO(astra): Implement proper responsive layout that adapts to width.
   // For now, just invalidate layout to trigger relayout.
@@ -929,6 +1379,17 @@ void AstraNewTabView::OnRecentlyClosedClicked(int session_id) {
 void AstraNewTabView::OnSettingsGearPressed() {
   if (delegate_) {
     delegate_->OnSettingsGearPressed();
+  }
+}
+
+void AstraNewTabView::OnProfileButtonPressed() {
+  // TODO(astra): Show profile menu / account picker.
+  // Chromium owner: ProfileMenuView (chrome/browser/ui/views/profiles/profile_menu_view.h)
+}
+
+void AstraNewTabView::OnSuggestedContentClicked(const GURL& url) {
+  if (delegate_) {
+    delegate_->OnNavigateToURL(url);
   }
 }
 

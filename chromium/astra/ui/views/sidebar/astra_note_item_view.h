@@ -96,6 +96,11 @@ class AstraNoteItemView : public AstraSidebarItemView {
   void SetModifiedTime(base::Time time);
   base::Time GetModifiedTime() const { return modified_time_; }
 
+  // -- Selected state -----------------------------------------------------
+
+  // Set whether this note item is selected (e.g. via keyboard navigation).
+  void SetSelected(bool selected) override;
+
   // -- Delegate -----------------------------------------------------------
 
   void set_delegate(AstraNoteItemDelegate* delegate) {
@@ -108,6 +113,7 @@ class AstraNoteItemView : public AstraSidebarItemView {
       const views::SizeBounds& available_size) const override;
   void Layout() override;
   void OnThemeChanged() override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
  protected:
   // AstraSidebarItemView overrides.
@@ -133,6 +139,7 @@ class AstraNoteItemView : public AstraSidebarItemView {
   void UpdateTimeLabel();
 
   // Button action handlers.
+  void OnEditButtonPressed();
   void OnDeleteButtonPressed();
 
   // The note ID this item represents.
@@ -153,6 +160,7 @@ class AstraNoteItemView : public AstraSidebarItemView {
   // Child views.
   raw_ptr<views::View> color_bar_ = nullptr;
   raw_ptr<views::Label> time_label_ = nullptr;
+  raw_ptr<views::ImageButton> edit_button_ = nullptr;
   raw_ptr<views::ImageButton> delete_button_ = nullptr;
 
   // Hover state for showing/hiding action buttons.

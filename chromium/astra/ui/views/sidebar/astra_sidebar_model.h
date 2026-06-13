@@ -19,6 +19,127 @@ enum class AstraSidebarPosition {
   kRight,
 };
 
+// Section group: top vs bottom sections.
+// Top sections are the primary navigation items (workspaces, favorites, tabs).
+// Bottom sections are secondary/utility items (downloads, settings, etc.).
+enum class AstraSidebarSectionGroup {
+  kTop,     // Primary navigation sections (top of sidebar)
+  kBottom,  // Utility/secondary sections (bottom of sidebar)
+};
+
+// Compact mode size configuration.
+// Controls icon sizes and spacing when compact mode is enabled.
+struct AstraSidebarCompactModeConfig {
+  // Icon size in pixels for section icons in compact mode.
+  int icon_size = 20;
+
+  // Icon size in pixels for normal (non-compact) mode.
+  int normal_icon_size = 24;
+
+  // Spacing between section items in compact mode (pixels).
+  int item_spacing = 2;
+
+  // Spacing between section items in normal mode (pixels).
+  int normal_item_spacing = 4;
+
+  // Horizontal padding in compact mode (pixels).
+  int horizontal_padding = 4;
+
+  // Horizontal padding in normal mode (pixels).
+  int normal_horizontal_padding = 8;
+
+  // Item height in compact mode (pixels).
+  int item_height = 36;
+
+  // Item height in normal mode (pixels).
+  int normal_item_height = 40;
+
+  // Whether section labels are hidden in compact mode.
+  bool hide_labels = true;
+
+  // Whether badges are smaller in compact mode.
+  bool smaller_badges = true;
+};
+
+// Drag-and-drop metadata for sidebar sections.
+// Controls which sections support drag-and-drop and what types of items
+// can be dragged/dropped.
+struct AstraSidebarDragDropConfig {
+  // Whether reordering sections by drag is enabled.
+  bool section_reorder_enabled = true;
+
+  // Whether items can be dragged within a section.
+  bool item_drag_enabled = true;
+
+  // Whether items can be dropped between sections (e.g. tab to favorites).
+  bool cross_section_drop_enabled = true;
+
+  // Whether drag previews are shown.
+  bool show_drag_preview = true;
+
+  // Drag threshold in pixels (how far to move before drag starts).
+  int drag_threshold_pixels = 5;
+};
+
+// Sidebar layout data for import/export.
+// Represents a complete sidebar layout configuration that can be
+// serialized to JSON or other formats for backup/restore.
+struct AstraSidebarLayoutData {
+  // Sidebar position.
+  AstraSidebarPosition position = AstraSidebarPosition::kLeft;
+
+  // Sidebar width in pixels.
+  int width = 280;
+
+  // Whether the sidebar is pinned open.
+  bool pinned = true;
+
+  // Whether the sidebar is visible.
+  bool visible = true;
+
+  // Whether compact mode is enabled.
+  bool compact_mode = false;
+
+  // Whether section icons are shown.
+  bool show_icons = true;
+
+  // Whether section labels are shown.
+  bool show_labels = true;
+
+  // Whether animations are enabled.
+  bool animation_enabled = true;
+
+  // Whether auto-hide on tab click is enabled.
+  bool auto_hide_on_tab_click = false;
+
+  // Whether tab count badges are shown.
+  bool show_tab_count_badges = true;
+
+  // Whether the workspace badge is shown.
+  bool show_workspace_badge = true;
+
+  // Whether to remember the last active section.
+  bool remember_last_section = true;
+
+  // The default active section ID.
+  std::string default_active_section;
+
+  // Ordered list of section IDs (defines the custom order).
+  std::vector<std::string> section_order;
+
+  // Map of section IDs to visibility state.
+  std::vector<std::pair<std::string, bool>> section_visibility;
+
+  // List of collapsed section IDs.
+  std::vector<std::string> collapsed_sections;
+
+  // Returns whether this layout data is empty / default.
+  bool IsEmpty() const {
+    return section_order.empty() && section_visibility.empty() &&
+           collapsed_sections.empty();
+  }
+};
+
 // =========================================================================
 // AstraSidebarSection — metadata for a sidebar section
 // =========================================================================
@@ -51,6 +172,21 @@ struct AstraSidebarSection {
 
   // Whether this section is currently collapsed.
   bool is_collapsed = false;
+
+  // Which group this section belongs to (top or bottom).
+  AstraSidebarSectionGroup group = AstraSidebarSectionGroup::kTop;
+
+  // Whether this section supports drag-and-drop reordering.
+  bool reorderable = true;
+
+  // Whether this section can be hidden by the user.
+  bool can_hide = true;
+
+  // Badge text (e.g. count of items). Empty means no badge.
+  std::u16string badge_text;
+
+  // Whether this section is the active section.
+  bool is_active = false;
 };
 
 // =========================================================================
@@ -98,6 +234,16 @@ class AstraSidebarModelObserver : public base::CheckedObserver {
   // This is a catch-all for settings that don't have a specific observer
   // method (compact mode, show icons, show labels, etc.).
   virtual void OnSidebarSettingsChanged() {}
+
+  // Called when compact mode is toggled.
+  virtual void OnCompactModeChanged(bool compact) {}
+
+  // Called when the layout is imported or exported.
+  virtual void OnSidebarLayoutChanged() {}
+
+  // Called when a section is dragged and dropped (reorder).
+  virtual void OnSectionDragDropCompleted(const std::string& section_id,
+                                          int new_position) {}
 
  protected:
   ~AstraSidebarModelObserver() override = default;
@@ -212,10 +358,23 @@ class AstraSidebarModel {
   // Returns the number of visible sections.
   size_t GetVisibleSectionCount() const;
 
+  // Returns sections belonging to a specific group.
+  std::vector<AstraSidebarSection> GetSectionsInGroup(
+      AstraSidebarSectionGroup group) const;
+
+  // Returns the number of sections in a specific group.
+  size_t GetSectionCountInGroup(AstraSidebarSectionGroup group) const;
+
   // -- Bulk operations -----------------------------------------------------
 
   // Sets all sections' visibility to |visible|.
   void SetAllSectionsVisible(bool visible);
+
+  // Shows all sections (convenience alias).
+  void ShowAllSections();
+
+  // Hides all hideable sections (convenience alias).
+  void HideAllSections();
 
   // Toggles visibility for multiple sections at once.
   void ToggleMultipleSections(const std::vector<std::string>& section_ids);
@@ -247,6 +406,7 @@ class AstraSidebarModel {
   // Whether compact mode is enabled.
   bool compact_mode() const;
   void SetCompactMode(bool enabled);
+  void ToggleCompactMode();
 
   // Whether the sidebar auto-hides when a tab is clicked.
   bool auto_hide_on_tab_click() const;
@@ -276,6 +436,48 @@ class AstraSidebarModel {
   std::string last_active_section() const;
   void SetLastActiveSection(const std::string& section_id);
 
+  // -- Compact mode configuration -----------------------------------------
+
+  // Get the compact mode configuration.
+  const AstraSidebarCompactModeConfig& compact_mode_config() const {
+    return compact_mode_config_;
+  }
+
+  // Get the effective icon size based on compact mode state.
+  int GetEffectiveIconSize() const;
+
+  // Get the effective item spacing based on compact mode state.
+  int GetEffectiveItemSpacing() const;
+
+  // Get the effective item height based on compact mode state.
+  int GetEffectiveItemHeight() const;
+
+  // Get the effective horizontal padding based on compact mode state.
+  int GetEffectiveHorizontalPadding() const;
+
+  // -- Drag-and-drop configuration ----------------------------------------
+
+  // Get the drag-and-drop configuration.
+  const AstraSidebarDragDropConfig& drag_drop_config() const {
+    return drag_drop_config_;
+  }
+
+  // Whether section reordering by drag is enabled.
+  bool section_reorder_enabled() const {
+    return drag_drop_config_.section_reorder_enabled;
+  }
+  void set_section_reorder_enabled(bool enabled) {
+    drag_drop_config_.section_reorder_enabled = enabled;
+  }
+
+  // Whether item drag-and-drop is enabled.
+  bool item_drag_enabled() const {
+    return drag_drop_config_.item_drag_enabled;
+  }
+  void set_item_drag_enabled(bool enabled) {
+    drag_drop_config_.item_drag_enabled = enabled;
+  }
+
   // -- Section visibility settings (persisted) ----------------------------
   //
   // These are convenience getters/setters for per-section visibility prefs.
@@ -304,6 +506,17 @@ class AstraSidebarModel {
 
   bool show_extensions_section() const;
   void SetShowExtensionsSection(bool show);
+
+  // -- Layout import/export -----------------------------------------------
+
+  // Exports the current sidebar layout to a serializable data structure.
+  // Returns the layout data that can be saved or shared.
+  AstraSidebarLayoutData ExportLayout() const;
+
+  // Imports a sidebar layout from the provided data.
+  // Applies all settings and section configurations.
+  // Returns true if the import was successful.
+  bool ImportLayout(const AstraSidebarLayoutData& layout);
 
   // -- Utility methods -----------------------------------------------------
 
@@ -335,6 +548,7 @@ class AstraSidebarModel {
   static const char kSectionPasswords[];
   static const char kSectionExtensions[];
   static const char kSectionDevTools[];
+  static const char kSectionSettings[];
 
   PrefService* pref_service() { return pref_service_; }
   const PrefService* pref_service() const { return pref_service_; }
@@ -372,6 +586,8 @@ class AstraSidebarModel {
   void NotifySidebarWidthChanged(int width);
   void NotifySidebarPositionChanged(AstraSidebarPosition position);
   void NotifySidebarSettingsChanged();
+  void NotifyCompactModeChanged(bool compact);
+  void NotifySidebarLayoutChanged();
 
   raw_ptr<PrefService> pref_service_ = nullptr;
   base::ObserverList<AstraSidebarModelObserver> observers_;
@@ -388,6 +604,14 @@ class AstraSidebarModel {
   // position.
 
   std::vector<AstraSidebarSection> sections_;
+
+  // -- Configuration -------------------------------------------------------
+
+  // Compact mode visual configuration.
+  AstraSidebarCompactModeConfig compact_mode_config_;
+
+  // Drag-and-drop configuration.
+  AstraSidebarDragDropConfig drag_drop_config_;
 };
 
 }  // namespace astra

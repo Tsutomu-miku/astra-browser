@@ -118,6 +118,28 @@ class AstraNtpShortcutView : public views::View {
   // Returns whether the shortcut is in edit mode.
   bool is_edit_mode() const { return is_edit_mode_; }
 
+  // -- Special tile modes --
+
+  // Sets this as an "add shortcut" special tile (+ icon).
+  void SetIsAddShortcutTile(bool is_add_tile);
+  bool is_add_shortcut_tile() const { return is_add_shortcut_tile_; }
+
+  // -- Badge --
+
+  // Sets a badge count (0 hides the badge).
+  void SetBadgeCount(int count);
+  int badge_count() const { return badge_count_; }
+
+  // -- States --
+
+  // Sets loading state (shows skeleton/placeholder).
+  void SetLoading(bool loading);
+  bool is_loading() const { return is_loading_; }
+
+  // Sets error state (shows broken icon indicator).
+  void SetErrorState(bool error);
+  bool has_error() const { return has_error_; }
+
   // -- Callbacks
 
   void SetClickCallback(ClickCallback callback);
@@ -176,6 +198,18 @@ class AstraNtpShortcutView : public views::View {
   // Starts a drag operation.
   void StartDrag(const ui::LocatedEvent& event);
 
+  // Builds the "add shortcut" tile variant.
+  void BuildAddShortcutLayout();
+
+  // Paints the badge.
+  void PaintBadge(gfx::Canvas* canvas);
+
+  // Paints loading skeleton.
+  void PaintLoadingSkeleton(gfx::Canvas* canvas);
+
+  // Paints error state indicator.
+  void PaintErrorIndicator(gfx::Canvas* canvas);
+
   // Calculates icon size based on current size preset.
   int GetIconSize() const;
 
@@ -193,6 +227,16 @@ class AstraNtpShortcutView : public views::View {
   bool is_dragging_ = false;
   bool is_edit_mode_ = false;
   bool show_drag_handle_ = false;
+
+  // Special tile modes.
+  bool is_add_shortcut_tile_ = false;
+
+  // Badge state.
+  int badge_count_ = 0;
+
+  // Loading / error states.
+  bool is_loading_ = false;
+  bool has_error_ = false;
 
   ClickCallback click_callback_;
   RemoveCallback remove_callback_;

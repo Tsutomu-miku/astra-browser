@@ -153,6 +153,29 @@ void AstraWorkspaceMenuItemView::SetReorderHandleVisible(bool visible) {
 }
 
 // ---------------------------------------------------------------------------
+// Menu button (more options)
+// ---------------------------------------------------------------------------
+
+void AstraWorkspaceMenuItemView::SetMenuButtonVisible(bool visible) {
+  if (menu_button_visible_ == visible) {
+    return;
+  }
+  menu_button_visible_ = visible;
+  if (menu_button_) {
+    menu_button_->SetVisible(visible);
+  }
+  PreferredSizeChanged();
+}
+
+// ---------------------------------------------------------------------------
+// Tooltip
+// ---------------------------------------------------------------------------
+
+void AstraWorkspaceMenuItemView::SetTooltip(const std::u16string& tooltip) {
+  SetTooltipText(tooltip);
+}
+
+// ---------------------------------------------------------------------------
 // views::Button overrides
 // ---------------------------------------------------------------------------
 
@@ -455,6 +478,13 @@ void AstraWorkspaceMenuItemView::UpdateSizeVariant() {
   checkmark->SetPreferredSize(gfx::Size(checkmark_size, checkmark_size));
   // TODO(astra): Replace with a real checkmark icon.
   checkmark_indicator_ = AddChildView(std::move(checkmark));
+
+  // --- Menu button (more options) ---
+  auto menu_button = std::make_unique<views::View>();
+  menu_button->SetPreferredSize(gfx::Size(16, checkmark_size));
+  menu_button->SetTooltipText(u"More options");
+  menu_button_ = AddChildView(std::move(menu_button));
+  menu_button_->SetVisible(menu_button_visible_);
 
   // Initialize state.
   UpdateTabCountLabel();

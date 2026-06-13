@@ -406,4 +406,823 @@ void AstraNewTabBubble::OnSettingsGearPressed() {
   // The settings gear button triggers this via the controller delegate.
 }
 
+// =========================================================================
+// AstraNewTabCustomizeBubble — customize/settings bubble implementation
+// =========================================================================
+
+namespace {
+
+// Customize bubble constants.
+constexpr int kCustomizeBubbleWidth = 320;
+constexpr int kCustomizeBubbleMaxHeight = 520;
+constexpr int kSectionSpacing = 16;
+constexpr int kSectionHeaderSpacing = 12;
+constexpr int kRowHeight = 40;
+constexpr int kRowSpacing = 8;
+constexpr int kResetButtonHeight = 36;
+constexpr SkColor kSectionBackgroundColor = SK_ColorWHITE;
+constexpr SkColor kSectionBorderColor = SkColorSetRGB(0xE0, 0xE0, 0xE0);
+constexpr SkColor kHeaderTextColor = SkColorSetRGB(0x33, 0x33, 0x33);
+constexpr SkColor kLabelTextColor = SkColorSetRGB(0x55, 0x55, 0x55);
+constexpr SkColor kResetButtonColor = SkColorSetRGB(0xEA, 0x43, 0x35);
+
+// A simple toggle switch view (custom-drawn for testability).
+class ToggleSwitchView : public views::View {
+ public:
+  using ToggleCallback = base::RepeatingCallback<void(bool)>;
+
+  ToggleSwitch(bool initial_value, ToggleCallback callback)
+      : is_on_(initial_value), callback_(std::move(callback)) {
+    SetPreferredSize(gfx::Size(36, 20));
+    SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+    SetAccessibleName(is_on_ ? u"Toggle switch: on" : u"Toggle switch: off");
+  }
+
+  ~ToggleSwitchView() override = default;
+
+  void SetState(bool state) {
+    if (is_on_ == state) return;
+    is_on_ = state;
+    SetAccessibleName(is_on_ ? u"Toggle switch: on" : u"Toggle switch: off");
+    SchedulePaint();
+  }
+
+  bool is_on() const { return is_on_; }
+
+  // views::View:
+  bool OnMousePressed(const ui::MouseEvent& event) override {
+    if (event.IsOnlyLeftMouseButton()) {
+      Toggle();
+      return true;
+    }
+    return views::View::OnMousePressed(event);
+  }
+
+  bool OnKeyPressed(const ui::KeyEvent& event) override {
+    if (event.key_code() == ui::VKEY_SPACE ||
+        event.key_code() == ui::VKEY_RETURN) {
+      Toggle();
+      return true;
+    }
+    return views::View::OnKeyPressed(event);
+  }
+
+  void OnPaint(gfx::Canvas* canvas) override {
+    views::View::OnPaint(canvas);
+
+    // Draw track.
+    cc::PaintFlags track_flags;
+    track_flags.setColor(is_on_ ? SkColorSetRGB(0x5B, 0x8F, 0xF9)
+                                 : SkColorSetRGB(0xCC, 0xCC, 0xCC));
+    track_flags.setStyle(cc::PaintFlags::kFill_Style);
+    track_flags.setAntiAlias(true);
+    gfx::RectF track_rect(GetLocalBounds());
+    canvas->DrawRoundRect(track_rect, 10, track_flags);
+
+    // Draw thumb.
+    cc::PaintFlags thumb_flags;
+    thumb_flags.setColor(SK_ColorWHITE);
+    thumb_flags.setStyle(cc::PaintFlags::kFill_Style);
+    thumb_flags.setAntiAlias(true);
+    int thumb_size = 16;
+    int thumb_x = is_on_ ? width() - thumb_size - 2 : 2;
+    int thumb_y = (height() - thumb_size) / 2;
+    gfx::RectF thumb_rect(thumb_x, thumb_y, thumb_size, thumb_size);
+    canvas->DrawRoundRect(thumb_rect, thumb_size / 2.0f, thumb_flags);
+  }
+
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override {
+    views::View::GetAccessibleNodeData(node_data);
+    node_data->role = ax::mojom::Role::kToggleButton;
+    node_data->SetCheckedState(is_on_ ? ax::mojom::CheckedState::kTrue
+                                      : ax::mojom::CheckedState::kFalse);
+  }
+
+ private:
+  void Toggle() {
+    is_on_ = !is_on_;
+    SetAccessibleName(is_on_ ? u"Toggle switch: on" : u"Toggle switch: off");
+    SchedulePaint();
+    if (callback_) {
+      callback_.Run(is_on_);
+    }
+  }
+
+  bool is_on_;
+  ToggleCallback callback_;
+};
+
+// A simple segmented control / selector view.
+class SelectorView : public views::View {
+ public:
+  using SelectCallback = base::RepeatingCallback<void(int)>;
+
+  SelectorView(const std::vector<std::u16string>& options,
+               int selected_index,
+               SelectCallback callback)
+      : options_(options),
+        selected_index_(selected_index),
+        callback_(std::move(callback)) {
+    DCHECK(!options_.empty());
+    DCHECK_GE(selected_index_, 0);
+    DCHECK_LT(selected_index_, static_cast<int>(options_.size()));
+    SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+    SetPreferredSize(gfx::Size(120, 28));
+  }
+
+  ~SelectorView() override = default;
+
+  int selected_index() const { return selected_index_; }
+
+  void SetSelectedIndex(int index) {
+    if (index == selected_index_ || index < 0 ||
+        index >= static_cast<int>(options_.size())) {
+      return;
+    }
+    selected_index_ = index;
+    SchedulePaint();
+  }
+
+  // views::View:
+  bool OnMousePressed(const ui::MouseEvent& event) override {
+    if (event.IsOnlyLeftMouseButton()) {
+      // Calculate which segment was clicked.
+      int segment_width = width() / static_cast<int>(options_.size());
+      int clicked_index = event.x() / segment_width;
+      if (clicked_index >= static_cast<int>(options_.size())) {
+        clicked_index = static_cast<int>(options_.size()) - 1;
+      }
+      if (clicked_index != selected_index_) {
+        selected_index_ = clicked_index;
+        SchedulePaint();
+        if (callback_) {
+          callback_.Run(selected_index_);
+        }
+      }
+      return true;
+    }
+    return views::View::OnMousePressed(event);
+  }
+
+  bool OnKeyPressed(const ui::KeyEvent& event) override {
+    if (event.key_code() == ui::VKEY_LEFT || event.key_code() == ui::VKEY_UP) {
+      if (selected_index_ > 0) {
+        selected_index_--;
+        SchedulePaint();
+        if (callback_) callback_.Run(selected_index_);
+      }
+      return true;
+    }
+    if (event.key_code() == ui::VKEY_RIGHT ||
+        event.key_code() == ui::VKEY_DOWN) {
+      if (selected_index_ < static_cast<int>(options_.size()) - 1) {
+        selected_index_++;
+        SchedulePaint();
+        if (callback_) callback_.Run(selected_index_);
+      }
+      return true;
+    }
+    return views::View::OnKeyPressed(event);
+  }
+
+  void OnPaint(gfx::Canvas* canvas) override {
+    views::View::OnPaint(canvas);
+
+    int count = static_cast<int>(options_.size());
+    int segment_width = width() / count;
+
+    cc::PaintFlags bg_flags;
+    bg_flags.setColor(SkColorSetRGB(0xF0, 0xF0, 0xF0));
+    bg_flags.setStyle(cc::PaintFlags::kFill_Style);
+    bg_flags.setAntiAlias(true);
+    canvas->DrawRoundRect(GetLocalBounds(), 6, bg_flags);
+
+    // Draw selected segment highlight.
+    cc::PaintFlags sel_flags;
+    sel_flags.setColor(SK_ColorWHITE);
+    sel_flags.setStyle(cc::PaintFlags::kFill_Style);
+    sel_flags.setAntiAlias(true);
+    gfx::Rect sel_rect(selected_index_ * segment_width + 1, 1,
+                        segment_width - 2, height() - 2);
+    canvas->DrawRoundRect(gfx::RectF(sel_rect), 5, sel_flags);
+
+    // Draw labels.
+    gfx::FontList font_list;
+    font_list = font_list.Derive(-1, gfx::Font::NORMAL, gfx::Font::Weight::MEDIUM);
+    for (int i = 0; i < count; ++i) {
+      gfx::Rect text_rect(i * segment_width, 0, segment_width, height());
+      SkColor text_color = (i == selected_index_)
+                               ? SkColorSetRGB(0x33, 0x33, 0x33)
+                               : SkColorSetRGB(0x88, 0x88, 0x88);
+      canvas->DrawStringRect(options_[i], font_list, text_color, text_rect,
+                             gfx::ALIGN_CENTER, gfx::ALIGN_MIDDLE);
+    }
+  }
+
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override {
+    views::View::GetAccessibleNodeData(node_data);
+    node_data->role = ax::mojom::Role::kRadioGroup;
+  }
+
+ private:
+  std::vector<std::u16string> options_;
+  int selected_index_;
+  SelectCallback callback_;
+};
+
+}  // namespace
+
+// =========================================================================
+// Customize bubble — static factory
+// =========================================================================
+
+views::Widget* AstraNewTabCustomizeBubble::ShowBubble(
+    views::View* anchor_view,
+    AstraNewTabModel* model,
+    Delegate* delegate) {
+  DCHECK(anchor_view);
+  DCHECK(model);
+
+  auto* bubble =
+      new AstraNewTabCustomizeBubble(anchor_view, model, delegate);
+  views::Widget* widget = views::BubbleDialogDelegateView::CreateBubble(bubble);
+  bubble->SetArrow(views::BubbleBorder::TOP_RIGHT);
+  widget->Show();
+  return widget;
+}
+
+// =========================================================================
+// Construction / destruction
+// =========================================================================
+
+AstraNewTabCustomizeBubble::AstraNewTabCustomizeBubble(
+    views::View* anchor_view,
+    AstraNewTabModel* model,
+    Delegate* delegate)
+    : views::BubbleDialogDelegateView(anchor_view,
+                                       views::BubbleBorder::TOP_RIGHT,
+                                       views::BubbleBorder::STANDARD_SHADOW),
+      model_(model),
+      delegate_(delegate) {
+  SetAcceptCallback(base::DoNothing());
+  SetCancelCallback(base::DoNothing());
+  SetButtons(ui::DIALOG_BUTTON_NONE);
+  SetShowTitle(false);
+  SetShowCloseButton(true);
+
+  set_fixed_width(kCustomizeBubbleWidth);
+  set_close_on_deactivate(true);
+  set_modal_type(ui::MODAL_TYPE_NONE);
+}
+
+AstraNewTabCustomizeBubble::~AstraNewTabCustomizeBubble() {
+  if (delegate_) {
+    delegate_->OnCustomizeBubbleClosed();
+  }
+}
+
+// =========================================================================
+// Init / layout
+// =========================================================================
+
+void AstraNewTabCustomizeBubble::Init() {
+  auto* root_layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kVertical,
+      gfx::Insets::VH(16, 16),
+      /*between_child_spacing=*/kSectionSpacing));
+  root_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kStretch);
+
+  set_background(
+      views::Background::CreateSolidBackground(SK_ColorWHITE));
+
+  scroll_view_ = AddChildView(std::make_unique<views::ScrollView>());
+  scroll_view_->SetBackgroundColor(SK_ColorTRANSPARENT);
+  scroll_view_->SetPaintToLayer();
+  scroll_view_->layer()->SetFillsBoundsOpaquely(false);
+  root_layout->SetFlexForView(scroll_view_, 1);
+
+  auto content_view = std::make_unique<views::View>();
+  auto* content_layout = content_view->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical,
+          gfx::Insets::VH(0, 0),
+          /*between_child_spacing=*/kSectionSpacing));
+  content_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kStretch);
+
+  BuildSections();
+
+  // Move sections to the scroll view content.
+  for (auto& section : sections_) {
+    content_view->AddChildView(
+        section->parent()->RemoveChildViewT(section));
+  }
+  sections_.clear();
+
+  scroll_view_->SetContents(std::move(content_view));
+
+  // Reset button at the bottom.
+  auto reset_button = std::make_unique<views::LabelButton>(
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnResetButtonPressed,
+                          base::Unretained(this)),
+      u"Reset to defaults");
+  reset_button->SetPreferredSize(gfx::Size(0, kResetButtonHeight));
+  reset_button->SetEnabledColor(kResetButtonColor);
+  reset_button->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  reset_button->SetAccessibleName(u"Reset to defaults");
+  AddChildView(std::move(reset_button));
+}
+
+void AstraNewTabCustomizeBubble::BuildSections() {
+  // ---- Appearance section ----
+  auto appearance_section = BuildSectionHeader(u"Appearance");
+  auto* appearance_ptr = appearance_section.get();
+  AddChildView(std::move(appearance_section));
+  sections_.push_back(appearance_ptr);
+
+  // Theme mode selector.
+  AddChildView(BuildSelectorRow(
+      u"Theme",
+      {u"System", u"Light", u"Dark"},
+      static_cast<int>(model_->theme_mode()),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnThemeModeChanged,
+                          base::Unretained(this))));
+
+  // Layout density selector.
+  AddChildView(BuildSelectorRow(
+      u"Density",
+      {u"Comfortable", u"Cozy", u"Compact"},
+      static_cast<int>(model_->layout_density()),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnLayoutDensityChanged,
+                          base::Unretained(this))));
+
+  // Greeting style selector.
+  AddChildView(BuildSelectorRow(
+      u"Greeting",
+      {u"Formal", u"Casual", u"Minimal"},
+      static_cast<int>(model_->greeting_style()),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnGreetingStyleChanged,
+                          base::Unretained(this))));
+
+  // Clock format selector.
+  AddChildView(BuildSelectorRow(
+      u"Clock",
+      {u"12h", u"24h", u"System"},
+      static_cast<int>(model_->clock_format()),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnClockFormatChanged,
+                          base::Unretained(this))));
+
+  // Toggle show seconds.
+  AddChildView(BuildToggleRow(
+      u"Show seconds",
+      model_->show_seconds(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleSeconds,
+                          base::Unretained(this))));
+
+  // Toggle show date.
+  AddChildView(BuildToggleRow(
+      u"Show date",
+      model_->show_date(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleDate,
+                          base::Unretained(this))));
+
+  // ---- Background section ----
+  auto bg_section = BuildSectionHeader(u"Background");
+  auto* bg_ptr = bg_section.get();
+  AddChildView(std::move(bg_section));
+  sections_.push_back(bg_ptr);
+
+  AddChildView(BuildSelectorRow(
+      u"Style",
+      {u"Solid", u"Gradient", u"Image", u"Daily"},
+      static_cast<int>(model_->background_style()),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnBackgroundStyleChanged,
+                          base::Unretained(this))));
+
+  // ---- Shortcuts section ----
+  auto sc_section = BuildSectionHeader(u"Shortcuts");
+  auto* sc_ptr = sc_section.get();
+  AddChildView(std::move(sc_section));
+  sections_.push_back(sc_ptr);
+
+  AddChildView(BuildToggleRow(
+      u"Show shortcuts",
+      model_->show_shortcuts(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleShortcuts,
+                          base::Unretained(this))));
+
+  AddChildView(BuildToggleRow(
+      u"Show titles",
+      model_->show_shortcut_titles(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleShortcutTitles,
+                          base::Unretained(this))));
+
+  AddChildView(BuildToggleRow(
+      u"Most visited",
+      model_->show_most_visited(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleMostVisited,
+                          base::Unretained(this))));
+
+  AddChildView(BuildSelectorRow(
+      u"Layout",
+      {u"Grid", u"List"},
+      static_cast<int>(model_->shortcut_layout_mode()),
+      base::BindRepeating(
+          &AstraNewTabCustomizeBubble::OnShortcutLayoutModeChanged,
+          base::Unretained(this))));
+
+  AddChildView(BuildSelectorRow(
+      u"Icon size",
+      {u"Small", u"Medium", u"Large"},
+      static_cast<int>(model_->shortcut_icon_size()),
+      base::BindRepeating(
+          &AstraNewTabCustomizeBubble::OnShortcutIconSizeChanged,
+          base::Unretained(this))));
+
+  AddChildView(BuildSliderRow(
+      u"Columns", AstraNewTabModel::kMinShortcutColumns,
+      AstraNewTabModel::kMaxShortcutColumns, model_->shortcut_columns(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnShortcutColumnsChanged,
+                          base::Unretained(this))));
+
+  // ---- Workspace section ----
+  auto ws_section = BuildSectionHeader(u"Workspaces");
+  auto* ws_ptr = ws_section.get();
+  AddChildView(std::move(ws_section));
+  sections_.push_back(ws_ptr);
+
+  AddChildView(BuildToggleRow(
+      u"Show workspace cards",
+      model_->show_workspace_cards(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleWorkspaces,
+                          base::Unretained(this))));
+
+  AddChildView(BuildSelectorRow(
+      u"Card style",
+      {u"Compact", u"Full", u"Grid"},
+      static_cast<int>(model_->workspace_card_style()),
+      base::BindRepeating(
+          &AstraNewTabCustomizeBubble::OnWorkspaceCardStyleChanged,
+          base::Unretained(this))));
+
+  // ---- Content section ----
+  auto content_section = BuildSectionHeader(u"Content");
+  auto* content_ptr = content_section.get();
+  AddChildView(std::move(content_section));
+  sections_.push_back(content_ptr);
+
+  AddChildView(BuildToggleRow(
+      u"Recently closed",
+      model_->show_recently_closed(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleRecentlyClosed,
+                          base::Unretained(this))));
+
+  AddChildView(BuildToggleRow(
+      u"Quick actions",
+      model_->show_quick_actions(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleQuickActions,
+                          base::Unretained(this))));
+
+  AddChildView(BuildToggleRow(
+      u"Suggested content",
+      model_->show_suggested_content(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleSuggestedContent,
+                          base::Unretained(this))));
+
+  AddChildView(BuildToggleRow(
+      u"Greeting",
+      model_->show_greeting(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleGreeting,
+                          base::Unretained(this))));
+
+  AddChildView(BuildToggleRow(
+      u"Search bar",
+      model_->show_search_bar(),
+      base::BindRepeating(&AstraNewTabCustomizeBubble::OnToggleSearchBar,
+                          base::Unretained(this))));
+}
+
+std::unique_ptr<views::View> AstraNewTabCustomizeBubble::BuildSectionHeader(
+    const std::u16string& title) {
+  auto header = std::make_unique<views::Label>(title);
+  header->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  header->SetAutoColorReadabilityEnabled(false);
+  header->SetEnabledColor(kHeaderTextColor);
+  header->SetFontList(header->font_list().Derive(
+      1, gfx::Font::NORMAL, gfx::Font::Weight::BOLD));
+  header->SetPreferredSize(gfx::Size(0, 24));
+  return header;
+}
+
+std::unique_ptr<views::View> AstraNewTabCustomizeBubble::BuildToggleRow(
+    const std::u16string& label,
+    bool initial_value,
+    base::RepeatingCallback<void(bool)> callback) {
+  auto row = std::make_unique<views::View>();
+  auto* row_layout = row->SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kHorizontal,
+      gfx::Insets::VH(8, 4),
+      /*between_child_spacing=*/8));
+  row_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  row_layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kSpaceBetween);
+
+  auto label_view = std::make_unique<views::Label>(label);
+  label_view->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  label_view->SetAutoColorReadabilityEnabled(false);
+  label_view->SetEnabledColor(kLabelTextColor);
+  label_view->SetFontList(label_view->font_list().Derive(
+      0, gfx::Font::NORMAL, gfx::Font::Weight::NORMAL));
+  row_layout->SetFlexForView(label_view.get(), 1);
+  row->AddChildView(std::move(label_view));
+
+  auto toggle = std::make_unique<ToggleSwitchView>(
+      initial_value, std::move(callback));
+  row->AddChildView(std::move(toggle));
+
+  return row;
+}
+
+std::unique_ptr<views::View> AstraNewTabCustomizeBubble::BuildSelectorRow(
+    const std::u16string& label,
+    const std::vector<std::u16string>& options,
+    int selected_index,
+    base::RepeatingCallback<void(int)> callback) {
+  auto row = std::make_unique<views::View>();
+  auto* row_layout = row->SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kHorizontal,
+      gfx::Insets::VH(8, 4),
+      /*between_child_spacing=*/8));
+  row_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  row_layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kSpaceBetween);
+
+  auto label_view = std::make_unique<views::Label>(label);
+  label_view->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  label_view->SetAutoColorReadabilityEnabled(false);
+  label_view->SetEnabledColor(kLabelTextColor);
+  label_view->SetFontList(label_view->font_list().Derive(
+      0, gfx::Font::NORMAL, gfx::Font::Weight::NORMAL));
+  row_layout->SetFlexForView(label_view.get(), 1);
+  row->AddChildView(std::move(label_view));
+
+  auto selector = std::make_unique<SelectorView>(
+      options, selected_index, std::move(callback));
+  row->AddChildView(std::move(selector));
+
+  return row;
+}
+
+std::unique_ptr<views::View> AstraNewTabCustomizeBubble::BuildSliderRow(
+    const std::u16string& label,
+    int min_value,
+    int max_value,
+    int current_value,
+    base::RepeatingCallback<void(int)> callback) {
+  // Simple slider using an integer text display (for testing).
+  // In production, this would use views::Slider.
+  auto row = std::make_unique<views::View>();
+  auto* row_layout = row->SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kHorizontal,
+      gfx::Insets::VH(8, 4),
+      /*between_child_spacing=*/8));
+  row_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  row_layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kSpaceBetween);
+
+  auto label_view = std::make_unique<views::Label>(label);
+  label_view->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  label_view->SetAutoColorReadabilityEnabled(false);
+  label_view->SetEnabledColor(kLabelTextColor);
+  row_layout->SetFlexForView(label_view.get(), 1);
+  row->AddChildView(std::move(label_view));
+
+  // Simple numeric display + buttons.
+  auto value_label = std::make_unique<views::Label>(
+      base::NumberToString16(current_value));
+  value_label->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  value_label->SetAutoColorReadabilityEnabled(false);
+  value_label->SetEnabledColor(kLabelTextColor);
+  value_label->SetPreferredSize(gfx::Size(32, 20));
+  row->AddChildView(std::move(value_label));
+
+  return row;
+}
+
+// =========================================================================
+// Widget callbacks
+// =========================================================================
+
+void AstraNewTabCustomizeBubble::OnWidgetDestroying(views::Widget* widget) {
+  views::BubbleDialogDelegateView::OnWidgetDestroying(widget);
+}
+
+// =========================================================================
+// Settings change handlers
+// =========================================================================
+
+void AstraNewTabCustomizeBubble::OnBackgroundStyleChanged(int index) {
+  model_->set_background_style(
+      static_cast<AstraNtpBackgroundStyle>(index));
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnShortcutColumnsChanged(int value) {
+  model_->set_shortcut_columns(value);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnShortcutLayoutModeChanged(int index) {
+  model_->set_shortcut_layout_mode(
+      static_cast<AstraNtpShortcutLayoutMode>(index));
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnShortcutIconSizeChanged(int index) {
+  model_->set_shortcut_icon_size(
+      static_cast<AstraNtpShortcutIconSize>(index));
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnWorkspaceCardStyleChanged(int index) {
+  model_->set_workspace_card_style(
+      static_cast<AstraNtpWorkspaceCardStyle>(index));
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnThemeModeChanged(int index) {
+  model_->set_theme_mode(static_cast<AstraNtpThemeMode>(index));
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnLayoutDensityChanged(int index) {
+  model_->set_layout_density(
+      static_cast<AstraNtpLayoutDensity>(index));
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnGreetingStyleChanged(int index) {
+  model_->set_greeting_style(
+      static_cast<AstraNtpGreetingStyle>(index));
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnClockFormatChanged(int index) {
+  model_->set_clock_format(static_cast<AstraNtpClockFormat>(index));
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnSearchBarStyleChanged(int index) {
+  model_->set_search_bar_style(
+      static_cast<AstraNtpSearchBarStyle>(index));
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleShortcuts(bool enabled) {
+  model_->set_show_shortcuts(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleWorkspaces(bool enabled) {
+  model_->set_show_workspace_cards(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleRecentlyClosed(bool enabled) {
+  model_->set_show_recently_closed(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleQuickActions(bool enabled) {
+  model_->set_show_quick_actions(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleGreeting(bool enabled) {
+  model_->set_show_greeting(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleSearchBar(bool enabled) {
+  model_->set_show_search_bar(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleSuggestedContent(bool enabled) {
+  model_->set_show_suggested_content(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleShortcutTitles(bool enabled) {
+  model_->set_show_shortcut_titles(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleSeconds(bool enabled) {
+  model_->set_show_seconds(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleDate(bool enabled) {
+  model_->set_show_date(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnToggleMostVisited(bool enabled) {
+  model_->set_show_most_visited(enabled);
+  if (delegate_) delegate_->OnCustomizeSettingsChanged();
+}
+
+void AstraNewTabCustomizeBubble::OnResetButtonPressed() {
+  if (model_) {
+    model_->ResetSettingsToDefaults();
+  }
+  if (delegate_) {
+    delegate_->OnCustomizeResetToDefaults();
+    delegate_->OnCustomizeSettingsChanged();
+  }
+}
+
+// =========================================================================
+// Public test helpers
+// =========================================================================
+
+void AstraNewTabCustomizeBubble::ResetToDefaults() {
+  if (model_) {
+    model_->ResetSettingsToDefaults();
+  }
+}
+
+void AstraNewTabCustomizeBubble::ToggleSetting(const std::string& setting_key) {
+  // Handle boolean settings by key (for testing).
+  if (setting_key == "show_shortcuts") {
+    OnToggleShortcuts(!model_->show_shortcuts());
+  } else if (setting_key == "show_workspaces") {
+    OnToggleWorkspaces(!model_->show_workspace_cards());
+  } else if (setting_key == "show_recently_closed") {
+    OnToggleRecentlyClosed(!model_->show_recently_closed());
+  } else if (setting_key == "show_quick_actions") {
+    OnToggleQuickActions(!model_->show_quick_actions());
+  } else if (setting_key == "show_greeting") {
+    OnToggleGreeting(!model_->show_greeting());
+  } else if (setting_key == "show_search_bar") {
+    OnToggleSearchBar(!model_->show_search_bar());
+  } else if (setting_key == "show_suggested_content") {
+    OnToggleSuggestedContent(!model_->show_suggested_content());
+  } else if (setting_key == "show_shortcut_titles") {
+    OnToggleShortcutTitles(!model_->show_shortcut_titles());
+  } else if (setting_key == "show_seconds") {
+    OnToggleSeconds(!model_->show_seconds());
+  } else if (setting_key == "show_date") {
+    OnToggleDate(!model_->show_date());
+  } else if (setting_key == "show_most_visited") {
+    OnToggleMostVisited(!model_->show_most_visited());
+  }
+}
+
+bool AstraNewTabCustomizeBubble::GetBooleanSetting(
+    const std::string& setting_key) const {
+  if (!model_) return false;
+  if (setting_key == "show_shortcuts") return model_->show_shortcuts();
+  if (setting_key == "show_workspaces") return model_->show_workspace_cards();
+  if (setting_key == "show_recently_closed") return model_->show_recently_closed();
+  if (setting_key == "show_quick_actions") return model_->show_quick_actions();
+  if (setting_key == "show_greeting") return model_->show_greeting();
+  if (setting_key == "show_search_bar") return model_->show_search_bar();
+  if (setting_key == "show_suggested_content")
+    return model_->show_suggested_content();
+  if (setting_key == "show_shortcut_titles")
+    return model_->show_shortcut_titles();
+  if (setting_key == "show_seconds") return model_->show_seconds();
+  if (setting_key == "show_date") return model_->show_date();
+  if (setting_key == "show_most_visited") return model_->show_most_visited();
+  return false;
+}
+
+int AstraNewTabCustomizeBubble::GetIntSetting(
+    const std::string& setting_key) const {
+  if (!model_) return 0;
+  if (setting_key == "shortcut_columns") return model_->shortcut_columns();
+  if (setting_key == "theme_mode") return static_cast<int>(model_->theme_mode());
+  if (setting_key == "layout_density")
+    return static_cast<int>(model_->layout_density());
+  if (setting_key == "greeting_style")
+    return static_cast<int>(model_->greeting_style());
+  if (setting_key == "clock_format")
+    return static_cast<int>(model_->clock_format());
+  if (setting_key == "shortcut_layout_mode")
+    return static_cast<int>(model_->shortcut_layout_mode());
+  if (setting_key == "shortcut_icon_size")
+    return static_cast<int>(model_->shortcut_icon_size());
+  if (setting_key == "workspace_card_style")
+    return static_cast<int>(model_->workspace_card_style());
+  if (setting_key == "background_style")
+    return static_cast<int>(model_->background_style());
+  return 0;
+}
+
 }  // namespace astra

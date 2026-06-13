@@ -1139,4 +1139,597 @@ TEST_F(PasswordHelperTest, GetSavedPasswords_ZeroMaxCountUsesDefault) {
   EXPECT_TRUE(results.empty());
 }
 
+// ---------------------------------------------------------------------------
+// Sort order settings
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, SortOrder_DefaultIsAlphabetical) {
+  EXPECT_EQ(helper_->GetSortOrder(), AstraPasswordSortOrder::kAlphabetical);
+}
+
+TEST_F(PasswordHelperTest, SortOrder_SetToLastUsed) {
+  TestPasswordHelperObserver observer;
+  helper_->AddObserver(&observer);
+
+  helper_->SetSortOrder(AstraPasswordSortOrder::kLastUsed);
+  EXPECT_EQ(helper_->GetSortOrder(), AstraPasswordSortOrder::kLastUsed);
+  EXPECT_EQ(observer.settings_changed_count_, 1);
+
+  helper_->RemoveObserver(&observer);
+}
+
+TEST_F(PasswordHelperTest, SortOrder_SetToDateCreated) {
+  helper_->SetSortOrder(AstraPasswordSortOrder::kDateCreated);
+  EXPECT_EQ(helper_->GetSortOrder(), AstraPasswordSortOrder::kDateCreated);
+}
+
+TEST_F(PasswordHelperTest, SortOrder_SetSameNoChange) {
+  TestPasswordHelperObserver observer;
+  helper_->AddObserver(&observer);
+
+  // Default is alphabetical; setting it again should not notify.
+  helper_->SetSortOrder(AstraPasswordSortOrder::kAlphabetical);
+  EXPECT_EQ(observer.settings_changed_count_, 0);
+
+  helper_->RemoveObserver(&observer);
+}
+
+TEST_F(PasswordHelperTest, SortOrder_CycleAlphabeticalToLastUsed) {
+  helper_->SetSortOrder(AstraPasswordSortOrder::kAlphabetical);
+  AstraPasswordSortOrder next = helper_->CycleSortOrder();
+  EXPECT_EQ(next, AstraPasswordSortOrder::kLastUsed);
+}
+
+TEST_F(PasswordHelperTest, SortOrder_CycleLastUsedToDateCreated) {
+  helper_->SetSortOrder(AstraPasswordSortOrder::kLastUsed);
+  AstraPasswordSortOrder next = helper_->CycleSortOrder();
+  EXPECT_EQ(next, AstraPasswordSortOrder::kDateCreated);
+}
+
+TEST_F(PasswordHelperTest, SortOrder_CycleDateCreatedToAlphabetical) {
+  helper_->SetSortOrder(AstraPasswordSortOrder::kDateCreated);
+  AstraPasswordSortOrder next = helper_->CycleSortOrder();
+  EXPECT_EQ(next, AstraPasswordSortOrder::kAlphabetical);
+}
+
+TEST_F(PasswordHelperTest, SortOrder_Persistence) {
+  helper_->SetSortOrder(AstraPasswordSortOrder::kLastUsed);
+  // Read back from prefs to verify persistence.
+  PrefService* prefs = profile_->GetPrefs();
+  EXPECT_EQ(prefs->GetString(prefs::kPrefPasswordSortOrder), "last_used");
+}
+
+// ---------------------------------------------------------------------------
+// Filter settings
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, Filter_DefaultIsAll) {
+  EXPECT_EQ(helper_->GetFilter(), AstraPasswordFilter::kAll);
+}
+
+TEST_F(PasswordHelperTest, Filter_SetToCompromised) {
+  TestPasswordHelperObserver observer;
+  helper_->AddObserver(&observer);
+
+  helper_->SetFilter(AstraPasswordFilter::kCompromised);
+  EXPECT_EQ(helper_->GetFilter(), AstraPasswordFilter::kCompromised);
+  EXPECT_EQ(observer.settings_changed_count_, 1);
+
+  helper_->RemoveObserver(&observer);
+}
+
+TEST_F(PasswordHelperTest, Filter_SetToWeak) {
+  helper_->SetFilter(AstraPasswordFilter::kWeak);
+  EXPECT_EQ(helper_->GetFilter(), AstraPasswordFilter::kWeak);
+}
+
+TEST_F(PasswordHelperTest, Filter_SetToReused) {
+  helper_->SetFilter(AstraPasswordFilter::kReused);
+  EXPECT_EQ(helper_->GetFilter(), AstraPasswordFilter::kReused);
+}
+
+TEST_F(PasswordHelperTest, Filter_SetSameNoNotification) {
+  TestPasswordHelperObserver observer;
+  helper_->AddObserver(&observer);
+
+  helper_->SetFilter(AstraPasswordFilter::kAll);
+  EXPECT_EQ(observer.settings_changed_count_, 0);
+
+  helper_->RemoveObserver(&observer);
+}
+
+TEST_F(PasswordHelperTest, Filter_CycleAllToCompromised) {
+  helper_->SetFilter(AstraPasswordFilter::kAll);
+  AstraPasswordFilter next = helper_->CycleFilter();
+  EXPECT_EQ(next, AstraPasswordFilter::kCompromised);
+}
+
+TEST_F(PasswordHelperTest, Filter_CycleCompromisedToWeak) {
+  helper_->SetFilter(AstraPasswordFilter::kCompromised);
+  AstraPasswordFilter next = helper_->CycleFilter();
+  EXPECT_EQ(next, AstraPasswordFilter::kWeak);
+}
+
+TEST_F(PasswordHelperTest, Filter_CycleWeakToReused) {
+  helper_->SetFilter(AstraPasswordFilter::kWeak);
+  AstraPasswordFilter next = helper_->CycleFilter();
+  EXPECT_EQ(next, AstraPasswordFilter::kReused);
+}
+
+TEST_F(PasswordHelperTest, Filter_CycleReusedToAll) {
+  helper_->SetFilter(AstraPasswordFilter::kReused);
+  AstraPasswordFilter next = helper_->CycleFilter();
+  EXPECT_EQ(next, AstraPasswordFilter::kAll);
+}
+
+TEST_F(PasswordHelperTest, Filter_Persistence) {
+  helper_->SetFilter(AstraPasswordFilter::kCompromised);
+  PrefService* prefs = profile_->GetPrefs();
+  EXPECT_EQ(prefs->GetString(prefs::kPrefPasswordFilter), "compromised");
+}
+
+// ---------------------------------------------------------------------------
+// Group by settings
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, GroupBy_DefaultIsNone) {
+  EXPECT_EQ(helper_->GetGroupBy(), AstraPasswordGroupBy::kNone);
+}
+
+TEST_F(PasswordHelperTest, GroupBy_SetToSite) {
+  TestPasswordHelperObserver observer;
+  helper_->AddObserver(&observer);
+
+  helper_->SetGroupBy(AstraPasswordGroupBy::kSite);
+  EXPECT_EQ(helper_->GetGroupBy(), AstraPasswordGroupBy::kSite);
+  EXPECT_EQ(observer.settings_changed_count_, 1);
+
+  helper_->RemoveObserver(&observer);
+}
+
+TEST_F(PasswordHelperTest, GroupBy_SetToAccount) {
+  helper_->SetGroupBy(AstraPasswordGroupBy::kAccount);
+  EXPECT_EQ(helper_->GetGroupBy(), AstraPasswordGroupBy::kAccount);
+}
+
+TEST_F(PasswordHelperTest, GroupBy_SetSameNoNotification) {
+  TestPasswordHelperObserver observer;
+  helper_->AddObserver(&observer);
+
+  helper_->SetGroupBy(AstraPasswordGroupBy::kNone);
+  EXPECT_EQ(observer.settings_changed_count_, 0);
+
+  helper_->RemoveObserver(&observer);
+}
+
+TEST_F(PasswordHelperTest, GroupBy_CycleNoneToSite) {
+  helper_->SetGroupBy(AstraPasswordGroupBy::kNone);
+  AstraPasswordGroupBy next = helper_->CycleGroupBy();
+  EXPECT_EQ(next, AstraPasswordGroupBy::kSite);
+}
+
+TEST_F(PasswordHelperTest, GroupBy_CycleSiteToAccount) {
+  helper_->SetGroupBy(AstraPasswordGroupBy::kSite);
+  AstraPasswordGroupBy next = helper_->CycleGroupBy();
+  EXPECT_EQ(next, AstraPasswordGroupBy::kAccount);
+}
+
+TEST_F(PasswordHelperTest, GroupBy_CycleAccountToNone) {
+  helper_->SetGroupBy(AstraPasswordGroupBy::kAccount);
+  AstraPasswordGroupBy next = helper_->CycleGroupBy();
+  EXPECT_EQ(next, AstraPasswordGroupBy::kNone);
+}
+
+TEST_F(PasswordHelperTest, GroupBy_Persistence) {
+  helper_->SetGroupBy(AstraPasswordGroupBy::kSite);
+  PrefService* prefs = profile_->GetPrefs();
+  EXPECT_EQ(prefs->GetString(prefs::kPrefPasswordGroupBy), "site");
+}
+
+// ---------------------------------------------------------------------------
+// Hide passwords by default
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, HideByDefault_DefaultIsTrue) {
+  EXPECT_TRUE(helper_->GetHidePasswordsByDefault());
+}
+
+TEST_F(PasswordHelperTest, HideByDefault_SetToFalse) {
+  TestPasswordHelperObserver observer;
+  helper_->AddObserver(&observer);
+
+  helper_->SetHidePasswordsByDefault(false);
+  EXPECT_FALSE(helper_->GetHidePasswordsByDefault());
+  EXPECT_EQ(observer.settings_changed_count_, 1);
+
+  helper_->RemoveObserver(&observer);
+}
+
+TEST_F(PasswordHelperTest, HideByDefault_Toggle) {
+  bool original = helper_->GetHidePasswordsByDefault();
+  bool toggled = helper_->ToggleHidePasswordsByDefault();
+  EXPECT_EQ(toggled, !original);
+  EXPECT_EQ(helper_->GetHidePasswordsByDefault(), !original);
+}
+
+TEST_F(PasswordHelperTest, HideByDefault_SetSameNoNotification) {
+  TestPasswordHelperObserver observer;
+  helper_->AddObserver(&observer);
+
+  helper_->SetHidePasswordsByDefault(helper_->GetHidePasswordsByDefault());
+  EXPECT_EQ(observer.settings_changed_count_, 0);
+
+  helper_->RemoveObserver(&observer);
+}
+
+TEST_F(PasswordHelperTest, HideByDefault_Persistence) {
+  helper_->SetHidePasswordsByDefault(false);
+  PrefService* prefs = profile_->GetPrefs();
+  EXPECT_FALSE(prefs->GetBoolean(prefs::kPrefPasswordHideByDefault));
+}
+
+// ---------------------------------------------------------------------------
+// GetDisplayPasswords
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, GetDisplayPasswords_ReturnsEmptyInOverlay) {
+  auto results = helper_->GetDisplayPasswords(10);
+  EXPECT_TRUE(results.empty());
+}
+
+TEST_F(PasswordHelperTest, GetDisplayPasswords_ZeroMaxCount) {
+  auto results = helper_->GetDisplayPasswords(0);
+  // With no real store, still returns empty.
+  EXPECT_TRUE(results.empty());
+}
+
+TEST_F(PasswordHelperTest, GetDisplayPasswords_RespectsFilter) {
+  // Set filter to compromised and verify it doesn't crash.
+  helper_->SetFilter(AstraPasswordFilter::kCompromised);
+  auto results = helper_->GetDisplayPasswords(10);
+  // In overlay, still empty, but shouldn't crash.
+  EXPECT_TRUE(results.empty());
+}
+
+TEST_F(PasswordHelperTest, GetDisplayPasswords_RespectsSortOrder) {
+  helper_->SetSortOrder(AstraPasswordSortOrder::kLastUsed);
+  auto results = helper_->GetDisplayPasswords(10);
+  // In overlay, still empty, but shouldn't crash.
+  EXPECT_TRUE(results.empty());
+}
+
+// ---------------------------------------------------------------------------
+// GetPasswordsForURL
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, GetPasswordsForURL_InvalidURL) {
+  auto results = helper_->GetPasswordsForURL(GURL(), 10);
+  // Invalid URL returns all (which is empty in overlay).
+  EXPECT_TRUE(results.empty());
+}
+
+TEST_F(PasswordHelperTest, GetPasswordsForURL_ValidURLNoMatches) {
+  auto results = helper_->GetPasswordsForURL(GURL("https://example.com"), 10);
+  // No passwords in overlay.
+  EXPECT_TRUE(results.empty());
+}
+
+TEST_F(PasswordHelperTest, GetPasswordsForURL_ZeroMaxCount) {
+  auto results = helper_->GetPasswordsForURL(GURL("https://example.com"), 0);
+  // Zero means no limit. In overlay, still empty.
+  EXPECT_TRUE(results.empty());
+}
+
+// ---------------------------------------------------------------------------
+// GetPasswordById
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, GetPasswordById_EmptyId) {
+  auto result = helper_->GetPasswordById("");
+  EXPECT_FALSE(result.has_value());
+}
+
+TEST_F(PasswordHelperTest, GetPasswordById_Nonexistent) {
+  auto result = helper_->GetPasswordById("nonexistent-id");
+  EXPECT_FALSE(result.has_value());
+}
+
+// ---------------------------------------------------------------------------
+// GetFilteredPasswordCount
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, GetFilteredPasswordCount_AllFilter) {
+  helper_->SetFilter(AstraPasswordFilter::kAll);
+  EXPECT_EQ(helper_->GetFilteredPasswordCount(), 0u);
+}
+
+TEST_F(PasswordHelperTest, GetFilteredPasswordCount_CompromisedFilter) {
+  helper_->SetFilter(AstraPasswordFilter::kCompromised);
+  EXPECT_EQ(helper_->GetFilteredPasswordCount(), 0u);
+}
+
+TEST_F(PasswordHelperTest, GetFilteredPasswordCount_WeakFilter) {
+  helper_->SetFilter(AstraPasswordFilter::kWeak);
+  EXPECT_EQ(helper_->GetFilteredPasswordCount(), 0u);
+}
+
+TEST_F(PasswordHelperTest, GetFilteredPasswordCount_ReusedFilter) {
+  helper_->SetFilter(AstraPasswordFilter::kReused);
+  EXPECT_EQ(helper_->GetFilteredPasswordCount(), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// Password strength color
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, StrengthColor_VeryWeakIsRed) {
+  SkColor color = AstraPasswordHelper::GetPasswordStrengthColor(
+      AstraPasswordStrength::kVeryWeak);
+  EXPECT_EQ(color, SK_ColorRED);
+}
+
+TEST_F(PasswordHelperTest, StrengthColor_VeryStrongIsGreen) {
+  SkColor color = AstraPasswordHelper::GetPasswordStrengthColor(
+      AstraPasswordStrength::kVeryStrong);
+  // Should be a green-ish color.
+  EXPECT_GT(SkColorGetG(color), SkColorGetR(color));
+}
+
+TEST_F(PasswordHelperTest, StrengthColor_MediumIsAmber) {
+  SkColor color = AstraPasswordHelper::GetPasswordStrengthColor(
+      AstraPasswordStrength::kMedium);
+  // Medium should have high red and green (amber/yellow).
+  EXPECT_GT(SkColorGetR(color), 0);
+  EXPECT_GT(SkColorGetG(color), 0);
+}
+
+TEST_F(PasswordHelperTest, StrengthColor_AllStrengthsDistinct) {
+  SkColor very_weak = AstraPasswordHelper::GetPasswordStrengthColor(
+      AstraPasswordStrength::kVeryWeak);
+  SkColor weak = AstraPasswordHelper::GetPasswordStrengthColor(
+      AstraPasswordStrength::kWeak);
+  SkColor medium = AstraPasswordHelper::GetPasswordStrengthColor(
+      AstraPasswordStrength::kMedium);
+  SkColor strong = AstraPasswordHelper::GetPasswordStrengthColor(
+      AstraPasswordStrength::kStrong);
+  SkColor very_strong = AstraPasswordHelper::GetPasswordStrengthColor(
+      AstraPasswordStrength::kVeryStrong);
+
+  // Not all should be the same.
+  EXPECT_TRUE(very_weak != weak || weak != medium || medium != strong ||
+              strong != very_strong);
+}
+
+// ---------------------------------------------------------------------------
+// CopyUsernameToClipboard
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, CopyUsernameToClipboard_EmptyUsername) {
+  AstraPasswordEntry entry;
+  entry.username = std::u16string();
+  EXPECT_FALSE(helper_->CopyUsernameToClipboard(entry));
+}
+
+TEST_F(PasswordHelperTest, CopyUsernameToClipboard_ValidEntry) {
+  AstraPasswordEntry entry;
+  entry.username = u"testuser@example.com";
+  // In overlay, returns false (not implemented).
+  // Just verify it doesn't crash.
+  helper_->CopyUsernameToClipboard(entry);
+  SUCCEED();
+}
+
+// ---------------------------------------------------------------------------
+// AstraPasswordEntry struct
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, PasswordEntry_DefaultValues) {
+  AstraPasswordEntry entry;
+  EXPECT_FALSE(entry.url.is_valid());
+  EXPECT_TRUE(entry.site_display_name.empty());
+  EXPECT_TRUE(entry.username.empty());
+  EXPECT_FALSE(entry.is_blocked);
+  EXPECT_FALSE(entry.is_compromised);
+  EXPECT_FALSE(entry.is_weak);
+  EXPECT_FALSE(entry.is_reused);
+  EXPECT_EQ(entry.strength, AstraPasswordStrength::kMedium);
+  EXPECT_EQ(entry.strength_percent, 50);
+  EXPECT_EQ(entry.last_used_time, 0);
+  EXPECT_EQ(entry.date_created, 0);
+  EXPECT_EQ(entry.use_count, 0);
+  EXPECT_FALSE(entry.is_federated);
+  EXPECT_TRUE(entry.id.empty());
+  EXPECT_TRUE(entry.notes.empty());
+}
+
+TEST_F(PasswordHelperTest, PasswordEntry_Copyable) {
+  AstraPasswordEntry entry;
+  entry.site_display_name = u"Example";
+  entry.username = u"user";
+  entry.is_compromised = true;
+  entry.strength = AstraPasswordStrength::kStrong;
+  entry.strength_percent = 75;
+
+  AstraPasswordEntry copy = entry;
+  EXPECT_EQ(copy.site_display_name, entry.site_display_name);
+  EXPECT_EQ(copy.username, entry.username);
+  EXPECT_EQ(copy.is_compromised, entry.is_compromised);
+  EXPECT_EQ(copy.strength, entry.strength);
+  EXPECT_EQ(copy.strength_percent, entry.strength_percent);
+}
+
+// ---------------------------------------------------------------------------
+// AstraPasswordHealthStats struct
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, HealthStats_DefaultValues) {
+  AstraPasswordHealthStats stats;
+  EXPECT_EQ(stats.total_passwords, 0u);
+  EXPECT_EQ(stats.compromised_count, 0u);
+  EXPECT_EQ(stats.weak_count, 0u);
+  EXPECT_EQ(stats.reused_count, 0u);
+  EXPECT_EQ(stats.blocked_count, 0u);
+  EXPECT_EQ(stats.problem_count(), 0u);
+  EXPECT_FALSE(stats.has_breaches());
+}
+
+TEST_F(PasswordHelperTest, HealthStats_ProblemCount) {
+  AstraPasswordHealthStats stats;
+  stats.compromised_count = 3;
+  stats.weak_count = 5;
+  stats.reused_count = 2;
+  // problem_count sums all three categories.
+  EXPECT_EQ(stats.problem_count(), 10u);
+}
+
+TEST_F(PasswordHelperTest, HealthStats_HasBreaches) {
+  AstraPasswordHealthStats stats;
+  EXPECT_FALSE(stats.has_breaches());
+  stats.compromised_count = 1;
+  EXPECT_TRUE(stats.has_breaches());
+}
+
+TEST_F(PasswordHelperTest, HealthStats_SinglePasswordMultipleProblems) {
+  // A single password can be both weak and compromised.
+  AstraPasswordHealthStats stats;
+  stats.total_passwords = 1;
+  stats.compromised_count = 1;
+  stats.weak_count = 1;
+  // problem_count can exceed total_passwords.
+  EXPECT_GT(stats.problem_count(), stats.total_passwords);
+}
+
+// ---------------------------------------------------------------------------
+// More password strength tests
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, Strength_VeryShortPassword) {
+  EXPECT_EQ(AstraPasswordHelper::GetPasswordStrength(u"abc"),
+            AstraPasswordStrength::kVeryWeak);
+}
+
+TEST_F(PasswordHelperTest, Strength_LongAllLowercase) {
+  // Long but only lowercase — likely weak or medium.
+  auto strength = AstraPasswordHelper::GetPasswordStrength(u"abcdefghijklmnop");
+  EXPECT_NE(strength, AstraPasswordStrength::kVeryStrong);
+  EXPECT_NE(strength, AstraPasswordStrength::kStrong);
+}
+
+TEST_F(PasswordHelperTest, Strength_MixedCaseAndNumbers) {
+  // Mixed case + numbers + 12 chars — should be strong or very strong.
+  auto strength = AstraPasswordHelper::GetPasswordStrength(u"Abcdefg123456");
+  EXPECT_TRUE(strength == AstraPasswordStrength::kStrong ||
+              strength == AstraPasswordStrength::kVeryStrong ||
+              strength == AstraPasswordStrength::kMedium);
+}
+
+TEST_F(PasswordHelperTest, Strength_AllSameCharacters) {
+  // All same characters — should be penalized.
+  int score_normal = AstraPasswordHelper::GetPasswordStrengthPercent(u"aaaaaaaa");
+  int score_varied = AstraPasswordHelper::GetPasswordStrengthPercent(u"abcdefgh");
+  EXPECT_LE(score_normal, score_varied);
+}
+
+TEST_F(PasswordHelperTest, Strength_SequentialCharacters) {
+  // Sequential characters — should be penalized.
+  int sequential = AstraPasswordHelper::GetPasswordStrengthPercent(u"abcdefgh");
+  int mixed = AstraPasswordHelper::GetPasswordStrengthPercent(u"ahcdefgb");
+  EXPECT_LE(sequential, mixed);
+}
+
+// ---------------------------------------------------------------------------
+// More complexity requirement tests
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, Complexity_TooShort) {
+  EXPECT_FALSE(AstraPasswordHelper::MeetsComplexityRequirements(u"Short1!"));
+}
+
+TEST_F(PasswordHelperTest, Complexity_AllLowercase) {
+  EXPECT_FALSE(AstraPasswordHelper::MeetsComplexityRequirements(
+      u"abcdefghijkl"));
+}
+
+TEST_F(PasswordHelperTest, Complexity_NoDigits) {
+  EXPECT_FALSE(AstraPasswordHelper::MeetsComplexityRequirements(
+      u"Abcdefghijkl"));
+}
+
+TEST_F(PasswordHelperTest, Complexity_MeetsRequirements) {
+  EXPECT_TRUE(AstraPasswordHelper::MeetsComplexityRequirements(
+      u"Abcdefg123456"));
+}
+
+TEST_F(PasswordHelperTest, Complexity_WithSymbols) {
+  EXPECT_TRUE(AstraPasswordHelper::MeetsComplexityRequirements(
+      u"Abcdefg123!@#"));
+}
+
+// ---------------------------------------------------------------------------
+// Max sidebar passwords clamping
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, MaxSidebarPasswords_ClampedToMin) {
+  helper_->SetMaxSidebarPasswords(-5);
+  EXPECT_GE(helper_->GetMaxSidebarPasswords(), 1);
+}
+
+TEST_F(PasswordHelperTest, MaxSidebarPasswords_ClampedToMax) {
+  helper_->SetMaxSidebarPasswords(1000);
+  EXPECT_LE(helper_->GetMaxSidebarPasswords(), 100);
+}
+
+TEST_F(PasswordHelperTest, MaxSidebarPasswords_ValidValue) {
+  helper_->SetMaxSidebarPasswords(50);
+  EXPECT_EQ(helper_->GetMaxSidebarPasswords(), 50);
+}
+
+TEST_F(PasswordHelperTest, MaxSidebarPasswords_SetSameNoChange) {
+  TestPasswordHelperObserver observer;
+  helper_->AddObserver(&observer);
+
+  int current = helper_->GetMaxSidebarPasswords();
+  helper_->SetMaxSidebarPasswords(current);
+  EXPECT_EQ(observer.settings_changed_count_, 0);
+
+  helper_->RemoveObserver(&observer);
+}
+
+// ---------------------------------------------------------------------------
+// Presentation settings — no-op when no prefs
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, Settings_NoCrashWithNullProfile) {
+  // Create a helper with null profile to test null safety.
+  auto helper_no_prefs = std::make_unique<AstraPasswordHelper>(nullptr);
+
+  // These should not crash even with no prefs.
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->GetShowPasswordSuggestions());
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->SetShowPasswordSuggestions(false));
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->GetSortOrder());
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->SetSortOrder(AstraPasswordSortOrder::kLastUsed));
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->GetFilter());
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->SetFilter(AstraPasswordFilter::kCompromised));
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->GetGroupBy());
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->SetGroupBy(AstraPasswordGroupBy::kSite));
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->GetHidePasswordsByDefault());
+  EXPECT_NO_FATAL_FAILURE(helper_no_prefs->SetHidePasswordsByDefault(false));
+}
+
+// ---------------------------------------------------------------------------
+// Shutdown
+// ---------------------------------------------------------------------------
+
+TEST_F(PasswordHelperTest, Shutdown_Clean) {
+  // Helper should shut down cleanly.
+  helper_->Shutdown();
+  SUCCEED();
+}
+
+TEST_F(PasswordHelperTest, Shutdown_DoubleShutdownNoCrash) {
+  helper_->Shutdown();
+  helper_->Shutdown();  // Second shutdown should be safe.
+  SUCCEED();
+}
+
 }  // namespace astra

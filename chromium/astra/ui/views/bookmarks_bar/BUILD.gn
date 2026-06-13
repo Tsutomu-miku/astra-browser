@@ -1,0 +1,42 @@
+# Copyright 2025 The Astra Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/config/ui/views/views.gni")
+
+component("astra_bookmarks_bar_views") {
+  sources = [
+    "astra_bookmarks_bar_item_view.cc",
+    "astra_bookmarks_bar_item_view.h",
+    "astra_bookmarks_bar_model.cc",
+    "astra_bookmarks_bar_model.h",
+    "astra_bookmarks_bar_view.cc",
+    "astra_bookmarks_bar_view.h",
+  ]
+
+  defines = [ "ASTRA_BOOKMARKS_BAR_VIEWS_IMPLEMENTATION" ]
+
+  deps = [
+    "//astra/browser",
+    "//base",
+    "//skia",
+    "//ui/base",
+    "//ui/gfx",
+    "//ui/views",
+  ]
+}
+
+source_set("unit_tests") {
+  testonly = true
+
+  sources = [
+    # TODO(astra): Add unit tests for bookmarks bar views.
+  ]
+
+  deps = [
+    ":astra_bookmarks_bar_views",
+    "//base",
+    "//testing/gtest",
+    "//ui/views",
+  ]
+}

@@ -140,6 +140,15 @@ class AstraProfileMenuHeaderView : public views::View {
   void SetNotificationBadgeVisible(bool visible);
   bool notification_badge_visible() const { return notification_badge_visible_; }
 
+  // -- Workspace badge ----------------------------------------------------
+
+  // Sets whether the workspace badge (color dot with name) is shown.
+  void SetWorkspaceBadgeVisible(bool visible);
+  bool workspace_badge_visible() const { return workspace_badge_visible_; }
+
+  // Sets the workspace badge text and color.
+  void SetWorkspaceBadge(const std::u16string& name, SkColor color);
+
   // -- Avatar visibility --------------------------------------------------
 
   // Sets whether the avatar is shown.
@@ -177,6 +186,9 @@ class AstraProfileMenuHeaderView : public views::View {
   // Updates all text colors from the color provider.
   void UpdateTextColors();
 
+  // Updates the workspace badge visuals.
+  void UpdateWorkspaceBadge();
+
   // Returns a human-readable sync status label for accessibility/tooltip.
   std::u16string GetSyncStatusLabel() const;
 
@@ -188,6 +200,9 @@ class AstraProfileMenuHeaderView : public views::View {
   raw_ptr<views::Label> avatar_initials_label_ = nullptr;
   raw_ptr<views::View> notification_badge_ = nullptr;
   raw_ptr<views::Label> notification_badge_label_ = nullptr;
+  raw_ptr<views::View> workspace_badge_ = nullptr;
+  raw_ptr<views::View> workspace_badge_dot_ = nullptr;
+  raw_ptr<views::Label> workspace_badge_label_ = nullptr;
 
   raw_ptr<views::View> text_container_ = nullptr;
   raw_ptr<views::Label> name_label_ = nullptr;
@@ -210,6 +225,11 @@ class AstraProfileMenuHeaderView : public views::View {
   // Notification badge state.
   int notification_count_ = 0;
   bool notification_badge_visible_ = false;
+
+  // Workspace badge state.
+  bool workspace_badge_visible_ = false;
+  std::u16string workspace_badge_name_;
+  SkColor workspace_badge_color_ = SK_ColorBLUE;
 
   // Avatar visibility.
   bool avatar_visible_ = true;

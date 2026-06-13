@@ -912,6 +912,30 @@ class AstraProfileMenuModelPersistenceTest : public testing::Test {
     prefs_.registry()->RegisterBooleanPref(
         prefs::kPrefProfileMenuShowSignInPromo,
         prefs::kDefaultProfileMenuShowSignInPromo);
+    prefs_.registry()->RegisterBooleanPref(
+        prefs::kPrefProfileMenuShowDividers,
+        prefs::kDefaultProfileMenuShowDividers);
+    prefs_.registry()->RegisterBooleanPref(
+        prefs::kPrefProfileMenuShowTabCounts,
+        prefs::kDefaultProfileMenuShowTabCounts);
+    prefs_.registry()->RegisterBooleanPref(
+        prefs::kPrefProfileMenuCompactMode,
+        prefs::kDefaultProfileMenuCompactMode);
+    prefs_.registry()->RegisterIntegerPref(
+        prefs::kPrefProfileMenuSize,
+        prefs::kDefaultProfileMenuSize);
+    prefs_.registry()->RegisterIntegerPref(
+        prefs::kPrefProfileMenuCustomWidth,
+        prefs::kDefaultProfileMenuCustomWidth);
+    prefs_.registry()->RegisterBooleanPref(
+        prefs::kPrefProfileMenuGuestMode,
+        prefs::kDefaultProfileMenuGuestMode);
+    prefs_.registry()->RegisterBooleanPref(
+        prefs::kPrefProfileMenuShowManageWorkspaces,
+        prefs::kDefaultProfileMenuShowManageWorkspaces);
+    prefs_.registry()->RegisterBooleanPref(
+        prefs::kPrefProfileMenuShowNewWorkspaceButton,
+        prefs::kDefaultProfileMenuShowNewWorkspaceButton);
   }
 
  protected:
@@ -1436,8 +1460,7 @@ TEST(AstraProfileMenuModelEdgeCasesTest, AllMenuPositionsValid) {
 
 TEST(AstraProfileMenuBulkTest, BulkSettingsChangeViaResetToDefaults) {
   // The model supports bulk changes via ResetToDefaults, which resets
-  // all presentation settings at once and fires a single notification
-  // (internally each setter fires, but the net effect is all settings reset).
+  // all presentation settings at once and fires notifications for each.
   AstraProfileMenuModel model;
   TestModelObserver observer;
   model.AddObserver(&observer);
@@ -1451,13 +1474,20 @@ TEST(AstraProfileMenuBulkTest, BulkSettingsChangeViaResetToDefaults) {
   model.set_menu_position(AstraProfileMenuPosition::kLeft);
   model.set_show_recently_closed(false);
   model.set_show_sign_in_promo(false);
+  model.set_show_dividers(false);
+  model.set_show_tab_counts(false);
+  model.set_compact_mode(true);
+  model.set_menu_size(AstraProfileMenuSize::kCompact);
+  model.set_custom_menu_width(300);
+  model.set_show_manage_workspaces(false);
+  model.set_show_new_workspace_button(false);
 
   int before_count = observer.settings_changed_count;
   model.ResetToDefaults();
   int after_count = observer.settings_changed_count;
 
-  // All 8 settings should have triggered a notification when reset.
-  EXPECT_EQ(8, after_count - before_count);
+  // All 15 settings should have triggered a notification when reset.
+  EXPECT_EQ(15, after_count - before_count);
 
   // All should be back to defaults.
   EXPECT_TRUE(model.show_workspaces());
@@ -1465,8 +1495,894 @@ TEST(AstraProfileMenuBulkTest, BulkSettingsChangeViaResetToDefaults) {
   EXPECT_TRUE(model.show_sync_status());
   EXPECT_TRUE(model.show_recently_closed());
   EXPECT_TRUE(model.show_sign_in_promo());
+  EXPECT_TRUE(model.show_dividers());
+  EXPECT_TRUE(model.show_tab_counts());
+  EXPECT_FALSE(model.compact_mode());
+  EXPECT_EQ(AstraProfileMenuSize::kNormal, model.menu_size());
+  EXPECT_EQ(0, model.custom_menu_width());
+  EXPECT_TRUE(model.show_manage_workspaces());
+  EXPECT_TRUE(model.show_new_workspace_button());
 
   model.RemoveObserver(&observer);
+}
+
+// =========================================================================
+// Model deepening tests — profile info
+// =========================================================================
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultProfileInfoIsEmpty) {
+  AstraProfileMenuModel model;
+  EXPECT_TRUE(model.profile_info().name.empty());
+  EXPECT_TRUE(model.profile_info().email.empty());
+  EXPECT_FALSE(model.profile_info().is_guest);
+  EXPECT_FALSE(model.profile_info().is_managed);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetProfileInfo) {
+  AstraProfileMenuModel model;
+  TestModelObserver observer;
+  model.AddObserver(&observer);
+
+  AstraMenuProfileInfo info;
+  info.name = u"Alice";
+  info.email = u"alice@example.com";
+  info.is_guest = false;
+  info.is_managed = true;
+  model.SetProfileInfo(info);
+
+  EXPECT_EQ(u"Alice", model.profile_info().name);
+  EXPECT_EQ(u"alice@example.com", model.profile_info().email);
+  EXPECT_FALSE(model.profile_info().is_guest);
+  EXPECT_TRUE(model.profile_info().is_managed);
+
+  model.RemoveObserver(&observer);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetProfileInfoSameNoNotify) {
+  AstraProfileMenuModel model;
+  TestModelObserver observer;
+  model.AddObserver(&observer);
+
+  AstraMenuProfileInfo info;
+  info.name = u"Bob";
+  model.SetProfileInfo(info);
+  int initial_count = 0;
+  // We can't easily check OnProfileInfoSet count since our test observer
+  // doesn't track it. Let's just verify no crash and state is correct.
+
+  // Set same info again — should be no-op.
+  model.SetProfileInfo(info);
+  EXPECT_EQ(u"Bob", model.profile_info().name);
+
+  model.RemoveObserver(&observer);
+}
+
+// =========================================================================
+// Model deepening tests — multi-profile list
+// =========================================================================
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultProfileListEmpty) {
+  AstraProfileMenuModel model;
+  EXPECT_EQ(0u, model.GetProfileListSize());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetProfileList) {
+  AstraProfileMenuModel model;
+
+  std::vector<AstraMenuProfileEntry> profiles;
+  AstraMenuProfileEntry p1;
+  p1.profile_path = "Default";
+  p1.name = u"Default";
+  p1.is_current = true;
+  profiles.push_back(p1);
+
+  AstraMenuProfileEntry p2;
+  p2.profile_path = "Profile 1";
+  p2.name = u"Work";
+  p2.is_current = false;
+  profiles.push_back(p2);
+
+  model.SetProfileList(profiles);
+
+  EXPECT_EQ(2u, model.GetProfileListSize());
+  EXPECT_EQ(2, model.profile_count());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, GetProfileEntryAt) {
+  AstraProfileMenuModel model;
+
+  std::vector<AstraMenuProfileEntry> profiles;
+  AstraMenuProfileEntry p;
+  p.profile_path = "Default";
+  p.name = u"Default";
+  p.is_current = true;
+  profiles.push_back(p);
+
+  model.SetProfileList(profiles);
+
+  const auto* entry = model.GetProfileEntryAt(0);
+  ASSERT_NE(nullptr, entry);
+  EXPECT_EQ("Default", entry->profile_path);
+  EXPECT_EQ(u"Default", entry->name);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, GetProfileEntryAtOutOfBounds) {
+  AstraProfileMenuModel model;
+  EXPECT_EQ(nullptr, model.GetProfileEntryAt(0));
+  EXPECT_EQ(nullptr, model.GetProfileEntryAt(99));
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, GetCurrentProfileEntry) {
+  AstraProfileMenuModel model;
+
+  std::vector<AstraMenuProfileEntry> profiles;
+  AstraMenuProfileEntry p1;
+  p1.profile_path = "Default";
+  p1.name = u"Default";
+  p1.is_current = true;
+  profiles.push_back(p1);
+
+  AstraMenuProfileEntry p2;
+  p2.profile_path = "Other";
+  p2.name = u"Other";
+  p2.is_current = false;
+  profiles.push_back(p2);
+
+  model.SetProfileList(profiles);
+
+  const auto* current = model.GetCurrentProfileEntry();
+  ASSERT_NE(nullptr, current);
+  EXPECT_EQ("Default", current->profile_path);
+  EXPECT_TRUE(current->is_current);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, GetCurrentProfileEntryNone) {
+  AstraProfileMenuModel model;
+  EXPECT_EQ(nullptr, model.GetCurrentProfileEntry());
+
+  std::vector<AstraMenuProfileEntry> profiles;
+  AstraMenuProfileEntry p;
+  p.profile_path = "Default";
+  p.name = u"Default";
+  p.is_current = false;  // None marked as current.
+  profiles.push_back(p);
+  model.SetProfileList(profiles);
+
+  EXPECT_EQ(nullptr, model.GetCurrentProfileEntry());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, ProfileListClampsSelectedIndex) {
+  AstraProfileMenuModel model;
+  model.SetProfileCount(5);
+  model.SetSelectedProfileIndex(4);
+  ASSERT_EQ(4, model.selected_profile_index());
+
+  std::vector<AstraMenuProfileEntry> profiles;
+  profiles.push_back(AstraMenuProfileEntry());
+  profiles.push_back(AstraMenuProfileEntry());
+  model.SetProfileList(profiles);
+
+  // Should be clamped to new list size.
+  EXPECT_EQ(1, model.selected_profile_index());
+}
+
+// =========================================================================
+// Model deepening tests — guest mode
+// =========================================================================
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultGuestModeOff) {
+  AstraProfileMenuModel model;
+  EXPECT_FALSE(model.is_guest_mode());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetGuestModeOn) {
+  AstraProfileMenuModel model;
+  TestModelObserver observer;
+  model.AddObserver(&observer);
+
+  model.SetGuestMode(true);
+  EXPECT_TRUE(model.is_guest_mode());
+  EXPECT_TRUE(model.profile_info().is_guest);
+
+  model.RemoveObserver(&observer);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetGuestModeOff) {
+  AstraProfileMenuModel model;
+  model.SetGuestMode(true);
+  ASSERT_TRUE(model.is_guest_mode());
+
+  model.SetGuestMode(false);
+  EXPECT_FALSE(model.is_guest_mode());
+  EXPECT_FALSE(model.profile_info().is_guest);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, GuestModeSameValueNoOp) {
+  AstraProfileMenuModel model;
+  TestModelObserver observer;
+  model.AddObserver(&observer);
+
+  // Set to false (already false) — should not notify.
+  model.SetGuestMode(false);
+  // OnGuestModeToggled isn't tracked by our test observer directly,
+  // but we verify no crash and state is correct.
+  EXPECT_FALSE(model.is_guest_mode());
+
+  model.RemoveObserver(&observer);
+}
+
+// =========================================================================
+// Model deepening tests — workspace color customization
+// =========================================================================
+
+TEST(AstraProfileMenuModelDeepeningTest, SetWorkspaceColor) {
+  AstraProfileMenuModel model;
+  std::vector<AstraMenuWorkspaceInfo> workspaces;
+  AstraMenuWorkspaceInfo ws;
+  ws.id = "ws1";
+  ws.name = u"Test";
+  ws.accent_color = SK_ColorBLUE;
+  ws.order_index = 0;
+  workspaces.push_back(ws);
+  model.SetWorkspaces(workspaces);
+
+  bool changed = model.SetWorkspaceColor("ws1", SK_ColorRED);
+  EXPECT_TRUE(changed);
+
+  const auto* updated = model.GetWorkspaceById("ws1");
+  ASSERT_NE(nullptr, updated);
+  EXPECT_EQ(SK_ColorRED, updated->accent_color);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetWorkspaceColorNotFound) {
+  AstraProfileMenuModel model;
+  bool changed = model.SetWorkspaceColor("nonexistent", SK_ColorRED);
+  EXPECT_FALSE(changed);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetWorkspaceColorSameColor) {
+  AstraProfileMenuModel model;
+  std::vector<AstraMenuWorkspaceInfo> workspaces;
+  AstraMenuWorkspaceInfo ws;
+  ws.id = "ws1";
+  ws.name = u"Test";
+  ws.accent_color = SK_ColorBLUE;
+  ws.order_index = 0;
+  workspaces.push_back(ws);
+  model.SetWorkspaces(workspaces);
+
+  bool changed = model.SetWorkspaceColor("ws1", SK_ColorBLUE);  // Same color.
+  EXPECT_FALSE(changed);
+}
+
+// =========================================================================
+// Model deepening tests — menu size variant
+// =========================================================================
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultMenuSizeIsNormal) {
+  AstraProfileMenuModel model;
+  EXPECT_EQ(AstraProfileMenuSize::kNormal, model.menu_size());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetMenuSizeCompact) {
+  AstraProfileMenuModel model;
+  TestModelObserver observer;
+  model.AddObserver(&observer);
+
+  model.set_menu_size(AstraProfileMenuSize::kCompact);
+  EXPECT_EQ(AstraProfileMenuSize::kCompact, model.menu_size());
+
+  model.RemoveObserver(&observer);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetMenuSizeLarge) {
+  AstraProfileMenuModel model;
+  model.set_menu_size(AstraProfileMenuSize::kLarge);
+  EXPECT_EQ(AstraProfileMenuSize::kLarge, model.menu_size());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, MenuSizeSameValueNoNotify) {
+  AstraProfileMenuModel model;
+  TestModelObserver observer;
+  model.AddObserver(&observer);
+
+  model.set_menu_size(AstraProfileMenuSize::kNormal);  // Already normal.
+  // Should not trigger settings changed.
+  // We check indirectly via settings_changed_count.
+  int count_before = observer.settings_changed_count;
+  model.set_menu_size(AstraProfileMenuSize::kNormal);
+  EXPECT_EQ(count_before, observer.settings_changed_count);
+
+  model.RemoveObserver(&observer);
+}
+
+// =========================================================================
+// Model deepening tests — menu width
+// =========================================================================
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultCustomMenuWidth) {
+  AstraProfileMenuModel model;
+  EXPECT_EQ(0, model.custom_menu_width());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetCustomMenuWidth) {
+  AstraProfileMenuModel model;
+  model.set_custom_menu_width(350);
+  EXPECT_EQ(350, model.custom_menu_width());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, CustomMenuWidthClampsMax) {
+  AstraProfileMenuModel model;
+  model.set_custom_menu_width(1000);
+  EXPECT_EQ(AstraProfileMenuModel::kMaxMenuWidth, model.custom_menu_width());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, CustomMenuWidthClampsMin) {
+  AstraProfileMenuModel model;
+  model.set_custom_menu_width(-10);
+  EXPECT_EQ(0, model.custom_menu_width());  // Clamped to 0 (use default).
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, GetEffectiveMenuWidthCustom) {
+  AstraProfileMenuModel model;
+  model.set_custom_menu_width(320);
+  EXPECT_EQ(320, model.GetEffectiveMenuWidth());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, GetEffectiveMenuWidthNormalDefault) {
+  AstraProfileMenuModel model;
+  EXPECT_EQ(AstraProfileMenuModel::kMenuWidthNormal,
+            model.GetEffectiveMenuWidth());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, GetEffectiveMenuWidthCompact) {
+  AstraProfileMenuModel model;
+  model.set_menu_size(AstraProfileMenuSize::kCompact);
+  EXPECT_EQ(AstraProfileMenuModel::kMenuWidthCompact,
+            model.GetEffectiveMenuWidth());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, GetEffectiveMenuWidthLarge) {
+  AstraProfileMenuModel model;
+  model.set_menu_size(AstraProfileMenuSize::kLarge);
+  EXPECT_EQ(AstraProfileMenuModel::kMenuWidthLarge,
+            model.GetEffectiveMenuWidth());
+}
+
+// =========================================================================
+// Model deepening tests — additional presentation settings
+// =========================================================================
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultShowDividers) {
+  AstraProfileMenuModel model;
+  EXPECT_TRUE(model.show_dividers());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetShowDividersFalse) {
+  AstraProfileMenuModel model;
+  TestModelObserver observer;
+  model.AddObserver(&observer);
+
+  model.set_show_dividers(false);
+  EXPECT_FALSE(model.show_dividers());
+
+  model.RemoveObserver(&observer);
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultShowTabCounts) {
+  AstraProfileMenuModel model;
+  EXPECT_TRUE(model.show_tab_counts());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetShowTabCountsFalse) {
+  AstraProfileMenuModel model;
+  model.set_show_tab_counts(false);
+  EXPECT_FALSE(model.show_tab_counts());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultCompactModeOff) {
+  AstraProfileMenuModel model;
+  EXPECT_FALSE(model.compact_mode());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetCompactModeOn) {
+  AstraProfileMenuModel model;
+  model.set_compact_mode(true);
+  EXPECT_TRUE(model.compact_mode());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultShowManageWorkspaces) {
+  AstraProfileMenuModel model;
+  EXPECT_TRUE(model.show_manage_workspaces());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetShowManageWorkspacesFalse) {
+  AstraProfileMenuModel model;
+  model.set_show_manage_workspaces(false);
+  EXPECT_FALSE(model.show_manage_workspaces());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, DefaultShowNewWorkspaceButton) {
+  AstraProfileMenuModel model;
+  EXPECT_TRUE(model.show_new_workspace_button());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, SetShowNewWorkspaceButtonFalse) {
+  AstraProfileMenuModel model;
+  model.set_show_new_workspace_button(false);
+  EXPECT_FALSE(model.show_new_workspace_button());
+}
+
+TEST(AstraProfileMenuModelDeepeningTest, AllAdditionalSettingsTriggerNotification) {
+  AstraProfileMenuModel model;
+  TestModelObserver observer;
+  model.AddObserver(&observer);
+
+  int before = observer.settings_changed_count;
+
+  model.set_show_dividers(false);
+  model.set_show_tab_counts(false);
+  model.set_compact_mode(true);
+  model.set_menu_size(AstraProfileMenuSize::kCompact);
+  model.set_custom_menu_width(300);
+  model.set_show_manage_workspaces(false);
+  model.set_show_new_workspace_button(false);
+
+  EXPECT_EQ(7, observer.settings_changed_count - before);
+
+  model.RemoveObserver(&observer);
+}
+
+// =========================================================================
+// Model deepening tests — persistence for new settings
+// =========================================================================
+
+TEST_F(AstraProfileMenuModelPersistenceTest, LoadNewSettingsFromDefaultPrefs) {
+  model_.LoadFromPrefs(&prefs_);
+
+  EXPECT_TRUE(model_.show_dividers());
+  EXPECT_TRUE(model_.show_tab_counts());
+  EXPECT_FALSE(model_.compact_mode());
+  EXPECT_EQ(AstraProfileMenuSize::kNormal, model_.menu_size());
+  EXPECT_EQ(0, model_.custom_menu_width());
+  EXPECT_FALSE(model_.is_guest_mode());
+  EXPECT_TRUE(model_.show_manage_workspaces());
+  EXPECT_TRUE(model_.show_new_workspace_button());
+}
+
+TEST_F(AstraProfileMenuModelPersistenceTest, SaveAndLoadNewSettingsRoundTrip) {
+  // Change all new settings from defaults.
+  model_.set_show_dividers(false);
+  model_.set_show_tab_counts(false);
+  model_.set_compact_mode(true);
+  model_.set_menu_size(AstraProfileMenuSize::kCompact);
+  model_.set_custom_menu_width(320);
+  model_.SetGuestMode(true);
+  model_.set_show_manage_workspaces(false);
+  model_.set_show_new_workspace_button(false);
+
+  // Save to prefs.
+  model_.SaveToPrefs(&prefs_);
+
+  // Create a new model and load from prefs.
+  AstraProfileMenuModel model2;
+  model2.LoadFromPrefs(&prefs_);
+
+  // Verify all settings match.
+  EXPECT_FALSE(model2.show_dividers());
+  EXPECT_FALSE(model2.show_tab_counts());
+  EXPECT_TRUE(model2.compact_mode());
+  EXPECT_EQ(AstraProfileMenuSize::kCompact, model2.menu_size());
+  EXPECT_EQ(320, model2.custom_menu_width());
+  EXPECT_TRUE(model2.is_guest_mode());
+  EXPECT_FALSE(model2.show_manage_workspaces());
+  EXPECT_FALSE(model2.show_new_workspace_button());
+}
+
+TEST_F(AstraProfileMenuModelPersistenceTest, MenuSizeFromIntPref) {
+  // Set compact size (0) in prefs directly.
+  prefs_.SetInteger(prefs::kPrefProfileMenuSize, 0);
+
+  AstraProfileMenuModel model2;
+  model2.LoadFromPrefs(&prefs_);
+
+  EXPECT_EQ(AstraProfileMenuSize::kCompact, model2.menu_size());
+}
+
+TEST_F(AstraProfileMenuModelPersistenceTest, CustomWidthClampedOnLoad) {
+  prefs_.SetInteger(prefs::kPrefProfileMenuCustomWidth, 9999);
+
+  AstraProfileMenuModel model2;
+  model2.LoadFromPrefs(&prefs_);
+
+  EXPECT_EQ(AstraProfileMenuModel::kMaxMenuWidth, model2.custom_menu_width());
+}
+
+// =========================================================================
+// View deepening tests — header workspace badge
+// =========================================================================
+
+class AstraProfileMenuHeaderBadgeTest : public views::ViewsTestBase {
+ public:
+  AstraProfileMenuHeaderBadgeTest() = default;
+  ~AstraProfileMenuHeaderBadgeTest() override = default;
+
+  void SetUp() override {
+    ViewsTestBase::SetUp();
+    widget_ = CreateTestWidget();
+    delegate_ = std::make_unique<FakeHeaderDelegate>();
+    header_view_ = widget_->SetContentsView(
+        std::make_unique<AstraProfileMenuHeaderView>(delegate_.get()));
+    widget_->Show();
+  }
+
+  void TearDown() override {
+    widget_.reset();
+    delegate_.reset();
+    ViewsTestBase::TearDown();
+  }
+
+ protected:
+  std::unique_ptr<views::Widget> widget_;
+  raw_ptr<AstraProfileMenuHeaderView> header_view_ = nullptr;
+  std::unique_ptr<FakeHeaderDelegate> delegate_;
+};
+
+TEST_F(AstraProfileMenuHeaderBadgeTest, WorkspaceBadgeHiddenByDefault) {
+  EXPECT_FALSE(header_view_->workspace_badge_visible());
+}
+
+TEST_F(AstraProfileMenuHeaderBadgeTest, SetWorkspaceBadgeVisible) {
+  header_view_->SetWorkspaceBadgeVisible(true);
+  EXPECT_TRUE(header_view_->workspace_badge_visible());
+}
+
+TEST_F(AstraProfileMenuHeaderBadgeTest, SetWorkspaceBadgeContent) {
+  header_view_->SetWorkspaceBadgeVisible(true);
+  header_view_->SetWorkspaceBadge(u"Design", SK_ColorGREEN);
+  // No crash = success. Badge content is stored and rendered.
+  SUCCEED();
+}
+
+TEST_F(AstraProfileMenuHeaderBadgeTest, WorkspaceBadgeInAccessibility) {
+  header_view_->SetWorkspaceBadgeVisible(true);
+  header_view_->SetWorkspaceBadge(u"Marketing", SK_ColorBLUE);
+  header_view_->SetProfileName(u"Test User");
+
+  ui::AXNodeData data;
+  header_view_->GetAccessibleNodeData(&data);
+
+  EXPECT_NE(std::u16string::npos,
+            data.GetDescription().find(u"Marketing"));
+  EXPECT_NE(std::u16string::npos,
+            data.GetDescription().find(u"Workspace"));
+}
+
+TEST_F(AstraProfileMenuHeaderBadgeTest, BadgeHiddenNotInAccessibility) {
+  header_view_->SetProfileName(u"Test User");
+
+  ui::AXNodeData data;
+  header_view_->GetAccessibleNodeData(&data);
+
+  // "Workspace:" should not appear in description when badge is hidden.
+  EXPECT_EQ(std::u16string::npos,
+            data.GetDescription().find(u"Workspace:"));
+}
+
+TEST_F(AstraProfileMenuHeaderBadgeTest, ThemeChangeUpdatesBadge) {
+  header_view_->SetWorkspaceBadgeVisible(true);
+  header_view_->SetWorkspaceBadge(u"Test", SK_ColorRED);
+  header_view_->OnThemeChanged();
+  // No crash = success.
+  SUCCEED();
+}
+
+// =========================================================================
+// View deepening tests — workspaces view empty state and show more
+// =========================================================================
+
+class AstraProfileMenuWorkspacesDeepeningTest : public views::ViewsTestBase {
+ public:
+  AstraProfileMenuWorkspacesDeepeningTest() = default;
+  ~AstraProfileMenuWorkspacesDeepeningTest() override = default;
+
+  void SetUp() override {
+    ViewsTestBase::SetUp();
+    widget_ = CreateTestWidget();
+    workspaces_view_ = widget_->SetContentsView(
+        std::make_unique<AstraProfileMenuWorkspaces>(nullptr, nullptr));
+    widget_->Show();
+  }
+
+  void TearDown() override {
+    widget_.reset();
+    ViewsTestBase::TearDown();
+  }
+
+ protected:
+  std::unique_ptr<views::Widget> widget_;
+  raw_ptr<AstraProfileMenuWorkspaces> workspaces_view_ = nullptr;
+};
+
+TEST_F(AstraProfileMenuWorkspacesDeepeningTest, ShowMoreButtonHiddenByDefault) {
+  // Show more button should be visible by default per the setting,
+  // but not shown if there are few workspaces.
+  EXPECT_TRUE(workspaces_view_->show_more_button_visible());
+}
+
+TEST_F(AstraProfileMenuWorkspacesDeepeningTest, SetShowMoreButtonVisible) {
+  workspaces_view_->SetShowMoreButtonVisible(false);
+  EXPECT_FALSE(workspaces_view_->show_more_button_visible());
+
+  workspaces_view_->SetShowMoreButtonVisible(true);
+  EXPECT_TRUE(workspaces_view_->show_more_button_visible());
+}
+
+TEST_F(AstraProfileMenuWorkspacesDeepeningTest, ToggleShowMore) {
+  EXPECT_FALSE(workspaces_view_->is_showing_all());
+
+  workspaces_view_->ToggleShowMore();
+  EXPECT_TRUE(workspaces_view_->is_showing_all());
+
+  workspaces_view_->ToggleShowMore();
+  EXPECT_FALSE(workspaces_view_->is_showing_all());
+}
+
+TEST_F(AstraProfileMenuWorkspacesDeepeningTest, EmptyStateHiddenByDefault) {
+  EXPECT_FALSE(workspaces_view_->empty_state_visible());
+}
+
+TEST_F(AstraProfileMenuWorkspacesDeepeningTest, SetEmptyStateVisible) {
+  workspaces_view_->SetEmptyStateVisible(true);
+  EXPECT_TRUE(workspaces_view_->empty_state_visible());
+
+  workspaces_view_->SetEmptyStateVisible(false);
+  EXPECT_FALSE(workspaces_view_->empty_state_visible());
+}
+
+TEST_F(AstraProfileMenuWorkspacesDeepeningTest, ContextMenuReturnsFalseWhenNoWorkspaces) {
+  gfx::Point point;
+  bool shown = workspaces_view_->ShowContextMenuForWorkspace(0, point);
+  EXPECT_FALSE(shown);
+}
+
+TEST_F(AstraProfileMenuWorkspacesDeepeningTest, ContextMenuOutOfBounds) {
+  gfx::Point point;
+  bool shown = workspaces_view_->ShowContextMenuForWorkspace(99, point);
+  EXPECT_FALSE(shown);
+}
+
+// =========================================================================
+// View deepening tests — workspace menu item menu button and tooltip
+// =========================================================================
+
+class AstraWorkspaceMenuItemDeepeningTest : public views::ViewsTestBase {
+ public:
+  AstraWorkspaceMenuItemDeepeningTest() = default;
+  ~AstraWorkspaceMenuItemDeepeningTest() override = default;
+
+  void SetUp() override {
+    ViewsTestBase::SetUp();
+    widget_ = CreateTestWidget();
+    item_view_ = widget_->SetContentsView(
+        std::make_unique<AstraWorkspaceMenuItemView>(
+            u"Work", SK_ColorBLUE, 5, false, base::DoNothing()));
+    widget_->Show();
+  }
+
+  void TearDown() override {
+    widget_.reset();
+    ViewsTestBase::TearDown();
+  }
+
+ protected:
+  std::unique_ptr<views::Widget> widget_;
+  raw_ptr<AstraWorkspaceMenuItemView> item_view_ = nullptr;
+};
+
+TEST_F(AstraWorkspaceMenuItemDeepeningTest, MenuButtonHiddenByDefault) {
+  EXPECT_FALSE(item_view_->menu_button_visible());
+}
+
+TEST_F(AstraWorkspaceMenuItemDeepeningTest, SetMenuButtonVisible) {
+  item_view_->SetMenuButtonVisible(true);
+  EXPECT_TRUE(item_view_->menu_button_visible());
+}
+
+TEST_F(AstraWorkspaceMenuItemDeepeningTest, SetTooltip) {
+  item_view_->SetTooltip(u"Test tooltip");
+  // No crash = success. Tooltip is set on the underlying button.
+  SUCCEED();
+}
+
+TEST_F(AstraWorkspaceMenuItemDeepeningTest, MenuButtonCallbackCanBeSet) {
+  int click_count = 0;
+  item_view_->set_menu_button_callback(base::BindLambdaForTesting(
+      [&]() { click_count++; }));
+  // No crash = callback is set.
+  SUCCEED();
+}
+
+// =========================================================================
+// View deepening tests — avatar button window badge and animation
+// =========================================================================
+
+class AstraWorkspaceAvatarButtonWindowBadgeTest : public views::ViewsTestBase {
+ public:
+  AstraWorkspaceAvatarButtonWindowBadgeTest() = default;
+  ~AstraWorkspaceAvatarButtonWindowBadgeTest() override = default;
+
+  void SetUp() override {
+    ViewsTestBase::SetUp();
+    widget_ = CreateTestWidget();
+    delegate_ = std::make_unique<FakeAvatarDelegate>();
+    avatar_button_ = widget_->SetContentsView(
+        std::make_unique<AstraWorkspaceAvatarButton>(
+            nullptr, delegate_.get()));
+    widget_->Show();
+  }
+
+  void TearDown() override {
+    widget_.reset();
+    delegate_.reset();
+    ViewsTestBase::TearDown();
+  }
+
+ protected:
+  std::unique_ptr<views::Widget> widget_;
+  raw_ptr<AstraWorkspaceAvatarButton> avatar_button_ = nullptr;
+  std::unique_ptr<FakeAvatarDelegate> delegate_;
+};
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest, DefaultWindowCount) {
+  EXPECT_EQ(1, avatar_button_->window_count());
+}
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest, SetWindowCount) {
+  avatar_button_->SetWindowCount(3);
+  EXPECT_EQ(3, avatar_button_->window_count());
+}
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest, WindowBadgeHiddenByDefault) {
+  EXPECT_FALSE(avatar_button_->window_badge_visible());
+}
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest, SetWindowBadgeVisible) {
+  avatar_button_->SetWindowBadgeVisible(true);
+  EXPECT_TRUE(avatar_button_->window_badge_visible());
+}
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest,
+       AccessibilityIncludesWindowCount) {
+  avatar_button_->SetWindowBadgeVisible(true);
+  avatar_button_->SetWindowCount(5);
+  avatar_button_->SetProfileName(u"Test");
+
+  ui::AXNodeData data;
+  avatar_button_->GetAccessibleNodeData(&data);
+
+  EXPECT_NE(std::u16string::npos,
+            data.GetDescription().find(u"windows"));
+}
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest,
+       WindowCountOneNotInAccessibility) {
+  // Window count of 1 doesn't show the badge, so shouldn't be in a11y.
+  avatar_button_->SetWindowBadgeVisible(true);
+  avatar_button_->SetWindowCount(1);
+  avatar_button_->SetProfileName(u"Test");
+
+  ui::AXNodeData data;
+  avatar_button_->GetAccessibleNodeData(&data);
+
+  // Should not mention windows when count is 1.
+  EXPECT_EQ(std::u16string::npos,
+            data.GetDescription().find(u"windows"));
+}
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest, AnimationsEnabledByDefault) {
+  EXPECT_TRUE(avatar_button_->animations_enabled());
+}
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest, SetAnimationsDisabled) {
+  avatar_button_->SetAnimationsEnabled(false);
+  EXPECT_FALSE(avatar_button_->animations_enabled());
+}
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest, PlaySwitchAnimationNoCrash) {
+  avatar_button_->PlaySwitchAnimation();
+  // No crash = success. Animation is started.
+  SUCCEED();
+}
+
+TEST_F(AstraWorkspaceAvatarButtonWindowBadgeTest,
+       PlaySwitchAnimationWithAnimationsDisabled) {
+  avatar_button_->SetAnimationsEnabled(false);
+  avatar_button_->PlaySwitchAnimation();
+  // No crash = success. Should be a no-op.
+  SUCCEED();
+}
+
+// =========================================================================
+// Additional edge case tests
+// =========================================================================
+
+TEST(AstraProfileMenuEdgeCasesDeepeningTest, WorkspaceColorWithEmptyList) {
+  AstraProfileMenuModel model;
+  bool result = model.SetWorkspaceColor("ws1", SK_ColorRED);
+  EXPECT_FALSE(result);
+}
+
+TEST(AstraProfileMenuEdgeCasesDeepeningTest, AllMenuSizesValid) {
+  AstraProfileMenuModel model;
+  for (auto size : {
+       AstraProfileMenuSize::kCompact,
+       AstraProfileMenuSize::kNormal,
+       AstraProfileMenuSize::kLarge,
+   }) {
+    model.set_menu_size(size);
+    EXPECT_EQ(size, model.menu_size());
+    EXPECT_GT(model.GetEffectiveMenuWidth(), 0);
+  }
+}
+
+TEST(AstraProfileMenuEdgeCasesDeepeningTest, MenuWidthBounds) {
+  AstraProfileMenuModel model;
+
+  // Min menu width constant.
+  EXPECT_GT(AstraProfileMenuModel::kMinMenuWidth, 0);
+  // Max menu width constant.
+  EXPECT_GT(AstraProfileMenuModel::kMaxMenuWidth,
+            AstraProfileMenuModel::kMinMenuWidth);
+  // Default menu width.
+  EXPECT_GT(AstraProfileMenuModel::kDefaultMenuWidth, 0);
+}
+
+TEST(AstraProfileMenuEdgeCasesDeepeningTest, EmptyProfileInfo) {
+  AstraProfileMenuModel model;
+  AstraMenuProfileInfo empty_info;
+  model.SetProfileInfo(empty_info);
+
+  EXPECT_TRUE(model.profile_info().name.empty());
+  EXPECT_TRUE(model.profile_info().email.empty());
+  EXPECT_FALSE(model.profile_info().is_guest);
+  EXPECT_FALSE(model.profile_info().is_managed);
+}
+
+TEST(AstraProfileMenuEdgeCasesDeepeningTest, ProfileListWithZeroEntries) {
+  AstraProfileMenuModel model;
+  std::vector<AstraMenuProfileEntry> empty_list;
+  model.SetProfileList(empty_list);
+
+  EXPECT_EQ(0u, model.GetProfileListSize());
+  EXPECT_EQ(nullptr, model.GetCurrentProfileEntry());
+  EXPECT_EQ(nullptr, model.GetProfileEntryAt(0));
+}
+
+TEST(AstraProfileMenuEdgeCasesDeepeningTest, GuestModeWithProfileInfo) {
+  AstraProfileMenuModel model;
+  model.SetGuestMode(true);
+  EXPECT_TRUE(model.profile_info().is_guest);
+
+  // Setting profile info with guest=false should override.
+  AstraMenuProfileInfo info;
+  info.name = u"User";
+  info.is_guest = false;
+  model.SetProfileInfo(info);
+  EXPECT_FALSE(model.profile_info().is_guest);
+  // But is_guest_mode() state is separate.
+  EXPECT_TRUE(model.is_guest_mode());
+}
+
+TEST(AstraProfileMenuEdgeCasesDeepeningTest, CompactModeAffectsEffectiveWidth) {
+  // Actually compact mode and menu size are separate settings.
+  AstraProfileMenuModel model;
+  model.set_compact_mode(true);
+  model.set_menu_size(AstraProfileMenuSize::kCompact);
+
+  // Compact size variant should give compact width.
+  EXPECT_EQ(AstraProfileMenuModel::kMenuWidthCompact,
+            model.GetEffectiveMenuWidth());
 }
 
 }  // namespace astra

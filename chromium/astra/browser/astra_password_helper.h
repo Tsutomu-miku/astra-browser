@@ -8,6 +8,8 @@
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "components/keyed_service/core/keyed_service.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
+#include "third_party/skia/include/core/SkColor.h"
 #include "url/gurl.h"
 
 class PrefService;
@@ -19,6 +21,60 @@ class PasswordStoreInterface;
 }  // namespace password_manager
 
 namespace astra {
+
+// =========================================================================
+// Password strength classification
+// =========================================================================
+//
+// Strength rating for a password, used by the password generator and
+// strength checker UI.  These are projected values — the actual strength
+// computation is done by Chromium's password strength estimator.
+//
+// Chromium owner: PasswordStrengthEstimator
+//   (components/password_manager/core/browser/password_strength/password_strength_estimator.h)
+enum class AstraPasswordStrength {
+  kVeryWeak,   // 0-20% strength — extremely guessable
+  kWeak,       // 21-40% strength — easily guessable
+  kMedium,     // 41-60% strength — moderate security
+  kStrong,     // 61-80% strength — good security
+  kVeryStrong, // 81-100% strength — excellent security
+};
+
+// =========================================================================
+// Password sort order
+// =========================================================================
+//
+// Sort order for the password list in the sidebar.
+// These are projected from the user's presentation preference.
+enum class AstraPasswordSortOrder {
+  kAlphabetical,  // Sort by site name (A-Z)
+  kLastUsed,      // Sort by last used time (most recent first)
+  kDateCreated,   // Sort by creation date (newest first)
+};
+
+// =========================================================================
+// Password filter
+// =========================================================================
+//
+// Filter type for the password list.
+// Controls which passwords are shown in the sidebar.
+enum class AstraPasswordFilter {
+  kAll,           // Show all saved passwords
+  kCompromised,   // Show only compromised passwords
+  kWeak,          // Show only weak passwords
+  kReused,        // Show only reused passwords
+};
+
+// =========================================================================
+// Password grouping mode
+// =========================================================================
+//
+// How passwords are grouped in the sidebar view.
+enum class AstraPasswordGroupBy {
+  kNone,      // No grouping — flat list
+  kSite,      // Group by site domain
+  kAccount,   // Group by username/account
+};
 
 // =========================================================================
 // AstraPasswordEntry — projected password entry data
@@ -57,26 +113,38 @@ struct AstraPasswordEntry {
   // Whether this password is reused across multiple sites.
   bool is_reused = false;
 
-  // TODO(astra): Add favicon URL when integrating with FaviconService.
-  // Chromium owner: FaviconService (components/favicon/core/favicon_service.h)
-};
+  // Password strength rating (projected from Chromium's estimator).
+  AstraPasswordStrength strength = AstraPasswordStrength::kMedium;
 
-// =========================================================================
-// Password strength classification
-// =========================================================================
-//
-// Strength rating for a password, used by the password generator and
-// strength checker UI.  These are projected values — the actual strength
-// computation is done by Chromium's password strength estimator.
-//
-// Chromium owner: PasswordStrengthEstimator
-//   (components/password_manager/core/browser/password_strength/password_strength_estimator.h)
-enum class AstraPasswordStrength {
-  kVeryWeak,   // 0-20% strength — extremely guessable
-  kWeak,       // 21-40% strength — easily guessable
-  kMedium,     // 41-60% strength — moderate security
-  kStrong,     // 61-80% strength — good security
-  kVeryStrong, // 81-100% strength — excellent security
+  // Password strength as a percentage (0-100).
+  int strength_percent = 50;
+
+  // Last time this password was used (base::Time encoded as microseconds
+  // since epoch, or 0 if never used).
+  // TODO(astra): Use base::Time directly when Chromium headers are available.
+  int64_t last_used_time = 0;
+
+  // Date this password was created (microseconds since epoch).
+  int64_t date_created = 0;
+
+  // Number of times this password has been used.
+  int use_count = 0;
+
+  // Whether this is a federated credential (e.g. Sign in with Google).
+  bool is_federated = false;
+
+  // Favicon URL for the site (for display in the item view).
+  // TODO(astra): Populate from FaviconService.
+  // Chromium owner: FaviconService (components/favicon/core/favicon_service.h)
+  GURL favicon_url;
+
+  // Unique identifier for this password entry.
+  // In Chromium, this would map to PasswordForm::unique_key or the form's
+  // primary key in the password store.
+  std::string id;
+
+  // Notes attached to this password (if supported by the store).
+  std::u16string notes;
 };
 
 // =========================================================================
@@ -234,9 +302,15 @@ class AstraPasswordHelper : public KeyedService {
   //   (components/password_manager/core/browser/password_store_interface.h)
   std::vector<AstraPasswordEntry> GetSavedPasswords(size_t max_count) const;
 
-  // Searches saved passwords by site name or username.
-  // Returns entries where |query| matches the site display name or
-  // username (case-insensitive substring match).
+  // Returns saved passwords filtered and sorted according to the current
+  // presentation settings (sort_order, filter, group_by).
+  //
+  // This is the primary query method for UI views.
+  std::vector<AstraPasswordEntry> GetDisplayPasswords(size_t max_count) const;
+
+  // Searches saved passwords by site name, username, or domain.
+  // Returns entries where |query| matches the site display name,
+  // username, or URL hostname (case-insensitive substring match).
   //
   // |max_count| limits the number of results.
   //
@@ -246,6 +320,18 @@ class AstraPasswordHelper : public KeyedService {
   std::vector<AstraPasswordEntry> SearchPasswords(
       const std::u16string& query,
       size_t max_count) const;
+
+  // Searches saved passwords by URL / domain.
+  // Returns entries whose URL matches |url| or whose hostname matches.
+  //
+  // |max_count| limits the number of results.
+  std::vector<AstraPasswordEntry> GetPasswordsForURL(
+      const GURL& url,
+      size_t max_count = 0) const;
+
+  // Returns a single password entry by ID, if found.
+  absl::optional<AstraPasswordEntry> GetPasswordById(
+      const std::string& id) const;
 
   // Returns the total number of saved passwords.
   //
@@ -279,6 +365,9 @@ class AstraPasswordHelper : public KeyedService {
   // TODO(astra): Compute from real PasswordHealthChecker data.
   AstraPasswordHealthStats GetPasswordHealthStats() const;
 
+  // Returns the number of passwords that match the current filter setting.
+  size_t GetFilteredPasswordCount() const;
+
   // -- Password strength -------------------------------------------------
 
   // Computes the strength rating for a given password string.
@@ -300,6 +389,12 @@ class AstraPasswordHelper : public KeyedService {
   // Returns a human-readable strength label (e.g. "Weak", "Strong").
   static std::u16string GetPasswordStrengthLabel(
       AstraPasswordStrength strength);
+
+  // Returns a color hint for the strength level (for UI display).
+  // Returns an SkColor appropriate for the strength (red for weak,
+  // green for strong).
+  // TODO(astra): Use proper Chromium color IDs when available.
+  static SkColor GetPasswordStrengthColor(AstraPasswordStrength strength);
 
   // -- Password generator -----------------------------------------------
 
@@ -344,6 +439,10 @@ class AstraPasswordHelper : public KeyedService {
   // Chromium clipboard: ui::Clipboard (ui/base/clipboard/clipboard.h)
   bool CopyPasswordToClipboard(const AstraPasswordEntry& entry) const;
 
+  // Copies the username for |entry| to the system clipboard.
+  // Returns true if the copy was successful.
+  bool CopyUsernameToClipboard(const AstraPasswordEntry& entry) const;
+
   // Opens the password settings page (chrome://settings/passwords).
   //
   // TODO(astra): Implement proper navigation to password settings.
@@ -373,6 +472,59 @@ class AstraPasswordHelper : public KeyedService {
   // Chromium owner: PasswordExporter
   //   (components/password_manager/core/browser/export/password_exporter.h)
   bool ExportPasswords(const std::string& file_path) const;
+
+  // -- Sort order settings ----------------------------------------------
+
+  // Gets the current sort order for the password list.
+  // Persisted via PrefService. Default: kAlphabetical.
+  AstraPasswordSortOrder GetSortOrder() const;
+
+  // Sets the sort order. Fires OnPasswordSettingsChanged.
+  void SetSortOrder(AstraPasswordSortOrder order);
+
+  // Toggles through available sort orders.
+  // Returns the new sort order.
+  AstraPasswordSortOrder CycleSortOrder();
+
+  // -- Filter settings --------------------------------------------------
+
+  // Gets the current filter for the password list.
+  // Persisted via PrefService. Default: kAll.
+  AstraPasswordFilter GetFilter() const;
+
+  // Sets the filter. Fires OnPasswordSettingsChanged.
+  void SetFilter(AstraPasswordFilter filter);
+
+  // Toggles through available filters.
+  // Returns the new filter.
+  AstraPasswordFilter CycleFilter();
+
+  // -- Grouping settings ------------------------------------------------
+
+  // Gets how passwords are grouped in the sidebar.
+  // Persisted via PrefService. Default: kNone.
+  AstraPasswordGroupBy GetGroupBy() const;
+
+  // Sets the grouping mode. Fires OnPasswordSettingsChanged.
+  void SetGroupBy(AstraPasswordGroupBy group_by);
+
+  // Toggles through available grouping modes.
+  // Returns the new grouping mode.
+  AstraPasswordGroupBy CycleGroupBy();
+
+  // -- Password visibility settings -------------------------------------
+
+  // Whether passwords are hidden (shown as dots) by default.
+  // Persisted via PrefService. Default: true.
+  bool GetHidePasswordsByDefault() const;
+
+  // Sets whether passwords are hidden by default.
+  // Fires OnPasswordSettingsChanged.
+  void SetHidePasswordsByDefault(bool hide);
+
+  // Toggles the hide-passwords-by-default setting.
+  // Returns the new state.
+  bool ToggleHidePasswordsByDefault();
 
   // -- Presentation settings --------------------------------------------
 

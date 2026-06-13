@@ -78,6 +78,24 @@ constexpr SkColor kDefaultAccentColor = SkColorSetRGB(0x5B, 0x8F, 0xF9);
 // Drag threshold.
 constexpr int kDragThresholdPixels = 8;
 
+// Last active time.
+constexpr SkColor kLastActiveTextColor = SkColorSetRGB(0x99, 0x99, 0x99);
+constexpr int kLastActiveFontSizeDelta = -2;
+
+// Grid layout.
+constexpr int kGridCardSize = 120;
+constexpr int kGridIconSize = 40;
+constexpr int kGridSpacing = 8;
+
+// Compact layout.
+constexpr int kCompactCardWidth = 160;
+constexpr int kCompactCardHeight = 64;
+constexpr int kCompactAccentWidth = 4;
+
+// Selection.
+constexpr SkColor kSelectionColor = SkColorSetRGB(0x5B, 0x8F, 0xF9);
+constexpr int kSelectionBorderWidth = 2;
+
 }  // namespace
 
 // =========================================================================
@@ -171,6 +189,17 @@ void AstraNtpWorkspaceCard::BuildLayout() {
   tab_count_label_->SetFontList(tab_count_label_->font_list().Derive(
       kBadgeFontSizeDelta, gfx::Font::NORMAL, gfx::Font::Weight::MEDIUM));
 
+  // Last active time label.
+  auto last_active = std::make_unique<views::Label>();
+  last_active->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  last_active->SetAutoColorReadabilityEnabled(false);
+  last_active->SetEnabledColor(kLastActiveTextColor);
+  last_active->SetFontList(last_active->font_list().Derive(
+      kLastActiveFontSizeDelta, gfx::Font::NORMAL, gfx::Font::Weight::NORMAL));
+  last_active->SetElideBehavior(gfx::ELIDE_TAIL);
+  last_active_label_ = last_active.get();
+  text_column->AddChildView(std::move(last_active));
+
   // Menu button (⋮) — right side.
   auto menu_button = std::make_unique<views::ImageButton>(
       base::BindRepeating(&AstraNtpWorkspaceCard::OnMenuButtonPressed,
@@ -256,11 +285,29 @@ void AstraNtpWorkspaceCard::SetTabCount(int tab_count) {
   UpdateTabCountBadge();
 }
 
+void AstraNtpWorkspaceCard::SetWindowCount(int window_count) {
+  window_count_ = window_count;
+  UpdateTabCountBadge();
+}
+
+void AstraNtpWorkspaceCard::SetLastActiveTime(base::Time time) {
+  last_active_time_ = time;
+  UpdateLastActiveLabel();
+}
+
 void AstraNtpWorkspaceCard::SetIsActive(bool is_active) {
   if (is_active_ == is_active) {
     return;
   }
   is_active_ = is_active;
+  UpdateVisualState();
+}
+
+void AstraNtpWorkspaceCard::SetIsSelected(bool is_selected) {
+  if (is_selected_ == is_selected) {
+    return;
+  }
+  is_selected_ = is_selected;
   UpdateVisualState();
 }
 
@@ -293,6 +340,243 @@ void AstraNtpWorkspaceCard::SetShowDragHandle(bool show) {
   }
   show_drag_handle_ = show;
   UpdateControlVisibility();
+}
+
+void AstraNtpWorkspaceCard::SetCardStyle(AstraNtpWorkspaceCardStyle style) {
+  if (card_style_ == style) {
+    return;
+  }
+  card_style_ = style;
+
+  if (is_new_workspace_card_) {
+    // New workspace card doesn't change style much.
+    return;
+  }
+
+  switch (style) {
+    case AstraNtpWorkspaceCardStyle::kCompact:
+      BuildCompactLayout();
+      break;
+    case AstraNtpWorkspaceCardStyle::kFull:
+      BuildLayout();
+      break;
+    case AstraNtpWorkspaceCardStyle::kGrid:
+      BuildGridLayout();
+      break;
+  }
+
+  // Restore data.
+  if (!workspace_name_.empty() && name_label_) {
+    name_label_->SetText(workspace_name_);
+  }
+  UpdateTabCountBadge();
+  UpdateLastActiveLabel();
+  SetAccessibleName(workspace_name_);
+
+  UpdateVisualState();
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Compact layout variant
+// =========================================================================
+
+void AstraNtpWorkspaceCard::BuildCompactLayout() {
+  RemoveAllChildViews();
+
+  auto* layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kHorizontal,
+      gfx::Insets::VH(8, 10),
+      /*between_child_spacing=*/10));
+  layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  // Accent bar (left side, full height).
+  auto accent_bar = std::make_unique<views::View>();
+  accent_bar->SetPreferredSize(gfx::Size(kCompactAccentWidth, 0));
+  accent_bar->SetPaintToLayer();
+  accent_bar->layer()->SetFillsBoundsOpaquely(true);
+  accent_bar->layer()->SetColor(kDefaultAccentColor);
+  accent_header_ = accent_bar.get();
+  layout->SetFlexForView(accent_bar.get(), 0);
+  AddChildView(std::move(accent_bar));
+
+  // Text column.
+  auto* text_column = AddChildView(std::make_unique<views::View>());
+  auto* text_layout = text_column->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical));
+  text_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kStretch);
+  text_layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kCenter);
+  text_layout->set_between_child_spacing(2);
+  layout->SetFlexForView(text_column, 1);
+
+  name_label_ = text_column->AddChildView(std::make_unique<views::Label>());
+  name_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  name_label_->SetAutoColorReadabilityEnabled(false);
+  name_label_->SetEnabledColor(kNameTextColor);
+  name_label_->SetFontList(name_label_->font_list().Derive(
+      0, gfx::Font::NORMAL, gfx::Font::Weight::MEDIUM));
+  name_label_->SetElideBehavior(gfx::ELIDE_MIDDLE);
+
+  // Tab/window count (single line).
+  auto count_label = std::make_unique<views::Label>();
+  count_label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  count_label->SetAutoColorReadabilityEnabled(false);
+  count_label->SetEnabledColor(kTabCountTextColor);
+  count_label->SetFontList(count_label->font_list().Derive(
+      -1, gfx::Font::NORMAL, gfx::Font::Weight::NORMAL));
+  tab_count_label_ = count_label.get();
+  text_column->AddChildView(std::move(count_label));
+  tab_count_badge_ = nullptr;  // No badge in compact mode
+
+  // Clear other views.
+  menu_button_ = nullptr;
+  drag_handle_ = nullptr;
+  last_active_label_ = nullptr;
+
+  SetPreferredSize(gfx::Size(kCompactCardWidth, kCompactCardHeight));
+  SetPaintToLayer();
+  layer()->SetFillsBoundsOpaquely(false);
+  SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+
+  accent_color_ = kDefaultAccentColor;
+  UpdateVisualState();
+}
+
+// =========================================================================
+// Grid layout variant
+// =========================================================================
+
+void AstraNtpWorkspaceCard::BuildGridLayout() {
+  RemoveAllChildViews();
+
+  auto* layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kVertical,
+      gfx::Insets::VH(12, 8),
+      /*between_child_spacing=*/kGridSpacing));
+  layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kCenter);
+
+  // Colored circle icon.
+  auto icon_view = std::make_unique<views::View>();
+  icon_view->SetPreferredSize(gfx::Size(kGridIconSize, kGridIconSize));
+  icon_view->SetPaintToLayer();
+  icon_view->layer()->SetFillsBoundsOpaquely(true);
+  icon_view->layer()->SetColor(kDefaultAccentColor);
+  // Make it circular.
+  // TODO(astra): Use clip path or rounded rect for circular icon.
+  accent_header_ = icon_view.get();
+  AddChildView(std::move(icon_view));
+
+  // Name label below icon.
+  name_label_ = AddChildView(std::make_unique<views::Label>());
+  name_label_->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  name_label_->SetAutoColorReadabilityEnabled(false);
+  name_label_->SetEnabledColor(kNameTextColor);
+  name_label_->SetFontList(name_label_->font_list().Derive(
+      -1, gfx::Font::NORMAL, gfx::Font::Weight::MEDIUM));
+  name_label_->SetElideBehavior(gfx::ELIDE_TAIL);
+  name_label_->SetMultiLine(true);
+  name_label_->SetMaxLines(2);
+
+  // Tab count label.
+  auto count_label = std::make_unique<views::Label>();
+  count_label->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  count_label->SetAutoColorReadabilityEnabled(false);
+  count_label->SetEnabledColor(kTabCountTextColor);
+  count_label->SetFontList(count_label->font_list().Derive(
+      -2, gfx::Font::NORMAL, gfx::Font::Weight::NORMAL));
+  tab_count_label_ = count_label.get();
+  AddChildView(std::move(count_label));
+  tab_count_badge_ = nullptr;
+
+  // Clear other views.
+  menu_button_ = nullptr;
+  drag_handle_ = nullptr;
+  last_active_label_ = nullptr;
+
+  SetPreferredSize(gfx::Size(kGridCardSize, kGridCardSize));
+  SetPaintToLayer();
+  layer()->SetFillsBoundsOpaquely(false);
+  SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+
+  accent_color_ = kDefaultAccentColor;
+  UpdateVisualState();
+}
+
+// =========================================================================
+// Last active time
+// =========================================================================
+
+void AstraNtpWorkspaceCard::UpdateLastActiveLabel() {
+  if (!last_active_label_) {
+    // Only full style has last active label.
+    return;
+  }
+
+  if (last_active_time_.is_null()) {
+    last_active_label_->SetText(u"");
+    return;
+  }
+
+  last_active_label_->SetText(FormatLastActiveTime());
+}
+
+std::u16string AstraNtpWorkspaceCard::FormatLastActiveTime() const {
+  if (last_active_time_.is_null()) {
+    return u"";
+  }
+
+  base::TimeDelta delta = base::Time::Now() - last_active_time_;
+
+  if (delta < base::Minutes(1)) {
+    return u"Just now";
+  }
+  if (delta < base::Hours(1)) {
+    int mins = static_cast<int>(delta.InMinutes());
+    return base::UTF8ToUTF16(base::NumberToString(mins) + " min ago");
+  }
+  if (delta < base::Days(1)) {
+    int hours = static_cast<int>(delta.InHours());
+    return base::UTF8ToUTF16(base::NumberToString(hours) + " hr ago");
+  }
+  if (delta < base::Days(7)) {
+    int days = static_cast<int>(delta.InDays());
+    return base::UTF8ToUTF16(base::NumberToString(days) + " days ago");
+  }
+
+  // Older than a week — just show date.
+  base::Time::Exploded exploded;
+  last_active_time_.LocalExplode(&exploded);
+  char buf[32];
+  base::snprintf(buf, sizeof(buf), "%d/%d/%d",
+                 exploded.month, exploded.day_of_month, exploded.year);
+  return base::UTF8ToUTF16(buf);
+}
+
+// =========================================================================
+// Selection indicator
+// =========================================================================
+
+void AstraNtpWorkspaceCard::PaintSelectionIndicator(gfx::Canvas* canvas) {
+  if (!is_selected_) {
+    return;
+  }
+
+  cc::PaintFlags selection_flags;
+  selection_flags.setColor(kSelectionColor);
+  selection_flags.setStyle(cc::PaintFlags::kStroke_Style);
+  selection_flags.setStrokeWidth(kSelectionBorderWidth);
+  selection_flags.setAntiAlias(true);
+
+  gfx::RectF selection_rect(GetLocalBounds());
+  selection_rect.Inset(kSelectionBorderWidth / 2.0f);
+  canvas->DrawRoundRect(selection_rect, kCardCornerRadius, selection_flags);
 }
 
 // =========================================================================
@@ -515,6 +799,11 @@ void AstraNtpWorkspaceCard::OnPaint(gfx::Canvas* canvas) {
     PaintFocusRing(canvas);
   }
 
+  // Paint selection indicator.
+  if (is_selected_) {
+    PaintSelectionIndicator(canvas);
+  }
+
   // Paint menu button dots (⋮) if visible.
   if (menu_button_ && menu_button_->GetVisible() && !is_new_workspace_card_) {
     gfx::Rect menu_bounds = menu_button_->bounds();
@@ -713,11 +1002,24 @@ void AstraNtpWorkspaceCard::UpdateTabCountBadge() {
     return;
   }
 
-  std::u16string count_text = base::NumberToString16(tab_count_);
-  if (tab_count_ == 1) {
-    count_text += u" tab";
+  std::u16string count_text;
+  if (card_style_ == AstraNtpWorkspaceCardStyle::kCompact ||
+      card_style_ == AstraNtpWorkspaceCardStyle::kGrid) {
+    // Compact/grid: just show tab count.
+    count_text = base::NumberToString16(tab_count_) + u" tabs";
   } else {
-    count_text += u" tabs";
+    // Full: show tab count and window count.
+    if (window_count_ > 0) {
+      count_text = base::NumberToString16(tab_count_) + u" tabs · " +
+                   base::NumberToString16(window_count_) + u" windows";
+    } else {
+      count_text = base::NumberToString16(tab_count_);
+      if (tab_count_ == 1) {
+        count_text += u" tab";
+      } else {
+        count_text += u" tabs";
+      }
+    }
   }
   tab_count_label_->SetText(count_text);
 

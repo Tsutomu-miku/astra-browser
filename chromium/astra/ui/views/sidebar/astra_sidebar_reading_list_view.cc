@@ -34,6 +34,9 @@ constexpr int kReadingListHeaderVerticalPadding = 8;
 constexpr int kReadingListHeaderFontSizeDelta = 1;
 constexpr int kReadingListGroupSpacing = 8;
 constexpr int kReadingListItemSpacing = 2;
+constexpr int kSearchFieldHeight = 28;
+constexpr int kSearchFieldHorizontalPadding = 12;
+constexpr int kReadingListMainHeaderFontSizeDelta = 2;
 
 // Astra color IDs for the reading list panel.
 // Uses the Astra sidebar color system from astra/ui/color/astra_color_ids.h.
@@ -42,10 +45,20 @@ constexpr ui::ColorId kReadingListHeaderTextColorId =
     kColorAstraSidebarSectionHeaderText;
 constexpr ui::ColorId kReadingListCountTextColorId =
     kColorAstraSidebarItemSecondaryText;
+constexpr ui::ColorId kReadingListEmptyTextColorId =
+    kColorAstraSidebarItemSecondaryText;
+constexpr ui::ColorId kReadingListMainHeaderTextColorId =
+    kColorAstraSidebarSectionHeaderText;
 
 // Titles.
+const char16_t kReadingListTitle[] = u"Reading List";
 const char16_t kUnreadTitle[] = u"Unread";
 const char16_t kReadTitle[] = u"Read";
+const char16_t kSearchPlaceholder[] = u"Search reading list...";
+const char16_t kNoUnreadLabel[] = u"No unread items";
+const char16_t kNoReadLabel[] = u"No read items";
+const char16_t kAddButtonLabel[] = u"+";
+const char16_t kLoadingText[] = u"Loading...";
 
 }  // namespace
 
@@ -80,6 +93,61 @@ void AstraSidebarReadingListView::BuildLayout() {
       kReadingListGroupSpacing));
   layout->set_cross_axis_alignment(
       views::BoxLayout::CrossAxisAlignment::kStretch);
+
+  // -- Main header row: title + add button --
+
+  header_row_ = AddChildView(std::make_unique<views::View>());
+  auto* header_layout = header_row_->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(kReadingListHeaderVerticalPadding,
+                          kReadingListHeaderHorizontalPadding),
+          8));
+  header_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  header_label_ = header_row_->AddChildView(
+      std::make_unique<views::Label>(kReadingListTitle));
+  header_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  header_label_->SetAutoColorReadabilityEnabled(false);
+  header_label_->SetFontList(
+      header_label_->font_list().DeriveWithSizeDelta(
+          kReadingListMainHeaderFontSizeDelta).DeriveWithWeight(
+              gfx::Font::Weight::MEDIUM));
+  header_layout->SetFlexForView(header_label_, 1);
+
+  add_button_ = header_row_->AddChildView(
+      std::make_unique<views::LabelButton>(
+          base::BindRepeating(
+              &AstraSidebarReadingListView::OnAddButtonPressed,
+              base::Unretained(this)),
+          kAddButtonLabel));
+  add_button_->SetTooltipText(u"Add to reading list");
+  add_button_->SetAccessibleName(u"Add to reading list");
+
+  // -- Search field --
+
+  search_field_ = AddChildView(std::make_unique<views::Textfield>());
+  search_field_->SetPlaceholderText(kSearchPlaceholder);
+  search_field_->SetController(this);
+  search_field_->SetAccessibleName(u"Search reading list");
+  search_field_->SetBorder(views::CreateEmptyBorder(
+      gfx::Insets::VH(0, kSearchFieldHorizontalPadding)));
+  search_field_->SetPreferredSize(gfx::Size(0, kSearchFieldHeight));
+
+  // -- Loading state --
+
+  loading_view_ = AddChildView(std::make_unique<views::View>());
+  auto* loading_layout = loading_view_->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical,
+          gfx::Insets::VH(16, kReadingListHeaderHorizontalPadding), 0));
+  loading_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  auto* loading_label = loading_view_->AddChildView(
+      std::make_unique<views::Label>(kLoadingText));
+  loading_label->SetAutoColorReadabilityEnabled(false);
+  loading_view_->SetVisible(false);
 
   // -- Unread group --
 
@@ -122,6 +190,14 @@ void AstraSidebarReadingListView::BuildLayout() {
   unread_items_layout->set_cross_axis_alignment(
       views::BoxLayout::CrossAxisAlignment::kStretch);
 
+  // Unread empty state.
+  unread_empty_label_ = AddChildView(std::make_unique<views::Label>(kNoUnreadLabel));
+  unread_empty_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  unread_empty_label_->SetAutoColorReadabilityEnabled(false);
+  unread_empty_label_->SetBorder(views::CreateEmptyBorder(
+      gfx::Insets::VH(4, kReadingListHeaderHorizontalPadding + 4)));
+  unread_empty_label_->SetVisible(false);
+
   // -- Read group --
 
   // Read header row.
@@ -163,6 +239,14 @@ void AstraSidebarReadingListView::BuildLayout() {
   read_items_layout->set_cross_axis_alignment(
       views::BoxLayout::CrossAxisAlignment::kStretch);
 
+  // Read empty state.
+  read_empty_label_ = AddChildView(std::make_unique<views::Label>(kNoReadLabel));
+  read_empty_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  read_empty_label_->SetAutoColorReadabilityEnabled(false);
+  read_empty_label_->SetBorder(views::CreateEmptyBorder(
+      gfx::Insets::VH(4, kReadingListHeaderHorizontalPadding + 4)));
+  read_empty_label_->SetVisible(false);
+
   // Initial state: apply expand/collapse.
   SetUnreadExpanded(unread_expanded_);
   SetReadExpanded(read_expanded_);
@@ -181,17 +265,16 @@ void AstraSidebarReadingListView::UpdateFromService() {
   unread_items_container_->RemoveAllChildViews();
   read_items_container_->RemoveAllChildViews();
 
-  // Populate from service.
+  // Populate from service (with sort/filter/search applied).
   PopulateUnreadItems();
   PopulateReadItems();
 
-  // Update count labels.
-  size_t unread_count = reading_list_service_->GetUnreadCount();
-  size_t read_count = reading_list_service_->GetEntryCount() - unread_count;
-  unread_count_label_->SetText(base::NumberToString16(unread_count));
-  read_count_label_->SetText(base::NumberToString16(read_count));
+  // Update count labels and empty states.
+  UpdateCountLabels();
+  UpdateEmptyStates();
 
   // Show/hide read group based on whether there are any read items.
+  size_t read_count = read_items_container_->children().size();
   bool has_read = read_count > 0;
   read_header_->SetVisible(has_read);
   if (has_read) {
@@ -208,7 +291,7 @@ void AstraSidebarReadingListView::PopulateUnreadItems() {
     return;
   }
 
-  auto entries = reading_list_service_->GetUnreadEntries();
+  auto entries = GetFilteredUnreadEntries();
   for (const auto& entry : entries) {
     unread_items_container_->AddChildView(CreateItemView(entry));
   }
@@ -219,7 +302,7 @@ void AstraSidebarReadingListView::PopulateReadItems() {
     return;
   }
 
-  auto entries = reading_list_service_->GetReadEntries();
+  auto entries = GetFilteredReadEntries();
   for (const auto& entry : entries) {
     read_items_container_->AddChildView(CreateItemView(entry));
   }
@@ -231,9 +314,14 @@ AstraSidebarReadingListView::CreateItemView(
   std::u16 title = base::UTF8ToUTF16(entry.title);
   std::u16 domain = GetDomainDisplayString(entry.url);
 
+  bool is_read = entry.status == AstraReadingListStatus::kRead;
   auto item = std::make_unique<AstraReadingListItemView>(
-      entry.url, title, domain, entry.is_read);
+      entry.url, title, domain, is_read);
   item->set_delegate(this);
+  item->SetEstimatedReadTime(entry.estimated_read_time);
+  if (entry.word_count > 0) {
+    item->SetWordCount(entry.word_count);
+  }
 
   return item;
 }
@@ -321,26 +409,13 @@ void AstraSidebarReadingListView::OnReadingListModelLoaded() {
 // =========================================================================
 
 void AstraSidebarReadingListView::OnReadingListItemClicked(const GURL& url) {
-  if (!reading_list_service_) {
-    return;
+  if (delegate_) {
+    delegate_->OnReadingListItemOpen(url, /*open_in_new_tab=*/false);
   }
 
-  // TODO(astra): Open the URL in the active tab.
-  // This should be done through the browser's tab strip / navigation
-  // controller, not directly by the sidebar.
-  //
-  // Options:
-  //   1. Use a delegate that goes through the Browser's NavigateController
-  //      or adds a new tab.
-  //   2. Dispatch through AstraCommandDelegate with a command like
-  //      kAstraCommandOpenReadingListEntry.
-  //
-  // Chromium subsystem: NavigateController / TabStripModel / Browser.
-  //
-  // For now, this is a stub — clicking logs an intent but doesn't navigate.
-  //
   // TODO(astra): Mark the entry as read when opened? Chrome's reading list
   // UI marks items as read when opened. This is a UX decision.
+  // For now, we leave the read state unchanged.
 }
 
 void AstraSidebarReadingListView::OnReadingListToggleRead(const GURL& url) {
@@ -380,7 +455,14 @@ void AstraSidebarReadingListView::OnThemeChanged() {
       color_provider->GetColor(kReadingListHeaderTextColorId);
   SkColor count_color =
       color_provider->GetColor(kReadingListCountTextColorId);
+  SkColor empty_color =
+      color_provider->GetColor(kReadingListEmptyTextColorId);
+  SkColor main_header_color =
+      color_provider->GetColor(kReadingListMainHeaderTextColorId);
 
+  if (header_label_) {
+    header_label_->SetEnabledColor(main_header_color);
+  }
   if (unread_label_) {
     unread_label_->SetEnabledColor(header_color);
   }
@@ -393,6 +475,12 @@ void AstraSidebarReadingListView::OnThemeChanged() {
   if (read_count_label_) {
     read_count_label_->SetEnabledColor(count_color);
   }
+  if (unread_empty_label_) {
+    unread_empty_label_->SetEnabledColor(empty_color);
+  }
+  if (read_empty_label_) {
+    read_empty_label_->SetEnabledColor(empty_color);
+  }
 }
 
 void AstraSidebarReadingListView::GetAccessibleNodeData(
@@ -400,6 +488,427 @@ void AstraSidebarReadingListView::GetAccessibleNodeData(
   views::View::GetAccessibleNodeData(node_data);
   node_data->role = ax::mojom::Role::kList;
   node_data->SetName("Reading list");
+}
+
+// =========================================================================
+// Search
+// =========================================================================
+
+void AstraSidebarReadingListView::SearchEntries(const std::string& query) {
+  if (search_field_) {
+    search_field_->SetText(base::UTF8ToUTF16(query));
+  }
+  // UpdateFromService will be called by ContentsChanged if the text changed.
+  // If called programmatically with the same text, force update.
+  if (delegate_) {
+    delegate_->OnReadingListSearch(query);
+  }
+  UpdateFromService();
+}
+
+std::string AstraSidebarReadingListView::GetSearchQuery() const {
+  if (!search_field_) {
+    return std::string();
+  }
+  return base::UTF16ToUTF8(search_field_->GetText());
+}
+
+// =========================================================================
+// Sorting
+// =========================================================================
+
+void AstraSidebarReadingListView::SetSortOrder(AstraReadingListSortOrder order) {
+  if (sort_order_ == order) {
+    return;
+  }
+  sort_order_ = order;
+  UpdateFromService();
+}
+
+// =========================================================================
+// Filter
+// =========================================================================
+
+void AstraSidebarReadingListView::SetFilter(AstraReadingListView filter) {
+  if (filter_ == filter) {
+    return;
+  }
+  filter_ = filter;
+  UpdateFromService();
+}
+
+// =========================================================================
+// Selection
+// =========================================================================
+
+void AstraSidebarReadingListView::SetSelectedItem(const GURL& url) {
+  if (selected_url_ == url) {
+    return;
+  }
+
+  // Clear old selection.
+  if (!selected_url_.is_empty()) {
+    auto* old_item = FindItemInContainer(unread_items_container_, selected_url_);
+    if (!old_item) {
+      old_item = FindItemInContainer(read_items_container_, selected_url_);
+    }
+    if (old_item) {
+      old_item->SetSelected(false);
+    }
+  }
+
+  selected_url_ = url;
+
+  // Set new selection.
+  if (!selected_url_.is_empty()) {
+    auto* new_item = FindItemInContainer(unread_items_container_, selected_url_);
+    if (!new_item) {
+      new_item = FindItemInContainer(read_items_container_, selected_url_);
+    }
+    if (new_item) {
+      new_item->SetSelected(true);
+    }
+  }
+}
+
+void AstraSidebarReadingListView::ClearSelection() {
+  SetSelectedItem(GURL());
+}
+
+// =========================================================================
+// Bulk operations
+// =========================================================================
+
+void AstraSidebarReadingListView::MarkAllAsRead() {
+  if (!reading_list_service_) {
+    return;
+  }
+  auto entries = GetFilteredUnreadEntries();
+  for (const auto& entry : entries) {
+    if (entry.status != AstraReadingListStatus::kRead) {
+      reading_list_service_->SetReadStatus(entry.url, true);
+    }
+  }
+  // UI updates via observer notifications.
+}
+
+void AstraSidebarReadingListView::DeleteAllRead() {
+  if (!reading_list_service_) {
+    return;
+  }
+  auto entries = GetFilteredReadEntries();
+  for (const auto& entry : entries) {
+    reading_list_service_->RemoveEntry(entry.url);
+  }
+  // UI updates via observer notifications.
+}
+
+// =========================================================================
+// Loading state
+// =========================================================================
+
+void AstraSidebarReadingListView::SetLoading(bool loading) {
+  if (is_loading_ == loading) {
+    return;
+  }
+  is_loading_ = loading;
+  UpdateLoadingState();
+}
+
+void AstraSidebarReadingListView::UpdateLoadingState() {
+  if (loading_view_) {
+    loading_view_->SetVisible(is_loading_);
+  }
+  if (unread_header_) {
+    unread_header_->SetVisible(!is_loading_);
+  }
+  if (unread_items_container_) {
+    unread_items_container_->SetVisible(!is_loading_ && unread_expanded_);
+  }
+  if (read_header_) {
+    read_header_->SetVisible(!is_loading_ &&
+                             read_items_container_ &&
+                             read_items_container_->children().size() > 0);
+  }
+}
+
+// =========================================================================
+// Count getters
+// =========================================================================
+
+int AstraSidebarReadingListView::GetTotalItemCount() const {
+  return GetUnreadCount() + GetReadCount();
+}
+
+int AstraSidebarReadingListView::GetUnreadCount() const {
+  if (!unread_items_container_) {
+    return 0;
+  }
+  return static_cast<int>(unread_items_container_->children().size());
+}
+
+int AstraSidebarReadingListView::GetReadCount() const {
+  if (!read_items_container_) {
+    return 0;
+  }
+  return static_cast<int>(read_items_container_->children().size());
+}
+
+// =========================================================================
+// AstraReadingListServiceObserver (additional)
+// =========================================================================
+
+void AstraSidebarReadingListView::OnReadingListEntryStatusChanged(
+    const GURL& url, bool is_read) {
+  // Convenience event — full update also fires via OnReadingListEntryUpdated.
+  // For now, just do a full rebuild.
+  // TODO(astra): Incremental update for status changes.
+  UpdateFromService();
+}
+
+void AstraSidebarReadingListView::OnReadingListReordered() {
+  UpdateFromService();
+}
+
+void AstraSidebarReadingListView::OnReadingListReloaded() {
+  UpdateFromService();
+}
+
+// =========================================================================
+// TextfieldController (search box)
+// =========================================================================
+
+void AstraSidebarReadingListView::ContentsChanged(
+    views::Textfield* sender, const std::u16string& new_contents) {
+  if (delegate_) {
+    delegate_->OnReadingListSearch(base::UTF16ToUTF8(new_contents));
+  }
+  UpdateFromService();
+}
+
+// =========================================================================
+// Filtered entries helpers
+// =========================================================================
+
+std::vector<AstraReadingListEntry>
+AstraSidebarReadingListView::GetFilteredUnreadEntries() const {
+  if (!reading_list_service_) {
+    return std::vector<AstraReadingListEntry>();
+  }
+
+  std::vector<AstraReadingListEntry> entries;
+  std::string query = GetSearchQuery();
+
+  // Apply view filter.
+  switch (filter_) {
+    case AstraReadingListView::kAll:
+    case AstraReadingListView::kUnread:
+      entries = reading_list_service_->GetUnreadEntries();
+      break;
+    case AstraReadingListView::kFavorites: {
+      auto all = reading_list_service_->GetFavoriteEntries();
+      for (const auto& e : all) {
+        if (e.status != AstraReadingListStatus::kRead) {
+          entries.push_back(e);
+        }
+      }
+      break;
+    }
+    case AstraReadingListView::kFolders:
+      // TODO(astra): Folder-based view. For now, fall back to all unread.
+      entries = reading_list_service_->GetUnreadEntries();
+      break;
+  }
+
+  // Apply search filter.
+  if (!query.empty()) {
+    std::vector<AstraReadingListEntry> filtered;
+    std::string query_lower = base::ToLowerASCII(query);
+    for (const auto& entry : entries) {
+      std::string title_lower = base::ToLowerASCII(entry.title);
+      std::string url_lower = base::ToLowerASCII(entry.url.spec());
+      if (title_lower.find(query_lower) != std::string::npos ||
+          url_lower.find(query_lower) != std::string::npos) {
+        filtered.push_back(entry);
+      }
+    }
+    entries = std::move(filtered);
+  }
+
+  // Apply sort order.
+  if (sort_order_ != AstraReadingListSortOrder::kByDateAdded) {
+    // TODO(astra): Use service's SortEntries method when available.
+    // For now, do a simple client-side sort.
+    switch (sort_order_) {
+      case AstraReadingListSortOrder::kByTitle: {
+        std::sort(entries.begin(), entries.end(),
+                  [](const AstraReadingListEntry& a,
+                     const AstraReadingListEntry& b) {
+                    return base::CompareCaseInsensitiveASCII(a.title, b.title) < 0;
+                  });
+        break;
+      }
+      case AstraReadingListSortOrder::kByEstimatedReadTime: {
+        std::sort(entries.begin(), entries.end(),
+                  [](const AstraReadingListEntry& a,
+                     const AstraReadingListEntry& b) {
+                    return a.estimated_read_time < b.estimated_read_time;
+                  });
+        break;
+      }
+      case AstraReadingListSortOrder::kByDateRead:
+      case AstraReadingListSortOrder::kByDateAdded:
+      default:
+        // Already sorted by date added (newest first) from the service.
+        break;
+    }
+  }
+
+  return entries;
+}
+
+std::vector<AstraReadingListEntry>
+AstraSidebarReadingListView::GetFilteredReadEntries() const {
+  if (!reading_list_service_) {
+    return std::vector<AstraReadingListEntry>();
+  }
+
+  std::vector<AstraReadingListEntry> entries;
+  std::string query = GetSearchQuery();
+
+  // Apply view filter.
+  switch (filter_) {
+    case AstraReadingListView::kAll:
+    case AstraReadingListView::kUnread:
+      entries = reading_list_service_->GetReadEntries();
+      break;
+    case AstraReadingListView::kFavorites: {
+      auto all = reading_list_service_->GetFavoriteEntries();
+      for (const auto& e : all) {
+        if (e.status == AstraReadingListStatus::kRead) {
+          entries.push_back(e);
+        }
+      }
+      break;
+    }
+    case AstraReadingListView::kFolders:
+      // TODO(astra): Folder-based view. For now, fall back to all read.
+      entries = reading_list_service_->GetReadEntries();
+      break;
+  }
+
+  // Apply search filter.
+  if (!query.empty()) {
+    std::vector<AstraReadingListEntry> filtered;
+    std::string query_lower = base::ToLowerASCII(query);
+    for (const auto& entry : entries) {
+      std::string title_lower = base::ToLowerASCII(entry.title);
+      std::string url_lower = base::ToLowerASCII(entry.url.spec());
+      if (title_lower.find(query_lower) != std::string::npos ||
+          url_lower.find(query_lower) != std::string::npos) {
+        filtered.push_back(entry);
+      }
+    }
+    entries = std::move(filtered);
+  }
+
+  // Apply sort order.
+  if (sort_order_ != AstraReadingListSortOrder::kByDateAdded) {
+    switch (sort_order_) {
+      case AstraReadingListSortOrder::kByTitle: {
+        std::sort(entries.begin(), entries.end(),
+                  [](const AstraReadingListEntry& a,
+                     const AstraReadingListEntry& b) {
+                    return base::CompareCaseInsensitiveASCII(a.title, b.title) < 0;
+                  });
+        break;
+      }
+      case AstraReadingListSortOrder::kByEstimatedReadTime: {
+        std::sort(entries.begin(), entries.end(),
+                  [](const AstraReadingListEntry& a,
+                     const AstraReadingListEntry& b) {
+                    return a.estimated_read_time < b.estimated_read_time;
+                  });
+        break;
+      }
+      case AstraReadingListSortOrder::kByDateRead: {
+        std::sort(entries.begin(), entries.end(),
+                  [](const AstraReadingListEntry& a,
+                     const AstraReadingListEntry& b) {
+                    return a.last_read_time > b.last_read_time;
+                  });
+        break;
+      }
+      case AstraReadingListSortOrder::kByDateAdded:
+      default:
+        break;
+    }
+  }
+
+  return entries;
+}
+
+// =========================================================================
+// Empty states
+// =========================================================================
+
+void AstraSidebarReadingListView::UpdateEmptyStates() {
+  if (!unread_empty_label_ || !read_empty_label_) {
+    return;
+  }
+
+  size_t unread_count = unread_items_container_
+                            ? unread_items_container_->children().size()
+                            : 0;
+  size_t read_count = read_items_container_
+                          ? read_items_container_->children().size()
+                          : 0;
+
+  unread_empty_label_->SetVisible(unread_count == 0 && !is_loading_);
+  read_empty_label_->SetVisible(read_count == 0 && !is_loading_ &&
+                                read_header_ && read_header_->GetVisible());
+}
+
+// =========================================================================
+// Count labels
+// =========================================================================
+
+void AstraSidebarReadingListView::UpdateCountLabels() {
+  if (!unread_count_label_ || !read_count_label_) {
+    return;
+  }
+
+  size_t unread_count = unread_items_container_
+                            ? unread_items_container_->children().size()
+                            : 0;
+  size_t read_count = read_items_container_
+                          ? read_items_container_->children().size()
+                          : 0;
+
+  unread_count_label_->SetText(base::NumberToString16(unread_count));
+  read_count_label_->SetText(base::NumberToString16(read_count));
+}
+
+// =========================================================================
+// Header click handlers
+// =========================================================================
+
+void AstraSidebarReadingListView::OnUnreadHeaderClicked() {
+  SetUnreadExpanded(!unread_expanded_);
+}
+
+void AstraSidebarReadingListView::OnReadHeaderClicked() {
+  SetReadExpanded(!read_expanded_);
+}
+
+// =========================================================================
+// Add button handler
+// =========================================================================
+
+void AstraSidebarReadingListView::OnAddButtonPressed() {
+  if (delegate_) {
+    delegate_->OnAddCurrentPageRequested();
+  }
 }
 
 }  // namespace astra

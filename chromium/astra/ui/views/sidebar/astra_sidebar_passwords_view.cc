@@ -13,6 +13,8 @@
 #include "ui/color/color_id.h"
 #include "ui/color/color_provider.h"
 #include "ui/gfx/geometry/insets.h"
+#include "ui/views/controls/button/toggle_button.h"
+#include "ui/views/controls/combobox/combobox.h"
 #include "ui/views/controls/label.h"
 #include "ui/views/controls/label_button.h"
 #include "ui/views/controls/textfield/textfield.h"
@@ -34,6 +36,9 @@ constexpr int kPasswordsItemSpacing = 2;
 constexpr int kPasswordsFooterLinkHeight = 28;
 constexpr int kPasswordsEmptyStateHeight = 48;
 constexpr int kPasswordsLoadingStateHeight = 40;
+constexpr int kPasswordsToolbarHeight = 28;
+constexpr int kPasswordsHealthSummaryHeight = 32;
+constexpr int kPasswordsShowMoreHeight = 28;
 
 // Section title.
 const char16_t kPasswordsSectionTitle[] = u"Passwords";
@@ -47,10 +52,21 @@ const char16_t kPasswordSettingsText[] = u"Password settings";
 // State messages.
 const char16_t kLoadingText[] = u"Loading passwords...";
 const char16_t kEmptyStateText[] = u"No saved passwords";
+const char16_t kShowMoreText[] = u"Show more";
+const char16_t kHealthSummaryText[] = u"Password health";
+
+// Sort order labels.
+const char16_t kSortAlphabetical[] = u"A-Z";
+const char16_t kSortLastUsed[] = u"Recently used";
+const char16_t kSortDateCreated[] = u"Recently added";
+
+// Filter labels.
+const char16_t kFilterAll[] = u"All";
+const char16_t kFilterCompromised[] = u"Compromised";
+const char16_t kFilterWeak[] = u"Weak";
+const char16_t kFilterReused[] = u"Reused";
 
 // Astra color IDs for the passwords panel.
-// Uses the Astra sidebar color system from astra/ui/color/astra_color_ids.h.
-// Chromium subsystem: ui::ColorProvider (ui/color/color_provider.h)
 constexpr ui::ColorId kPasswordsHeaderTextColorId =
     kColorAstraSidebarSectionHeaderText;
 constexpr ui::ColorId kPasswordsCountBadgeTextColorId =
@@ -58,6 +74,20 @@ constexpr ui::ColorId kPasswordsCountBadgeTextColorId =
 constexpr ui::ColorId kPasswordsFooterLinkColorId = kColorAstraSidebarItemText;
 constexpr ui::ColorId kPasswordsSecondaryTextColorId =
     kColorAstraSidebarItemSecondaryText;
+constexpr ui::ColorId kPasswordsToolbarTextColorId =
+    kColorAstraSidebarItemSecondaryText;
+constexpr ui::ColorId kPasswordsHealthTextColorId =
+    kColorAstraSidebarItemText;
+
+// Helper to build sort order label list for the combobox.
+std::vector<std::u16string> GetSortOrderLabels() {
+  return {kSortAlphabetical, kSortLastUsed, kSortDateCreated};
+}
+
+// Helper to build filter label list for the combobox.
+std::vector<std::u16string> GetFilterLabels() {
+  return {kFilterAll, kFilterCompromised, kFilterWeak, kFilterReused};
+}
 
 }  // namespace
 
@@ -69,6 +99,8 @@ AstraSidebarPasswordsView::AstraSidebarPasswordsView(Profile* profile)
   password_helper_ = GetPasswordHelper();
   if (password_helper_) {
     password_helper_->AddObserver(this);
+    // Sync presentation settings from the helper.
+    all_revealed_ = !password_helper_->GetHidePasswordsByDefault();
   }
 
   // Kick off the initial password query.
@@ -114,7 +146,6 @@ void AstraSidebarPasswordsView::BuildLayout() {
   count_badge_->SetAutoColorReadabilityEnabled(false);
 
   // ---- Search field ----
-  // Container for the search field with padding.
   auto* search_container = AddChildView(std::make_unique<views::View>());
   auto* search_layout = search_container->SetLayoutManager(
       std::make_unique<views::BoxLayout>(
@@ -132,6 +163,75 @@ void AstraSidebarPasswordsView::BuildLayout() {
   search_field_->SetTextChangedCallback(base::BindRepeating(
       &AstraSidebarPasswordsView::OnSearchTextChanged,
       base::Unretained(this)));
+
+  // ---- Toolbar row (sort + filter + group + reveal all) ----
+  toolbar_row_ = AddChildView(std::make_unique<views::View>());
+  auto* toolbar_layout = toolbar_row_->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(4, kPasswordsSectionHorizontalPadding)));
+  toolbar_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  toolbar_layout->set_between_child_spacing(8);
+  toolbar_row_->SetPreferredSize(gfx::Size(0, kPasswordsToolbarHeight));
+
+  // Sort combobox.
+  sort_combobox_ = toolbar_row_->AddChildView(
+      std::make_unique<views::Combobox>(GetSortOrderLabels()));
+  sort_combobox_->SetAccessibleName(u"Sort passwords");
+  sort_combobox_->SetTooltipText(u"Sort passwords");
+  sort_combobox_->SetCallback(base::BindRepeating(
+      &AstraSidebarPasswordsView::OnSortOrderChanged,
+      base::Unretained(this)));
+
+  // Filter combobox.
+  filter_combobox_ = toolbar_row_->AddChildView(
+      std::make_unique<views::Combobox>(GetFilterLabels()));
+  filter_combobox_->SetAccessibleName(u"Filter passwords");
+  filter_combobox_->SetTooltipText(u"Filter passwords");
+  filter_combobox_->SetCallback(base::BindRepeating(
+      &AstraSidebarPasswordsView::OnFilterChanged,
+      base::Unretained(this)));
+
+  // Spacer between filters and toggles.
+  auto* spacer = toolbar_row_->AddChildView(std::make_unique<views::View>());
+  toolbar_layout->SetFlexForView(spacer, 1);
+
+  // Group by toggle.
+  group_toggle_ = toolbar_row_->AddChildView(
+      std::make_unique<views::ToggleButton>(base::BindRepeating(
+          &AstraSidebarPasswordsView::OnGroupByToggled,
+          base::Unretained(this))));
+  group_toggle_->SetAccessibleName(u"Group by site");
+  group_toggle_->SetTooltipText(u"Group passwords by site");
+  group_toggle_->SetPreferredSize(gfx::Size(28, 16));
+
+  // Reveal all toggle.
+  reveal_all_toggle_ = toolbar_row_->AddChildView(
+      std::make_unique<views::ToggleButton>(base::BindRepeating(
+          &AstraSidebarPasswordsView::OnRevealAllToggled,
+          base::Unretained(this))));
+  reveal_all_toggle_->SetAccessibleName(u"Show all passwords");
+  reveal_all_toggle_->SetTooltipText(u"Show all passwords");
+  reveal_all_toggle_->SetPreferredSize(gfx::Size(28, 16));
+
+  // ---- Health summary row ----
+  health_summary_row_ = AddChildView(std::make_unique<views::View>());
+  auto* health_layout = health_summary_row_->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(4, kPasswordsSectionHorizontalPadding)));
+  health_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+  health_summary_row_->SetPreferredSize(
+      gfx::Size(0, kPasswordsHealthSummaryHeight));
+  health_summary_row_->SetVisible(false);  // Hidden by default
+
+  health_summary_label_ = health_summary_row_->AddChildView(
+      std::make_unique<views::Label>(kHealthSummaryText));
+  health_summary_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  health_summary_label_->SetAutoColorReadabilityEnabled(false);
+  health_layout->SetFlexForView(health_summary_label_, 1);
 
   // ---- Loading state indicator ----
   loading_label_ = AddChildView(std::make_unique<views::Label>(kLoadingText));
@@ -161,6 +261,20 @@ void AstraSidebarPasswordsView::BuildLayout() {
           kPasswordsItemSpacing));
   items_layout->set_cross_axis_alignment(
       views::BoxLayout::CrossAxisAlignment::kStretch);
+
+  // ---- "Show more" button ----
+  show_more_button_ = AddChildView(
+      std::make_unique<views::LabelButton>(
+          base::BindRepeating(
+              &AstraSidebarPasswordsView::OnShowMoreClicked,
+              base::Unretained(this)),
+          kShowMoreText));
+  show_more_button_->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  show_more_button_->SetBorder(views::CreateEmptyBorder(
+      gfx::Insets::VH(4, kPasswordsSectionHorizontalPadding)));
+  show_more_button_->SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+  show_more_button_->SetVisible(false);
+  show_more_button_->SetAccessibleName(u"Show more passwords");
 
   // ---- Footer: "Password settings" link ----
   settings_link_ = AddChildView(
@@ -216,22 +330,20 @@ void AstraSidebarPasswordsView::Refresh() {
   // TODO(astra): The real password store query is async. The helper
   //   should notify via OnPasswordsChanged when results arrive.
   //   For now, we do a synchronous read and update immediately.
-  //
-  //   Proper flow:
-  //     1. password_helper_->StartQuery() — triggers async PasswordStore query
-  //     2. Helper receives results via PasswordStoreConsumer callback
-  //     3. Helper calls OnPasswordsChanged() on observers
-  //     4. This view reads updated data via GetSavedPasswords()
-  //
-  //   Chromium pattern: PasswordStoreConsumer
-  //     (components/password_manager/core/browser/password_store_consumer.h)
 
   std::vector<AstraPasswordEntry> entries;
   if (!search_query_.empty()) {
-    entries = password_helper_->SearchPasswords(search_query_, max_items_);
+    entries = password_helper_->SearchPasswords(search_query_, max_items_ + 1);
   } else {
-    entries = password_helper_->GetSavedPasswords(max_items_);
+    entries = password_helper_->GetDisplayPasswords(max_items_ + 1);
   }
+
+  // Check if there are more items than max_items_ (for "Show more" button).
+  bool has_more = entries.size() > max_items_;
+  if (has_more) {
+    entries.resize(max_items_);
+  }
+  SetShowMoreVisible(has_more);
 
   PopulateItems(entries);
   UpdateCountBadge();
@@ -246,6 +358,7 @@ void AstraSidebarPasswordsView::PopulateItems(
   for (const auto& entry : entries) {
     auto item = std::make_unique<AstraPasswordItemView>(entry);
     item->set_delegate(this);
+    item->SetPasswordRevealed(all_revealed_);
     items_container_->AddChildView(std::move(item));
   }
 
@@ -286,12 +399,146 @@ void AstraSidebarPasswordsView::UpdateHeaderForSearch() {
 }
 
 // =========================================================================
+// Sort / filter / group controls
+// =========================================================================
+
+void AstraSidebarPasswordsView::SetSortOrder(AstraPasswordSortOrder order) {
+  if (password_helper_) {
+    password_helper_->SetSortOrder(order);
+  }
+  if (sort_combobox_) {
+    int index = 0;
+    switch (order) {
+      case AstraPasswordSortOrder::kAlphabetical: index = 0; break;
+      case AstraPasswordSortOrder::kLastUsed: index = 1; break;
+      case AstraPasswordSortOrder::kDateCreated: index = 2; break;
+    }
+    sort_combobox_->SetSelectedRow(index);
+  }
+  Refresh();
+}
+
+AstraPasswordSortOrder AstraSidebarPasswordsView::GetSortOrder() const {
+  if (password_helper_) {
+    return password_helper_->GetSortOrder();
+  }
+  return AstraPasswordSortOrder::kAlphabetical;
+}
+
+void AstraSidebarPasswordsView::SetFilter(AstraPasswordFilter filter) {
+  if (password_helper_) {
+    password_helper_->SetFilter(filter);
+  }
+  if (filter_combobox_) {
+    int index = 0;
+    switch (filter) {
+      case AstraPasswordFilter::kAll: index = 0; break;
+      case AstraPasswordFilter::kCompromised: index = 1; break;
+      case AstraPasswordFilter::kWeak: index = 2; break;
+      case AstraPasswordFilter::kReused: index = 3; break;
+    }
+    filter_combobox_->SetSelectedRow(index);
+  }
+  Refresh();
+}
+
+AstraPasswordFilter AstraSidebarPasswordsView::GetFilter() const {
+  if (password_helper_) {
+    return password_helper_->GetFilter();
+  }
+  return AstraPasswordFilter::kAll;
+}
+
+void AstraSidebarPasswordsView::SetGroupBy(AstraPasswordGroupBy group_by) {
+  if (password_helper_) {
+    password_helper_->SetGroupBy(group_by);
+  }
+  if (group_toggle_) {
+    group_toggle_->SetIsOn(group_by != AstraPasswordGroupBy::kNone);
+  }
+  Refresh();
+}
+
+AstraPasswordGroupBy AstraSidebarPasswordsView::GetGroupBy() const {
+  if (password_helper_) {
+    return password_helper_->GetGroupBy();
+  }
+  return AstraPasswordGroupBy::kNone;
+}
+
+void AstraSidebarPasswordsView::SetAllRevealed(bool revealed) {
+  all_revealed_ = revealed;
+  if (reveal_all_toggle_) {
+    reveal_all_toggle_->SetIsOn(revealed);
+  }
+  // Update all items.
+  if (items_container_) {
+    for (auto* child : items_container_->children()) {
+      auto* item = static_cast<AstraPasswordItemView*>(child);
+      item->SetPasswordRevealed(revealed);
+    }
+  }
+}
+
+bool AstraSidebarPasswordsView::AreAllRevealed() const {
+  return all_revealed_;
+}
+
+// =========================================================================
+// Show more
+// =========================================================================
+
+void AstraSidebarPasswordsView::SetShowMoreVisible(bool visible) {
+  if (show_more_button_) {
+    show_more_button_->SetVisible(visible);
+  }
+}
+
+bool AstraSidebarPasswordsView::IsShowMoreVisible() const {
+  return show_more_button_ && show_more_button_->GetVisible();
+}
+
+// =========================================================================
+// Health summary
+// =========================================================================
+
+void AstraSidebarPasswordsView::SetHealthSummaryVisible(bool visible) {
+  if (health_summary_row_) {
+    health_summary_row_->SetVisible(visible);
+  }
+}
+
+bool AstraSidebarPasswordsView::IsHealthSummaryVisible() const {
+  return health_summary_row_ && health_summary_row_->GetVisible();
+}
+
+void AstraSidebarPasswordsView::UpdateHealthSummary() {
+  if (!health_summary_label_ || !password_helper_) {
+    return;
+  }
+  auto stats = password_helper_->GetPasswordHealthStats();
+  std::u16string text = kHealthSummaryText +
+      u" (" + base::NumberToString16(stats.problem_count()) + u" issues)";
+  health_summary_label_->SetText(text);
+}
+
+// =========================================================================
 // AstraPasswordHelperObserver
 // =========================================================================
 
 void AstraSidebarPasswordsView::OnPasswordsChanged() {
   // Password store state changed — refresh our projection.
   Refresh();
+}
+
+void AstraSidebarPasswordsView::OnPasswordSettingsChanged() {
+  // Presentation settings changed — refresh UI accordingly.
+  Refresh();
+}
+
+void AstraSidebarPasswordsView::OnPasswordHealthChanged() {
+  // Health stats changed — update the summary.
+  UpdateHealthSummary();
 }
 
 // =========================================================================
@@ -301,6 +548,7 @@ void AstraSidebarPasswordsView::OnPasswordsChanged() {
 void AstraSidebarPasswordsView::OnPasswordItemClicked(
     const AstraPasswordEntry& entry) {
   if (delegate_) {
+    delegate_->OnPasswordSelected(entry);
     // Open the site in a new tab by default.
     delegate_->OpenPasswordURL(entry.url, /*in_new_tab=*/true);
   }
@@ -311,18 +559,32 @@ void AstraSidebarPasswordsView::OnPasswordCopyRequested(
   if (!password_helper_) {
     return;
   }
-
   // Delegate copy to the password helper.
-  // The helper handles all security (reauth, etc.) via Chromium's
-  // password manager. The view just shows visual feedback.
-  bool success = password_helper_->CopyPasswordToClipboard(entry);
+  password_helper_->CopyPasswordToClipboard(entry);
+  // TODO(astra): Show "Copied!" visual feedback.
+}
 
-  // TODO(astra): Show a "Copied!" toast or tooltip on success.
-  //   For example, show a brief confirmation label near the copy button
-  //   or use the system notification center.
-  //   Chromium pattern: PasswordManagerUI shows "Copied" text feedback.
-  if (success) {
-    // Visual feedback could go here.
+void AstraSidebarPasswordsView::OnUsernameCopyRequested(
+    const AstraPasswordEntry& entry) {
+  if (!password_helper_) {
+    return;
+  }
+  password_helper_->CopyUsernameToClipboard(entry);
+  // TODO(astra): Show "Copied!" visual feedback.
+}
+
+void AstraSidebarPasswordsView::OnPasswordRevealToggled(
+    const AstraPasswordEntry& entry,
+    bool revealed) {
+  // Per-item reveal state is handled by the item view itself.
+  // We could sync this back to the helper if we wanted to persist it.
+  // For now, it's just a per-session UI state.
+}
+
+void AstraSidebarPasswordsView::OnPasswordOpenInNewTab(
+    const AstraPasswordEntry& entry) {
+  if (delegate_ && entry.url.is_valid()) {
+    delegate_->OpenPasswordURL(entry.url, /*in_new_tab=*/true);
   }
 }
 
@@ -334,6 +596,19 @@ void AstraSidebarPasswordsView::OnPasswordSettingsClicked() {
   if (delegate_) {
     delegate_->OpenPasswordSettings();
   }
+}
+
+// =========================================================================
+// Show more callback
+// =========================================================================
+
+void AstraSidebarPasswordsView::OnShowMoreClicked() {
+  if (delegate_) {
+    delegate_->OnShowMorePasswords();
+  }
+  // Increase the max items and refresh.
+  max_items_ += 20;
+  Refresh();
 }
 
 // =========================================================================
@@ -356,6 +631,60 @@ void AstraSidebarPasswordsView::OnSearchTextChanged() {
 }
 
 // =========================================================================
+// Sort / filter / group callbacks
+// =========================================================================
+
+void AstraSidebarPasswordsView::OnSortOrderChanged() {
+  if (!sort_combobox_ || !password_helper_) {
+    return;
+  }
+  int selected = sort_combobox_->GetSelectedRow().value_or(0);
+  AstraPasswordSortOrder order;
+  switch (selected) {
+    case 0: order = AstraPasswordSortOrder::kAlphabetical; break;
+    case 1: order = AstraPasswordSortOrder::kLastUsed; break;
+    case 2: order = AstraPasswordSortOrder::kDateCreated; break;
+    default: order = AstraPasswordSortOrder::kAlphabetical; break;
+  }
+  password_helper_->SetSortOrder(order);
+  Refresh();
+}
+
+void AstraSidebarPasswordsView::OnFilterChanged() {
+  if (!filter_combobox_ || !password_helper_) {
+    return;
+  }
+  int selected = filter_combobox_->GetSelectedRow().value_or(0);
+  AstraPasswordFilter filter;
+  switch (selected) {
+    case 0: filter = AstraPasswordFilter::kAll; break;
+    case 1: filter = AstraPasswordFilter::kCompromised; break;
+    case 2: filter = AstraPasswordFilter::kWeak; break;
+    case 3: filter = AstraPasswordFilter::kReused; break;
+    default: filter = AstraPasswordFilter::kAll; break;
+  }
+  password_helper_->SetFilter(filter);
+  Refresh();
+}
+
+void AstraSidebarPasswordsView::OnGroupByToggled() {
+  if (!group_toggle_ || !password_helper_) {
+    return;
+  }
+  bool is_on = group_toggle_->GetIsOn();
+  password_helper_->SetGroupBy(is_on ? AstraPasswordGroupBy::kSite
+                                     : AstraPasswordGroupBy::kNone);
+  Refresh();
+}
+
+void AstraSidebarPasswordsView::OnRevealAllToggled() {
+  if (!reveal_all_toggle_) {
+    return;
+  }
+  SetAllRevealed(reveal_all_toggle_->GetIsOn());
+}
+
+// =========================================================================
 // Loading and empty states
 // =========================================================================
 
@@ -365,6 +694,9 @@ void AstraSidebarPasswordsView::ShowLoadingState() {
   }
   if (items_container_) {
     items_container_->SetVisible(false);
+  }
+  if (show_more_button_) {
+    show_more_button_->SetVisible(false);
   }
 }
 
@@ -383,6 +715,9 @@ void AstraSidebarPasswordsView::ShowEmptyState() {
   }
   if (items_container_) {
     items_container_->SetVisible(false);
+  }
+  if (show_more_button_) {
+    show_more_button_->SetVisible(false);
   }
 }
 
@@ -413,6 +748,26 @@ void AstraSidebarPasswordsView::UpdateStateVisibility() {
 }
 
 // =========================================================================
+// Item access (for testing)
+// =========================================================================
+
+size_t AstraSidebarPasswordsView::GetItemCount() const {
+  if (!items_container_) {
+    return 0;
+  }
+  return items_container_->children().size();
+}
+
+AstraPasswordItemView* AstraSidebarPasswordsView::GetItemAt(
+    size_t index) const {
+  if (!items_container_ || index >= items_container_->children().size()) {
+    return nullptr;
+  }
+  return static_cast<AstraPasswordItemView*>(
+      items_container_->children()[index]);
+}
+
+// =========================================================================
 // Accessibility
 // =========================================================================
 
@@ -421,6 +776,9 @@ void AstraSidebarPasswordsView::GetAccessibleNodeData(
   views::View::GetAccessibleNodeData(node_data);
   node_data->role = ax::mojom::Role::kList;
   node_data->SetName("Passwords");
+  size_t count = GetItemCount();
+  node_data->AddIntAttribute(ax::mojom::IntAttribute::kSetSize,
+                             static_cast<int>(count));
 }
 
 // =========================================================================
@@ -468,9 +826,20 @@ void AstraSidebarPasswordsView::OnThemeChanged() {
         color_provider->GetColor(kPasswordsFooterLinkColorId));
   }
 
-  // Search field styling.
-  // TODO(astra): Style the search field properly with Astra colors.
-  // For now, it uses default Chromium textfield styling.
+  // Health summary label color.
+  if (health_summary_label_) {
+    health_summary_label_->SetEnabledColor(
+        color_provider->GetColor(kPasswordsHealthTextColorId));
+  }
+
+  // Show more button color.
+  if (show_more_button_) {
+    show_more_button_->SetEnabledTextColors(
+        color_provider->GetColor(kPasswordsSecondaryTextColorId));
+  }
+
+  // Toolbar text colors.
+  // TODO(astra): Style toolbar comboboxes properly with Astra colors.
 }
 
 }  // namespace astra

@@ -211,6 +211,159 @@ class AstraNewTabBubble : public views::BubbleDialogDelegateView,
   base::WeakPtrFactory<AstraNewTabBubble> weak_factory_{this};
 };
 
+// =========================================================================
+// AstraNewTabCustomizeBubble — customize/settings bubble for the NTP
+// =========================================================================
+//
+// A bubble panel that provides customization options for the new tab page.
+// Shown when the user clicks the settings gear icon on the NTP.
+//
+// Sections:
+//   - Background: solid / gradient / image / daily refresh
+//   - Shortcuts: visibility, layout mode, icon size, show titles
+//   - Workspace cards: visibility, card style
+//   - Appearance: theme mode, layout density, greeting style
+//   - Content: recently closed, suggested content
+//
+// The customize bubble provides live preview — changes are immediately
+// reflected in the NTP model, which updates the view.
+// A "Reset to defaults" button restores all settings to their default values.
+//
+// Chromium pattern: views::BubbleDialogDelegateView with form-style layout.
+// Similar to Chrome's bookmark bubble or autofill bubble.
+//
+// TODO(astra): Use proper toggle switches and sliders from ui/views/controls.
+//   Chromium has views::ToggleButton, views::Slider, views::Combobox.
+// =========================================================================
+
+class AstraNewTabCustomizeBubble : public views::BubbleDialogDelegateView {
+ public:
+  // Delegate interface for customize bubble actions.
+  class Delegate {
+   public:
+    // Called when the bubble is closing.
+    virtual void OnCustomizeBubbleClosed() = 0;
+
+    // Called when settings are changed (for live preview).
+    virtual void OnCustomizeSettingsChanged() = 0;
+
+    // Called when "Reset to defaults" is pressed.
+    virtual void OnCustomizeResetToDefaults() = 0;
+
+   protected:
+    ~Delegate() = default;
+  };
+
+  // Creates and shows the customize bubble anchored to |anchor_view|.
+  // Returns the bubble widget (owned by the native widget system).
+  static views::Widget* ShowBubble(views::View* anchor_view,
+                                   AstraNewTabModel* model,
+                                   Delegate* delegate);
+
+  ~AstraNewTabCustomizeBubble() override;
+
+  AstraNewTabCustomizeBubble(const AstraNewTabCustomizeBubble&) = delete;
+  AstraNewTabCustomizeBubble& operator=(const AstraNewTabCustomizeBubble&) =
+      delete;
+
+  // -- views::BubbleDialogDelegateView -------------------------------------
+
+  void OnWidgetDestroying(views::Widget* widget) override;
+
+  // -- Section accessors (for testing) ------------------------------------
+
+  // Gets the number of sections in the customize bubble.
+  size_t GetSectionCount() const { return sections_.size(); }
+
+  // Gets the model (for testing).
+  AstraNewTabModel* model() { return model_; }
+
+  // Resets settings to defaults (called by the reset button).
+  void ResetToDefaults();
+
+  // Toggles a setting by section and setting key (for testing).
+  void ToggleSetting(const std::string& setting_key);
+
+  // Gets the current value of a boolean setting (for testing).
+  bool GetBooleanSetting(const std::string& setting_key) const;
+
+  // Gets the current value of an integer setting (for testing).
+  int GetIntSetting(const std::string& setting_key) const;
+
+ private:
+  AstraNewTabCustomizeBubble(views::View* anchor_view,
+                             AstraNewTabModel* model,
+                             Delegate* delegate);
+
+  // Build the bubble contents.
+  void Init() override;
+
+  // Build the sections.
+  void BuildSections();
+
+  // Build a section header.
+  std::unique_ptr<views::View> BuildSectionHeader(const std::u16string& title);
+
+  // Build a toggle row (label + switch).
+  std::unique_ptr<views::View> BuildToggleRow(
+      const std::u16string& label,
+      bool initial_value,
+      base::RepeatingCallback<void(bool)> callback);
+
+  // Build a selector row (label + options).
+  std::unique_ptr<views::View> BuildSelectorRow(
+      const std::u16string& label,
+      const std::vector<std::u16string>& options,
+      int selected_index,
+      base::RepeatingCallback<void(int)> callback);
+
+  // Build a slider row (label + slider).
+  std::unique_ptr<views::View> BuildSliderRow(
+      const std::u16string& label,
+      int min_value,
+      int max_value,
+      int current_value,
+      base::RepeatingCallback<void(int)> callback);
+
+  // Callback handlers.
+  void OnBackgroundStyleChanged(int index);
+  void OnShortcutColumnsChanged(int value);
+  void OnShortcutLayoutModeChanged(int index);
+  void OnShortcutIconSizeChanged(int index);
+  void OnWorkspaceCardStyleChanged(int index);
+  void OnThemeModeChanged(int index);
+  void OnLayoutDensityChanged(int index);
+  void OnGreetingStyleChanged(int index);
+  void OnClockFormatChanged(int index);
+  void OnSearchBarStyleChanged(int index);
+  void OnToggleShortcuts(bool enabled);
+  void OnToggleWorkspaces(bool enabled);
+  void OnToggleRecentlyClosed(bool enabled);
+  void OnToggleQuickActions(bool enabled);
+  void OnToggleGreeting(bool enabled);
+  void OnToggleSearchBar(bool enabled);
+  void OnToggleSuggestedContent(bool enabled);
+  void OnToggleShortcutTitles(bool enabled);
+  void OnToggleSeconds(bool enabled);
+  void OnToggleDate(bool enabled);
+  void OnToggleMostVisited(bool enabled);
+  void OnResetButtonPressed();
+
+  // The model (not owned).
+  raw_ptr<AstraNewTabModel> model_ = nullptr;
+
+  // Delegate (not owned).
+  raw_ptr<Delegate> delegate_ = nullptr;
+
+  // Section views (owned by view hierarchy).
+  std::vector<raw_ptr<views::View>> sections_;
+
+  // Scroll view for the content.
+  raw_ptr<views::ScrollView> scroll_view_ = nullptr;
+
+  base::WeakPtrFactory<AstraNewTabCustomizeBubble> weak_factory_{this};
+};
+
 }  // namespace astra
 
 #endif  // ASTRA_UI_VIEWS_NEWTAB_ASTRA_NEW_TAB_BUBBLE_H_
