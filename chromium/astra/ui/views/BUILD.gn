@@ -277,6 +277,18 @@ source_set("views") {
     "tab_groups_page/astra_tab_groups_page_model.h",
     "tab_groups_page/astra_tab_groups_page_view.cc",
     "tab_groups_page/astra_tab_groups_page_view.h",
+    "clear_browsing_data/astra_clear_browsing_data_dialog.cc",
+    "clear_browsing_data/astra_clear_browsing_data_dialog.h",
+    "clear_browsing_data/astra_clear_browsing_data_model.cc",
+    "clear_browsing_data/astra_clear_browsing_data_model.h",
+    "page_info/astra_page_info_bubble.cc",
+    "page_info/astra_page_info_bubble.h",
+    "page_info/astra_page_info_model.cc",
+    "page_info/astra_page_info_model.h",
+    "site_settings/astra_site_settings_model.cc",
+    "site_settings/astra_site_settings_model.h",
+    "site_settings/astra_site_settings_view.cc",
+    "site_settings/astra_site_settings_view.h",
   ]
 
   public_deps = [
@@ -392,6 +404,9 @@ source_set("astra_ui_views_tests") {
     "notes_page/astra_notes_page_views_unittest.cc",
     "permission_prompt/astra_permission_prompt_views_unittest.cc",
     "tab_groups_page/astra_tab_groups_page_views_unittest.cc",
+    "clear_browsing_data/astra_clear_browsing_data_views_unittest.cc",
+    "page_info/astra_page_info_views_unittest.cc",
+    "site_settings/astra_site_settings_views_unittest.cc",
   ]
 
   deps = [
