@@ -52,10 +52,9 @@ const activeRequiredFiles = [
   "AGENTS.md",
   "README.md",
   "docs/ARCHITECTURE.md",
-  "docs/CODE_STRUCTURE.md",
   "docs/ENGINEERING_STANDARDS.md",
+  "docs/REQUIREMENTS_SCOPE.md",
   "docs/ROADMAP.md",
-  "docs/CHROMIUM_DIRECT_REFACTOR_PLAN.md",
   "docs/adr/0009-direct-chromium-architecture.md",
   "chromium/astra/BUILD.gn"
 ];
@@ -65,10 +64,9 @@ const activeDocFiles = [
   "README.md",
   "AGENTS.md",
   "docs/ARCHITECTURE.md",
-  "docs/CODE_STRUCTURE.md",
   "docs/ENGINEERING_STANDARDS.md",
+  "docs/REQUIREMENTS_SCOPE.md",
   "docs/ROADMAP.md",
-  "docs/CHROMIUM_DIRECT_REFACTOR_PLAN.md",
   "docs/adr/README.md",
   "docs/adr/0009-direct-chromium-architecture.md"
 ];

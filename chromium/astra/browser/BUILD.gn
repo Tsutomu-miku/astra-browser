@@ -4,6 +4,7 @@
 #   - AstraWorkspaceService      (spaces/workspace metadata)
 #   - AstraFavoriteService       (favorite folder metadata)
 #   - AstraTabFeatures           (per-tab Astra metadata, via WebContentsUserData)
+#   - AstraTabRulesService       (auto-action rules for tabs)
 #   - AstraSessionRestoreHelper  (bridge between Chromium session service and
 #                                 Astra tab metadata)
 #   - astra_session_metadata     (serialization helpers for Astra session data)
@@ -117,6 +118,8 @@ source_set("browser") {
     "astra_sync_helper_factory.h",
     "astra_tab_features.cc",
     "astra_tab_features.h",
+    "astra_tab_rules_service.cc",
+    "astra_tab_rules_service.h",
     "astra_tab_stack_service.cc",
     "astra_tab_stack_service.h",
     "astra_tab_stack_service_factory.cc",
@@ -232,6 +235,7 @@ source_set("astra_browser_unit_tests") {
     "astra_session_restore_helper_unittest.cc",
     "astra_sync_helper_unittest.cc",
     "astra_tab_features_unittest.cc",
+    "astra_tab_rules_service_unittest.cc",
     "astra_tab_stack_service_unittest.cc",
     "astra_theme_service_unittest.cc",
     "astra_window_features_unittest.cc",
