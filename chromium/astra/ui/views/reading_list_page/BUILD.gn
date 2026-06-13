@@ -1,0 +1,49 @@
+# Copyright 2025 The Astra Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/config/ui/views/views.gni")
+
+component("astra_reading_list_views") {
+  sources = [
+    "astra_reading_list_model.cc",
+    "astra_reading_list_model.h",
+    "astra_reading_list_page_view.cc",
+    "astra_reading_list_page_view.h",
+  ]
+
+  defines = [ "ASTRA_READING_LIST_VIEWS_IMPLEMENTATION" ]
+
+  deps = [
+    "//base",
+    "//base/i18n",
+    "//skia",
+    "//ui/base",
+    "//ui/color",
+    "//ui/events",
+    "//ui/gfx",
+    "//ui/gfx:geometry_skia",
+    "//ui/views",
+    "//ui/views/controls",
+  ]
+}
+
+source_set("unit_tests") {
+  testonly = true
+
+  sources = [
+    "astra_reading_list_views_unittest.cc",
+  ]
+
+  deps = [
+    ":astra_reading_list_views",
+    "//base",
+    "//base/test:test_support",
+    "//skia",
+    "//testing/gtest",
+    "//ui/gfx",
+    "//ui/views",
+    "//ui/views:views_test_support",
+    "//ui/views/controls",
+  ]
+}

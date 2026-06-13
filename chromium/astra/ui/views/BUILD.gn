@@ -253,6 +253,22 @@ source_set("views") {
     "downloads_page/astra_downloads_page_model.h",
     "downloads_page/astra_downloads_page_view.cc",
     "downloads_page/astra_downloads_page_view.h",
+    "extensions_page/astra_extensions_page_model.cc",
+    "extensions_page/astra_extensions_page_model.h",
+    "extensions_page/astra_extensions_page_view.cc",
+    "extensions_page/astra_extensions_page_view.h",
+    "password_manager/astra_password_manager_model.cc",
+    "password_manager/astra_password_manager_model.h",
+    "password_manager/astra_password_manager_view.cc",
+    "password_manager/astra_password_manager_view.h",
+    "reading_list_page/astra_reading_list_model.cc",
+    "reading_list_page/astra_reading_list_model.h",
+    "reading_list_page/astra_reading_list_page_view.cc",
+    "reading_list_page/astra_reading_list_page_view.h",
+    "notes_page/astra_notes_page_model.cc",
+    "notes_page/astra_notes_page_model.h",
+    "notes_page/astra_notes_page_view.cc",
+    "notes_page/astra_notes_page_view.h",
   ]
 
   public_deps = [
@@ -362,6 +378,10 @@ source_set("astra_ui_views_tests") {
     "history_page/astra_history_page_views_unittest.cc",
     "bookmarks_manager/astra_bookmarks_manager_views_unittest.cc",
     "downloads_page/astra_downloads_page_views_unittest.cc",
+    "extensions_page/astra_extensions_page_views_unittest.cc",
+    "password_manager/astra_password_manager_views_unittest.cc",
+    "reading_list_page/astra_reading_list_views_unittest.cc",
+    "notes_page/astra_notes_page_views_unittest.cc",
   ]
 
   deps = [

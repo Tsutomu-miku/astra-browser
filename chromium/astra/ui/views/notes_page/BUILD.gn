@@ -1,0 +1,43 @@
+# Copyright 2025 The Astra Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/config/ui/views/views.gni")
+
+component("astra_notes_page_views") {
+  sources = [
+    "astra_notes_page_model.cc",
+    "astra_notes_page_model.h",
+    "astra_notes_page_view.cc",
+    "astra_notes_page_view.h",
+  ]
+
+  defines = [ "ASTRA_NOTES_PAGE_VIEWS_IMPLEMENTATION" ]
+
+  deps = [
+    "//base",
+    "//skia",
+    "//ui/base",
+    "//ui/color",
+    "//ui/events",
+    "//ui/gfx",
+    "//ui/views",
+    "//ui/views/controls",
+  ]
+}
+
+source_set("unit_tests") {
+  testonly = true
+
+  sources = [
+    "astra_notes_page_views_unittest.cc",
+  ]
+
+  deps = [
+    ":astra_notes_page_views",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gtest",
+    "//ui/views:views_test_support",
+  ]
+}
