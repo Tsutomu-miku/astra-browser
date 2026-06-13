@@ -8,14 +8,19 @@
 #include "skia/include/core/SkColor.h"
 #include "ui/accessibility/ax_enums.mojom-shared.h"
 #include "ui/accessibility/ax_node_data.h"
+#include "ui/base/ui_base_types.h"
 #include "ui/color/color_id.h"
 #include "ui/color/color_provider.h"
+#include "ui/events/event_constants.h"
+#include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/geometry/insets.h"
+#include "ui/views/accessibility/view_ax_platform_node_delegate.h"
 #include "ui/views/controls/button/image_button.h"
 #include "ui/views/controls/label.h"
 #include "ui/views/layout/box_layout.h"
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/flex_layout_types.h"
+#include "ui/views/metadata/metadata_header_macros.h"
 
 #include "astra/ui/color/astra_color_ids.h"
 
@@ -44,6 +49,10 @@ constexpr int kHostFontSizeDelta = -2;
 constexpr int kShortcutFontSizeDelta = -1;
 constexpr int kWorkspaceFontSizeDelta = -2;
 
+// Group header constants.
+constexpr int kGroupHeaderVerticalPadding = 8;
+constexpr int kGroupHeaderHorizontalPadding = 12;
+
 // Astra color IDs for tab search items.
 // TODO(astra): Define dedicated tab-search color IDs in astra_color_ids.h
 //   instead of reusing command palette / sidebar colors.
@@ -51,6 +60,8 @@ constexpr ui::ColorId kItemSelectedBackground =
     kColorAstraCommandPaletteSelectedBackground;
 constexpr ui::ColorId kItemHoverBackground =
     kColorAstraSidebarItemHoverBackground;
+constexpr ui::ColorId kItemFocusRing =
+    kColorAstraWorkspaceAccent;
 constexpr ui::ColorId kTitleTextColor = kColorAstraCommandPaletteText;
 constexpr ui::ColorId kHostTextColor =
     kColorAstraCommandPaletteDescriptionText;
@@ -62,6 +73,11 @@ constexpr ui::ColorId kWorkspaceBackground =
     kColorAstraSidebarItemHoverBackground;
 constexpr ui::ColorId kFaviconPlaceholderColor = ui::kColorIcon;
 constexpr ui::ColorId kAudioIndicatorColor = ui::kColorIcon;
+
+constexpr ui::ColorId kGroupHeaderTextColor =
+    kColorAstraSidebarSectionHeaderText;
+constexpr ui::ColorId kGroupHeaderCountTextColor =
+    kColorAstraCommandPaletteDescriptionText;
 
 // Get a human-readable group name for accessibility.
 std::u16string GetGroupName(AstraTabSearchItemView::Group group) {
@@ -76,7 +92,133 @@ std::u16string GetGroupName(AstraTabSearchItemView::Group group) {
   return u"Tab";
 }
 
+// Get a human-readable result type label.
+std::u16string GetResultTypeName(AstraTabSearchResultType type) {
+  switch (type) {
+    case AstraTabSearchResultType::kOpenTab:
+      return u"Open tab";
+    case AstraTabSearchResultType::kRecentlyClosed:
+      return u"Recently closed";
+    case AstraTabSearchResultType::kBookmark:
+      return u"Bookmark";
+    case AstraTabSearchResultType::kHistory:
+      return u"History";
+    case AstraTabSearchResultType::kSearchHistory:
+      return u"Recent search";
+    case AstraTabSearchResultType::kAction:
+      return u"Action";
+  }
+  return u"Result";
+}
+
 }  // namespace
+
+// =========================================================================
+// AstraTabSearchGroupHeaderView — group section header
+// =========================================================================
+
+AstraTabSearchGroupHeaderView::AstraTabSearchGroupHeaderView(
+    const std::u16string& title,
+    size_t count)
+    : title_(title), count_(count) {
+  SetPaintToLayer();
+  layer()->SetFillsBoundsOpaquely(false);
+  BuildLayout();
+}
+
+AstraTabSearchGroupHeaderView::~AstraTabSearchGroupHeaderView() = default;
+
+void AstraTabSearchGroupHeaderView::SetTitle(const std::u16string& title) {
+  if (title_ == title) {
+    return;
+  }
+  title_ = title;
+  if (title_label_) {
+    title_label_->SetText(title);
+  }
+  NotifyAccessibilityEvent(ax::mojom::Event::kTextChanged, true);
+}
+
+void AstraTabSearchGroupHeaderView::SetCount(size_t count) {
+  if (count_ == count) {
+    return;
+  }
+  count_ = count;
+  if (count_label_) {
+    count_label_->SetText(base::NumberToString16(count));
+  }
+  NotifyAccessibilityEvent(ax::mojom::Event::kTextChanged, true);
+}
+
+void AstraTabSearchGroupHeaderView::OnThemeChanged() {
+  views::View::OnThemeChanged();
+  UpdateColors();
+}
+
+void AstraTabSearchGroupHeaderView::GetAccessibleNodeData(
+    ui::AXNodeData* node_data) {
+  views::View::GetAccessibleNodeData(node_data);
+  node_data->role = ax::mojom::Role::kGroup;
+  node_data->SetName(title_);
+  node_data->SetDescription(
+      base::NumberToString16(count_) + u" items");
+}
+
+gfx::Size AstraTabSearchGroupHeaderView::CalculatePreferredSize(
+    const views::SizeBounds& available_size) const {
+  return views::View::CalculatePreferredSize(available_size);
+}
+
+void AstraTabSearchGroupHeaderView::BuildLayout() {
+  auto* layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kHorizontal,
+      gfx::Insets::VH(kGroupHeaderVerticalPadding,
+                      kGroupHeaderHorizontalPadding),
+      kItemSpacing));
+  layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  // Title label (bold, section header color).
+  title_label_ = AddChildView(std::make_unique<views::Label>(title_));
+  title_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  title_label_->SetAutoColorReadabilityEnabled(false);
+  title_label_->SetFontList(views::Label::GetDefaultFontList().Derive(
+      kHostFontSizeDelta, gfx::Font::FontStyle::NORMAL,
+      gfx::Font::Weight::BOLD));
+  title_label_->SetElideBehavior(gfx::ELIDE_MIDDLE);
+  layout->SetFlexForView(title_label_, 1);
+
+  // Count label (secondary color).
+  count_label_ = AddChildView(
+      std::make_unique<views::Label>(base::NumberToString16(count_)));
+  count_label_->SetHorizontalAlignment(gfx::ALIGN_RIGHT);
+  count_label_->SetAutoColorReadabilityEnabled(false);
+  count_label_->SetFontList(views::Label::GetDefaultFontList().Derive(
+      kShortcutFontSizeDelta, gfx::Font::FontStyle::NORMAL,
+      gfx::Font::Weight::NORMAL));
+
+  UpdateColors();
+}
+
+void AstraTabSearchGroupHeaderView::UpdateColors() {
+  const auto* color_provider = GetColorProvider();
+  if (!color_provider) {
+    return;
+  }
+
+  if (title_label_) {
+    title_label_->SetEnabledColor(
+        color_provider->GetColor(kGroupHeaderTextColor));
+  }
+  if (count_label_) {
+    count_label_->SetEnabledColor(
+        color_provider->GetColor(kGroupHeaderCountTextColor));
+  }
+}
+
+// =========================================================================
+// AstraTabSearchItemView — single result item
+// =========================================================================
 
 // =========================================================================
 // Construction
@@ -86,10 +228,25 @@ AstraTabSearchItemView::AstraTabSearchItemView(
     const AstraTabSearchItem& tab)
     : tab_data_(tab),
       display_index_(0) {
-  // Map group for legacy compatibility.
-  // TODO(astra): Remove legacy_group_ once bubble is fully migrated.
-  legacy_group_ = Group::kOpenTabs;
-  legacy_identifier_ = base::NumberToString(tab.tab_id);
+  // Map result type to legacy group.
+  switch (tab.result_type) {
+    case AstraTabSearchResultType::kOpenTab:
+      legacy_group_ = Group::kOpenTabs;
+      break;
+    case AstraTabSearchResultType::kRecentlyClosed:
+      legacy_group_ = Group::kRecentlyClosed;
+      break;
+    case AstraTabSearchResultType::kBookmark:
+      legacy_group_ = Group::kBookmarks;
+      break;
+    default:
+      legacy_group_ = Group::kOpenTabs;
+      break;
+  }
+  legacy_identifier_ = base::NumberToString(tab.item_id);
+
+  // Make the view focusable for keyboard navigation.
+  SetFocusBehavior(FocusBehavior::ALWAYS);
 
   SetPaintToLayer();
   layer()->SetFillsBoundsOpaquely(false);
@@ -104,10 +261,15 @@ AstraTabSearchItemView::AstraTabSearchItemView(const TabInfo& tab_info,
   tab_data_.title = tab_info.title;
   tab_data_.hostname = tab_info.host;
   tab_data_.tab_index = tab_info.tab_index;
-  tab_data_.tab_id = tab_info.tab_index;  // Use tab_index as ID for legacy.
+  tab_data_.tab_id = tab_info.tab_index;
+  tab_data_.item_id = tab_info.tab_index;
+  tab_data_.result_type = AstraTabSearchResultType::kOpenTab;
 
   legacy_group_ = tab_info.group;
   legacy_identifier_ = tab_info.identifier;
+
+  // Make the view focusable.
+  SetFocusBehavior(FocusBehavior::ALWAYS);
 
   SetPaintToLayer();
   layer()->SetFillsBoundsOpaquely(false);
@@ -276,6 +438,12 @@ void AstraTabSearchItemView::BuildLayout() {
   UpdateAudioIndicator();
   UpdateWorkspaceLabel();
   UpdatePinnedIndicator();
+  UpdateFaviconAppearance();
+  UpdateBackground();
+  UpdateTextColors();
+  UpdateCloseButtonVisibility();
+  UpdateShortcutHint();
+  UpdateSiteInfo();
 }
 
 // =========================================================================
@@ -290,6 +458,8 @@ void AstraTabSearchItemView::SetTab(const AstraTabSearchItem& tab) {
   UpdateWorkspaceLabel();
   UpdatePinnedIndicator();
   UpdateFaviconAppearance();
+  UpdateSiteInfo();
+  NotifyAccessibilityEvent(ax::mojom::Event::kTextChanged, true);
 }
 
 // =========================================================================
@@ -305,6 +475,7 @@ void AstraTabSearchItemView::SetSelected(bool selected) {
   UpdateCloseButtonVisibility();
   if (selected) {
     NotifyAccessibilityEvent(ax::mojom::Event::kSelection, true);
+    NotifyAccessibilityEvent(ax::mojom::Event::kSelectedChildrenChanged, true);
   }
 }
 
@@ -334,6 +505,25 @@ void AstraTabSearchItemView::SetUrlMatchRanges(
     const std::vector<gfx::Range>& ranges) {
   url_match_ranges_ = ranges;
   // TODO(astra): Apply match highlighting to host_label_ using StyledLabel.
+}
+
+void AstraTabSearchItemView::SetMatches(
+    const std::vector<AstraTabSearchMatch>& matches) {
+  // Separate matches by type.
+  std::vector<gfx::Range> title_ranges;
+  std::vector<gfx::Range> url_ranges;
+
+  for (const auto& match : matches) {
+    if (match.type == AstraTabSearchMatch::Type::kTitle) {
+      title_ranges.push_back(match.range);
+    } else if (match.type == AstraTabSearchMatch::Type::kHostname ||
+               match.type == AstraTabSearchMatch::Type::kUrl) {
+      url_ranges.push_back(match.range);
+    }
+  }
+
+  SetTitleMatchRanges(title_ranges);
+  SetUrlMatchRanges(url_ranges);
 }
 
 // =========================================================================
@@ -372,6 +562,22 @@ void AstraTabSearchItemView::ShowCloseButton(bool show) {
   }
   show_close_button_ = show;
   UpdateCloseButtonVisibility();
+}
+
+void AstraTabSearchItemView::ShowShortcutHint(bool show) {
+  if (show_shortcut_hint_ == show) {
+    return;
+  }
+  show_shortcut_hint_ = show;
+  UpdateShortcutHint();
+}
+
+void AstraTabSearchItemView::ShowSiteInfo(bool show) {
+  if (show_site_info_ == show) {
+    return;
+  }
+  show_site_info_ = show;
+  UpdateSiteInfo();
 }
 
 // =========================================================================
@@ -416,9 +622,27 @@ void AstraTabSearchItemView::OnThemeChanged() {
 }
 
 bool AstraTabSearchItemView::OnMousePressed(const ui::MouseEvent& event) {
-  if (activated_callback_) {
-    activated_callback_.Run();
+  if (event.IsOnlyMiddleMouseButton()) {
+    if (middle_click_callback_) {
+      middle_click_callback_.Run();
+    }
+    return true;
   }
+
+  if (event.IsOnlyLeftMouseButton()) {
+    RequestFocus();
+    if (activated_callback_) {
+      activated_callback_.Run();
+    }
+    return true;
+  }
+
+  return views::View::OnMousePressed(event);
+}
+
+bool AstraTabSearchItemView::OnMouseDragged(const ui::MouseEvent& event) {
+  // Start a drag operation could be implemented here.
+  // For now, just consume the event.
   return true;
 }
 
@@ -430,7 +654,42 @@ void AstraTabSearchItemView::OnMouseExited(const ui::MouseEvent& event) {
   SetHighlighted(false);
 }
 
-void AstraTabSearchItemView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+bool AstraTabSearchItemView::OnKeyPressed(const ui::KeyEvent& event) {
+  if (event.key_code() == ui::VKEY_RETURN ||
+      event.key_code() == ui::VKEY_SPACE) {
+    if (activated_callback_) {
+      activated_callback_.Run();
+    }
+    return true;
+  }
+
+  if (event.key_code() == ui::VKEY_DELETE ||
+      event.key_code() == ui::VKEY_BACK) {
+    if (close_callback_) {
+      close_callback_.Run();
+    }
+    return true;
+  }
+
+  return views::View::OnKeyPressed(event);
+}
+
+void AstraTabSearchItemView::OnFocus() {
+  views::View::OnFocus();
+  focused_ = true;
+  SetSelected(true);
+  NotifyAccessibilityEvent(ax::mojom::Event::kFocus, true);
+}
+
+void AstraTabSearchItemView::OnBlur() {
+  views::View::OnBlur();
+  focused_ = false;
+  // Don't unselect on blur — selection is managed by the bubble.
+  // The bubble controls selection state; focus is just visual.
+}
+
+void AstraTabSearchItemView::GetAccessibleNodeData(
+    ui::AXNodeData* node_data) {
   views::View::GetAccessibleNodeData(node_data);
   node_data->role = ax::mojom::Role::kListItem;
 
@@ -441,23 +700,65 @@ void AstraTabSearchItemView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
   }
   node_data->SetName(name);
 
-  // Description: group category + workspace.
-  std::u16string description = GetGroupName(legacy_group_);
+  // Description: result type + group category + workspace + audio + pinned.
+  std::u16string description = GetResultTypeLabel();
+  if (tab_data_.is_in_group && !tab_data_.group_name.empty()) {
+    description += u" - " + tab_data_.group_name;
+  }
   if (!tab_data_.workspace_name.empty()) {
     description += u" - " + tab_data_.workspace_name;
   }
   if (tab_data_.is_audible) {
-    description += u" - Audio";
+    description += tab_data_.is_muted ? u" - Muted" : u" - Audio";
   }
   if (tab_data_.is_pinned) {
     description += u" - Pinned";
   }
+  if (tab_data_.visit_count > 0) {
+    description += u" - " + base::NumberToString16(tab_data_.visit_count) +
+                    u" visits";
+  }
   node_data->SetDescription(description);
+
+  // Position info (1-based).
+  if (display_index_ > 0) {
+    node_data->AddIntAttribute(ax::mojom::IntAttribute::kPosInSet,
+                                display_index_);
+  }
 
   node_data->AddState(ax::mojom::State::kSelectable);
   if (selected_) {
     node_data->AddState(ax::mojom::State::kSelected);
   }
+  if (tab_data_.is_audible && !tab_data_.is_muted) {
+    node_data->AddState(ax::mojom::State::kBusy);
+  }
+
+  // Value: URL for accessibility tools.
+  if (tab_data_.url.is_valid()) {
+    node_data->SetValue(base::UTF8ToUTF16(tab_data_.url.spec()));
+  }
+}
+
+bool AstraTabSearchItemView::OnGestureEvent(ui::GestureEvent* event) {
+  switch (event->type()) {
+    case ui::ET_GESTURE_TAP:
+      if (activated_callback_) {
+        activated_callback_.Run();
+      }
+      event->SetHandled();
+      return true;
+
+    case ui::ET_GESTURE_LONG_PRESS:
+      // Could show a context menu here.
+      event->SetHandled();
+      return true;
+
+    default:
+      break;
+  }
+
+  return views::View::OnGestureEvent(event);
 }
 
 // =========================================================================
@@ -507,6 +808,11 @@ void AstraTabSearchItemView::UpdateShortcutHint() {
     return;
   }
 
+  if (!show_shortcut_hint_) {
+    shortcut_label_->SetVisible(false);
+    return;
+  }
+
   // Show "Ctrl+N" for the first 9 results.
   if (display_index_ > 0 && display_index_ <= 9) {
     // TODO(astra): Use platform-appropriate modifier key (Ctrl on Linux/Win,
@@ -548,21 +854,28 @@ void AstraTabSearchItemView::UpdateFaviconAppearance() {
     return;
   }
 
-  // Use different colors for different groups as a visual indicator.
+  // Use different colors for different result types as a visual indicator.
   // TODO(astra): Replace with real favicons.
   SkColor color;
-  switch (legacy_group_) {
-    case Group::kOpenTabs:
+  switch (tab_data_.result_type) {
+    case AstraTabSearchResultType::kOpenTab:
       color = color_provider->GetColor(kFaviconPlaceholderColor);
       break;
-    case Group::kRecentlyClosed:
-      color = color_provider->GetColor(kFaviconPlaceholderColor);
+    case AstraTabSearchResultType::kRecentlyClosed:
+      color = color_provider->GetColor(ui::kColorIconSecondary);
       break;
-    case Group::kBookmarks:
+    case AstraTabSearchResultType::kBookmark:
       color = color_provider->GetColor(kColorAstraWorkspaceAccent);
+      break;
+    case AstraTabSearchResultType::kHistory:
+      color = color_provider->GetColor(kFaviconPlaceholderColor);
+      break;
+    default:
+      color = color_provider->GetColor(kFaviconPlaceholderColor);
       break;
   }
   favicon_placeholder_->layer()->SetColor(color);
+  favicon_placeholder_->SetVisible(show_favicon_);
 }
 
 void AstraTabSearchItemView::UpdateGroupColorStrip() {
@@ -632,6 +945,18 @@ void AstraTabSearchItemView::UpdatePinnedIndicator() {
           color_provider->GetColor(kFaviconPlaceholderColor));
     }
   }
+}
+
+void AstraTabSearchItemView::UpdateSiteInfo() {
+  if (!host_label_) {
+    return;
+  }
+
+  host_label_->SetVisible(show_site_info_ && !tab_data_.hostname.empty());
+}
+
+std::u16string AstraTabSearchItemView::GetResultTypeLabel() const {
+  return GetResultTypeName(tab_data_.result_type);
 }
 
 }  // namespace astra

@@ -14,6 +14,7 @@
 #include "chrome/browser/ui/views/frame/browser_view.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/web_contents.h"
+#include "ui/events/event.h"
 #include "ui/views/view.h"
 
 namespace astra {
@@ -1424,6 +1425,231 @@ void AstraSplitViewController::NotifyAstraShutdown() {
   for (AstraSplitViewObserver& observer : astra_observers_) {
     observer.OnSplitViewControllerShutdown(this);
   }
+}
+
+// =========================================================================
+// Layout mode management
+// =========================================================================
+
+AstraSplitLayoutMode AstraSplitViewController::GetLayoutMode() const {
+  return model_.layout_mode();
+}
+
+void AstraSplitViewController::SetLayoutMode(AstraSplitLayoutMode mode) {
+  if (!is_active_ || !split_view_) {
+    // Update model even when inactive (for next activation).
+    model_.SetLayoutMode(mode);
+    return;
+  }
+
+  model_.SetLayoutMode(mode);
+
+  // Update the view to reflect the new layout mode.
+  split_view_->SetLayoutMode(mode);
+
+  // Also update the orientation for 2-pane compatibility.
+  bool horizontal = model_.IsHorizontal();
+  orientation_ = horizontal ? SplitViewOrientation::kHorizontal
+                            : SplitViewOrientation::kVertical;
+
+  // Update metadata on tabs.
+  WriteMetadataToTabs();
+}
+
+void AstraSplitViewController::CycleNextLayoutMode() {
+  if (!is_active_) {
+    model_.CycleNextLayoutMode();
+    return;
+  }
+  model_.CycleNextLayoutMode();
+  if (split_view_) {
+    split_view_->SetLayoutMode(model_.layout_mode());
+  }
+
+  bool horizontal = model_.IsHorizontal();
+  orientation_ = horizontal ? SplitViewOrientation::kHorizontal
+                            : SplitViewOrientation::kVertical;
+  WriteMetadataToTabs();
+}
+
+void AstraSplitViewController::CyclePreviousLayoutMode() {
+  if (!is_active_) {
+    model_.CyclePreviousLayoutMode();
+    return;
+  }
+  model_.CyclePreviousLayoutMode();
+  if (split_view_) {
+    split_view_->SetLayoutMode(model_.layout_mode());
+  }
+
+  bool horizontal = model_.IsHorizontal();
+  orientation_ = horizontal ? SplitViewOrientation::kHorizontal
+                            : SplitViewOrientation::kVertical;
+  WriteMetadataToTabs();
+}
+
+// =========================================================================
+// Keyboard shortcut handling
+// =========================================================================
+
+bool AstraSplitViewController::HandleKeyboardShortcut(const ui::KeyEvent& event) {
+  // TODO(astra): Integrate with Chromium's accelerator system properly.
+  //   Chromium owner: chrome/browser/ui/views/accelerator_table.cc
+  //   This is a skeleton implementation that demonstrates the concept.
+
+  bool is_control = event.IsControlDown() || event.IsCommandDown();
+  bool is_shift = event.IsShiftDown();
+
+  if (!is_control) {
+    return false;
+  }
+
+  switch (event.key_code()) {
+    case ui::VKEY_RETURN:
+      // Ctrl+Enter: Toggle split view.
+      if (is_shift) {
+        // Ctrl+Shift+Enter: Toggle orientation.
+        ToggleOrientation();
+      } else {
+        ToggleSplitView();
+      }
+      return true;
+
+    case ui::VKEY_D:
+      // Ctrl+D: Swap panes.
+      SwapPanes();
+      return true;
+
+    case ui::VKEY_1:
+    case ui::VKEY_2:
+    case ui::VKEY_3:
+    case ui::VKEY_4:
+    case ui::VKEY_5:
+    case ui::VKEY_6: {
+      // Ctrl+1..6: Focus pane N.
+      int pane_index = event.key_code() - ui::VKEY_1;
+      AstraSplitPaneId pane_id = static_cast<AstraSplitPaneId>(pane_index);
+      if (model_.IsValidPaneId(pane_id)) {
+        if (is_shift) {
+          // Ctrl+Shift+N: Move current tab to pane N.
+          // TODO(astra): Implement tab movement between panes.
+          //   Requires TabStripModel integration.
+          //   Chromium owner: TabStripModel::DetachAndInsertWebContentsAt
+        } else {
+          // Ctrl+N: Focus pane N.
+          model_.SetFocusedPane(pane_id);
+          if (pane_index == 0) {
+            FocusPrimaryPane();
+          } else if (pane_index == 1) {
+            FocusSecondaryPane();
+          }
+        }
+      }
+      return true;
+    }
+
+    case ui::VKEY_OEM_4:  // '[' key
+      // Ctrl+[: Focus previous pane.
+      model_.FocusPreviousPane();
+      if (model_.focused_pane() == AstraSplitPaneId::kPane0) {
+        FocusPrimaryPane();
+      } else {
+        FocusSecondaryPane();
+      }
+      return true;
+
+    case ui::VKEY_OEM_6:  // ']' key
+      // Ctrl+]: Focus next pane.
+      model_.FocusNextPane();
+      if (model_.focused_pane() == AstraSplitPaneId::kPane0) {
+        FocusPrimaryPane();
+      } else {
+        FocusSecondaryPane();
+      }
+      return true;
+
+    case ui::VKEY_W:
+      // Ctrl+W: Close focused pane.
+      if (model_.focused_pane() == AstraSplitPaneId::kPane0) {
+        ClosePrimaryPane();
+      } else {
+        CloseSecondaryPane();
+      }
+      return true;
+
+    default:
+      break;
+  }
+
+  return false;
+}
+
+// =========================================================================
+// Tab drag and drop
+// =========================================================================
+
+bool AstraSplitViewController::CanDropTabOnPane(
+    AstraSplitPaneId pane_id,
+    content::WebContents* dragged_contents) const {
+  if (!is_active_ || !dragged_contents) {
+    return false;
+  }
+
+  // Can't drop on the same pane that contains the tab.
+  // TODO(astra): Check if the dragged contents are already in this pane.
+  //   Requires tracking which WebContents are in which pane.
+  //   Chromium owner: TabStripModel + WebContents mapping.
+
+  // Can't drop if the pane ID is invalid.
+  if (!model_.IsValidPaneId(pane_id)) {
+    return false;
+  }
+
+  return true;
+}
+
+void AstraSplitViewController::DropTabOnPane(AstraSplitPaneId pane_id,
+                                              content::WebContents* dropped_contents) {
+  if (!is_active_ || !dropped_contents) {
+    return;
+  }
+  if (!model_.IsValidPaneId(pane_id)) {
+    return;
+  }
+
+  // Replace the pane's contents with the dropped tab.
+  // TODO(astra): Implement actual tab replacement with proper WebContents
+  //   view management.  Requires TabStripModel integration for detaching
+  //   and reattaching tabs.
+  //   Chromium owner: TabStripModel (chrome/browser/ui/tabs/tab_strip_model.h)
+  //   Patch point: May need a small patch to expose tab detachment APIs.
+
+  int pane_index = static_cast<int>(pane_id);
+  if (pane_index == 0) {
+    ReplacePrimaryTab(dropped_contents);
+  } else if (pane_index == 1) {
+    ReplaceSecondaryTab(dropped_contents);
+  }
+
+  // Update the model's focused pane to the drop target.
+  model_.SetFocusedPane(pane_id);
+}
+
+bool AstraSplitViewController::StartSplitFromDrag(
+    AstraSplitPaneId source_pane_id,
+    content::WebContents* dragged_contents) {
+  if (!is_active_ || !dragged_contents) {
+    return false;
+  }
+
+  // TODO(astra): Implement split-from-drag.
+  //   Dragging a tab out of a pane could create a new split, or open
+  //   a new window, or reorder panes.
+  //   Chromium owner: TabDragController (chrome/browser/ui/views/tabs)
+  //   This is a placeholder for the feature.
+
+  // For now, just indicate that the drag is accepted.
+  return true;
 }
 
 }  // namespace astra

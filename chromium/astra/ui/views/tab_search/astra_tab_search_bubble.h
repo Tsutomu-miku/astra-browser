@@ -15,9 +15,11 @@
 #include "astra/ui/views/tab_search/astra_tab_search_model.h"
 
 namespace views {
+class ImageView;
 class Label;
 class ScrollView;
 class Textfield;
+class ToggleButton;
 }  // namespace views
 
 class Browser;
@@ -30,17 +32,34 @@ namespace astra {
 // =========================================================================
 //
 // AstraTabSearchBubble provides a Chromium bubble dialog for searching and
-// switching between open tabs, recently closed tabs, and bookmarks.  Users
-// type to filter results by title or URL, use arrow keys to navigate, and
-// press Enter to activate the selected result.
+// switching between open tabs, recently closed tabs, bookmarks, and history.
+// Users type to filter results by title or URL, use arrow keys to navigate,
+// and press Enter to activate the selected result.
 //
 // This is a projection layer only — all data comes from Chromium
 // subsystems, projected through AstraTabSearchModel.
+//
+// UI structure:
+//   +--------------------------------------------------------------+
+//   |  [Search icon]  Search tabs, bookmarks, history...     [X]  |
+//   |  [ Tabs ] [ Bookmarks ] [ History ] [ Recently Closed ]     |
+//   |  5 results                                                  |
+//   |  -----------------------------------------------------------|
+//   |  = Open Tabs =                                              |
+//   |  [icon] Tab Title 1                           workspace    |
+//   |         example.com                     [audio] [close]   |
+//   |  ...                                                        |
+//   |  = Recent Searches =                                        |
+//   |  [clock] "my document"                       5 visits       |
+//   |  ...                                                        |
+//   |  (empty / no results state)                                 |
+//   +--------------------------------------------------------------+
 //
 // Chromium subsystems reused:
 //   - TabStripModel — source of truth for open tab data.
 //   - TabRestoreService — recently closed tabs.
 //   - BookmarkModel — bookmarks.
+//   - HistoryService — browsing history.
 //   - views::BubbleDialogDelegateView — bubble UI framework.
 //   - views::Textfield — search input field.
 //   - views::ScrollView — scrollable results container.
@@ -97,6 +116,21 @@ class AstraTabSearchBubble : public views::BubbleDialogDelegateView,
 
     // Called when the search mode changes.
     virtual void OnSearchModeChanged(AstraTabSearchMode mode) {}
+
+    // Called when the search filter changes.
+    virtual void OnFilterChanged(AstraTabSearchFilter filter) {}
+
+    // Called when a recent search is selected.
+    virtual void OnRecentSearchSelected(const std::u16string& query) {}
+
+    // Called when user requests to clear recent searches.
+    virtual void OnClearRecentSearches() {}
+
+    // Called when a bookmark is activated.
+    virtual void OnBookmarkActivated(const GURL& url) {}
+
+    // Called when a history entry is activated.
+    virtual void OnHistoryActivated(const GURL& url) {}
 
    protected:
     ~Delegate() = default;
@@ -167,13 +201,19 @@ class AstraTabSearchBubble : public views::BubbleDialogDelegateView,
   // Activate (switch to) the currently selected tab.
   void ActivateSelected();
 
-  // -- Search mode ---------------------------------------------------------
+  // -- Search mode / filter ------------------------------------------------
 
   // Set the current search mode (all tabs, current workspace, etc.).
   void SetSearchMode(AstraTabSearchMode mode);
 
   // Get the current search mode.
   AstraTabSearchMode GetSearchMode() const;
+
+  // Set the active result filter.
+  void SetFilter(AstraTabSearchFilter filter);
+
+  // Get the active result filter.
+  AstraTabSearchFilter GetFilter() const;
 
   // -- Bubble sizing -------------------------------------------------------
 
@@ -207,8 +247,16 @@ class AstraTabSearchBubble : public views::BubbleDialogDelegateView,
 
   void OnTabListChanged(AstraTabSearchModel* model) override;
   void OnSearchResultsChanged(AstraTabSearchModel* model) override;
+  void OnSelectedIndexChanged(AstraTabSearchModel* model,
+                              size_t old_index,
+                              size_t new_index) override;
   void OnSearchModeChanged(AstraTabSearchModel* model,
                            AstraTabSearchMode mode) override;
+  void OnFilterChanged(AstraTabSearchModel* model,
+                       AstraTabSearchFilter filter) override;
+  void OnQueryChanged(AstraTabSearchModel* model,
+                      const std::u16string& query) override;
+  void OnRecentSearchesChanged(AstraTabSearchModel* model) override;
   void OnTabSearchModelShutdown(AstraTabSearchModel* model) override;
 
  private:
@@ -222,6 +270,9 @@ class AstraTabSearchBubble : public views::BubbleDialogDelegateView,
   // Build the child views and layout.
   void BuildLayout();
 
+  // Build the category toggle bar.
+  void BuildCategoryToggles(views::View* container);
+
   // -----------------------------------------------------------------------
   // Results UI
   // -----------------------------------------------------------------------
@@ -230,11 +281,24 @@ class AstraTabSearchBubble : public views::BubbleDialogDelegateView,
   void UpdateResults();
 
   // Add a group header label to the results container.
-  void AddGroupHeader(AstraTabSearchItemView::Group group, size_t count);
+  void AddGroupHeader(AstraTabSearchResultType type,
+                      const std::u16string& title,
+                      size_t count);
 
   // Add a result item to the results container.
   AstraTabSearchItemView* AddResultItem(const AstraTabSearchItem& item,
-                                        int display_index);
+                                        int display_index,
+                                        size_t result_index);
+
+  // Add a recent search entry to the results container.
+  void AddRecentSearchItem(const AstraTabSearchRecentSearch& entry,
+                           int display_index);
+
+  // Show the empty state (no query, no results available).
+  void ShowEmptyState();
+
+  // Show the "no results" state (query has no matches).
+  void ShowNoResultsState();
 
   // Move the selection by |delta| items (positive = down, negative = up).
   // Clamps to valid range.
@@ -269,8 +333,12 @@ class AstraTabSearchBubble : public views::BubbleDialogDelegateView,
   // Returns nullptr if the index is out of range.
   AstraTabSearchItemView* GetItemViewAt(size_t index) const;
 
-  // Get the group of the result at the given index.
-  AstraTabSearchItemView::Group GetGroupAt(size_t index) const;
+  // Find the group header for a result type.
+  AstraTabSearchGroupHeaderView* GetGroupHeaderForType(
+      AstraTabSearchResultType type) const;
+
+  // Get the total count of selectable items (including recent searches).
+  size_t GetTotalSelectableCount() const;
 
   // -----------------------------------------------------------------------
   // Helpers
@@ -283,8 +351,19 @@ class AstraTabSearchBubble : public views::BubbleDialogDelegateView,
   static std::u16string GetGroupLabel(AstraTabSearchItemView::Group group,
                                       size_t count);
 
+  // Get a human-readable label for a result type.
+  static std::u16string GetResultTypeLabel(AstraTabSearchResultType type);
+
   // Refresh the model's tab list from the TabStripModel.
   void RefreshModelFromTabStrip();
+
+  // Update category toggle states to match current filter.
+  void UpdateCategoryTogglesFromFilter();
+
+  // Handle a category toggle being clicked.
+  void OnCategoryToggleClicked(AstraTabSearchFilter filter);
+
+  // -----------------------------------------------------------------------
 
   raw_ptr<Browser> browser_;
   raw_ptr<Delegate> delegate_ = nullptr;
@@ -296,13 +375,26 @@ class AstraTabSearchBubble : public views::BubbleDialogDelegateView,
   std::vector<AstraTabSearchItem> results_;
 
   // Child views (owned by the view hierarchy).
+  raw_ptr<views::View> search_row_ = nullptr;
+  raw_ptr<views::ImageView> search_icon_ = nullptr;
   raw_ptr<views::Textfield> search_field_ = nullptr;
+  raw_ptr<views::View> category_row_ = nullptr;
+  raw_ptr<views::ToggleButton> tabs_toggle_ = nullptr;
+  raw_ptr<views::ToggleButton> bookmarks_toggle_ = nullptr;
+  raw_ptr<views::ToggleButton> history_toggle_ = nullptr;
+  raw_ptr<views::ToggleButton> recent_toggle_ = nullptr;
   raw_ptr<views::Label> result_count_label_ = nullptr;
   raw_ptr<views::ScrollView> scroll_view_ = nullptr;
   raw_ptr<views::View> results_container_ = nullptr;
+  raw_ptr<views::View> empty_state_view_ = nullptr;
+  raw_ptr<views::View> no_results_view_ = nullptr;
 
-  // Currently selected result index (0-based, into results_).
+  // Currently selected result index (0-based, into the flat results list).
   size_t selected_index_ = 0;
+
+  // Whether we're currently showing the empty / no-results state.
+  bool showing_empty_state_ = false;
+  bool showing_no_results_ = false;
 
   // Bubble dimensions.
   int bubble_width_ = 360;

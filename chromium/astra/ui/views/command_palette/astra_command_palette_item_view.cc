@@ -177,7 +177,27 @@ void AstraCommandPaletteItemView::BuildLayout() {
       gfx::Font::Weight::BOLD));
   type_badge_label_->SetBorder(views::CreateEmptyBorder(
       gfx::Insets::VH(kTypeBadgePaddingV, kTypeBadgePaddingH)));
-  type_badge_label_->SetVisible(false);  // Hidden by default.
+
+  // Recent badge (clock icon indicator for recently used commands).
+  recent_badge_container_ = bottom_row->AddChildView(std::make_unique<views::View>());
+  recent_badge_container_->SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::Orientation::kHorizontal,
+      gfx::Insets::VH(0, kTypeBadgeLeftMargin), 0));
+  static_cast<views::BoxLayout*>(recent_badge_container_->GetLayoutManager())
+      ->set_main_axis_alignment(
+          views::BoxLayout::MainAxisAlignment::kCenter);
+  static_cast<views::BoxLayout*>(recent_badge_container_->GetLayoutManager())
+      ->set_cross_axis_alignment(
+          views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  recent_badge_label_ = recent_badge_container_->AddChildView(
+      std::make_unique<views::Label>(u"◷"));
+  recent_badge_label_->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  recent_badge_label_->SetAutoColorReadabilityEnabled(false);
+  recent_badge_label_->SetFontList(views::Label::GetDefaultFontList().Derive(
+      kTypeBadgeFontSizeDelta, gfx::Font::FontStyle::NORMAL,
+      gfx::Font::Weight::NORMAL));
+  recent_badge_container_->SetVisible(false);  // Hidden by default.
 
   // Set initial accessibility info.
   SetAccessibleName(command_.title);
@@ -192,6 +212,7 @@ void AstraCommandPaletteItemView::SetCommand(const AstraCommandItem& command) {
   command_ = command;
   UpdateTextContent();
   ApplyMatchHighlighting();
+  ShowRecentBadge(command.is_recent);
   SetAccessibleName(command_.title);
   SetAccessibleDescription(command_.description);
 }
@@ -262,6 +283,24 @@ void AstraCommandPaletteItemView::ShowDescription(bool show) {
   }
   show_description_ = show;
   description_label_->parent()->SetVisible(show);
+  InvalidateLayout();
+}
+
+void AstraCommandPaletteItemView::ShowCategoryBadge(bool show) {
+  if (show_category_badge_ == show) {
+    return;
+  }
+  show_category_badge_ = show;
+  type_badge_label_->SetVisible(show);
+  InvalidateLayout();
+}
+
+void AstraCommandPaletteItemView::ShowRecentBadge(bool show) {
+  if (show_recent_badge_ == show) {
+    return;
+  }
+  show_recent_badge_ = show;
+  recent_badge_container_->SetVisible(show);
   InvalidateLayout();
 }
 
@@ -394,6 +433,10 @@ void AstraCommandPaletteItemView::UpdateTextColors() {
   // Type badge uses a muted color.
   type_badge_label_->SetEnabledColor(
       color_provider->GetColor(kColorAstraCommandPaletteDescriptionText));
+
+  // Recent badge uses a subtle accent-like color.
+  recent_badge_label_->SetEnabledColor(
+      color_provider->GetColor(kColorAstraCommandPaletteShortcutText));
 }
 
 }  // namespace astra

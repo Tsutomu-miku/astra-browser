@@ -636,6 +636,464 @@ gfx::Size AstraSplitMinimapView::CalculatePreferredSize(
 }
 
 // =========================================================================
+// AstraSplitViewButton
+// =========================================================================
+
+AstraSplitViewButton::AstraSplitViewButton(PressedCallback callback)
+    : ImageButton(std::move(callback)) {
+  SetFocusBehavior(FocusBehavior::ALWAYS);
+  SetAccessibleName(GetAccessibleName());
+  // Make the button have a reasonable touch target size.
+  SetMinSize(gfx::Size(28, 28));
+}
+
+AstraSplitViewButton::~AstraSplitViewButton() = default;
+
+void AstraSplitViewButton::SetAccessibleName(const std::u16string& name) {
+  accessible_name_ = name;
+  views::ImageButton::SetAccessibleName(name);
+}
+
+void AstraSplitViewButton::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  views::ImageButton::GetAccessibleNodeData(node_data);
+  node_data->role = ax::mojom::Role::kButton;
+  if (!accessible_name_.empty()) {
+    node_data->SetName(accessible_name_);
+  }
+}
+
+void AstraSplitViewButton::OnThemeChanged() {
+  views::ImageButton::OnThemeChanged();
+  SchedulePaint();
+}
+
+// =========================================================================
+// AstraSplitCloseButton
+// =========================================================================
+
+AstraSplitCloseButton::AstraSplitCloseButton(PressedCallback callback)
+    : AstraSplitViewButton(std::move(callback)) {
+  // TODO(astra): Use a proper vector icon from ui/gfx/vector_icon.
+  //   Chromium owner: ui/gfx/vector_icons/
+  //   For now, we paint a simple X icon.
+  SetAccessibleName(u"Close pane");
+  SetTooltipText(u"Close pane");
+}
+
+AstraSplitCloseButton::~AstraSplitCloseButton() = default;
+
+void AstraSplitCloseButton::PaintButtonContents(gfx::Canvas* canvas) {
+  // Draw a simple 'X' close icon.
+  gfx::Rect bounds = GetLocalBounds();
+  int size = std::min(bounds.width(), bounds.height());
+  int padding = size / 4;
+  int icon_size = size - padding * 2;
+  int x = (bounds.width() - icon_size) / 2;
+  int y = (bounds.height() - icon_size) / 2;
+
+  SkColor icon_color = SK_ColorGRAY;
+  if (GetColorProvider()) {
+    // Use the default icon color from the color provider.
+    icon_color = GetColorProvider()->GetColor(ui::kColorIcon);
+  }
+
+  // Draw two diagonal lines to form an X.
+  cc::PaintFlags flags;
+  flags.setColor(icon_color);
+  flags.setStrokeWidth(2);
+  flags.setStyle(cc::PaintFlags::kStroke_Style);
+  flags.setAntiAlias(true);
+
+  canvas->DrawLine(gfx::Point(x, y),
+                   gfx::Point(x + icon_size, y + icon_size), flags);
+  canvas->DrawLine(gfx::Point(x + icon_size, y),
+                   gfx::Point(x, y + icon_size), flags);
+}
+
+// =========================================================================
+// AstraSplitSwapButton
+// =========================================================================
+
+AstraSplitSwapButton::AstraSplitSwapButton(PressedCallback callback)
+    : AstraSplitViewButton(std::move(callback)) {
+  SetAccessibleName(u"Swap panes");
+  SetTooltipText(u"Swap primary and secondary panes");
+}
+
+AstraSplitSwapButton::~AstraSplitSwapButton() = default;
+
+void AstraSplitSwapButton::PaintButtonContents(gfx::Canvas* canvas) {
+  // Draw a simple swap icon (two arrows pointing in opposite directions).
+  gfx::Rect bounds = GetLocalBounds();
+  int size = std::min(bounds.width(), bounds.height());
+  int padding = size / 5;
+  int icon_size = size - padding * 2;
+  int x = (bounds.width() - icon_size) / 2;
+  int y = (bounds.height() - icon_size) / 2;
+
+  SkColor icon_color = SK_ColorGRAY;
+  if (GetColorProvider()) {
+    icon_color = GetColorProvider()->GetColor(ui::kColorIcon);
+  }
+
+  cc::PaintFlags flags;
+  flags.setColor(icon_color);
+  flags.setStrokeWidth(2);
+  flags.setStyle(cc::PaintFlags::kStroke_Style);
+  flags.setAntiAlias(true);
+
+  // Top arrow (pointing right).
+  int arrow_top = y + icon_size / 4;
+  int arrow_bottom = y + icon_size * 3 / 4;
+  int arrow_right = x + icon_size;
+  int arrow_left = x;
+
+  // Top line (rightward arrow).
+  canvas->DrawLine(gfx::Point(arrow_left, arrow_top),
+                   gfx::Point(arrow_right - 4, arrow_top), flags);
+  // Arrowhead for top line.
+  canvas->DrawLine(gfx::Point(arrow_right - 4, arrow_top),
+                   gfx::Point(arrow_right - 8, arrow_top - 4), flags);
+  canvas->DrawLine(gfx::Point(arrow_right - 4, arrow_top),
+                   gfx::Point(arrow_right - 8, arrow_top + 4), flags);
+
+  // Bottom line (leftward arrow).
+  canvas->DrawLine(gfx::Point(arrow_right, arrow_bottom),
+                   gfx::Point(arrow_left + 4, arrow_bottom), flags);
+  // Arrowhead for bottom line.
+  canvas->DrawLine(gfx::Point(arrow_left + 4, arrow_bottom),
+                   gfx::Point(arrow_left + 8, arrow_bottom - 4), flags);
+  canvas->DrawLine(gfx::Point(arrow_left + 4, arrow_bottom),
+                   gfx::Point(arrow_left + 8, arrow_bottom + 4), flags);
+}
+
+// =========================================================================
+// AstraSplitLayoutToggleButton
+// =========================================================================
+
+AstraSplitLayoutToggleButton::AstraSplitLayoutToggleButton(
+    PressedCallback callback)
+    : AstraSplitViewButton(std::move(callback)) {
+  SetAccessibleName(u"Toggle split layout");
+  SetTooltipText(u"Toggle between horizontal and vertical split");
+}
+
+AstraSplitLayoutToggleButton::~AstraSplitLayoutToggleButton() = default;
+
+void AstraSplitLayoutToggleButton::SetLayoutMode(AstraSplitLayoutMode mode) {
+  if (layout_mode_ == mode) {
+    return;
+  }
+  layout_mode_ = mode;
+  SchedulePaint();
+
+  // Update accessible name and tooltip based on mode.
+  // TODO(astra): Use localized strings.
+  switch (mode) {
+    case AstraSplitLayoutMode::kTwoPaneHorizontal:
+      SetAccessibleName(u"Switch to vertical split");
+      SetTooltipText(u"Switch to vertical split");
+      break;
+    case AstraSplitLayoutMode::kTwoPaneVertical:
+      SetAccessibleName(u"Switch to horizontal split");
+      SetTooltipText(u"Switch to horizontal split");
+      break;
+    case AstraSplitLayoutMode::kThreePaneHorizontal:
+      SetAccessibleName(u"Switch to three-pane vertical split");
+      SetTooltipText(u"Switch to three-pane vertical split");
+      break;
+    case AstraSplitLayoutMode::kThreePaneVertical:
+      SetAccessibleName(u"Switch to three-pane horizontal split");
+      SetTooltipText(u"Switch to three-pane horizontal split");
+      break;
+    case AstraSplitLayoutMode::kGridTwoByTwo:
+      SetAccessibleName(u"Next layout mode");
+      SetTooltipText(u"Next layout mode");
+      break;
+    case AstraSplitLayoutMode::kGridThreeByTwo:
+      SetAccessibleName(u"Next layout mode");
+      SetTooltipText(u"Next layout mode");
+      break;
+  }
+}
+
+void AstraSplitLayoutToggleButton::PaintButtonContents(gfx::Canvas* canvas) {
+  gfx::Rect bounds = GetLocalBounds();
+  int size = std::min(bounds.width(), bounds.height());
+  int padding = size / 5;
+  int icon_size = size - padding * 2;
+  int x = (bounds.width() - icon_size) / 2;
+  int y = (bounds.height() - icon_size) / 2;
+
+  SkColor icon_color = SK_ColorGRAY;
+  SkColor divider_color = SK_ColorLTGRAY;
+  if (GetColorProvider()) {
+    icon_color = GetColorProvider()->GetColor(ui::kColorIcon);
+    divider_color = GetColorProvider()->GetColor(ui::kColorSeparator);
+  }
+
+  // Draw the layout icon based on the current mode.
+  switch (layout_mode_) {
+    case AstraSplitLayoutMode::kTwoPaneHorizontal:
+    case AstraSplitLayoutMode::kThreePaneHorizontal:
+    case AstraSplitLayoutMode::kGridThreeByTwo: {
+      // Two rectangles side by side (horizontal split indicator).
+      int half = icon_size / 2;
+      // Left pane.
+      canvas->FillRect(gfx::Rect(x, y, half - 1, icon_size), icon_color);
+      // Right pane.
+      canvas->FillRect(gfx::Rect(x + half + 1, y, icon_size - half - 1,
+                       icon_size), icon_color);
+      break;
+    }
+    case AstraSplitLayoutMode::kTwoPaneVertical:
+    case AstraSplitLayoutMode::kThreePaneVertical:
+    case AstraSplitLayoutMode::kGridTwoByTwo: {
+      // Two rectangles stacked (vertical split indicator).
+      int half = icon_size / 2;
+      // Top pane.
+      canvas->FillRect(gfx::Rect(x, y, icon_size, half - 1), icon_color);
+      // Bottom pane.
+      canvas->FillRect(gfx::Rect(x, y + half + 1, icon_size,
+                       icon_size - half - 1), icon_color);
+      break;
+    }
+  }
+}
+
+// =========================================================================
+// AstraSplitPaneHeader
+// =========================================================================
+
+AstraSplitPaneHeader::AstraSplitPaneHeader() {
+  SetPaintToLayer();
+
+  // Create the close button (hidden by default).
+  close_button_ = AddChildView(std::make_unique<AstraSplitCloseButton>(
+      base::BindRepeating(&AstraSplitPaneHeader::OnCloseButtonPressed,
+                          base::Unretained(this))));
+  close_button_->SetPane(pane_);
+  close_button_->SetVisible(false);
+}
+
+AstraSplitPaneHeader::~AstraSplitPaneHeader() = default;
+
+void AstraSplitPaneHeader::SetTitle(const std::u16string& title) {
+  if (title_ == title) {
+    return;
+  }
+  title_ = title;
+  SchedulePaint();
+  NotifyAccessibilityEvent(ax::mojom::Event::kTextChanged, true);
+}
+
+void AstraSplitPaneHeader::SetShowCloseButton(bool show) {
+  if (show_close_button_ == show) {
+    return;
+  }
+  show_close_button_ = show;
+  if (close_button_) {
+    close_button_->SetVisible(show);
+  }
+  Layout();
+}
+
+void AstraSplitPaneHeader::Layout() {
+  gfx::Rect bounds = GetLocalBounds();
+  const int kCloseButtonSize = 24;
+  const int kCloseButtonMargin = 4;
+
+  // Position the close button on the right side.
+  if (close_button_ && show_close_button_) {
+    int close_x = bounds.width() - kCloseButtonSize - kCloseButtonMargin;
+    int close_y = (bounds.height() - kCloseButtonSize) / 2;
+    close_button_->SetBounds(close_x, close_y, kCloseButtonSize,
+                             kCloseButtonSize);
+  }
+}
+
+gfx::Size AstraSplitPaneHeader::CalculatePreferredSize(
+    const views::SizeBounds& available_size) const {
+  // Default height of 28 DIPs for the header bar.
+  return gfx::Size(0, 28);
+}
+
+void AstraSplitPaneHeader::OnPaint(gfx::Canvas* canvas) {
+  views::View::OnPaint(canvas);
+
+  gfx::Rect bounds = GetLocalBounds();
+
+  // Draw background.
+  SkColor bg_color = SK_ColorWHITE;
+  if (GetColorProvider()) {
+    bg_color = GetColorProvider()->GetColor(ui::kColorTabBackground);
+  }
+  canvas->FillRect(bounds, bg_color);
+
+  // Draw bottom border.
+  SkColor border_color = SK_ColorLTGRAY;
+  if (GetColorProvider()) {
+    border_color = GetColorProvider()->GetColor(ui::kColorSeparator);
+  }
+  canvas->FillRect(gfx::Rect(0, bounds.height() - 1, bounds.width(), 1),
+                   border_color);
+
+  // Draw title text (if we have a title).
+  if (!title_.empty()) {
+    // TODO(astra): Use proper text rendering with gfx::Canvas::DrawStringRect
+    //   or views::Label.  For now, we skip text rendering and rely on
+    //   accessibility for the title.
+    //
+    // Chromium owner: ui/gfx/canvas.h — DrawStringRect.
+    //   views::Label for proper label rendering.
+  }
+}
+
+void AstraSplitPaneHeader::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  views::View::GetAccessibleNodeData(node_data);
+  node_data->role = ax::mojom::Role::kGrouping;
+  if (!title_.empty()) {
+    node_data->SetName(title_);
+  } else {
+    // Default accessible name based on pane position.
+    node_data->SetName(pane_ == AstraSplitPane::kPrimary
+                           ? u"Primary pane header"
+                           : u"Secondary pane header");
+  }
+}
+
+void AstraSplitPaneHeader::OnThemeChanged() {
+  views::View::OnThemeChanged();
+  SchedulePaint();
+}
+
+void AstraSplitPaneHeader::OnCloseButtonPressed() {
+  if (close_callback_) {
+    close_callback_.Run();
+  }
+}
+
+// =========================================================================
+// AstraSplitDividerToolbar
+// =========================================================================
+
+AstraSplitDividerToolbar::AstraSplitDividerToolbar() {
+  SetPaintToLayer();
+
+  // Create swap button.
+  swap_button_ = AddChildView(std::make_unique<AstraSplitSwapButton>(
+      base::BindRepeating([]() {
+        // Callback is set later via SetSwapCallback.
+      })));
+
+  // Create layout toggle button.
+  layout_toggle_button_ =
+      AddChildView(std::make_unique<AstraSplitLayoutToggleButton>(
+          base::BindRepeating([]() {
+            // Callback is set later via SetLayoutToggleCallback.
+          })));
+}
+
+AstraSplitDividerToolbar::~AstraSplitDividerToolbar() = default;
+
+void AstraSplitDividerToolbar::SetSwapCallback(base::RepeatingClosure callback) {
+  if (swap_button_) {
+    swap_button_->SetCallback(
+        base::BindRepeating([](base::RepeatingClosure cb, const ui::Event&) {
+          if (cb) cb.Run();
+        }, callback));
+  }
+}
+
+void AstraSplitDividerToolbar::SetLayoutToggleCallback(
+    base::RepeatingClosure callback) {
+  if (layout_toggle_button_) {
+    layout_toggle_button_->SetCallback(
+        base::BindRepeating([](base::RepeatingClosure cb, const ui::Event&) {
+          if (cb) cb.Run();
+        }, callback));
+  }
+}
+
+void AstraSplitDividerToolbar::UpdateLayoutMode(AstraSplitLayoutMode mode) {
+  if (layout_toggle_button_) {
+    layout_toggle_button_->SetLayoutMode(mode);
+  }
+}
+
+void AstraSplitDividerToolbar::SetToolbarVisible(bool visible) {
+  if (toolbar_visible_ == visible) {
+    return;
+  }
+  toolbar_visible_ = visible;
+  SetVisible(visible);
+  SchedulePaint();
+}
+
+void AstraSplitDividerToolbar::Layout() {
+  gfx::Rect bounds = GetLocalBounds();
+  const int kButtonSize = 24;
+  const int kButtonSpacing = 4;
+
+  int total_width = kButtonSize * 2 + kButtonSpacing;
+  int start_x = (bounds.width() - total_width) / 2;
+  int y = (bounds.height() - kButtonSize) / 2;
+
+  if (swap_button_) {
+    swap_button_->SetBounds(start_x, y, kButtonSize, kButtonSize);
+  }
+
+  if (layout_toggle_button_) {
+    layout_toggle_button_->SetBounds(start_x + kButtonSize + kButtonSpacing,
+                                      y, kButtonSize, kButtonSize);
+  }
+}
+
+gfx::Size AstraSplitDividerToolbar::CalculatePreferredSize(
+    const views::SizeBounds& available_size) const {
+  const int kButtonSize = 24;
+  const int kButtonSpacing = 4;
+  const int kToolbarPadding = 4;
+  return gfx::Size(kButtonSize * 2 + kButtonSpacing + kToolbarPadding * 2,
+                   kButtonSize + kToolbarPadding * 2);
+}
+
+void AstraSplitDividerToolbar::OnPaint(gfx::Canvas* canvas) {
+  views::View::OnPaint(canvas);
+
+  gfx::Rect bounds = GetLocalBounds();
+
+  // Draw background (rounded rectangle).
+  SkColor bg_color = SK_ColorWHITE;
+  if (GetColorProvider()) {
+    bg_color = GetColorProvider()->GetColor(ui::kColorDialogBackground);
+  }
+
+  // Draw a simple rounded background.
+  // TODO(astra): Use views::Background or a proper rounded rect painter.
+  //   Chromium owner: ui/views/background.h and ui/gfx/canvas_skia.h.
+  canvas->FillRect(bounds, bg_color);
+
+  // Draw border.
+  SkColor border_color = SK_ColorLTGRAY;
+  if (GetColorProvider()) {
+    border_color = GetColorProvider()->GetColor(ui::kColorSeparator);
+  }
+  canvas->DrawRect(bounds, border_color);
+}
+
+void AstraSplitDividerToolbar::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  views::View::GetAccessibleNodeData(node_data);
+  node_data->role = ax::mojom::Role::kToolbar;
+  node_data->SetName(u"Split view toolbar");
+}
+
+void AstraSplitDividerToolbar::OnThemeChanged() {
+  views::View::OnThemeChanged();
+  SchedulePaint();
+}
+
+// =========================================================================
 // AstraSplitView
 // =========================================================================
 
@@ -1017,11 +1475,366 @@ bool AstraSplitView::IsDraggingDivider() const {
 }
 
 // =========================================================================
+// Layout modes and multi-pane support
+// =========================================================================
+
+void AstraSplitView::SetLayoutMode(AstraSplitLayoutMode mode) {
+  if (layout_mode_ == mode) {
+    return;
+  }
+
+  layout_mode_ = mode;
+
+  // Map layout mode to orientation and ratio for 2-pane compatibility.
+  // TODO(astra): Full multi-pane support requires multiple dividers and
+  //   a grid layout manager.  For now, we adapt the 2-pane layout to
+  //   reflect the mode for presentation purposes.
+  //   Chromium owner: views::GridLayout (ui/views/layout/grid_layout.h)
+  switch (mode) {
+    case AstraSplitLayoutMode::kTwoPaneHorizontal:
+    case AstraSplitLayoutMode::kThreePaneHorizontal:
+    case AstraSplitLayoutMode::kGridTwoByTwo:
+    case AstraSplitLayoutMode::kGridThreeByTwo:
+      SetOrientation(SplitViewOrientation::kHorizontal);
+      break;
+    case AstraSplitLayoutMode::kTwoPaneVertical:
+    case AstraSplitLayoutMode::kThreePaneVertical:
+      SetOrientation(SplitViewOrientation::kVertical);
+      break;
+  }
+
+  // Update the divider toolbar layout toggle button.
+  if (divider_toolbar_) {
+    divider_toolbar_->UpdateLayoutMode(mode);
+  }
+
+  InvalidateLayout();
+}
+
+int AstraSplitView::GetPaneCount() const {
+  // TODO(astra): Return actual pane count based on layout mode.
+  //   For 2-pane modes: 2 panes.
+  //   For 3-pane modes: 3 panes (not yet implemented).
+  //   For grid modes: columns * rows panes (not yet implemented).
+  //   Currently we support 2 panes in all modes for the skeleton.
+  switch (layout_mode_) {
+    case AstraSplitLayoutMode::kTwoPaneHorizontal:
+    case AstraSplitLayoutMode::kTwoPaneVertical:
+      return 2;
+    case AstraSplitLayoutMode::kThreePaneHorizontal:
+    case AstraSplitLayoutMode::kThreePaneVertical:
+      // TODO(astra): Implement 3-pane layout.
+      return 2;  // Still 2 implemented panes
+    case AstraSplitLayoutMode::kGridTwoByTwo:
+      // TODO(astra): Implement 2x2 grid layout.
+      return 2;  // Still 2 implemented panes
+    case AstraSplitLayoutMode::kGridThreeByTwo:
+      // TODO(astra): Implement 3x2 grid layout.
+      return 2;  // Still 2 implemented panes
+  }
+  return 2;
+}
+
+bool AstraSplitView::IsGridLayout() const {
+  return layout_mode_ == AstraSplitLayoutMode::kGridTwoByTwo ||
+         layout_mode_ == AstraSplitLayoutMode::kGridThreeByTwo;
+}
+
+void AstraSplitView::CycleNextLayoutMode() {
+  // Cycle through all layout modes in order.
+  AstraSplitLayoutMode next;
+  switch (layout_mode_) {
+    case AstraSplitLayoutMode::kTwoPaneHorizontal:
+      next = AstraSplitLayoutMode::kTwoPaneVertical;
+      break;
+    case AstraSplitLayoutMode::kTwoPaneVertical:
+      next = AstraSplitLayoutMode::kThreePaneHorizontal;
+      break;
+    case AstraSplitLayoutMode::kThreePaneHorizontal:
+      next = AstraSplitLayoutMode::kThreePaneVertical;
+      break;
+    case AstraSplitLayoutMode::kThreePaneVertical:
+      next = AstraSplitLayoutMode::kGridTwoByTwo;
+      break;
+    case AstraSplitLayoutMode::kGridTwoByTwo:
+      next = AstraSplitLayoutMode::kGridThreeByTwo;
+      break;
+    case AstraSplitLayoutMode::kGridThreeByTwo:
+      next = AstraSplitLayoutMode::kTwoPaneHorizontal;
+      break;
+  }
+  SetLayoutMode(next);
+}
+
+void AstraSplitView::CyclePreviousLayoutMode() {
+  // Cycle backwards through layout modes.
+  AstraSplitLayoutMode prev;
+  switch (layout_mode_) {
+    case AstraSplitLayoutMode::kTwoPaneHorizontal:
+      prev = AstraSplitLayoutMode::kGridThreeByTwo;
+      break;
+    case AstraSplitLayoutMode::kTwoPaneVertical:
+      prev = AstraSplitLayoutMode::kTwoPaneHorizontal;
+      break;
+    case AstraSplitLayoutMode::kThreePaneHorizontal:
+      prev = AstraSplitLayoutMode::kTwoPaneVertical;
+      break;
+    case AstraSplitLayoutMode::kThreePaneVertical:
+      prev = AstraSplitLayoutMode::kThreePaneHorizontal;
+      break;
+    case AstraSplitLayoutMode::kGridTwoByTwo:
+      prev = AstraSplitLayoutMode::kThreePaneVertical;
+      break;
+    case AstraSplitLayoutMode::kGridThreeByTwo:
+      prev = AstraSplitLayoutMode::kGridTwoByTwo;
+      break;
+  }
+  SetLayoutMode(prev);
+}
+
+// =========================================================================
+// Pane headers and control buttons
+// =========================================================================
+
+void AstraSplitView::SetShowPaneHeaders(bool show) {
+  if (show_pane_headers_ == show) {
+    return;
+  }
+  show_pane_headers_ = show;
+  UpdatePaneHeaders();
+  InvalidateLayout();
+}
+
+void AstraSplitView::SetPaneTitle(AstraSplitPane pane,
+                                  const std::u16string& title) {
+  if (pane == AstraSplitPane::kPrimary && primary_header_) {
+    primary_header_->SetTitle(title);
+    primary_label_ = title;
+  } else if (pane == AstraSplitPane::kSecondary && secondary_header_) {
+    secondary_header_->SetTitle(title);
+    secondary_label_ = title;
+  }
+}
+
+void AstraSplitView::SetShowDividerToolbar(bool show) {
+  if (show_divider_toolbar_ == show) {
+    return;
+  }
+  show_divider_toolbar_ = show;
+  UpdateDividerToolbar();
+  InvalidateLayout();
+}
+
+void AstraSplitView::UpdatePaneHeaders() {
+  if (show_pane_headers_) {
+    // Create primary header if needed.
+    if (!primary_header_) {
+      primary_header_ = AddChildView(std::make_unique<AstraSplitPaneHeader>());
+      primary_header_->SetPane(AstraSplitPane::kPrimary);
+      primary_header_->SetTitle(primary_label_);
+      primary_header_->SetShowCloseButton(true);
+      primary_header_->SetCloseCallback(
+          base::BindRepeating(&AstraSplitView::OnCloseButtonPressed,
+                              base::Unretained(this),
+                              AstraSplitPane::kPrimary));
+    }
+    // Create secondary header if needed.
+    if (!secondary_header_) {
+      secondary_header_ = AddChildView(std::make_unique<AstraSplitPaneHeader>());
+      secondary_header_->SetPane(AstraSplitPane::kSecondary);
+      secondary_header_->SetTitle(secondary_label_);
+      secondary_header_->SetShowCloseButton(true);
+      secondary_header_->SetCloseCallback(
+          base::BindRepeating(&AstraSplitView::OnCloseButtonPressed,
+                              base::Unretained(this),
+                              AstraSplitPane::kSecondary));
+    }
+
+    primary_header_->SetVisible(true);
+    secondary_header_->SetVisible(true);
+  } else {
+    // Hide headers but keep them in the hierarchy for fast toggle.
+    if (primary_header_) {
+      primary_header_->SetVisible(false);
+    }
+    if (secondary_header_) {
+      secondary_header_->SetVisible(false);
+    }
+  }
+}
+
+void AstraSplitView::UpdateDividerToolbar() {
+  if (show_divider_toolbar_) {
+    if (!divider_toolbar_) {
+      divider_toolbar_ = AddChildView(std::make_unique<AstraSplitDividerToolbar>());
+      divider_toolbar_->SetSwapCallback(
+          base::BindRepeating(&AstraSplitView::OnSwapButtonPressed,
+                              base::Unretained(this)));
+      divider_toolbar_->SetLayoutToggleCallback(
+          base::BindRepeating(&AstraSplitView::OnLayoutToggleButtonPressed,
+                              base::Unretained(this)));
+      divider_toolbar_->UpdateLayoutMode(layout_mode_);
+    }
+    divider_toolbar_->SetVisible(true);
+    divider_toolbar_->SetToolbarVisible(true);
+  } else {
+    if (divider_toolbar_) {
+      divider_toolbar_->SetVisible(false);
+    }
+  }
+}
+
+void AstraSplitView::LayoutPaneHeaders() {
+  if (!show_pane_headers_) {
+    return;
+  }
+
+  gfx::Rect bounds = GetLocalBounds();
+  const int kHeaderHeight = 28;
+
+  if (orientation_ == SplitViewOrientation::kHorizontal) {
+    // Horizontal split — headers are at top of each pane.
+    int primary_width = static_cast<int>(bounds.width() * ratio_);
+    int divider_thickness = show_handle_ ? divider_width_ : 0;
+
+    if (primary_header_ && primary_header_->GetVisible()) {
+      primary_header_->SetBounds(0, 0, primary_width, kHeaderHeight);
+    }
+
+    int secondary_x = primary_width + divider_thickness;
+    int secondary_width = bounds.width() - secondary_x;
+    if (secondary_header_ && secondary_header_->GetVisible()) {
+      secondary_header_->SetBounds(secondary_x, 0, secondary_width, kHeaderHeight);
+    }
+  } else {
+    // Vertical split — headers are at top of each pane.
+    int primary_height = static_cast<int>(bounds.height() * ratio_);
+    int divider_thickness = show_handle_ ? divider_width_ : 0;
+
+    if (primary_header_ && primary_header_->GetVisible()) {
+      primary_header_->SetBounds(0, 0, bounds.width(), kHeaderHeight);
+    }
+
+    int secondary_y = primary_height + divider_thickness;
+    if (secondary_header_ && secondary_header_->GetVisible()) {
+      secondary_header_->SetBounds(0, secondary_y, bounds.width(), kHeaderHeight);
+    }
+  }
+}
+
+void AstraSplitView::LayoutDividerToolbar() {
+  if (!show_divider_toolbar_ || !divider_toolbar_) {
+    return;
+  }
+
+  gfx::Size pref = divider_toolbar_->GetPreferredSize();
+  gfx::Rect bounds = GetLocalBounds();
+
+  if (orientation_ == SplitViewOrientation::kHorizontal) {
+    // Horizontal split — toolbar is in the middle of the vertical divider.
+    int divider_x = static_cast<int>(bounds.width() * ratio_);
+    int toolbar_x = divider_x - pref.width() / 2;
+    int toolbar_y = (bounds.height() - pref.height()) / 2;
+    // Clamp to view bounds.
+    toolbar_x = std::max(0, std::min(toolbar_x, bounds.width() - pref.width()));
+    toolbar_y = std::max(0, std::min(toolbar_y, bounds.height() - pref.height()));
+    divider_toolbar_->SetBounds(toolbar_x, toolbar_y, pref.width(), pref.height());
+  } else {
+    // Vertical split — toolbar is in the middle of the horizontal divider.
+    int divider_y = static_cast<int>(bounds.height() * ratio_);
+    int toolbar_x = (bounds.width() - pref.width()) / 2;
+    int toolbar_y = divider_y - pref.height() / 2;
+    toolbar_x = std::max(0, std::min(toolbar_x, bounds.width() - pref.width()));
+    toolbar_y = std::max(0, std::min(toolbar_y, bounds.height() - pref.height()));
+    divider_toolbar_->SetBounds(toolbar_x, toolbar_y, pref.width(), pref.height());
+  }
+}
+
+void AstraSplitView::OnSwapButtonPressed() {
+  SwapViews();
+}
+
+void AstraSplitView::OnLayoutToggleButtonPressed() {
+  CycleNextLayoutMode();
+}
+
+void AstraSplitView::OnCloseButtonPressed(AstraSplitPane pane) {
+  ClosePane(pane);
+}
+
+// =========================================================================
+// Pane operations
+// =========================================================================
+
+void AstraSplitView::ClosePane(AstraSplitPane pane) {
+  // TODO(astra): Implement proper pane closing for multi-pane layouts.
+  //   For 2-pane mode, closing one pane leaves the other full-width.
+  //   For multi-pane, closing a pane rebalances the remaining panes.
+  //   Chromium owner: views::View hierarchy manipulation.
+
+  if (pane == AstraSplitPane::kPrimary) {
+    // Make the secondary pane the primary and hide the divider.
+    // For now, just set ratio to minimum and notify.
+    SetRatio(kMinPaneRatio, /*animate=*/true);
+  } else {
+    SetRatio(1.0f - kMinPaneRatio, /*animate=*/true);
+  }
+
+  NotifyPaneClosed(pane);
+}
+
+void AstraSplitView::NotifyPaneClosed(AstraSplitPane pane) {
+  // The Observer interface doesn't have a pane closed method yet.
+  // TODO(astra): Add OnSplitPaneClosed to the Observer interface if needed.
+  // For now, this is a no-op for the legacy observer interface.
+}
+
+// =========================================================================
+// Accessibility
+// =========================================================================
+
+std::u16string AstraSplitView::GetAccessibleName() const {
+  // TODO(astra): Use localized strings (ui::ResourceBundle).
+  std::u16string name = u"Split view";
+  switch (layout_mode_) {
+    case AstraSplitLayoutMode::kTwoPaneHorizontal:
+      name = u"Horizontal split view, two panes";
+      break;
+    case AstraSplitLayoutMode::kTwoPaneVertical:
+      name = u"Vertical split view, two panes";
+      break;
+    case AstraSplitLayoutMode::kThreePaneHorizontal:
+      name = u"Horizontal split view, three panes";
+      break;
+    case AstraSplitLayoutMode::kThreePaneVertical:
+      name = u"Vertical split view, three panes";
+      break;
+    case AstraSplitLayoutMode::kGridTwoByTwo:
+      name = u"Grid split view, two by two";
+      break;
+    case AstraSplitLayoutMode::kGridThreeByTwo:
+      name = u"Grid split view, three by two";
+      break;
+  }
+  return name;
+}
+
+void AstraSplitView::SetAccessibleDescription(const std::u16string& description) {
+  if (accessible_description_ == description) {
+    return;
+  }
+  accessible_description_ = description;
+  NotifyAccessibilityEvent(ax::mojom::Event::kDescriptionChanged, true);
+}
+
+// =========================================================================
 // Layout and sizing
 // =========================================================================
 
 void AstraSplitView::Layout() {
   if (!primary_view_ && !secondary_view_) {
+    LayoutPaneHeaders();
+    LayoutDividerToolbar();
     LayoutMinimap();
     return;
   }
@@ -1030,35 +1843,43 @@ void AstraSplitView::Layout() {
   int total_size = 0;
   int divider_pos = 0;
 
+  // Calculate header offset (if headers are shown).
+  const int kHeaderHeight = 28;
+  int header_offset = show_pane_headers_ ? kHeaderHeight : 0;
+
   if (orientation_ == SplitViewOrientation::kHorizontal) {
     total_size = bounds.width();
     int primary_width = static_cast<int>(total_size * ratio_);
     divider_pos = primary_width;
 
-    // Position primary view (left side).
+    // Position primary view (left side), below the header.
     if (primary_view_) {
-      primary_view_->SetBounds(0, 0, primary_width, bounds.height());
+      primary_view_->SetBounds(0, header_offset, primary_width,
+                                bounds.height() - header_offset);
     }
 
     // Position divider.
     int divider_thickness =
         show_handle_ ? divider_width_ : 0;
-    divider_->SetBounds(primary_width, 0, divider_thickness, bounds.height());
+    divider_->SetBounds(primary_width, header_offset, divider_thickness,
+                         bounds.height() - header_offset);
 
-    // Position secondary view (right side).
+    // Position secondary view (right side), below the header.
     int secondary_x = primary_width + divider_thickness;
     int secondary_width = total_size - secondary_x;
     if (secondary_view_) {
-      secondary_view_->SetBounds(secondary_x, 0, secondary_width, bounds.height());
+      secondary_view_->SetBounds(secondary_x, header_offset, secondary_width,
+                                  bounds.height() - header_offset);
     }
   } else {
     total_size = bounds.height();
     int primary_height = static_cast<int>(total_size * ratio_);
     divider_pos = primary_height;
 
-    // Position primary view (top side).
+    // Position primary view (top side), below the header.
     if (primary_view_) {
-      primary_view_->SetBounds(0, 0, bounds.width(), primary_height);
+      primary_view_->SetBounds(0, header_offset, bounds.width(),
+                                primary_height - header_offset);
     }
 
     // Position divider.
@@ -1073,6 +1894,10 @@ void AstraSplitView::Layout() {
       secondary_view_->SetBounds(0, secondary_y, bounds.width(), secondary_height);
     }
   }
+
+  // Layout pane headers and divider toolbar.
+  LayoutPaneHeaders();
+  LayoutDividerToolbar();
 
   LayoutMinimap();
 }

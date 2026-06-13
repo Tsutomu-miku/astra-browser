@@ -21,6 +21,68 @@ class StyledLabel;
 namespace astra {
 
 // =========================================================================
+// Group header view — section header for search result groups
+// =========================================================================
+//
+// Displays a group label (e.g. "Open Tabs", "Bookmarks") and a count badge.
+// Used as a section divider in the tab search results list.
+//
+// Layout:
+//   +--------------------------------------------------------------+
+//   |  [Icon?]  Group Label                          (count)       |
+//   +--------------------------------------------------------------+
+//
+// Accessibility:
+//   - Role: kGroup
+//   - Name: group label
+//   - Description: count of items in the group
+// =========================================================================
+
+class AstraTabSearchGroupHeaderView : public views::View {
+ public:
+  AstraTabSearchGroupHeaderView(const std::u16string& title, size_t count);
+  ~AstraTabSearchGroupHeaderView() override;
+
+  AstraTabSearchGroupHeaderView(const AstraTabSearchGroupHeaderView&) = delete;
+  AstraTabSearchGroupHeaderView& operator=(
+      const AstraTabSearchGroupHeaderView&) = delete;
+
+  // Update the title text.
+  void SetTitle(const std::u16string& title);
+  const std::u16string& title() const { return title_; }
+
+  // Update the item count.
+  void SetCount(size_t count);
+  size_t count() const { return count_; }
+
+  // Set the group type (used for accessibility).
+  void SetGroupType(AstraTabSearchResultType type) { group_type_ = type; }
+  AstraTabSearchResultType group_type() const { return group_type_; }
+
+  // -- views::View ---------------------------------------------------------
+
+  void OnThemeChanged() override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
+  gfx::Size CalculatePreferredSize(
+      const views::SizeBounds& available_size) const override;
+
+ private:
+  // Build the layout.
+  void BuildLayout();
+
+  // Update colors from color provider.
+  void UpdateColors();
+
+  std::u16string title_;
+  size_t count_ = 0;
+  AstraTabSearchResultType group_type_ =
+      AstraTabSearchResultType::kOpenTab;
+
+  raw_ptr<views::Label> title_label_ = nullptr;
+  raw_ptr<views::Label> count_label_ = nullptr;
+};
+
+// =========================================================================
 // A single tab search result item view.
 // =========================================================================
 //
@@ -44,6 +106,7 @@ namespace astra {
 //   - Close button (right side, visible on hover or selection).
 //   - Group color strip (left edge, colored line for tab groups).
 //   - Pinned indicator (small pin icon if tab is pinned).
+//   - Keyboard shortcut hint (right side, e.g. "Ctrl+1").
 //
 // This is a pure presentation view — it does not own tab state.
 // Tab data is projected from the AstraTabSearchModel.
@@ -51,7 +114,7 @@ namespace astra {
 // Accessibility:
 //   - Role: kListItem
 //   - Name: tab title
-//   - Description: tab URL / domain + workspace
+//   - Description: tab URL / domain + workspace + group
 //   - States: kSelectable, kSelected (when selected)
 //
 // Chromium subsystems reused:
@@ -122,6 +185,9 @@ class AstraTabSearchItemView : public views::View {
   // Set the character ranges in the URL/hostname that match the search query.
   void SetUrlMatchRanges(const std::vector<gfx::Range>& ranges);
 
+  // Set all matches at once from a match vector.
+  void SetMatches(const std::vector<AstraTabSearchMatch>& matches);
+
   // -- Visibility toggles --------------------------------------------------
 
   // Show or hide the favicon.
@@ -136,6 +202,12 @@ class AstraTabSearchItemView : public views::View {
   // Show or hide the close button.
   void ShowCloseButton(bool show);
 
+  // Show or hide the shortcut hint.
+  void ShowShortcutHint(bool show);
+
+  // Show or hide the site information (secondary text).
+  void ShowSiteInfo(bool show);
+
   // -- Group color ---------------------------------------------------------
 
   // Set the group indicator color (left edge strip).
@@ -146,12 +218,14 @@ class AstraTabSearchItemView : public views::View {
 
   int tab_index() const { return tab_data_.tab_index; }
   int tab_id() const { return tab_data_.tab_id; }
+  int item_id() const { return tab_data_.item_id; }
   const std::u16string& title() const { return tab_data_.title; }
   const std::u16string& hostname() const { return tab_data_.hostname; }
   const std::string& workspace_id() const { return tab_data_.workspace_id; }
   bool is_pinned() const { return tab_data_.is_pinned; }
   bool is_audible() const { return tab_data_.is_audible; }
   bool is_muted() const { return tab_data_.is_muted; }
+  AstraTabSearchResultType result_type() const { return tab_data_.result_type; }
 
   // Legacy accessors (kept for backward compatibility).
   const std::u16string& host() const { return tab_data_.hostname; }
@@ -177,15 +251,26 @@ class AstraTabSearchItemView : public views::View {
     close_callback_ = std::move(callback);
   }
 
+  // Callback invoked when the middle mouse button is pressed (close tab).
+  using MiddleClickCallback = base::RepeatingClosure;
+  void SetMiddleClickCallback(MiddleClickCallback callback) {
+    middle_click_callback_ = std::move(callback);
+  }
+
   // -- views::View ---------------------------------------------------------
 
   gfx::Size CalculatePreferredSize(
       const views::SizeBounds& available_size) const override;
   void OnThemeChanged() override;
   bool OnMousePressed(const ui::MouseEvent& event) override;
+  bool OnMouseDragged(const ui::MouseEvent& event) override;
   void OnMouseEntered(const ui::MouseEvent& event) override;
   void OnMouseExited(const ui::MouseEvent& event) override;
+  bool OnKeyPressed(const ui::KeyEvent& event) override;
+  void OnFocus() override;
+  void OnBlur() override;
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
+  bool OnGestureEvent(ui::GestureEvent* event) override;
 
  private:
   // Build the child views and layout.
@@ -221,6 +306,12 @@ class AstraTabSearchItemView : public views::View {
   // Update the pinned indicator visibility.
   void UpdatePinnedIndicator();
 
+  // Update the site information label (secondary row).
+  void UpdateSiteInfo();
+
+  // Get a human-readable result type string for accessibility.
+  std::u16string GetResultTypeLabel() const;
+
   // The tab data this item displays.
   AstraTabSearchItem tab_data_;
 
@@ -234,12 +325,15 @@ class AstraTabSearchItemView : public views::View {
   // State flags.
   bool selected_ = false;
   bool highlighted_ = false;
+  bool focused_ = false;
 
   // Visibility flags.
   bool show_favicon_ = true;
   bool show_workspace_ = true;
   bool show_audio_indicator_ = true;
   bool show_close_button_ = false;  // Controlled by hover/selection.
+  bool show_shortcut_hint_ = true;
+  bool show_site_info_ = true;
 
   // Child views (owned by the view hierarchy).
   raw_ptr<views::View> group_color_strip_ = nullptr;
@@ -259,6 +353,7 @@ class AstraTabSearchItemView : public views::View {
   // Callbacks.
   ActivatedCallback activated_callback_;
   CloseCallback close_callback_;
+  MiddleClickCallback middle_click_callback_;
 
   base::WeakPtrFactory<AstraTabSearchItemView> weak_ptr_factory_{this};
 };

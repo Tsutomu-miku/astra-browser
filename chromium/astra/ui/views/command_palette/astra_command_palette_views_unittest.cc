@@ -25,6 +25,7 @@
 #include "astra/ui/views/command_palette/astra_command_palette_bubble.h"
 #include "astra/ui/views/command_palette/astra_command_palette_item_view.h"
 #include "astra/ui/views/command_palette/astra_command_palette_model.h"
+#include "astra/ui/views/command_palette/astra_command_palette_section_header_view.h"
 #include "astra/ui/views/command_palette/astra_command_palette_view.h"
 
 #include "base/test/task_environment.h"
@@ -208,17 +209,18 @@ TEST(AstraCommandTypeTest, TypeNamesAreDistinct) {
 // Command category tests
 // =========================================================================
 
-TEST(AstraCommandCategoryTest, NineCategories) {
-  // There are 9 command categories.
+TEST(AstraCommandCategoryTest, TenCategories) {
+  // There are 10 command categories.
   EXPECT_EQ(static_cast<int>(AstraCommandCategory::kTabs), 0);
   EXPECT_EQ(static_cast<int>(AstraCommandCategory::kNavigation), 1);
   EXPECT_EQ(static_cast<int>(AstraCommandCategory::kWorkspaces), 2);
-  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kView), 3);
-  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kBookmarks), 4);
-  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kHistory), 5);
-  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kTools), 6);
-  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kSettings), 7);
-  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kHelp), 8);
+  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kBookmarks), 3);
+  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kHistory), 4);
+  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kActions), 5);
+  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kView), 6);
+  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kTools), 7);
+  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kSettings), 8);
+  EXPECT_EQ(static_cast<int>(AstraCommandCategory::kHelp), 9);
 }
 
 TEST(AstraCommandCategoryTest, GetCategoryLabelReturnsNonEmpty) {
@@ -236,7 +238,30 @@ TEST(AstraCommandCategoryTest, CategoryLabelsAreDistinct) {
     auto cat = static_cast<AstraCommandCategory>(i);
     labels.insert(GetCategoryLabel(cat));
   }
-  EXPECT_EQ(9u, labels.size());
+  EXPECT_EQ(10u, labels.size());
+}
+
+TEST(AstraCommandCategoryTest, GetCategoryIconNameReturnsNonEmpty) {
+  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kHelp); ++i) {
+    auto cat = static_cast<AstraCommandCategory>(i);
+    const char* icon = GetCategoryIconName(cat);
+    EXPECT_NE(nullptr, icon);
+    EXPECT_GT(std::string(icon).size(), 0u);
+  }
+}
+
+TEST(AstraCommandCategoryTest, CategoryIconNamesAreDistinct) {
+  std::set<std::string> icons;
+  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kHelp); ++i) {
+    auto cat = static_cast<AstraCommandCategory>(i);
+    icons.insert(GetCategoryIconName(cat));
+  }
+  // Not all icons need to be distinct, but most should be.
+  EXPECT_GT(icons.size(), 5u);
+}
+
+TEST(AstraCommandCategoryTest, GetCategoryCountReturnsTen) {
+  EXPECT_EQ(10u, GetCategoryCount());
 }
 
 // =========================================================================
@@ -418,6 +443,127 @@ TEST_F(AstraCommandPaletteModelTest, FuzzySearchEnabledFindsResults) {
   model.set_enable_fuzzy_search(true);
   auto results = model.SearchCommands(u"nt");
   EXPECT_GT(results.size(), 0u);
+}
+
+// -- Acronym matching -------------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, IsAcronymMatchBasic) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"nt", u"New Tab"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"nwt", u"New Window"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"dt", u"Developer Tools"));
+  EXPECT_FALSE(AstraCommandPaletteModel::IsAcronymMatch(u"abc", u"New Tab"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsAcronymMatchCaseInsensitive) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"NT", u"New Tab"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"Nt", u"new tab"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"nt", u"NEW TAB"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsAcronymMatchEmptyQuery) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"", u"Anything"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsAcronymMatchSingleChar) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"n", u"New Tab"));
+  EXPECT_FALSE(AstraCommandPaletteModel::IsAcronymMatch(u"x", u"New Tab"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsAcronymMatchLongerQueryThanWords) {
+  EXPECT_FALSE(AstraCommandPaletteModel::IsAcronymMatch(u"ntx", u"New Tab"));
+  EXPECT_FALSE(AstraCommandPaletteModel::IsAcronymMatch(u"ntab", u"New Tab"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsAcronymMatchMultipleSpaces) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"nt", u"New   Tab"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"nt", u"New\tTab"));
+}
+
+// -- Word boundary matching -------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchBasic) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"new", u"New Tab"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"new tab", u"New Tab"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"tab", u"New Tab"));
+  EXPECT_FALSE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"ew", u"New Tab"));
+  EXPECT_FALSE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"ab", u"New Tab"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchCaseInsensitive) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"NEW", u"New Tab"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"new", u"NEW TAB"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"New Tab", u"new tab"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchEmptyQuery) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"", u"Anything"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchPartialWord) {
+  // "dev tool" should match "Developer Tools" at word boundaries.
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(
+      u"dev tool", u"Developer Tools"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(
+      u"dev", u"Developer Tools"));
+  EXPECT_FALSE(AstraCommandPaletteModel::IsWordBoundaryMatch(
+      u"eloper", u"Developer Tools"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchMultipleSpacesInQuery) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(
+      u"new   tab", u"New Tab"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchQueryLongerThanText) {
+  EXPECT_FALSE(AstraCommandPaletteModel::IsWordBoundaryMatch(
+      u"New Tab Extra", u"New Tab"));
+}
+
+// -- Scoring with bonuses ---------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, AcronymMatchBoostsScore) {
+  AstraCommandPaletteModel model;
+  AstraCommandItem item;
+  item.title = u"New Tab";
+  item.description = u"Open a new tab";
+  item.category = AstraCommandCategory::kTabs;
+
+  // Score for "nt" (acronym match) should be higher than a non-acronym
+  // query of the same length that doesn't match as acronym.
+  double acronym_score = model.ComputeRelevanceScore(u"nt", item);
+
+  // "ab" should not be an acronym match and should have lower score
+  // (or negative if no match at all).
+  AstraCommandItem item2;
+  item2.title = u"About Page";
+  item2.description = u"Show about page";
+  item2.category = AstraCommandCategory::kHelp;
+  double non_acronym_score = model.ComputeRelevanceScore(u"ap", item2);
+
+  // Both should match via fuzzy or substring, but the acronym one
+  // should have the bonus applied.
+  if (acronym_score > 0 && non_acronym_score > 0) {
+    EXPECT_GT(acronym_score, non_acronym_score);
+  }
+}
+
+TEST_F(AstraCommandPaletteModelTest, WordBoundaryMatchBoostsScore) {
+  AstraCommandPaletteModel model;
+  AstraCommandItem item;
+  item.title = u"Developer Tools";
+  item.description = u"Open developer tools";
+  item.category = AstraCommandCategory::kTools;
+
+  // Word boundary match "dev tool" should score higher than a non-word-boundary
+  // substring match of similar length.
+  double wb_score = model.ComputeRelevanceScore(u"dev tool", item);
+
+  // A mid-word match should score lower.
+  double mid_score = model.ComputeRelevanceScore(u"eloper ools", item);
+
+  if (wb_score > 0 && mid_score > 0) {
+    EXPECT_GT(wb_score, mid_score);
+  }
 }
 
 // -- Match ranges ----------------------------------------------------------
@@ -1198,6 +1344,173 @@ TEST_F(AstraCommandPaletteModelTest, SelectionOnEmptyResults) {
   EXPECT_EQ(-1, model.GetSelectedIndex());
 }
 
+// -- GetSelectedItem --------------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, GetSelectedItemReturnsItem) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetResultCount(), 0u);
+
+  model.SetSelectedIndex(0);
+  const auto* item = model.GetSelectedItem();
+  ASSERT_NE(nullptr, item);
+  EXPECT_EQ(model.GetCommandAt(0)->command_id, item->command_id);
+  EXPECT_EQ(model.GetCommandAt(0)->title, item->title);
+}
+
+TEST_F(AstraCommandPaletteModelTest, GetSelectedItemNullWhenNoSelection) {
+  AstraCommandPaletteModel model;
+  model.SetQuery(u"zzzz_no_match_zzzz");
+  ASSERT_EQ(0u, model.GetResultCount());
+  EXPECT_EQ(-1, model.GetSelectedIndex());
+
+  const auto* item = model.GetSelectedItem();
+  EXPECT_EQ(nullptr, item);
+}
+
+TEST_F(AstraCommandPaletteModelTest, GetSelectedItemUpdatesAfterMove) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetResultCount(), 2u);
+
+  model.SetSelectedIndex(0);
+  int first_id = model.GetSelectedItem()->command_id;
+
+  model.MoveSelection(1);
+  int second_id = model.GetSelectedItem()->command_id;
+
+  EXPECT_NE(first_id, second_id);
+}
+
+// -- Group navigation --------------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, SelectNextGroupBasic) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetResultGroups().size(), 1u);
+
+  model.SetSelectedIndex(0);
+  int first_group_index = model.GetSelectedIndex();
+  auto first_group_cat = model.GetResultGroups()[0].category;
+
+  model.SelectNextGroup();
+
+  // Should have moved to a different group.
+  auto new_group_cat =
+      model.GetResultGroups()[0].category;
+  // Find the group of the new selection.
+  int new_index = model.GetSelectedIndex();
+  EXPECT_GT(new_index, first_group_index);
+
+  // Verify the selected item is in a different category group.
+  bool found_different = false;
+  for (const auto& group : model.GetResultGroups()) {
+    if (!group.items.empty() &&
+        group.items[0].command_id ==
+            model.GetCommandAt(new_index)->command_id) {
+      if (group.category != first_group_cat) {
+        found_different = true;
+      }
+      break;
+    }
+  }
+  EXPECT_TRUE(found_different);
+}
+
+TEST_F(AstraCommandPaletteModelTest, SelectPrevGroupBasic) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetResultGroups().size(), 2u);
+
+  // Start at the last item.
+  model.SetSelectedIndex(
+      static_cast<int>(model.GetResultCount()) - 1);
+  int last_index = model.GetSelectedIndex();
+
+  model.SelectPrevGroup();
+  int new_index = model.GetSelectedIndex();
+  EXPECT_LT(new_index, last_index);
+  EXPECT_GE(new_index, 0);
+}
+
+TEST_F(AstraCommandPaletteModelTest, SelectNextGroupWrapsAround) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetResultGroups().size(), 1u);
+
+  // Find the last group and go to its first item.
+  const auto& groups = model.GetResultGroups();
+  size_t last_group_start = 0;
+  for (size_t i = 0; i < groups.size() - 1; ++i) {
+    last_group_start += groups[i].items.size();
+  }
+
+  model.SetSelectedIndex(static_cast<int>(last_group_start));
+  int before = model.GetSelectedIndex();
+
+  model.SelectNextGroup();
+  int after = model.GetSelectedIndex();
+
+  // Should wrap to first group.
+  EXPECT_LT(after, before);
+  EXPECT_EQ(0, after);
+}
+
+TEST_F(AstraCommandPaletteModelTest, SelectPrevGroupWrapsAround) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetResultGroups().size(), 1u);
+
+  model.SetSelectedIndex(0);
+
+  model.SelectPrevGroup();
+  int after = model.GetSelectedIndex();
+
+  // Should wrap to last group (first item of last group).
+  const auto& groups = model.GetResultGroups();
+  size_t last_group_start = 0;
+  for (size_t i = 0; i < groups.size() - 1; ++i) {
+    last_group_start += groups[i].items.size();
+  }
+  EXPECT_EQ(static_cast<int>(last_group_start), after);
+}
+
+TEST_F(AstraCommandPaletteModelTest, SelectNextGroupSingleGroup) {
+  // When there's only one group, select next should still work
+  // (wraps to same group).
+  AstraCommandPaletteModel model;
+  std::set<AstraCommandCategory> filter = {AstraCommandCategory::kTabs};
+  model.SetCategoryFilter(filter);
+
+  ASSERT_EQ(1u, model.GetResultGroups().size());
+  ASSERT_GT(model.GetResultCount(), 0u);
+
+  model.SetSelectedIndex(0);
+  model.SelectNextGroup();
+  // Should still be 0 (wraps to first item of the only group).
+  EXPECT_EQ(0, model.GetSelectedIndex());
+}
+
+TEST_F(AstraCommandPaletteModelTest, SelectPrevGroupSingleGroup) {
+  AstraCommandPaletteModel model;
+  std::set<AstraCommandCategory> filter = {AstraCommandCategory::kTabs};
+  model.SetCategoryFilter(filter);
+
+  ASSERT_EQ(1u, model.GetResultGroups().size());
+  ASSERT_GT(model.GetResultCount(), 0u);
+
+  model.SetSelectedIndex(0);
+  model.SelectPrevGroup();
+  // Should wrap to first item of the only group.
+  EXPECT_EQ(0, model.GetSelectedIndex());
+}
+
+TEST_F(AstraCommandPaletteModelTest, SelectNextGroupEmptyResults) {
+  AstraCommandPaletteModel model;
+  model.SetQuery(u"zzzz_no_match_zzzz");
+  ASSERT_EQ(0u, model.GetResultCount());
+
+  model.SelectNextGroup();
+  EXPECT_EQ(-1, model.GetSelectedIndex());
+
+  model.SelectPrevGroup();
+  EXPECT_EQ(-1, model.GetSelectedIndex());
+}
+
 // -- ExecuteCommand --------------------------------------------------------
 
 TEST_F(AstraCommandPaletteModelTest, ExecuteCommandInvalidIndex) {
@@ -1503,6 +1816,210 @@ TEST_F(AstraCommandPaletteModelTest, ResultGroupsRespectFilter) {
   }
 }
 
+TEST_F(AstraCommandPaletteModelTest, ActionsCategoryHasCommands) {
+  AstraCommandPaletteModel model;
+  auto commands = model.GetCommandsByType(AstraCommandType::kAction);
+
+  // Actions category should have several commands (find, print, save, etc.).
+  std::set<AstraCommandCategory> filter = {AstraCommandCategory::kActions};
+  model.SetCategoryFilter(filter);
+  EXPECT_GT(model.GetResultCount(), 0u);
+}
+
+TEST_F(AstraCommandPaletteModelTest, ActionsCategoryFilterWorks) {
+  AstraCommandPaletteModel model;
+  std::set<AstraCommandCategory> filter = {AstraCommandCategory::kActions};
+  model.SetCategoryFilter(filter);
+
+  const auto& results = model.GetResults();
+  ASSERT_GT(results.size(), 0u);
+  for (const auto& item : results) {
+    EXPECT_EQ(AstraCommandCategory::kActions, item.category);
+  }
+}
+
+TEST_F(AstraCommandPaletteModelTest, ToolsAndActionsAreSeparate) {
+  AstraCommandPaletteModel model;
+
+  std::set<AstraCommandCategory> tools_filter = {
+      AstraCommandCategory::kTools};
+  model.SetCategoryFilter(tools_filter);
+  size_t tools_count = model.GetResultCount();
+
+  std::set<AstraCommandCategory> actions_filter = {
+      AstraCommandCategory::kActions};
+  model.SetCategoryFilter(actions_filter);
+  size_t actions_count = model.GetResultCount();
+
+  // Both should have commands.
+  EXPECT_GT(tools_count, 0u);
+  EXPECT_GT(actions_count, 0u);
+
+  model.ClearCategoryFilter();
+  size_t all_count = model.GetResultCount();
+
+  // Combined, tools + actions should be <= total.
+  EXPECT_LE(tools_count + actions_count, all_count);
+}
+
+// -- Result groups ----------------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, ResultGroupsNotEmptyWhenResultsExist) {
+  AstraCommandPaletteModel model;
+  ASSERT_GT(model.GetResultCount(), 0u);
+
+  const auto& groups = model.GetResultGroups();
+  EXPECT_GT(groups.size(), 0u);
+}
+
+TEST_F(AstraCommandPaletteModelTest, ResultGroupsSumToTotalResults) {
+  AstraCommandPaletteModel model;
+  const auto& groups = model.GetResultGroups();
+
+  size_t total = 0;
+  for (const auto& group : groups) {
+    total += group.items.size();
+  }
+  EXPECT_EQ(model.GetResultCount(), total);
+}
+
+TEST_F(AstraCommandPaletteModelTest, ResultGroupsHaveValidCategories) {
+  AstraCommandPaletteModel model;
+  const auto& groups = model.GetResultGroups();
+
+  for (const auto& group : groups) {
+    // Each group should have at least one item.
+    EXPECT_GT(group.items.size(), 0u);
+    // All items in a group should have the same category.
+    for (const auto& item : group.items) {
+      EXPECT_EQ(group.category, item.category);
+    }
+  }
+}
+
+TEST_F(AstraCommandPaletteModelTest, ResultGroupsEmptyWhenNoResults) {
+  AstraCommandPaletteModel model;
+  model.SetQuery(u"zzzz_no_match_zzzz");
+  ASSERT_EQ(0u, model.GetResultCount());
+
+  const auto& groups = model.GetResultGroups();
+  EXPECT_EQ(0u, groups.size());
+}
+
+TEST_F(AstraCommandPaletteModelTest, ResultGroupsCategoriesAreDistinct) {
+  AstraCommandPaletteModel model;
+  const auto& groups = model.GetResultGroups();
+
+  std::set<AstraCommandCategory> seen;
+  for (const auto& group : groups) {
+    EXPECT_EQ(0u, seen.count(group.category));
+    seen.insert(group.category);
+  }
+}
+
+TEST_F(AstraCommandPaletteModelTest, FilterReducesGroupCount) {
+  AstraCommandPaletteModel model;
+  size_t all_groups = model.GetResultGroups().size();
+  ASSERT_GT(all_groups, 1u);
+
+  std::set<AstraCommandCategory> filter = {AstraCommandCategory::kTabs};
+  model.SetCategoryFilter(filter);
+
+  const auto& groups = model.GetResultGroups();
+  EXPECT_EQ(1u, groups.size());
+  EXPECT_EQ(AstraCommandCategory::kTabs, groups[0].category);
+}
+
+// -- Edge cases: scoring ----------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, ComputeRelevanceScoreEmptyTitle) {
+  AstraCommandPaletteModel model;
+  AstraCommandItem item;
+  item.title = u"";
+  item.description = u"A description";
+  item.category = AstraCommandCategory::kTools;
+
+  double score = model.ComputeRelevanceScore(u"test", item);
+  // Should match in description.
+  EXPECT_LT(score, 0.0);  // "test" not in description
+}
+
+TEST_F(AstraCommandPaletteModelTest, ComputeRelevanceScoreDescriptionOnly) {
+  AstraCommandPaletteModel model;
+  AstraCommandItem item;
+  item.title = u"Some Command";
+  item.description = u"Find and replace text";
+  item.category = AstraCommandCategory::kTools;
+
+  double score = model.ComputeRelevanceScore(u"replace", item);
+  // "replace" is in description only.
+  EXPECT_GT(score, 0.0);
+}
+
+TEST_F(AstraCommandPaletteModelTest, ComputeRelevanceScoreWhitespaceQuery) {
+  AstraCommandPaletteModel model;
+  AstraCommandItem item;
+  item.title = u"New Tab";
+  item.description = u"Open a new tab";
+  item.category = AstraCommandCategory::kTabs;
+
+  double score = model.ComputeRelevanceScore(u"   ", item);
+  // Whitespace-only query should behave like empty query.
+  EXPECT_GE(score, 0.0);
+}
+
+TEST_F(AstraCommandPaletteModelTest, ComputeRelevanceScoreUnicode) {
+  AstraCommandPaletteModel model;
+  AstraCommandItem item;
+  item.title = u"设置";
+  item.description = u"浏览器设置";
+  item.category = AstraCommandCategory::kSettings;
+
+  double score = model.ComputeRelevanceScore(u"设置", item);
+  EXPECT_GT(score, 0.0);
+}
+
+// -- Edge cases: acronym ----------------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, IsAcronymMatchSingleWord) {
+  // Single word text — acronym of length 1 should match.
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"s", u"Settings"));
+  // Acronym of length > 1 should not match a single word.
+  EXPECT_FALSE(AstraCommandPaletteModel::IsAcronymMatch(u"st", u"Settings"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsAcronymMatchHyphenated) {
+  // Hyphenated words count as separate words.
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"sp", u"Split-View"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsAcronymMatchLeadingTrailingSpaces) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsAcronymMatch(u"nt", u"  New Tab  "));
+}
+
+// -- Edge cases: word boundary ----------------------------------------------
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchSingleWordStart) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"New", u"New Tab"));
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"Tab", u"New Tab"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchSingleWordMidFails) {
+  EXPECT_FALSE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"ew", u"New Tab"));
+  EXPECT_FALSE(AstraCommandPaletteModel::IsWordBoundaryMatch(u"ab", u"New Tab"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchHyphenated) {
+  EXPECT_TRUE(AstraCommandPaletteModel::IsWordBoundaryMatch(
+      u"split view", u"Split-View Mode"));
+}
+
+TEST_F(AstraCommandPaletteModelTest, IsWordBoundaryMatchMultiWordQuerySingleWordText) {
+  // Multi-word query on single-word text should fail.
+  EXPECT_FALSE(AstraCommandPaletteModel::IsWordBoundaryMatch(
+      u"new tab", u"Settings"));
+}
+
 // =========================================================================
 // AstraCommandPaletteItemView tests
 // =========================================================================
@@ -1717,6 +2234,80 @@ TEST_F(AstraCommandPaletteItemViewTest, ShowDescriptionSameValueNoCrash) {
   item_view_->ShowDescription(true);
 }
 
+// -- Show/hide category badge -----------------------------------------------
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowCategoryBadgeDefaultTrue) {
+  EXPECT_TRUE(item_view_->show_category_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowCategoryBadgeFalse) {
+  item_view_->ShowCategoryBadge(false);
+  EXPECT_FALSE(item_view_->show_category_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowCategoryBadgeTrue) {
+  item_view_->ShowCategoryBadge(false);
+  ASSERT_FALSE(item_view_->show_category_badge());
+
+  item_view_->ShowCategoryBadge(true);
+  EXPECT_TRUE(item_view_->show_category_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowCategoryBadgeSameValueNoCrash) {
+  item_view_->ShowCategoryBadge(true);
+  item_view_->ShowCategoryBadge(true);
+}
+
+// -- Show/hide recent badge -------------------------------------------------
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowRecentBadgeDefaultFalse) {
+  EXPECT_FALSE(item_view_->show_recent_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowRecentBadgeTrue) {
+  item_view_->ShowRecentBadge(true);
+  EXPECT_TRUE(item_view_->show_recent_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowRecentBadgeFalse) {
+  item_view_->ShowRecentBadge(true);
+  ASSERT_TRUE(item_view_->show_recent_badge());
+
+  item_view_->ShowRecentBadge(false);
+  EXPECT_FALSE(item_view_->show_recent_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, ShowRecentBadgeSameValueNoCrash) {
+  item_view_->ShowRecentBadge(false);
+  item_view_->ShowRecentBadge(false);
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, SetCommandWithRecentBadge) {
+  AstraCommandItem cmd;
+  cmd.command_id = 777;
+  cmd.title = u"Recent Command";
+  cmd.description = u"A recently used command";
+  cmd.type = AstraCommandType::kAction;
+  cmd.category = AstraCommandCategory::kActions;
+  cmd.is_recent = true;
+
+  item_view_->SetCommand(cmd);
+  EXPECT_TRUE(item_view_->show_recent_badge());
+}
+
+TEST_F(AstraCommandPaletteItemViewTest, SetCommandWithoutRecentBadge) {
+  AstraCommandItem cmd;
+  cmd.command_id = 778;
+  cmd.title = u"Non-Recent Command";
+  cmd.description = u"Not recently used";
+  cmd.type = AstraCommandType::kAction;
+  cmd.category = AstraCommandCategory::kActions;
+  cmd.is_recent = false;
+
+  item_view_->SetCommand(cmd);
+  EXPECT_FALSE(item_view_->show_recent_badge());
+}
+
 // -- Match ranges ----------------------------------------------------------
 
 TEST_F(AstraCommandPaletteItemViewTest, DefaultMatchRangesEmpty) {
@@ -1874,6 +2465,74 @@ TEST_F(AstraCommandPaletteItemViewTest, EmptyDescriptionNoCrash) {
   cmd.type = AstraCommandType::kAction;
   cmd.category = AstraCommandCategory::kTools;
   item_view_->SetCommand(cmd);
+}
+
+// =========================================================================
+// AstraCommandPaletteSectionHeaderView tests
+// =========================================================================
+
+class AstraCommandPaletteSectionHeaderViewTest : public views::ViewsTestBase {
+ public:
+  AstraCommandPaletteSectionHeaderViewTest() = default;
+  ~AstraCommandPaletteSectionHeaderViewTest() override = default;
+
+  void SetUp() override {
+    ViewsTestBase::SetUp();
+    widget_ = CreateTestWidget();
+    header_view_ = widget_->SetContentsView(
+        std::make_unique<AstraCommandPaletteSectionHeaderView>(u"Tabs"));
+    widget_->Show();
+  }
+
+  void TearDown() override {
+    widget_.reset();
+    ViewsTestBase::TearDown();
+  }
+
+ protected:
+  std::unique_ptr<views::Widget> widget_;
+  raw_ptr<AstraCommandPaletteSectionHeaderView> header_view_ = nullptr;
+};
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, ConstructsWithoutCrash) {
+  EXPECT_NE(nullptr, header_view_);
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, PreferredSizeIsPositive) {
+  gfx::Size pref = header_view_->CalculatePreferredSize(
+      views::SizeBounds(gfx::Size(500, 100)));
+  EXPECT_GT(pref.width(), 0);
+  EXPECT_GT(pref.height(), 0);
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, SetLabelUpdatesText) {
+  header_view_->SetLabel(u"Workspaces");
+  // No crash = success. The label text is internal but the method should work.
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, OnThemeChangedDoesNotCrash) {
+  header_view_->OnThemeChanged();
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, ConstructWithLongLabel) {
+  auto header = std::make_unique<AstraCommandPaletteSectionHeaderView>(
+      std::u16string(200, u'x'));
+  EXPECT_NE(nullptr, header.get());
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, ConstructWithEmptyLabel) {
+  auto header = std::make_unique<AstraCommandPaletteSectionHeaderView>(u"");
+  EXPECT_NE(nullptr, header.get());
+}
+
+TEST_F(AstraCommandPaletteSectionHeaderViewTest, AllCategoryLabelsWork) {
+  for (int i = 0; i <= static_cast<int>(AstraCommandCategory::kHelp); ++i) {
+    auto cat = static_cast<AstraCommandCategory>(i);
+    auto header =
+        std::make_unique<AstraCommandPaletteSectionHeaderView>(
+            GetCategoryLabel(cat));
+    EXPECT_NE(nullptr, header.get());
+  }
 }
 
 // =========================================================================

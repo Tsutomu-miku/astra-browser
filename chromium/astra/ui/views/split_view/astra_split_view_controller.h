@@ -5,12 +5,17 @@
 #include "base/observer_list.h"
 #include "astra/browser/astra_tab_features.h"
 #include "astra/ui/views/split_view/astra_split_view.h"
+#include "astra/ui/views/split_view/astra_split_view_model.h"
 #include "components/prefs/pref_change_registrar.h"
 #include "components/prefs/pref_service.h"
 
 namespace content {
 class WebContents;
 }
+
+namespace ui {
+class KeyEvent;
+}  // namespace ui
 
 namespace views {
 class View;
@@ -457,6 +462,76 @@ class AstraSplitViewController : public AstraSplitView::Observer {
   // Remove an observer.
   void RemoveAstraObserver(AstraSplitViewObserver* observer);
 
+  // ========================================================================
+  // Layout mode management
+  // ========================================================================
+
+  // Get the current layout mode.
+  AstraSplitLayoutMode GetLayoutMode() const;
+
+  // Set the layout mode (2-pane, 3-pane, grid, etc.).
+  void SetLayoutMode(AstraSplitLayoutMode mode);
+
+  // Cycle to the next layout mode.
+  void CycleNextLayoutMode();
+
+  // Cycle to the previous layout mode.
+  void CyclePreviousLayoutMode();
+
+  // ========================================================================
+  // Keyboard shortcut handling
+  // ========================================================================
+
+  // Handle a keyboard shortcut for split view operations.
+  // Returns true if the shortcut was handled.
+  //
+  // Supported shortcuts:
+  //   - Ctrl/Cmd+Enter: Toggle split view
+  //   - Ctrl/Cmd+Shift+Enter: Toggle orientation
+  //   - Ctrl/Cmd+D: Swap panes
+  //   - Ctrl/Cmd+1..6: Focus pane N
+  //   - Ctrl/Cmd+Shift+1..6: Move current tab to pane N
+  //   - Ctrl/Cmd+[ : Focus previous pane
+  //   - Ctrl/Cmd+] : Focus next pane
+  //   - Ctrl/Cmd+W: Close focused pane
+  //
+  // TODO(astra): Integrate with Chromium's accelerator system.
+  //   Chromium owner: chrome/browser/ui/views/accelerator_table.cc
+  //   Patch point: accelerator_table.cc merge with Astra accelerators.
+  bool HandleKeyboardShortcut(const ui::KeyEvent& event);
+
+  // ========================================================================
+  // Tab drag and drop
+  // ========================================================================
+
+  // Handle a tab being dragged over a split pane.
+  // |pane_id| identifies which pane the tab is being dragged over.
+  // Returns true if the drop is acceptable.
+  //
+  // TODO(astra): Integrate with Chromium's tab drag-drop system.
+  //   Chromium owner: chrome/browser/ui/views/tabs/tab_drag_controller.h
+  //   This handles dropping a tab into a specific split pane.
+  bool CanDropTabOnPane(AstraSplitPaneId pane_id,
+                        content::WebContents* dragged_contents) const;
+
+  // Handle a tab being dropped onto a split pane.
+  // Replaces the pane's content with the dropped tab.
+  void DropTabOnPane(AstraSplitPaneId pane_id,
+                     content::WebContents* dropped_contents);
+
+  // Handle a tab being dragged from a split pane to start a new split.
+  // Returns true if a new split can be created from the drag.
+  bool StartSplitFromDrag(AstraSplitPaneId source_pane_id,
+                          content::WebContents* dragged_contents);
+
+  // ========================================================================
+  // Model access (for testing and advanced use cases)
+  // ========================================================================
+
+  // Access the underlying split view model.
+  AstraSplitViewModel* model() { return &model_; }
+  const AstraSplitViewModel* model() const { return &model_; }
+
   // -- AstraSplitView::Observer overrides --------------------------------
 
   void OnSplitRatioChanged(float ratio) override;
@@ -615,6 +690,15 @@ class AstraSplitViewController : public AstraSplitView::Observer {
 
   // Extended observers for the AstraSplitViewObserver interface.
   base::ObserverList<AstraSplitViewObserver> astra_observers_;
+
+  // ========================================================================
+  // Model
+  // ========================================================================
+
+  // The split view model that owns all layout state.
+  // The model is the source of truth for split view state.
+  // The controller mediates between the model and the view.
+  AstraSplitViewModel model_;
 };
 
 }  // namespace astra

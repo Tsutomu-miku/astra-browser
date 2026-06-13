@@ -6,9 +6,12 @@
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 #include "astra/browser/astra_tab_features.h"
+#include "astra/ui/views/split_view/astra_split_view_model.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/ax_enums.mojom-forward.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/views/controls/button/button.h"
+#include "ui/views/controls/button/image_button.h"
 #include "ui/views/view.h"
 
 namespace astra {
@@ -338,6 +341,201 @@ class AstraSplitMinimapView : public views::View {
 };
 
 // =========================================================================
+// AstraSplitViewButton
+// =========================================================================
+//
+// Base class for split view control buttons.  These are small icon buttons
+// that appear on pane headers or on the divider toolbar.
+//
+// All buttons follow Chromium's ImageButton pattern and have accessible names.
+class AstraSplitViewButton : public views::ImageButton {
+ public:
+  explicit AstraSplitViewButton(PressedCallback callback);
+  ~AstraSplitViewButton() override;
+
+  // Set the accessible name for this button.
+  void SetAccessibleName(const std::u16string& name);
+
+  // views::View:
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
+  void OnThemeChanged() override;
+
+ protected:
+  // Override to provide the icon glyph or paint the button.
+  virtual void PaintButtonContents(gfx::Canvas* canvas) = 0;
+
+  // views::ImageButton:
+  void PaintButtonContentsOverride(gfx::Canvas* canvas) override {}
+
+ private:
+  std::u16string accessible_name_;
+};
+
+// =========================================================================
+// AstraSplitCloseButton
+// =========================================================================
+//
+// Close button that appears on a pane header.  Clicking it closes the pane.
+//
+// Accessibility: Role = kButton, name = "Close pane"
+class AstraSplitCloseButton : public AstraSplitViewButton {
+ public:
+  explicit AstraSplitCloseButton(PressedCallback callback);
+  ~AstraSplitCloseButton() override;
+
+  // Set which pane this close button belongs to.
+  void SetPane(AstraSplitPane pane) { pane_ = pane; }
+  AstraSplitPane pane() const { return pane_; }
+
+ protected:
+  void PaintButtonContents(gfx::Canvas* canvas) override;
+
+ private:
+  AstraSplitPane pane_ = AstraSplitPane::kPrimary;
+};
+
+// =========================================================================
+// AstraSplitSwapButton
+// =========================================================================
+//
+// Swap button that swaps the primary and secondary panes.
+// Appears on the divider toolbar or as a header action.
+//
+// Accessibility: Role = kButton, name = "Swap panes"
+class AstraSplitSwapButton : public AstraSplitViewButton {
+ public:
+  explicit AstraSplitSwapButton(PressedCallback callback);
+  ~AstraSplitSwapButton() override;
+
+ protected:
+  void PaintButtonContents(gfx::Canvas* canvas) override;
+};
+
+// =========================================================================
+// AstraSplitLayoutToggleButton
+// =========================================================================
+//
+// Button that toggles between horizontal and vertical split orientation.
+// For multi-pane layouts, cycles through layout modes.
+//
+// Accessibility: Role = kButton, name = "Toggle split layout"
+class AstraSplitLayoutToggleButton : public AstraSplitViewButton {
+ public:
+  explicit AstraSplitLayoutToggleButton(PressedCallback callback);
+  ~AstraSplitLayoutToggleButton() override;
+
+  // Set the current layout mode to display the appropriate icon.
+  void SetLayoutMode(AstraSplitLayoutMode mode);
+  AstraSplitLayoutMode layout_mode() const { return layout_mode_; }
+
+ protected:
+  void PaintButtonContents(gfx::Canvas* canvas) override;
+
+ private:
+  AstraSplitLayoutMode layout_mode_ = AstraSplitLayoutMode::kTwoPaneHorizontal;
+};
+
+// =========================================================================
+// AstraSplitPaneHeader
+// =========================================================================
+//
+// Header bar that appears at the top of each split pane.  Contains the
+// pane title and optional control buttons (close, etc.).
+//
+// The header is a lightweight presentation widget — it reflects state from
+// the model but does not own state.
+//
+// Accessibility:
+//   - Role: kGrouping
+//   - Label: the pane title
+//   - Buttons inside have their own accessible names
+class AstraSplitPaneHeader : public views::View {
+ public:
+  AstraSplitPaneHeader();
+  ~AstraSplitPaneHeader() override;
+
+  // Set the title text displayed in the header.
+  void SetTitle(const std::u16string& title);
+  const std::u16string& title() const { return title_; }
+
+  // Show or hide the close button.
+  void SetShowCloseButton(bool show);
+  bool show_close_button() const { return show_close_button_; }
+
+  // Set which pane this header belongs to.
+  void SetPane(AstraSplitPane pane) { pane_ = pane; }
+  AstraSplitPane pane() const { return pane_; }
+
+  // Set the close button callback.
+  void SetCloseCallback(base::RepeatingClosure callback) {
+    close_callback_ = callback;
+  }
+
+  // views::View:
+  void Layout() override;
+  gfx::Size CalculatePreferredSize(
+      const views::SizeBounds& available_size) const override;
+  void OnPaint(gfx::Canvas* canvas) override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
+  void OnThemeChanged() override;
+
+ private:
+  void OnCloseButtonPressed();
+
+  std::u16string title_;
+  AstraSplitPane pane_ = AstraSplitPane::kPrimary;
+  bool show_close_button_ = false;
+
+  raw_ptr<AstraSplitCloseButton> close_button_ = nullptr;
+  base::RepeatingClosure close_callback_;
+};
+
+// =========================================================================
+// AstraSplitDividerToolbar
+// =========================================================================
+//
+// Toolbar that appears on or near the divider, containing split view
+// control buttons like swap and layout toggle.
+//
+// The toolbar is positioned at a fixed location along the divider
+// (typically the center or top).  It contains action buttons that
+// operate on the split view as a whole.
+//
+// Accessibility:
+//   - Role: kToolbar
+//   - Buttons inside have their own accessible names
+//   - Keyboard accessible via Tab navigation
+class AstraSplitDividerToolbar : public views::View {
+ public:
+  AstraSplitDividerToolbar();
+  ~AstraSplitDividerToolbar() override;
+
+  // Set callbacks for the toolbar buttons.
+  void SetSwapCallback(base::RepeatingClosure callback);
+  void SetLayoutToggleCallback(base::RepeatingClosure callback);
+
+  // Update the layout toggle button icon based on current mode.
+  void UpdateLayoutMode(AstraSplitLayoutMode mode);
+
+  // Show or hide the toolbar.
+  void SetToolbarVisible(bool visible);
+  bool toolbar_visible() const { return toolbar_visible_; }
+
+  // views::View:
+  void Layout() override;
+  gfx::Size CalculatePreferredSize(
+      const views::SizeBounds& available_size) const override;
+  void OnPaint(gfx::Canvas* canvas) override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
+  void OnThemeChanged() override;
+
+ private:
+  raw_ptr<AstraSplitSwapButton> swap_button_ = nullptr;
+  raw_ptr<AstraSplitLayoutToggleButton> layout_toggle_button_ = nullptr;
+  bool toolbar_visible_ = true;
+};
+
+// =========================================================================
 // AstraSplitView
 // =========================================================================
 
@@ -508,6 +706,83 @@ class AstraSplitView : public views::View {
   bool IsDraggingDivider() const;
 
   // ========================================================================
+  // Layout modes and multi-pane support
+  // ========================================================================
+
+  // Set the layout mode (2-pane, 3-pane, grid, etc.).
+  // Resets all divider positions to equal ratios for the new layout.
+  // TODO(astra): Full multi-pane layout support requires additional dividers
+  //   and pane containers.  Current implementation supports 2-pane mode.
+  //   Chromium owner: views::View hierarchy, similar to views::GridLayout.
+  void SetLayoutMode(AstraSplitLayoutMode mode);
+  AstraSplitLayoutMode layout_mode() const { return layout_mode_; }
+
+  // Returns the number of panes in the current layout.
+  int GetPaneCount() const;
+
+  // Returns true if the current layout is a grid layout.
+  bool IsGridLayout() const;
+
+  // Cycle to the next layout mode (2-pane horizontal -> 2-pane vertical ->
+  // 3-pane horizontal -> 3-pane vertical -> grid 2x2 -> ... -> wrap).
+  void CycleNextLayoutMode();
+
+  // Cycle to the previous layout mode.
+  void CyclePreviousLayoutMode();
+
+  // ========================================================================
+  // Pane headers and control buttons
+  // ========================================================================
+
+  // Show or hide pane headers (title bars with close buttons).
+  void SetShowPaneHeaders(bool show);
+  bool show_pane_headers() const { return show_pane_headers_; }
+
+  // Set the title text for a specific pane.
+  void SetPaneTitle(AstraSplitPane pane, const std::u16string& title);
+
+  // Show or hide the divider toolbar (swap + layout toggle buttons).
+  void SetShowDividerToolbar(bool show);
+  bool show_divider_toolbar() const { return show_divider_toolbar_; }
+
+  // Access the divider toolbar (may be null if toolbar is not created).
+  AstraSplitDividerToolbar* divider_toolbar() { return divider_toolbar_; }
+  const AstraSplitDividerToolbar* divider_toolbar() const {
+    return divider_toolbar_;
+  }
+
+  // Access pane headers (may be null if headers are not shown).
+  AstraSplitPaneHeader* primary_header() { return primary_header_; }
+  const AstraSplitPaneHeader* primary_header() const { return primary_header_; }
+  AstraSplitPaneHeader* secondary_header() { return secondary_header_; }
+  const AstraSplitPaneHeader* secondary_header() const {
+    return secondary_header_;
+  }
+
+  // ========================================================================
+  // Pane operations (from user actions on buttons)
+  // ========================================================================
+
+  // Close a pane (removes it from the split view).
+  // If only one pane remains, split view is conceptually "closed".
+  // TODO(astra): Implement multi-pane close semantics.
+  //   Currently works for 2-pane: closing one pane leaves the other full-size.
+  void ClosePane(AstraSplitPane pane);
+
+  // ========================================================================
+  // Accessibility
+  // ========================================================================
+
+  // Get the accessible name for the split view as a whole.
+  std::u16string GetAccessibleName() const;
+
+  // Set a custom accessible description for the split view.
+  void SetAccessibleDescription(const std::u16string& description);
+  const std::u16string& accessible_description() const {
+    return accessible_description_;
+  }
+
+  // ========================================================================
   // Legacy API (float-based, with animation support)
   // ========================================================================
   //
@@ -658,13 +933,45 @@ class AstraSplitView : public views::View {
   // Position the minimap in the corner of the split view.
   void LayoutMinimap();
 
+  // -- Multi-pane layout helpers -------------------------------------------
+
+  // Create or destroy pane headers based on show_pane_headers_.
+  void UpdatePaneHeaders();
+
+  // Create or destroy the divider toolbar based on show_divider_toolbar_.
+  void UpdateDividerToolbar();
+
+  // Layout pane headers within each pane area.
+  void LayoutPaneHeaders();
+
+  // Layout the divider toolbar (positioned on the divider).
+  void LayoutDividerToolbar();
+
+  // Called when the swap button is pressed.
+  void OnSwapButtonPressed();
+
+  // Called when the layout toggle button is pressed.
+  void OnLayoutToggleButtonPressed();
+
+  // Called when a pane's close button is pressed.
+  void OnCloseButtonPressed(AstraSplitPane pane);
+
+  // Notify observers that a pane was closed.
+  void NotifyPaneClosed(AstraSplitPane pane);
+
   raw_ptr<views::View> primary_view_ = nullptr;
   raw_ptr<views::View> secondary_view_ = nullptr;
   raw_ptr<AstraSplitDivider> divider_ = nullptr;
   raw_ptr<AstraSplitMinimapView> minimap_ = nullptr;
+  raw_ptr<AstraSplitPaneHeader> primary_header_ = nullptr;
+  raw_ptr<AstraSplitPaneHeader> secondary_header_ = nullptr;
+  raw_ptr<AstraSplitDividerToolbar> divider_toolbar_ = nullptr;
 
   double ratio_ = 0.5;
   SplitViewOrientation orientation_ = SplitViewOrientation::kHorizontal;
+
+  // Current layout mode (2-pane, 3-pane, grid, etc.).
+  AstraSplitLayoutMode layout_mode_ = AstraSplitLayoutMode::kTwoPaneHorizontal;
 
   // Which pane currently has focus (for visual focus indicator).
   AstraSplitPane focused_pane_ = AstraSplitPane::kPrimary;
@@ -673,6 +980,15 @@ class AstraSplitView : public views::View {
   std::u16string primary_label_;
   std::u16string secondary_label_;
   bool show_pane_labels_ = false;
+
+  // Whether pane headers (title bars with close buttons) are shown.
+  bool show_pane_headers_ = false;
+
+  // Whether the divider toolbar is shown.
+  bool show_divider_toolbar_ = false;
+
+  // Accessible description.
+  std::u16string accessible_description_;
 
   // Whether the divider handle (visual drag indicator) is shown.
   bool show_handle_ = true;
@@ -701,6 +1017,9 @@ class AstraSplitView : public views::View {
 
   // The divider is a friend so it can call the drag callbacks.
   friend class AstraSplitDivider;
+
+  // The pane header is a friend so it can call close button callbacks.
+  friend class AstraSplitPaneHeader;
 };
 
 // Converts a preset enum value to a ratio.

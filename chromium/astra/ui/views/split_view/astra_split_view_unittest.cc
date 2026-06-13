@@ -2108,4 +2108,1079 @@ TEST_F(AstraSplitViewControllerStateTest, ShutdownNotifiesObservers) {
   controller_.reset();  // Destruction should notify shutdown.
 }
 
+// =========================================================================
+// AstraSplitViewModel tests
+// =========================================================================
+
+// Test fixture for the split view model.
+class AstraSplitViewModelTest : public testing::Test {
+ public:
+  AstraSplitViewModelTest() = default;
+  ~AstraSplitViewModelTest() override = default;
+
+  void SetUp() override {
+    model_ = std::make_unique<AstraSplitViewModel>();
+  }
+
+  void TearDown() override {
+    model_.reset();
+  }
+
+ protected:
+  std::unique_ptr<AstraSplitViewModel> model_;
+};
+
+// Mock observer for model tests.
+class MockSplitViewModelObserver : public AstraSplitViewModelObserver {
+ public:
+  MOCK_METHOD(void, OnSplitLayoutModeChanged,
+                (AstraSplitLayoutMode mode), (override));
+  MOCK_METHOD(void, OnSplitDividerPositionChanged,
+                (AstraSplitDividerId divider_id, double new_ratio),
+                (override));
+  MOCK_METHOD(void, OnSplitDividerPositionChanging,
+                (AstraSplitDividerId divider_id, double new_ratio),
+                (override));
+  MOCK_METHOD(void, OnSplitDividerDragStarted,
+                (AstraSplitDividerId divider_id), (override));
+  MOCK_METHOD(void, OnSplitDividerDragEnded,
+                (AstraSplitDividerId divider_id), (override));
+  MOCK_METHOD(void, OnSplitFocusedPaneChanged,
+                (AstraSplitPaneId pane_id), (override));
+  MOCK_METHOD(void, OnSplitPaneClosed,
+                (AstraSplitPaneId pane_id), (override));
+  MOCK_METHOD(void, OnSplitPanesSwapped,
+                (AstraSplitPaneId pane_a, AstraSplitPaneId pane_b),
+                (override));
+  MOCK_METHOD(void, OnSplitMinPaneSizeChanged,
+                (int min_size_dips), (override));
+  MOCK_METHOD(void, OnSplitResizeBehaviorChanged,
+                (AstraSplitResizeBehavior behavior), (override));
+  MOCK_METHOD(void, OnSplitViewModelDestroyed, (), (override));
+};
+
+// Empty observer - verifies all defaults are empty.
+class EmptySplitViewModelObserver : public AstraSplitViewModelObserver {
+  // Deliberately overrides no methods.
+};
+
+// ---- Basic construction tests
+
+TEST_F(AstraSplitViewModelTest, DefaultLayoutMode) {
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneHorizontal,
+            model_->layout_mode());
+}
+
+TEST_F(AstraSplitViewModelTest, DefaultPaneCount) {
+  EXPECT_EQ(2, model_->GetPaneCount());
+}
+
+TEST_F(AstraSplitViewModelTest, DefaultDividerCount) {
+  EXPECT_EQ(1, model_->GetDividerCount());
+}
+
+TEST_F(AstraSplitViewModelTest, DefaultFocusedPane) {
+  EXPECT_EQ(AstraSplitPaneId::kPane0, model_->focused_pane());
+}
+
+TEST_F(AstraSplitViewModelTest, DefaultMinPaneSize) {
+  EXPECT_EQ(AstraSplitViewModel::kDefaultMinPaneSize,
+            model_->min_pane_size());
+}
+
+TEST_F(AstraSplitViewModelTest, DefaultResizeBehavior) {
+  EXPECT_EQ(AstraSplitResizeBehavior::kFixedRatio,
+            model_->resize_behavior());
+}
+
+TEST_F(AstraSplitViewModelTest, DefaultNotDragging) {
+  EXPECT_FALSE(model_->IsDragging());
+  EXPECT_FALSE(model_->GetDraggedDivider().has_value());
+}
+
+TEST_F(AstraSplitViewModelTest, DefaultDividerRatioIsFiftyPercent) {
+  double ratio = model_->GetDividerRatio(AstraSplitDividerId::kDivider0);
+  EXPECT_DOUBLE_EQ(0.5, ratio);
+}
+
+// ---- Layout mode tests
+
+TEST_F(AstraSplitViewModelTest, SetLayoutModeVertical) {
+  model_->SetLayoutMode(AstraSplitLayoutMode::kTwoPaneVertical);
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneVertical, model_->layout_mode());
+  EXPECT_EQ(2, model_->GetPaneCount());
+}
+
+TEST_F(AstraSplitViewModelTest, SetLayoutModeThreePaneHorizontal) {
+  model_->SetLayoutMode(AstraSplitLayoutMode::kThreePaneHorizontal);
+  EXPECT_EQ(AstraSplitLayoutMode::kThreePaneHorizontal,
+            model_->layout_mode());
+  EXPECT_EQ(3, model_->GetPaneCount());
+}
+
+TEST_F(AstraSplitViewModelTest, SetLayoutModeGridTwoByTwo) {
+  model_->SetLayoutMode(AstraSplitLayoutMode::kGridTwoByTwo);
+  EXPECT_EQ(AstraSplitLayoutMode::kGridTwoByTwo, model_->layout_mode());
+  EXPECT_EQ(4, model_->GetPaneCount());
+  EXPECT_TRUE(model_->IsGridLayout());
+}
+
+TEST_F(AstraSplitViewModelTest, SetLayoutModeGridThreeByTwo) {
+  model_->SetLayoutMode(AstraSplitLayoutMode::kGridThreeByTwo);
+  EXPECT_EQ(AstraSplitLayoutMode::kGridThreeByTwo,
+            model_->layout_mode());
+  EXPECT_EQ(6, model_->GetPaneCount());
+  EXPECT_TRUE(model_->IsGridLayout());
+}
+
+TEST_F(AstraSplitViewModelTest, IsGridLayoutTwoPaneIsFalse) {
+  EXPECT_FALSE(model_->IsGridLayout());
+  model_->SetLayoutMode(AstraSplitLayoutMode::kTwoPaneVertical);
+  EXPECT_FALSE(model_->IsGridLayout());
+}
+
+TEST_F(AstraSplitViewModelTest, SameLayoutModeIsNoOp) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitLayoutModeChanged(_)).Times(0);
+  model_->SetLayoutMode(AstraSplitLayoutMode::kTwoPaneHorizontal);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, LayoutModeChangeNotifiesObserver) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer,
+              OnSplitLayoutModeChanged(AstraSplitLayoutMode::kTwoPaneVertical))
+      .Times(1);
+  model_->SetLayoutMode(AstraSplitLayoutMode::kTwoPaneVertical);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, GetColumnCount) {
+  EXPECT_EQ(2, model_->GetColumnCount());
+
+  model_->SetLayoutMode(AstraSplitLayoutMode::kTwoPaneVertical);
+  EXPECT_EQ(1, model_->GetColumnCount());
+
+  model_->SetLayoutMode(AstraSplitLayoutMode::kGridTwoByTwo);
+  EXPECT_EQ(2, model_->GetColumnCount());
+
+  model_->SetLayoutMode(AstraSplitLayoutMode::kGridThreeByTwo);
+  EXPECT_EQ(3, model_->GetColumnCount());
+}
+
+TEST_F(AstraSplitViewModelTest, GetRowCount) {
+  EXPECT_EQ(1, model_->GetRowCount());
+
+  model_->SetLayoutMode(AstraSplitLayoutMode::kTwoPaneVertical);
+  EXPECT_EQ(2, model_->GetRowCount());
+
+  model_->SetLayoutMode(AstraSplitLayoutMode::kGridTwoByTwo);
+  EXPECT_EQ(2, model_->GetRowCount());
+
+  model_->SetLayoutMode(AstraSplitLayoutMode::kGridThreeByTwo);
+  EXPECT_EQ(2, model_->GetRowCount());
+}
+
+TEST_F(AstraSplitViewModelTest, SetEqualRatios) {
+  model_->SetLayoutMode(AstraSplitLayoutMode::kThreePaneHorizontal);
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider0, 0.25);
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider1, 0.75);
+
+  model_->SetEqualRatios();
+
+  // For 3 panes, equal ratios should be 1/3 and 2/3.
+  EXPECT_NEAR(1.0 / 3.0,
+             model_->GetDividerRatio(AstraSplitDividerId::kDivider0), 0.001);
+  EXPECT_NEAR(2.0 / 3.0,
+             model_->GetDividerRatio(AstraSplitDividerId::kDivider1), 0.001);
+}
+
+TEST_F(AstraSplitViewModelTest, ResetToDefaults) {
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider0, 0.7);
+  model_->ResetToDefaults();
+  EXPECT_DOUBLE_EQ(0.5,
+                    model_->GetDividerRatio(AstraSplitDividerId::kDivider0));
+}
+
+// ---- Divider ratio tests
+
+TEST_F(AstraSplitViewModelTest, SetDividerRatio) {
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider0, 0.7);
+  EXPECT_DOUBLE_EQ(0.7,
+                    model_->GetDividerRatio(AstraSplitDividerId::kDivider0));
+}
+
+TEST_F(AstraSplitViewModelTest, SetDividerRatioClampsToMin) {
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider0, 0.0);
+  EXPECT_GE(model_->GetDividerRatio(AstraSplitDividerId::kDivider0),
+           AstraSplitViewModel::kMinPaneRatio);
+}
+
+TEST_F(AstraSplitViewModelTest, SetDividerRatioClampsToMax) {
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider0, 1.0);
+  EXPECT_LE(model_->GetDividerRatio(AstraSplitDividerId::kDivider0),
+            1.0 - AstraSplitViewModel::kMinPaneRatio);
+}
+
+TEST_F(AstraSplitViewModelTest, SameDividerRatioNoOp) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitDividerPositionChanged(_, _)).Times(0);
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider0, 0.5);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, DividerRatioChangeNotifies) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitDividerPositionChanged(
+                           AstraSplitDividerId::kDivider0, 0.7))
+      .Times(1);
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider0, 0.7);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, InvalidDividerIdIsNoOp) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitDividerPositionChanged(_, _)).Times(0);
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider5, 0.7);
+
+  model_->RemoveObserver(&observer);
+}
+
+// ---- Drag state tests
+
+TEST_F(AstraSplitViewModelTest, StartDrag) {
+  model_->StartDividerDrag(AstraSplitDividerId::kDivider0);
+  EXPECT_TRUE(model_->IsDragging());
+  auto dragged = model_->GetDraggedDivider();
+  ASSERT_TRUE(dragged.has_value());
+  EXPECT_EQ(AstraSplitDividerId::kDivider0, *dragged);
+}
+
+TEST_F(AstraSplitViewModelTest, DragUpdateNotifiesChanging) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  model_->StartDividerDrag(AstraSplitDividerId::kDivider0);
+
+  EXPECT_CALL(observer, OnSplitDividerPositionChanging(
+                               AstraSplitDividerId::kDivider0, 0.6))
+      .Times(1);
+  model_->UpdateDividerDrag(AstraSplitDividerId::kDivider0, 0.6);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, DragEndNotifiesEndedAndChanged) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  model_->StartDividerDrag(AstraSplitDividerId::kDivider0);
+  model_->UpdateDividerDrag(AstraSplitDividerId::kDivider0, 0.6);
+
+  EXPECT_CALL(observer,
+              OnSplitDividerDragEnded(AstraSplitDividerId::kDivider0))
+      .Times(1);
+  EXPECT_CALL(observer, OnSplitDividerPositionChanged(
+                               AstraSplitDividerId::kDivider0, 0.6))
+      .Times(1);
+  model_->EndDividerDrag(AstraSplitDividerId::kDivider0);
+
+  EXPECT_FALSE(model_->IsDragging());
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, DragUpdateWithoutStartIsNoOp) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitDividerPositionChanging(_, _)).Times(0);
+  model_->UpdateDividerDrag(AstraSplitDividerId::kDivider0, 0.6);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, DragStartNotifies) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer,
+              OnSplitDividerDragStarted(AstraSplitDividerId::kDivider0))
+      .Times(1);
+  model_->StartDividerDrag(AstraSplitDividerId::kDivider0);
+
+  model_->RemoveObserver(&observer);
+}
+
+// ---- Focused pane tests
+
+TEST_F(AstraSplitViewModelTest, SetFocusedPane) {
+  model_->SetFocusedPane(AstraSplitPaneId::kPane1);
+  EXPECT_EQ(AstraSplitPaneId::kPane1, model_->focused_pane());
+}
+
+TEST_F(AstraSplitViewModelTest, SetSameFocusedPaneIsNoOp) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitFocusedPaneChanged(_)).Times(0);
+  model_->SetFocusedPane(AstraSplitPaneId::kPane0);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, FocusedPaneChangeNotifies) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer,
+              OnSplitFocusedPaneChanged(AstraSplitPaneId::kPane1))
+      .Times(1);
+  model_->SetFocusedPane(AstraSplitPaneId::kPane1);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, FocusNextPane) {
+  model_->SetFocusedPane(AstraSplitPaneId::kPane0);
+  model_->FocusNextPane();
+  EXPECT_EQ(AstraSplitPaneId::kPane1, model_->focused_pane());
+}
+
+TEST_F(AstraSplitViewModelTest, FocusNextPaneWrapsAround) {
+  model_->SetFocusedPane(AstraSplitPaneId::kPane1);
+  model_->FocusNextPane();
+  EXPECT_EQ(AstraSplitPaneId::kPane0, model_->focused_pane());
+}
+
+TEST_F(AstraSplitViewModelTest, FocusPreviousPane) {
+  model_->SetFocusedPane(AstraSplitPaneId::kPane1);
+  model_->FocusPreviousPane();
+  EXPECT_EQ(AstraSplitPaneId::kPane0, model_->focused_pane());
+}
+
+TEST_F(AstraSplitViewModelTest, FocusPreviousPaneWrapsAround) {
+  model_->SetFocusedPane(AstraSplitPaneId::kPane0);
+  model_->FocusPreviousPane();
+  EXPECT_EQ(AstraSplitPaneId::kPane1, model_->focused_pane());
+}
+
+// ---- Swap tests
+
+TEST_F(AstraSplitViewModelTest, SwapPanesNotifies) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer,
+              OnSplitPanesSwapped(AstraSplitPaneId::kPane0,
+                                   AstraSplitPaneId::kPane1))
+      .Times(1);
+  model_->SwapPanes(AstraSplitPaneId::kPane0,
+                    AstraSplitPaneId::kPane1);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, SwapSamePaneIsNoOp) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitPanesSwapped(_, _)).Times(0);
+  model_->SwapPanes(AstraSplitPaneId::kPane0,
+                    AstraSplitPaneId::kPane0);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, SwapFocusedWithNext) {
+  model_->SetFocusedPane(AstraSplitPaneId::kPane0);
+  model_->SwapFocusedWithNext();
+  EXPECT_EQ(AstraSplitPaneId::kPane1, model_->focused_pane());
+}
+
+TEST_F(AstraSplitViewModelTest, SwapFocusedWithPrevious) {
+  model_->SetFocusedPane(AstraSplitPaneId::kPane1);
+  model_->SwapFocusedWithPrevious();
+  EXPECT_EQ(AstraSplitPaneId::kPane0, model_->focused_pane());
+}
+
+// ---- Close pane tests
+
+TEST_F(AstraSplitViewModelTest, ClosePaneReturnsTrue) {
+  bool result = model_->ClosePane(AstraSplitPaneId::kPane0);
+  EXPECT_TRUE(result);
+}
+
+TEST_F(AstraSplitViewModelTest, ClosePaneNotifies) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer,
+              OnSplitPaneClosed(AstraSplitPaneId::kPane1))
+      .Times(1);
+  model_->ClosePane(AstraSplitPaneId::kPane1);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, CloseInvalidPaneReturnsFalse) {
+  bool result = model_->ClosePane(
+      static_cast<AstraSplitPaneId>(99));
+  EXPECT_FALSE(result);
+}
+
+// ---- Min pane size tests
+
+TEST_F(AstraSplitViewModelTest, SetMinPaneSize) {
+  model_->SetMinPaneSize(200);
+  EXPECT_EQ(200, model_->min_pane_size());
+}
+
+TEST_F(AstraSplitViewModelTest, MinPaneSizeZero) {
+  model_->SetMinPaneSize(0);
+  EXPECT_EQ(0, model_->min_pane_size());
+}
+
+TEST_F(AstraSplitViewModelTest, MinPaneSizeNegativeClamps) {
+  model_->SetMinPaneSize(-10);
+  EXPECT_EQ(0, model_->min_pane_size());
+}
+
+TEST_F(AstraSplitViewModelTest, MinPaneSizeNotifies) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitMinPaneSizeChanged(150)).Times(1);
+  model_->SetMinPaneSize(150);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, SameMinPaneSizeIsNoOp) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitMinPaneSizeChanged(_)).Times(0);
+  model_->SetMinPaneSize(AstraSplitViewModel::kDefaultMinPaneSize);
+
+  model_->RemoveObserver(&observer);
+}
+
+// ---- Resize behavior tests
+
+TEST_F(AstraSplitViewModelTest, SetResizeBehavior) {
+  model_->SetResizeBehavior(AstraSplitResizeBehavior::kFixedPixelSize);
+  EXPECT_EQ(AstraSplitResizeBehavior::kFixedPixelSize,
+            model_->resize_behavior());
+}
+
+TEST_F(AstraSplitViewModelTest, ResizeBehaviorNotifies) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitResizeBehaviorChanged(
+                           AstraSplitResizeBehavior::kMinSizePriority))
+      .Times(1);
+  model_->SetResizeBehavior(AstraSplitResizeBehavior::kMinSizePriority);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraSplitViewModelTest, SameResizeBehaviorIsNoOp) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitResizeBehaviorChanged(_)).Times(0);
+  model_->SetResizeBehavior(AstraSplitResizeBehavior::kFixedRatio);
+
+  model_->RemoveObserver(&observer);
+}
+
+// ---- Orientation helpers
+
+TEST_F(AstraSplitViewModelTest, IsHorizontalDefault) {
+  EXPECT_TRUE(model_->IsHorizontal());
+}
+
+TEST_F(AstraSplitViewModelTest, ToggleOrientation) {
+  model_->ToggleOrientation();
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneVertical,
+            model_->layout_mode());
+  EXPECT_FALSE(model_->IsHorizontal());
+}
+
+TEST_F(AstraSplitViewModelTest, ToggleOrientationTwice) {
+  model_->ToggleOrientation();
+  model_->ToggleOrientation();
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneHorizontal,
+            model_->layout_mode());
+  EXPECT_TRUE(model_->IsHorizontal());
+}
+
+// ---- Validation tests
+
+TEST_F(AstraSplitViewModelTest, IsValidPaneId) {
+  EXPECT_TRUE(model_->IsValidPaneId(AstraSplitPaneId::kPane0));
+  EXPECT_TRUE(model_->IsValidPaneId(AstraSplitPaneId::kPane1));
+  EXPECT_FALSE(model_->IsValidPaneId(AstraSplitPaneId::kPane2));
+}
+
+TEST_F(AstraSplitViewModelTest, IsValidDividerId) {
+  EXPECT_TRUE(model_->IsValidDividerId(AstraSplitDividerId::kDivider0));
+  EXPECT_FALSE(model_->IsValidDividerId(AstraSplitDividerId::kDivider1));
+}
+
+TEST_F(AstraSplitViewModelTest, ClampRatio) {
+  EXPECT_GE(model_->ClampRatio(0.0), AstraSplitViewModel::kMinPaneRatio);
+  EXPECT_LE(model_->ClampRatio(1.0), 1.0);
+  EXPECT_DOUBLE_EQ(0.5, model_->ClampRatio(0.5));
+}
+
+// ---- Serialization tests
+
+TEST_F(AstraSplitViewModelTest, SerializeToStringNotEmpty) {
+  std::string serialized = model_->SerializeToString();
+  EXPECT_FALSE(serialized.empty());
+}
+
+TEST_F(AstraSplitViewModelTest, DeserializeFromString) {
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider0, 0.7);
+  model_->SetMinPaneSize(150);
+  model_->SetFocusedPane(AstraSplitPaneId::kPane1);
+
+  std::string serialized = model_->SerializeToString();
+
+  // Create a new model and deserialize.
+  AstraSplitViewModel new_model;
+  bool result = new_model.DeserializeFromString(serialized);
+  EXPECT_TRUE(result);
+  EXPECT_DOUBLE_EQ(0.7,
+                    new_model.GetDividerRatio(AstraSplitDividerId::kDivider0));
+  EXPECT_EQ(150, new_model.min_pane_size());
+  EXPECT_EQ(AstraSplitPaneId::kPane1, new_model.focused_pane());
+}
+
+TEST_F(AstraSplitViewModelTest, DeserializeInvalidStringReturnsFalse) {
+  AstraSplitViewModel model;
+  bool result = model.DeserializeFromString("invalid|data|here");
+  EXPECT_FALSE(result);
+}
+
+TEST_F(AstraSplitViewModelTest, DeserializeEmptyStringReturnsFalse) {
+  AstraSplitViewModel model;
+  bool result = model.DeserializeFromString("");
+  EXPECT_FALSE(result);
+}
+
+// ---- Observer tests
+
+TEST_F(AstraSplitViewModelTest, EmptyObserverWorks) {
+  EmptySplitViewModelObserver empty_observer;
+  model_->AddObserver(&empty_observer);
+
+  // Trigger various state changes.
+  model_->SetLayoutMode(AstraSplitLayoutMode::kTwoPaneVertical);
+  model_->SetDividerRatio(AstraSplitDividerId::kDivider0, 0.7);
+  model_->SetFocusedPane(AstraSplitPaneId::kPane1);
+  model_->ClosePane(AstraSplitPaneId::kPane1);
+
+  model_->RemoveObserver(&empty_observer);
+  // No crash = success.
+}
+
+TEST_F(AstraSplitViewModelTest, MultipleObservers) {
+  MockSplitViewModelObserver obs1;
+  MockSplitViewModelObserver obs2;
+
+  model_->AddObserver(&obs1);
+  model_->AddObserver(&obs2);
+
+  EXPECT_CALL(obs1,
+              OnSplitFocusedPaneChanged(AstraSplitPaneId::kPane1))
+      .Times(1);
+  EXPECT_CALL(obs2,
+              OnSplitFocusedPaneChanged(AstraSplitPaneId::kPane1))
+      .Times(1);
+
+  model_->SetFocusedPane(AstraSplitPaneId::kPane1);
+
+  model_->RemoveObserver(&obs1);
+  model_->RemoveObserver(&obs2);
+}
+
+TEST_F(AstraSplitViewModelTest, RemoveObserverStopsNotifications) {
+  MockSplitViewModelObserver observer;
+  model_->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitFocusedPaneChanged(_)).Times(1);
+  model_->SetFocusedPane(AstraSplitPaneId::kPane1);
+
+  model_->RemoveObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitFocusedPaneChanged(_)).Times(0);
+  model_->SetFocusedPane(AstraSplitPaneId::kPane0);
+}
+
+TEST_F(AstraSplitViewModelTest, DestroyNotifiesObserver) {
+  auto model = std::make_unique<AstraSplitViewModel>();
+  MockSplitViewModelObserver observer;
+  model->AddObserver(&observer);
+
+  EXPECT_CALL(observer, OnSplitViewModelDestroyed()).Times(1);
+  model.reset();  // Destroys the model.
+}
+
+// ---- Layout mode string tests
+
+TEST(AstraSplitLayoutModeStringTest, ModeToString) {
+  EXPECT_EQ("two_pane_horizontal",
+            AstraSplitLayoutModeToString(
+                AstraSplitLayoutMode::kTwoPaneHorizontal));
+  EXPECT_EQ("two_pane_vertical",
+            AstraSplitLayoutModeToString(
+                AstraSplitLayoutMode::kTwoPaneVertical));
+  EXPECT_EQ("three_pane_horizontal",
+            AstraSplitLayoutModeToString(
+                AstraSplitLayoutMode::kThreePaneHorizontal));
+  EXPECT_EQ("three_pane_vertical",
+            AstraSplitLayoutModeToString(
+                AstraSplitLayoutMode::kThreePaneVertical));
+  EXPECT_EQ("grid_two_by_two",
+            AstraSplitLayoutModeToString(
+                AstraSplitLayoutMode::kGridTwoByTwo));
+  EXPECT_EQ("grid_three_by_two",
+            AstraSplitLayoutModeToString(
+                AstraSplitLayoutMode::kGridThreeByTwo));
+}
+
+TEST(AstraSplitLayoutModeStringTest, ModeFromString) {
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneHorizontal,
+            AstraSplitLayoutModeFromString("two_pane_horizontal"));
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneVertical,
+            AstraSplitLayoutModeFromString("two_pane_vertical"));
+  EXPECT_EQ(AstraSplitLayoutMode::kThreePaneHorizontal,
+            AstraSplitLayoutModeFromString("three_pane_horizontal"));
+  EXPECT_EQ(AstraSplitLayoutMode::kThreePaneVertical,
+            AstraSplitLayoutModeFromString("three_pane_vertical"));
+  EXPECT_EQ(AstraSplitLayoutMode::kGridTwoByTwo,
+            AstraSplitLayoutModeFromString("grid_two_by_two"));
+  EXPECT_EQ(AstraSplitLayoutMode::kGridThreeByTwo,
+            AstraSplitLayoutModeFromString("grid_three_by_two"));
+}
+
+TEST(AstraSplitLayoutModeStringTest, UnknownModeDefaultsToHorizontal) {
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneHorizontal,
+            AstraSplitLayoutModeFromString("unknown_mode"));
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneHorizontal,
+            AstraSplitLayoutModeFromString(""));
+}
+
+TEST(AstraSplitLayoutModeStringTest, ModeNamesNotEmpty) {
+  EXPECT_FALSE(AstraSplitLayoutModeToName(
+                   AstraSplitLayoutMode::kTwoPaneHorizontal).empty());
+  EXPECT_FALSE(AstraSplitLayoutModeToName(
+                   AstraSplitLayoutMode::kGridTwoByTwo).empty());
+}
+
+TEST(AstraSplitResizeBehaviorStringTest, BehaviorToString) {
+  EXPECT_EQ("fixed_ratio",
+            AstraSplitResizeBehaviorToString(
+                AstraSplitResizeBehavior::kFixedRatio));
+  EXPECT_EQ("fixed_pixel_size",
+            AstraSplitResizeBehaviorToString(
+                AstraSplitResizeBehavior::kFixedPixelSize));
+  EXPECT_EQ("min_size_priority",
+            AstraSplitResizeBehaviorToString(
+                AstraSplitResizeBehavior::kMinSizePriority));
+}
+
+TEST(AstraSplitResizeBehaviorStringTest, BehaviorFromString) {
+  EXPECT_EQ(AstraSplitResizeBehavior::kFixedRatio,
+            AstraSplitResizeBehaviorFromString("fixed_ratio"));
+  EXPECT_EQ(AstraSplitResizeBehavior::kFixedPixelSize,
+            AstraSplitResizeBehaviorFromString("fixed_pixel_size"));
+  EXPECT_EQ(AstraSplitResizeBehavior::kMinSizePriority,
+            AstraSplitResizeBehaviorFromString("min_size_priority"));
+}
+
+TEST(AstraSplitPaneIdStringTest, PaneIdToString) {
+  EXPECT_EQ("pane0",
+            AstraSplitPaneIdToString(AstraSplitPaneId::kPane0));
+  EXPECT_EQ("pane5",
+            AstraSplitPaneIdToString(AstraSplitPaneId::kPane5));
+}
+
+TEST(AstraSplitPaneIdStringTest, PaneIdFromString) {
+  EXPECT_EQ(AstraSplitPaneId::kPane0,
+            AstraSplitPaneIdFromString("pane0"));
+  EXPECT_EQ(AstraSplitPaneId::kPane3,
+            AstraSplitPaneIdFromString("pane3"));
+  EXPECT_EQ(AstraSplitPaneId::kPane0,
+            AstraSplitPaneIdFromString("unknown"));
+}
+
+// =========================================================================
+// New view component tests
+// =========================================================================
+
+TEST_F(AstraSplitViewTest, DefaultLayoutMode) {
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneHorizontal,
+            split_view_->layout_mode());
+}
+
+TEST_F(AstraSplitViewTest, SetLayoutModeVertical) {
+  split_view_->SetLayoutMode(AstraSplitLayoutMode::kTwoPaneVertical);
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneVertical,
+            split_view_->layout_mode());
+}
+
+TEST_F(AstraSplitViewTest, CycleNextLayoutMode) {
+  split_view_->CycleNextLayoutMode();
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneVertical,
+            split_view_->layout_mode());
+}
+
+TEST_F(AstraSplitViewTest, CyclePreviousLayoutMode) {
+  split_view_->CyclePreviousLayoutMode();
+  // Should wrap to last mode.
+  EXPECT_EQ(AstraSplitLayoutMode::kGridThreeByTwo,
+            split_view_->layout_mode());
+}
+
+TEST_F(AstraSplitViewTest, GetPaneCount) {
+  EXPECT_EQ(2, split_view_->GetPaneCount());
+}
+
+TEST_F(AstraSplitViewTest, IsGridLayoutDefault) {
+  EXPECT_FALSE(split_view_->IsGridLayout());
+}
+
+TEST_F(AstraSplitViewTest, ShowPaneHeaders) {
+  split_view_->SetShowPaneHeaders(true);
+  EXPECT_TRUE(split_view_->show_pane_headers());
+  EXPECT_NE(nullptr, split_view_->primary_header());
+  EXPECT_NE(nullptr, split_view_->secondary_header());
+  EXPECT_TRUE(split_view_->primary_header()->GetVisible());
+  EXPECT_TRUE(split_view_->secondary_header()->GetVisible());
+}
+
+TEST_F(AstraSplitViewTest, HidePaneHeaders) {
+  split_view_->SetShowPaneHeaders(true);
+  ASSERT_TRUE(split_view_->show_pane_headers());
+
+  split_view_->SetShowPaneHeaders(false);
+  EXPECT_FALSE(split_view_->show_pane_headers());
+  EXPECT_FALSE(split_view_->primary_header()->GetVisible());
+  EXPECT_FALSE(split_view_->secondary_header()->GetVisible());
+}
+
+TEST_F(AstraSplitViewTest, SetPaneTitle) {
+  split_view_->SetShowPaneHeaders(true);
+  split_view_->SetPaneTitle(AstraSplitPane::kPrimary, u"Tab 1");
+  // Should not crash.
+  EXPECT_TRUE(split_view_->GetVisible());
+}
+
+TEST_F(AstraSplitViewTest, ShowDividerToolbar) {
+  split_view_->SetShowDividerToolbar(true);
+  EXPECT_TRUE(split_view_->show_divider_toolbar());
+  EXPECT_NE(nullptr, split_view_->divider_toolbar());
+  EXPECT_TRUE(split_view_->divider_toolbar()->GetVisible());
+}
+
+TEST_F(AstraSplitViewTest, HideDividerToolbar) {
+  split_view_->SetShowDividerToolbar(true);
+  ASSERT_TRUE(split_view_->show_divider_toolbar());
+
+  split_view_->SetShowDividerToolbar(false);
+  EXPECT_FALSE(split_view_->show_divider_toolbar());
+}
+
+TEST_F(AstraSplitViewTest, DividerToolbarHasBothButtons) {
+  split_view_->SetShowDividerToolbar(true);
+  ASSERT_NE(nullptr, split_view_->divider_toolbar());
+
+  // Toolbar should have swap and layout toggle buttons.
+  AstraSplitDividerToolbar* toolbar = split_view_->divider_toolbar();
+  EXPECT_TRUE(toolbar->GetVisible());
+  EXPECT_GT(toolbar->GetPreferredSize().width(), 0);
+  EXPECT_GT(toolbar->GetPreferredSize().height(), 0);
+}
+
+TEST_F(AstraSplitViewTest, DividerToolbarUpdateLayoutMode) {
+  split_view_->SetShowDividerToolbar(true);
+  ASSERT_NE(nullptr, split_view_->divider_toolbar());
+
+  split_view_->divider_toolbar()->UpdateLayoutMode(
+      AstraSplitLayoutMode::kTwoPaneVertical);
+  // Should not crash and should update button icon.
+  EXPECT_TRUE(split_view_->divider_toolbar()->GetVisible());
+}
+
+TEST_F(AstraSplitViewTest, ClosePanePrimary) {
+  auto primary = std::make_unique<views::View>();
+  auto secondary = std::make_unique<views::View>();
+  split_view_->SetPrimaryView(primary.release());
+  split_view_->SetSecondaryView(secondary.release());
+
+  widget_->SetSize(gfx::Size(400, 300));
+  widget_->LayoutRootViewIfNecessary();
+
+  split_view_->ClosePane(AstraSplitPane::kPrimary);
+  // After closing primary, ratio should be minimum (primary minimized).
+  EXPECT_LT(split_view_->GetRatio(), 0.2);
+}
+
+TEST_F(AstraSplitViewTest, ClosePaneSecondary) {
+  auto primary = std::make_unique<views::View>();
+  auto secondary = std::make_unique<views::View>();
+  split_view_->SetPrimaryView(primary.release());
+  split_view_->SetSecondaryView(secondary.release());
+
+  widget_->SetSize(gfx::Size(400, 300));
+  widget_->LayoutRootViewIfNecessary();
+
+  split_view_->ClosePane(AstraSplitPane::kSecondary);
+  // After closing secondary, ratio should be maximum (secondary minimized).
+  EXPECT_GT(split_view_->GetRatio(), 0.8);
+}
+
+TEST_F(AstraSplitViewTest, GetAccessibleName) {
+  std::u16string name = split_view_->GetAccessibleName();
+  EXPECT_FALSE(name.empty());
+}
+
+TEST_F(AstraSplitViewTest, SetAccessibleDescription) {
+  split_view_->SetAccessibleDescription(u"Test description");
+  EXPECT_EQ(u"Test description",
+            split_view_->accessible_description());
+}
+
+TEST_F(AstraSplitViewTest, SameAccessibleDescriptionIsNoOp) {
+  split_view_->SetAccessibleDescription(u"Test");
+  // Setting the same description should not cause issues.
+  split_view_->SetAccessibleDescription(u"Test");
+  EXPECT_EQ(u"Test",
+            split_view_->accessible_description());
+}
+
+TEST_F(AstraSplitViewTest, LayoutWithHeaders) {
+  auto primary = std::make_unique<views::View>();
+  auto secondary = std::make_unique<views::View>();
+  split_view_->SetPrimaryView(primary.release());
+  split_view_->SetSecondaryView(secondary.release());
+
+  split_view_->SetShowPaneHeaders(true);
+  widget_->SetSize(gfx::Size(400, 300));
+  widget_->LayoutRootViewIfNecessary();
+
+  // Primary view should be offset by header height.
+  EXPECT_GT(split_view_->GetPrimaryView()->y(), 0);
+  EXPECT_LT(split_view_->GetPrimaryView()->height(), 300);
+}
+
+TEST_F(AstraSplitViewTest, LayoutWithToolbar) {
+  auto primary = std::make_unique<views::View>();
+  auto secondary = std::make_unique<views::View>();
+  split_view_->SetPrimaryView(primary.release());
+  split_view_->SetSecondaryView(secondary.release());
+
+  split_view_->SetShowDividerToolbar(true);
+  widget_->SetSize(gfx::Size(400, 300));
+  widget_->LayoutRootViewIfNecessary();
+
+  // Toolbar should be visible and positioned near the divider.
+  ASSERT_NE(nullptr, split_view_->divider_toolbar());
+  EXPECT_TRUE(split_view_->divider_toolbar()->GetVisible());
+  EXPECT_GT(split_view_->divider_toolbar()->x(), 150);
+  EXPECT_LT(split_view_->divider_toolbar()->x(), 250);
+}
+
+// ---- Pane header tests
+
+TEST(AstraSplitPaneHeaderTest, DefaultTitleEmpty) {
+  AstraSplitPaneHeader header;
+  EXPECT_TRUE(header.title().empty());
+}
+
+TEST(AstraSplitPaneHeaderTest, SetTitle) {
+  AstraSplitPaneHeader header;
+  header.SetTitle(u"My Tab");
+  EXPECT_EQ(u"My Tab", header.title());
+}
+
+TEST(AstraSplitPaneHeaderTest, DefaultShowCloseButton) {
+  AstraSplitPaneHeader header;
+  EXPECT_FALSE(header.show_close_button());
+  header.SetShowCloseButton(true);
+  EXPECT_TRUE(header.show_close_button());
+}
+
+TEST(AstraSplitPaneHeaderTest, SetPane) {
+  AstraSplitPaneHeader header;
+  header.SetPane(AstraSplitPane::kSecondary);
+  EXPECT_EQ(AstraSplitPane::kSecondary, header.pane());
+}
+
+TEST(AstraSplitPaneHeaderTest, PreferredSize) {
+  AstraSplitPaneHeader header;
+  gfx::Size pref = header.CalculatePreferredSize(views::SizeBounds());
+  EXPECT_GT(pref.height(), 0);
+  EXPECT_EQ(0, pref.width());  // Width is flexible.
+}
+
+// ---- Divider toolbar tests
+
+TEST(AstraSplitDividerToolbarTest, DefaultVisible) {
+  AstraSplitDividerToolbar toolbar;
+  EXPECT_TRUE(toolbar.toolbar_visible());
+}
+
+TEST(AstraSplitDividerToolbarTest, SetToolbarVisible) {
+  AstraSplitDividerToolbar toolbar;
+  toolbar.SetToolbarVisible(false);
+  EXPECT_FALSE(toolbar.toolbar_visible());
+  EXPECT_FALSE(toolbar.GetVisible());
+
+  toolbar.SetToolbarVisible(true);
+  EXPECT_TRUE(toolbar.toolbar_visible());
+  EXPECT_TRUE(toolbar.GetVisible());
+}
+
+TEST(AstraSplitDividerToolbarTest, PreferredSize) {
+  AstraSplitDividerToolbar toolbar;
+  gfx::Size pref = toolbar.GetPreferredSize();
+  EXPECT_GT(pref.width(), 0);
+  EXPECT_GT(pref.height(), 0);
+}
+
+TEST(AstraSplitDividerToolbarTest, UpdateLayoutMode) {
+  AstraSplitDividerToolbar toolbar;
+  toolbar.UpdateLayoutMode(AstraSplitLayoutMode::kGridTwoByTwo);
+  // Should not crash.
+  EXPECT_TRUE(toolbar.GetVisible());
+}
+
+// =========================================================================
+// New controller tests
+// =========================================================================
+
+TEST_F(AstraSplitViewControllerStateTest, DefaultLayoutMode) {
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneHorizontal,
+            controller_->GetLayoutMode());
+}
+
+TEST_F(AstraSplitViewControllerStateTest, SetLayoutMode) {
+  controller_->SetLayoutMode(AstraSplitLayoutMode::kTwoPaneVertical);
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneVertical,
+            controller_->GetLayoutMode());
+}
+
+TEST_F(AstraSplitViewControllerStateTest, CycleNextLayoutMode) {
+  controller_->CycleNextLayoutMode();
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneVertical,
+            controller_->GetLayoutMode());
+}
+
+TEST_F(AstraSplitViewControllerStateTest, CyclePreviousLayoutMode) {
+  controller_->CyclePreviousLayoutMode();
+  EXPECT_EQ(AstraSplitLayoutMode::kGridThreeByTwo,
+            controller_->GetLayoutMode());
+}
+
+TEST_F(AstraSplitViewControllerStateTest, ModelAccess) {
+  EXPECT_NE(nullptr, controller_->model());
+  EXPECT_EQ(AstraSplitLayoutMode::kTwoPaneHorizontal,
+            controller_->model()->layout_mode());
+}
+
+TEST_F(AstraSplitViewControllerStateTest, CanDropTabOnPaneValid) {
+  // Without activation, but pane 0 and 1 should be valid for 2-pane mode.
+  // When not active, CanDropTabOnPane should return false.
+  EXPECT_FALSE(controller_->CanDropTabOnPane(AstraSplitPaneId::kPane0,
+                                               nullptr));
+}
+
+TEST_F(AstraSplitViewControllerStateTest, CanDropTabOnPaneInvalid) {
+  EXPECT_FALSE(controller_->CanDropTabOnPane(AstraSplitPaneId::kPane5,
+                                               nullptr));
+}
+
+TEST_F(AstraSplitViewControllerStateTest, StartSplitFromDragInactive) {
+  EXPECT_FALSE(controller_->StartSplitFromDrag(AstraSplitPaneId::kPane0,
+                                                  nullptr));
+}
+
+TEST_F(AstraSplitViewControllerStateTest, HandleKeyboardShortcutNoControl) {
+  // Without control key, shortcuts should not be handled.
+  ui::KeyEvent event(ui::ET_KEY_PRESSED, ui::VKEY_D, ui::EF_NONE);
+  EXPECT_FALSE(controller_->HandleKeyboardShortcut(event));
+}
+
+TEST_F(AstraSplitViewControllerStateTest, HandleKeyboardShortcutControlD) {
+  // Ctrl+D should be handled (swap panes).
+  // Even when inactive, some shortcuts might still work?
+  // Let's test that it doesn't crash at minimum.
+  ui::KeyEvent event(ui::ET_KEY_PRESSED, ui::VKEY_D, ui::EF_CONTROL_DOWN);
+  // Should not crash. May return true or false depending on implementation.
+  // We just verify no crash.
+  controller_->HandleKeyboardShortcut(event);
+}
+
+TEST_F(AstraSplitViewControllerStateTest, HandleKeyboardShortcutUnknownKey) {
+  // Unknown shortcut should not be handled.
+  ui::KeyEvent event(ui::ET_KEY_PRESSED, ui::VKEY_A, ui::EF_CONTROL_DOWN);
+  EXPECT_FALSE(controller_->HandleKeyboardShortcut(event));
+}
+
+TEST_F(AstraSplitViewControllerStateTest, HandleKeyboardShortcutBracketKeys) {
+  // Ctrl+[ and Ctrl+] should be handled.
+  ui::KeyEvent event_left(ui::ET_KEY_PRESSED, ui::VKEY_OEM_4,
+                          ui::EF_CONTROL_DOWN);  // '['
+  controller_->HandleKeyboardShortcut(event_left);
+
+  ui::KeyEvent event_right(ui::ET_KEY_PRESSED, ui::VKEY_OEM_6,
+                           ui::EF_CONTROL_DOWN);  // ']'
+  controller_->HandleKeyboardShortcut(event_right);
+  // Should not crash.
+}
+
+TEST_F(AstraSplitViewControllerStateTest, HandleKeyboardShortcutNumberKeys) {
+  // Ctrl+1 and Ctrl+2 should be handled.
+  ui::KeyEvent event1(ui::ET_KEY_PRESSED, ui::VKEY_1, ui::EF_CONTROL_DOWN);
+  controller_->HandleKeyboardShortcut(event1);
+
+  ui::KeyEvent event2(ui::ET_KEY_PRESSED, ui::VKEY_2, ui::EF_CONTROL_DOWN);
+  controller_->HandleKeyboardShortcut(event2);
+  // Should not crash.
+}
+
+TEST_F(AstraSplitViewControllerStateTest, HandleKeyboardShortcutReturn) {
+  // Ctrl+Enter should toggle split view.
+  ui::KeyEvent event(ui::ET_KEY_PRESSED, ui::VKEY_RETURN,
+                      ui::EF_CONTROL_DOWN);
+  controller_->HandleKeyboardShortcut(event);
+  // Should not crash.
+}
+
+TEST_F(AstraSplitViewControllerStateTest, HandleKeyboardShortcutW) {
+  // Ctrl+W should close focused pane.
+  ui::KeyEvent event(ui::ET_KEY_PRESSED, ui::VKEY_W, ui::EF_CONTROL_DOWN);
+  controller_->HandleKeyboardShortcut(event);
+  // Should not crash.
+}
+
 }  // namespace astra

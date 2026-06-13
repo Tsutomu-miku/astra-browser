@@ -14,6 +14,7 @@ namespace views {
 class Label;
 class ScrollView;
 class Textfield;
+class ImageView;
 }  // namespace views
 
 class Browser;
@@ -190,6 +191,39 @@ class AstraCommandPaletteView
   // Scrolls the result at |index| into view.
   void ScrollToIndex(int index);
 
+  // Returns the number of result groups (categories) currently displayed.
+  size_t GetGroupCount() const;
+
+  // Returns the category of the group at |group_index|.
+  AstraCommandCategory GetGroupCategoryAt(int group_index) const;
+
+  // -- Category filter ---------------------------------------------------
+
+  // Returns the number of category filter chips.
+  size_t GetCategoryChipCount() const;
+
+  // Selects a category chip by index (0 = All).
+  void SelectCategoryChip(int chip_index);
+
+  // Returns the index of the selected category chip (0 = All).
+  int GetSelectedCategoryChipIndex() const;
+
+  // -- Empty state -------------------------------------------------------
+
+  // Returns true if the empty state view is currently visible.
+  bool IsEmptyStateVisible() const;
+
+  // Returns the current empty state message text.
+  std::u16string GetEmptyStateMessage() const;
+
+  // -- Quick actions -----------------------------------------------------
+
+  // Returns true if the quick actions panel is visible.
+  bool IsQuickActionsPanelVisible() const;
+
+  // Shows or hides the quick actions panel.
+  void SetQuickActionsVisible(bool visible);
+
   // -- views::View --------------------------------------------------------
 
   void OnThemeChanged() override;
@@ -226,9 +260,33 @@ class AstraCommandPaletteView
   // Scroll the selected item into view.
   void ScrollSelectedIntoView();
 
+  // Build the category filter chips row.
+  void BuildCategoryChips();
+
+  // Update the visual state of category chips based on the model's filter.
+  void UpdateCategoryChipsVisual();
+
+  // Update the empty state view visibility and message.
+  void UpdateEmptyState();
+
+  // Build the quick actions panel.
+  void BuildQuickActionsPanel();
+
+  // Handle a category chip click.
+  void OnCategoryChipClicked(int chip_index);
+
   // Get the number of currently displayed result items.
   // Internal helper used by both public API and internal code.
   size_t result_count() const { return item_views_.size(); }
+
+  // Index of the selected category chip (0 = "All").
+  int selected_chip_index_ = 0;
+
+  // Whether the quick actions panel is visible.
+  bool quick_actions_visible_ = true;
+
+  // Update the empty state view colors from the color provider.
+  void UpdateEmptyStateColors();
 
   // -- views::TextfieldController ----------------------------------------
 
@@ -252,9 +310,14 @@ class AstraCommandPaletteView
   // Child views (owned by the view hierarchy).
   raw_ptr<views::Textfield> search_field_ = nullptr;
   raw_ptr<views::View> divider_top_ = nullptr;
+  raw_ptr<views::ScrollView> chips_scroll_view_ = nullptr;
+  raw_ptr<views::View> chips_container_ = nullptr;
   raw_ptr<views::ScrollView> scroll_view_ = nullptr;
   raw_ptr<views::View> results_container_ = nullptr;
+  raw_ptr<views::View> empty_state_view_ = nullptr;
+  raw_ptr<views::Label> empty_state_label_ = nullptr;
   raw_ptr<views::View> divider_bottom_ = nullptr;
+  raw_ptr<views::View> quick_actions_panel_ = nullptr;
   raw_ptr<views::Label> status_bar_label_ = nullptr;
 
   // Cached item views for direct access by index.

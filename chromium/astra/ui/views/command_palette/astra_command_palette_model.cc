@@ -55,12 +55,14 @@ const char16_t* GetCategoryLabel(AstraCommandCategory category) {
       return u"Navigation";
     case AstraCommandCategory::kWorkspaces:
       return u"Workspaces";
-    case AstraCommandCategory::kView:
-      return u"View";
     case AstraCommandCategory::kBookmarks:
       return u"Bookmarks";
     case AstraCommandCategory::kHistory:
       return u"History";
+    case AstraCommandCategory::kActions:
+      return u"Actions";
+    case AstraCommandCategory::kView:
+      return u"View";
     case AstraCommandCategory::kTools:
       return u"Tools";
     case AstraCommandCategory::kSettings:
@@ -69,6 +71,32 @@ const char16_t* GetCategoryLabel(AstraCommandCategory category) {
       return u"Help";
   }
   return u"";
+}
+
+const char* GetCategoryIconName(AstraCommandCategory category) {
+  switch (category) {
+    case AstraCommandCategory::kTabs:
+      return "tab";
+    case AstraCommandCategory::kNavigation:
+      return "arrow_forward";
+    case AstraCommandCategory::kWorkspaces:
+      return "workspace";
+    case AstraCommandCategory::kBookmarks:
+      return "bookmark";
+    case AstraCommandCategory::kHistory:
+      return "history";
+    case AstraCommandCategory::kActions:
+      return "bolt";
+    case AstraCommandCategory::kView:
+      return "visibility";
+    case AstraCommandCategory::kTools:
+      return "build";
+    case AstraCommandCategory::kSettings:
+      return "settings";
+    case AstraCommandCategory::kHelp:
+      return "help";
+  }
+  return "help";
 }
 
 namespace {
@@ -224,18 +252,18 @@ const ChromeCommandEntry kChromeCommands[] = {
 
     // -- Find & edit -------------------------------------------------------
     {IDC_FIND, u"Find", u"Find text on the page", u"⌘F",
-     AstraCommandType::kAction, AstraCommandCategory::kTools, "find"},
+     AstraCommandType::kAction, AstraCommandCategory::kActions, "find"},
     {IDC_FIND_NEXT, u"Find Next", u"Jump to the next match", u"⌘G",
-     AstraCommandType::kAction, AstraCommandCategory::kTools, "arrow_down"},
+     AstraCommandType::kAction, AstraCommandCategory::kActions, "arrow_down"},
     {IDC_FIND_PREVIOUS,
      u"Find Previous",
      u"Jump to the previous match",
      u"⇧⌘G",
      AstraCommandType::kAction,
-     AstraCommandCategory::kTools,
+     AstraCommandCategory::kActions,
      "arrow_up"},
     {IDC_FIND_STOP, u"Stop Find", u"Dismiss the find bar", u"⎋",
-     AstraCommandType::kAction, AstraCommandCategory::kTools, "close"},
+     AstraCommandType::kAction, AstraCommandCategory::kActions, "close"},
 
     // -- Tools & pages -----------------------------------------------------
     {IDC_SHOW_BOOKMARKS_BAR,
@@ -366,9 +394,9 @@ const ChromeCommandEntry kChromeCommands[] = {
 
     // -- Printing & sharing ------------------------------------------------
     {IDC_PRINT, u"Print", u"Print the current page", u"⌘P",
-     AstraCommandType::kAction, AstraCommandCategory::kTools, "print"},
+     AstraCommandType::kAction, AstraCommandCategory::kActions, "print"},
     {IDC_SAVE_PAGE, u"Save Page As", u"Save the current page to disk", u"⌘S",
-     AstraCommandType::kAction, AstraCommandCategory::kTools, "save"},
+     AstraCommandType::kAction, AstraCommandCategory::kActions, "save"},
 
     // -- Settings ----------------------------------------------------------
     {IDC_PRIVACY_SETTINGS,
@@ -698,21 +726,21 @@ const AstraCommandEntry kAstraCommands[] = {
      u"Capture a screenshot of the visible area",
      u"",
      AstraCommandType::kAction,
-     AstraCommandCategory::kTools,
+     AstraCommandCategory::kActions,
      "screenshot"},
     {kAstraCommandScreenshotFullPage,
      u"Screenshot Full Page",
      u"Capture a screenshot of the entire page",
      u"",
      AstraCommandType::kAction,
-     AstraCommandCategory::kTools,
+     AstraCommandCategory::kActions,
      "screenshot"},
     {kAstraCommandScreenshotRegion,
      u"Screenshot Region",
      u"Capture a screenshot of a selected region",
      u"",
      AstraCommandType::kAction,
-     AstraCommandCategory::kTools,
+     AstraCommandCategory::kActions,
      "screenshot"},
 
     // -- DevTools ----------------------------------------------------------
@@ -802,6 +830,8 @@ double GetCategoryWeightInternal(AstraCommandCategory category) {
       return 0.2;
     case AstraCommandCategory::kWorkspaces:
       return 0.3;
+    case AstraCommandCategory::kActions:
+      return 0.15;
     case AstraCommandCategory::kView:
       return 0.1;
     case AstraCommandCategory::kBookmarks:
@@ -930,6 +960,129 @@ std::vector<gfx::Range> AstraCommandPaletteModel::GetMatchRanges(
 }
 
 // =========================================================================
+// Acronym matching
+// =========================================================================
+//
+// Checks if |query| matches as an acronym of |text|.
+// An acronym match means each character of the query is the first letter
+// of a word in the text, in order.
+//
+// Examples:
+//   "nt" matches "New Tab" (N + T)
+//   "dt" matches "Developer Tools" (D + T)
+//   "nt" does NOT match "Navigation" (only one word)
+// =========================================================================
+
+// static
+bool AstraCommandPaletteModel::IsAcronymMatch(const std::u16string& query,
+                                              const std::u16string& text) {
+  if (query.empty()) {
+    return true;
+  }
+  if (text.empty()) {
+    return false;
+  }
+
+  std::u16string query_lower = base::ToLowerASCII(query);
+  std::u16string text_lower = base::ToLowerASCII(text);
+
+  size_t query_idx = 0;
+  bool at_word_start = true;
+
+  for (size_t i = 0; i < text_lower.size() && query_idx < query_lower.size();
+       ++i) {
+    char16_t c = text_lower[i];
+
+    if (c == ' ' || c == '-' || c == '_' || c == '/') {
+      at_word_start = true;
+      continue;
+    }
+
+    if (at_word_start) {
+      if (c == query_lower[query_idx]) {
+        ++query_idx;
+      }
+      at_word_start = false;
+    }
+  }
+
+  return query_idx == query_lower.size();
+}
+
+// =========================================================================
+// Word boundary matching
+// =========================================================================
+//
+// Checks if |query| matches on word boundaries of |text|.
+// A word boundary match means each word of the query matches the start
+// of a word in the text, in order.
+//
+// Examples:
+//   "new tab" matches "New Tab"
+//   "dev tool" matches "Developer Tools"
+//   "tab new" does NOT match "New Tab" (wrong order)
+// =========================================================================
+
+// static
+bool AstraCommandPaletteModel::IsWordBoundaryMatch(
+    const std::u16string& query,
+    const std::u16string& text) {
+  if (query.empty()) {
+    return true;
+  }
+  if (text.empty()) {
+    return false;
+  }
+
+  std::u16string query_lower = base::ToLowerASCII(query);
+  std::u16string text_lower = base::ToLowerASCII(text);
+
+  // Split query into words.
+  std::vector<std::u16string> query_words;
+  size_t start = 0;
+  for (size_t i = 0; i <= query_lower.size(); ++i) {
+    if (i == query_lower.size() || query_lower[i] == ' ') {
+      if (i > start) {
+        query_words.push_back(query_lower.substr(start, i - start));
+      }
+      start = i + 1;
+    }
+  }
+
+  if (query_words.empty()) {
+    return true;
+  }
+
+  // Walk through text word starts, checking each query word matches
+  // the start of a text word, in order.
+  size_t word_idx = 0;
+  bool at_word_start = true;
+
+  for (size_t i = 0; i < text_lower.size() && word_idx < query_words.size();
+       ++i) {
+    char16_t c = text_lower[i];
+
+    if (c == ' ' || c == '-' || c == '_' || c == '/') {
+      at_word_start = true;
+      continue;
+    }
+
+    if (at_word_start) {
+      // Check if the current query word matches at this position.
+      const auto& word = query_words[word_idx];
+      if (i + word.size() <= text_lower.size() &&
+          text_lower.substr(i, word.size()) == word) {
+        ++word_idx;
+        i += word.size() - 1;  // Skip the matched word.
+      }
+      at_word_start = false;
+    }
+  }
+
+  return word_idx == query_words.size();
+}
+
+// =========================================================================
 // Relevance scoring
 // =========================================================================
 //
@@ -1024,6 +1177,19 @@ double AstraCommandPaletteModel::ComputeRelevanceScore(
   // Apply category weight multiplier.
   double cat_weight = GetCategoryWeightInternal(item.category);
   score *= (1.0 + cat_weight);
+
+  // Apply word boundary match bonus on title (if the query matches at
+  // the start of words in the title, give a boost).
+  if (score >= 0 && !query_lower.empty() &&
+      IsWordBoundaryMatch(query, item.title)) {
+    score += 100.0;
+  }
+
+  // Apply acronym match bonus on title.
+  if (score >= 0 && !query_lower.empty() && query_lower.size() >= 2 &&
+      IsAcronymMatch(query, item.title)) {
+    score += 150.0;
+  }
 
   // Apply recent command boost.
   if (item.is_recent) {
@@ -1521,6 +1687,14 @@ const AstraCommandItem* AstraCommandPaletteModel::GetCommandAt(int index) const 
   return &results_[index];
 }
 
+const AstraCommandItem* AstraCommandPaletteModel::GetSelectedItem() const {
+  if (selected_index_ < 0 ||
+      selected_index_ >= static_cast<int>(results_.size())) {
+    return nullptr;
+  }
+  return &results_[selected_index_];
+}
+
 // =========================================================================
 // Commands by type
 // =========================================================================
@@ -1651,6 +1825,40 @@ void AstraCommandPaletteModel::MoveSelection(int delta) {
   SetSelectedIndex(new_index);
 }
 
+void AstraCommandPaletteModel::SelectNextGroup() {
+  if (result_groups_.size() <= 1) {
+    return;
+  }
+
+  int current_group = FindGroupIndexForResult(selected_index_);
+  int next_group = current_group + 1;
+  if (next_group >= static_cast<int>(result_groups_.size())) {
+    next_group = 0;  // Wrap around.
+  }
+
+  int first_in_group = GetFirstResultInGroup(next_group);
+  if (first_in_group >= 0) {
+    SetSelectedIndex(first_in_group);
+  }
+}
+
+void AstraCommandPaletteModel::SelectPrevGroup() {
+  if (result_groups_.size() <= 1) {
+    return;
+  }
+
+  int current_group = FindGroupIndexForResult(selected_index_);
+  int prev_group = current_group - 1;
+  if (prev_group < 0) {
+    prev_group = static_cast<int>(result_groups_.size()) - 1;  // Wrap around.
+  }
+
+  int first_in_group = GetFirstResultInGroup(prev_group);
+  if (first_in_group >= 0) {
+    SetSelectedIndex(first_in_group);
+  }
+}
+
 // =========================================================================
 // Command execution
 // =========================================================================
@@ -1748,6 +1956,38 @@ int AstraCommandPaletteModel::FindRecentIndex(int command_id) const {
     }
   }
   return -1;
+}
+
+int AstraCommandPaletteModel::FindGroupIndexForResult(int result_index) const {
+  if (result_index < 0 || result_index >= static_cast<int>(results_.size())) {
+    return -1;
+  }
+
+  int flat_index = 0;
+  for (size_t g = 0; g < result_groups_.size(); ++g) {
+    size_t group_size = result_groups_[g].items.size();
+    if (result_index < flat_index + static_cast<int>(group_size)) {
+      return static_cast<int>(g);
+    }
+    flat_index += static_cast<int>(group_size);
+  }
+  return -1;
+}
+
+int AstraCommandPaletteModel::GetFirstResultInGroup(int group_index) const {
+  if (group_index < 0 ||
+      group_index >= static_cast<int>(result_groups_.size())) {
+    return -1;
+  }
+  if (result_groups_[group_index].items.empty()) {
+    return -1;
+  }
+
+  int flat_index = 0;
+  for (int g = 0; g < group_index; ++g) {
+    flat_index += static_cast<int>(result_groups_[g].items.size());
+  }
+  return flat_index;
 }
 
 // =========================================================================

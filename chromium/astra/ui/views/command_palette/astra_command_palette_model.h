@@ -86,9 +86,10 @@ enum class AstraCommandCategory {
   kTabs,
   kNavigation,
   kWorkspaces,
-  kView,
   kBookmarks,
   kHistory,
+  kActions,
+  kView,
   kTools,
   kSettings,
   kHelp,
@@ -98,8 +99,17 @@ enum class AstraCommandCategory {
 // Used as a section header in the command palette results list.
 const char16_t* GetCategoryLabel(AstraCommandCategory category);
 
+// Returns the icon name for a category.
+// Used for category filter chips and section headers.
+const char* GetCategoryIconName(AstraCommandCategory category);
+
 // Returns the human-readable name for a command type.
 const char16_t* GetCommandTypeName(AstraCommandType type);
+
+// Returns the total number of categories.
+constexpr size_t GetCategoryCount() {
+  return static_cast<size_t>(AstraCommandCategory::kHelp) + 1;
+}
 
 // =========================================================================
 // AstraCommandItem — a single command entry in the palette's search index.
@@ -363,6 +373,9 @@ class AstraCommandPaletteModel {
   // results.
   int GetSelectedIndex() const { return selected_index_; }
 
+  // Returns the selected command item, or nullptr if no selection.
+  const AstraCommandItem* GetSelectedItem() const;
+
   // Sets the selected index.  Clamps to valid range.  Notifies observers
   // with OnSelectionChanged.
   void SetSelectedIndex(int index);
@@ -370,6 +383,14 @@ class AstraCommandPaletteModel {
   // Moves the selection by |delta| items (positive = down, negative = up).
   // Clamps to valid range.  Wraps around at edges.
   void MoveSelection(int delta);
+
+  // Moves selection to the first item in the next category group.
+  // Wraps around at the last group to the first group.
+  void SelectNextGroup();
+
+  // Moves selection to the first item in the previous category group.
+  // Wraps around at the first group to the last group.
+  void SelectPrevGroup();
 
   // -- Workspace commands ------------------------------------------------
 
@@ -528,6 +549,18 @@ class AstraCommandPaletteModel {
       const std::u16string& query,
       const std::u16string& text);
 
+  // Returns true if |query| matches as an acronym of |text|.
+  // For example: "nt" matches "New Tab" by taking first letter of each word.
+  // Public for testing.
+  static bool IsAcronymMatch(const std::u16string& query,
+                             const std::u16string& text);
+
+  // Returns true if |query| matches on word boundaries in |text|.
+  // For example: "new tab" matches "New Tab" as word boundary match.
+  // Public for testing.
+  static bool IsWordBoundaryMatch(const std::u16string& query,
+                                  const std::u16string& text);
+
  private:
   // Builds the full command index from all sources (Chrome, Astra,
   // workspace).  Called at construction and when workspace count changes.
@@ -548,6 +581,14 @@ class AstraCommandPaletteModel {
 
   // Returns the index of |command_id| in recently_used_ids_, or -1 if not found.
   int FindRecentIndex(int command_id) const;
+
+  // Returns the group index of the group containing |result_index|.
+  // Returns -1 if the index is invalid.
+  int FindGroupIndexForResult(int result_index) const;
+
+  // Returns the flat result index of the first item in |group_index|.
+  // Returns -1 if the group index is invalid.
+  int GetFirstResultInGroup(int group_index) const;
 
   // -- Static command sources (Chrome + Astra) ---------------------------
 

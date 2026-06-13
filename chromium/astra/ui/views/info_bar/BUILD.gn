@@ -1,0 +1,40 @@
+# Copyright 2025 The Astra Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/config/ui/views/views.gni")
+
+component("astra_info_bar_views") {
+  sources = [
+    "astra_info_bar_view.cc",
+    "astra_info_bar_view.h",
+  ]
+
+  defines = [ "ASTRA_INFO_BAR_VIEWS_IMPLEMENTATION" ]
+
+  deps = [
+    "//base",
+    "//skia",
+    "//ui/base",
+    "//ui/color",
+    "//ui/gfx",
+    "//ui/views",
+    "//ui/views/controls",
+  ]
+}
+
+source_set("unit_tests") {
+  testonly = true
+
+  sources = [
+    "astra_info_bar_views_unittest.cc",
+  ]
+
+  deps = [
+    ":astra_info_bar_views",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gtest",
+    "//ui/views:views_test_support",
+  ]
+}

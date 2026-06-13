@@ -119,6 +119,14 @@ class AstraCommandPaletteItemView : public views::View {
   void ShowDescription(bool show);
   bool show_description() const { return show_description_; }
 
+  // Show or hide the category / type badge.
+  void ShowCategoryBadge(bool show);
+  bool show_category_badge() const { return show_category_badge_; }
+
+  // Show or hide the "recent" indicator badge.
+  void ShowRecentBadge(bool show);
+  bool show_recent_badge() const { return show_recent_badge_; }
+
   // -- Legacy API (kept for backward compatibility) ----------------------
 
   // Update the display data (used when refreshing results).
@@ -176,6 +184,8 @@ class AstraCommandPaletteItemView : public views::View {
   raw_ptr<views::Label> shortcut_label_ = nullptr;
   raw_ptr<views::Label> description_label_ = nullptr;
   raw_ptr<views::Label> type_badge_label_ = nullptr;
+  raw_ptr<views::View> recent_badge_container_ = nullptr;
+  raw_ptr<views::Label> recent_badge_label_ = nullptr;
 
   // The current command data being displayed.
   AstraCommandItem command_;
@@ -189,6 +199,8 @@ class AstraCommandPaletteItemView : public views::View {
   bool show_icon_ = true;
   bool show_shortcut_ = true;
   bool show_description_ = true;
+  bool show_category_badge_ = true;
+  bool show_recent_badge_ = false;
 
   // Match ranges for search highlighting.
   std::vector<gfx::Range> match_ranges_;
