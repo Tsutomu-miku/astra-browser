@@ -39,7 +39,10 @@ AstraRecentlyClosedItemView::AstraRecentlyClosedItemView(
     const GURL& url,
     base::Time close_time,
     int entry_id)
-    : url_(url), close_time_(close_time), entry_id_(entry_id) {
+    : item_id_(base::NumberToString(entry_id)),
+      url_(url),
+      close_time_(close_time),
+      entry_id_(entry_id) {
   SetTitle(title);
 
   // Show icon placeholder.
@@ -189,6 +192,11 @@ void AstraRecentlyClosedItemView::UpdateTooltipText() {
 // =========================================================================
 
 void AstraRecentlyClosedItemView::OnItemClicked() {
+  // First, invoke the simple callback if set.
+  if (click_callback_) {
+    click_callback_.Run();
+  }
+  // Then invoke the delegate if set.
   if (delegate_) {
     delegate_->OnRecentlyClosedItemClicked(entry_id_);
   }

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "base/strings/string_number_conversions.h"
@@ -90,6 +91,60 @@ T Clamp(T value, T min_val, T max_val) {
   return value;
 }
 
+// Convert OverlayView::Handle to AstraResizeHandle.
+AstraResizeHandle HandleToResizeHandle(
+    AstraScreenshotRegionOverlay::OverlayView::Handle handle) {
+  using OverlayHandle = AstraScreenshotRegionOverlay::OverlayView::Handle;
+  switch (handle) {
+    case OverlayHandle::kNone:
+      return AstraResizeHandle::kNone;
+    case OverlayHandle::kTopLeft:
+      return AstraResizeHandle::kTopLeft;
+    case OverlayHandle::kTop:
+      return AstraResizeHandle::kTop;
+    case OverlayHandle::kTopRight:
+      return AstraResizeHandle::kTopRight;
+    case OverlayHandle::kLeft:
+      return AstraResizeHandle::kLeft;
+    case OverlayHandle::kRight:
+      return AstraResizeHandle::kRight;
+    case OverlayHandle::kBottomLeft:
+      return AstraResizeHandle::kBottomLeft;
+    case OverlayHandle::kBottom:
+      return AstraResizeHandle::kBottom;
+    case OverlayHandle::kBottomRight:
+      return AstraResizeHandle::kBottomRight;
+  }
+  return AstraResizeHandle::kNone;
+}
+
+// Convert AstraResizeHandle to OverlayView::Handle.
+AstraScreenshotRegionOverlay::OverlayView::Handle ResizeHandleToHandle(
+    AstraResizeHandle handle) {
+  using OverlayHandle = AstraScreenshotRegionOverlay::OverlayView::Handle;
+  switch (handle) {
+    case AstraResizeHandle::kNone:
+      return OverlayHandle::kNone;
+    case AstraResizeHandle::kTopLeft:
+      return OverlayHandle::kTopLeft;
+    case AstraResizeHandle::kTop:
+      return OverlayHandle::kTop;
+    case AstraResizeHandle::kTopRight:
+      return OverlayHandle::kTopRight;
+    case AstraResizeHandle::kLeft:
+      return OverlayHandle::kLeft;
+    case AstraResizeHandle::kRight:
+      return OverlayHandle::kRight;
+    case AstraResizeHandle::kBottomLeft:
+      return OverlayHandle::kBottomLeft;
+    case AstraResizeHandle::kBottom:
+      return OverlayHandle::kBottom;
+    case AstraResizeHandle::kBottomRight:
+      return OverlayHandle::kBottomRight;
+  }
+  return OverlayHandle::kNone;
+}
+
 // Convert OverlayView::Handle to model's AstraScreenshotRegionHandle.
 AstraScreenshotRegionHandle HandleToModelHandle(
     AstraScreenshotRegionOverlay::OverlayView::Handle handle) {
@@ -140,7 +195,16 @@ views::Widget* AstraScreenshotRegionOverlay::ShowOverlay(
 AstraScreenshotRegionOverlay::AstraScreenshotRegionOverlay(
     Delegate* delegate,
     AstraScreenshotCaptureModel* model)
-    : delegate_(delegate), model_(model) {}
+    : delegate_(delegate), model_(model) {
+  // Initialize state from model if available.
+  if (model_) {
+    show_magnifier_ = model_->GetShowMagnifier();
+    show_grid_ = model_->GetShowGrid();
+    show_pixel_grid_ = model_->GetShowPixelGrid();
+    grid_size_ = model_->GetGridSizePixels();
+    mode_ = model_->GetCaptureMode();
+  }
+}
 
 AstraScreenshotRegionOverlay::~AstraScreenshotRegionOverlay() {
   if (model_) {
@@ -182,15 +246,156 @@ views::Widget* AstraScreenshotRegionOverlay::Show(
   return widget_;
 }
 
-void AstraScreenshotRegionOverlay::ApplySettingsFromModel() {
-  if (!model_ || !overlay_view_) return;
+// -- Region management ---------------------------------------------------
 
-  overlay_view_->SetShowGrid(model_->GetShowGridInRegionSelection());
-  overlay_view_->SetShowMagnifier(model_->GetShowMagnifierInRegionSelection());
-  overlay_view_->SetAspectRatioLock(model_->GetRegionAspectRatioLock());
-  overlay_view_->SetSnapToGrid(model_->GetSnapToGrid());
-  overlay_view_->SetGridSize(model_->GetGridSizePixels());
+void AstraScreenshotRegionOverlay::SetRegion(const gfx::Rect& region) {
+  if (overlay_view_) {
+    overlay_view_->SetSelection(region);
+  }
+  if (model_) {
+    model_->SetRegion(region);
+  }
 }
+
+gfx::Rect AstraScreenshotRegionOverlay::GetRegion() const {
+  if (overlay_view_) {
+    return overlay_view_->selection();
+  }
+  return gfx::Rect();
+}
+
+void AstraScreenshotRegionOverlay::ResetRegion() {
+  if (overlay_view_) {
+    overlay_view_->ClearSelection();
+  }
+  if (model_) {
+    model_->ResetRegion();
+  }
+}
+
+std::string AstraScreenshotRegionOverlay::GetRegionSizeText() const {
+  if (!overlay_view_) return "0 x 0";
+  gfx::Rect region = overlay_view_->selection();
+  return base::NumberToString(region.width()) + " x " +
+         base::NumberToString(region.height());
+}
+
+// -- Capture mode --------------------------------------------------------
+
+void AstraScreenshotRegionOverlay::SetMode(AstraScreenshotMode mode) {
+  if (mode_ == mode) return;
+  mode_ = mode;
+  if (model_) {
+    model_->SetCaptureMode(mode);
+  }
+  UpdateViewFromState();
+}
+
+// -- Magnifier -----------------------------------------------------------
+
+void AstraScreenshotRegionOverlay::SetShowMagnifier(bool show) {
+  if (show_magnifier_ == show) return;
+  show_magnifier_ = show;
+  if (overlay_view_) {
+    overlay_view_->SetShowMagnifier(show);
+  }
+  if (model_) {
+    model_->SetShowMagnifier(show);
+  }
+}
+
+void AstraScreenshotRegionOverlay::SetMagnifierPosition(
+    const gfx::Point& position) {
+  magnifier_position_ = position;
+  // TODO(astra): Update magnifier position in the overlay view.
+  //   Currently the magnifier follows the cursor, but this method
+  //   allows programmatic placement (e.g. for keyboard control).
+  //   Chromium owner: Skia canvas rendering / views painting.
+  if (overlay_view_) {
+    overlay_view_->SchedulePaint();
+  }
+}
+
+// -- Grid ----------------------------------------------------------------
+
+void AstraScreenshotRegionOverlay::SetShowGrid(bool show) {
+  if (show_grid_ == show) return;
+  show_grid_ = show;
+  if (overlay_view_) {
+    overlay_view_->SetShowGrid(show);
+  }
+  if (model_) {
+    model_->SetShowGrid(show);
+  }
+}
+
+void AstraScreenshotRegionOverlay::SetGridSize(int size_px) {
+  if (grid_size_ == size_px) return;
+  grid_size_ = size_px;
+  if (overlay_view_) {
+    overlay_view_->SetGridSize(size_px);
+  }
+  if (model_) {
+    model_->SetGridSizePixels(size_px);
+  }
+}
+
+// -- Pixel grid ----------------------------------------------------------
+
+void AstraScreenshotRegionOverlay::SetShowPixelGrid(bool show) {
+  if (show_pixel_grid_ == show) return;
+  show_pixel_grid_ = show;
+  if (overlay_view_) {
+    overlay_view_->SetShowPixelGrid(show);
+  }
+  if (model_) {
+    model_->SetShowPixelGrid(show);
+  }
+}
+
+// -- Aspect ratio constraint ---------------------------------------------
+
+void AstraScreenshotRegionOverlay::SetAspectRatioConstraint(bool constrain,
+                                                           double ratio) {
+  if (aspect_ratio_constrained_ == constrain &&
+      (!constrain || aspect_ratio_ == ratio)) {
+    return;
+  }
+  aspect_ratio_constrained_ = constrain;
+  aspect_ratio_ = ratio;
+  if (overlay_view_) {
+    overlay_view_->SetAspectRatioConstraint(constrain, ratio);
+  }
+}
+
+// -- Selection state -----------------------------------------------------
+
+void AstraScreenshotRegionOverlay::SetIsSelecting(bool selecting) {
+  if (is_selecting_ == selecting) return;
+  is_selecting_ = selecting;
+  // Note: actual selection mode is driven by mouse events in the view.
+  // This method provides programmatic control for automation/accessibility.
+}
+
+// -- Resize state --------------------------------------------------------
+
+void AstraScreenshotRegionOverlay::SetIsResizing(bool resizing) {
+  if (is_resizing_ == resizing) return;
+  is_resizing_ = resizing;
+  // Note: actual resize mode is driven by mouse events in the view.
+  // This method provides programmatic control for automation/accessibility.
+}
+
+// -- Resize handle -------------------------------------------------------
+
+void AstraScreenshotRegionOverlay::SetResizeHandle(AstraResizeHandle handle) {
+  if (resize_handle_ == handle) return;
+  resize_handle_ = handle;
+  // Note: actual handle is determined by hit testing in the view.
+  // This method provides programmatic control for automation/accessibility.
+}
+
+// -- Observer callbacks --------------------------------------------------
 
 void AstraScreenshotRegionOverlay::OnRegionChanged(const gfx::Rect& region) {
   if (overlay_view_ && !region.IsEmpty()) {
@@ -200,6 +405,34 @@ void AstraScreenshotRegionOverlay::OnRegionChanged(const gfx::Rect& region) {
 
 void AstraScreenshotRegionOverlay::OnCaptureSettingsChanged() {
   ApplySettingsFromModel();
+}
+
+void AstraScreenshotRegionOverlay::OnSettingsChanged(
+    AstraScreenshotCaptureModel* model) {
+  ApplySettingsFromModel();
+}
+
+// -- Private helpers -----------------------------------------------------
+
+void AstraScreenshotRegionOverlay::ApplySettingsFromModel() {
+  if (!model_ || !overlay_view_) return;
+
+  overlay_view_->SetShowGrid(model_->GetShowGrid());
+  overlay_view_->SetShowPixelGrid(model_->GetShowPixelGrid());
+  overlay_view_->SetShowMagnifier(model_->GetShowMagnifier());
+  overlay_view_->SetGridSize(model_->GetGridSizePixels());
+
+  // Update our own state.
+  show_grid_ = model_->GetShowGrid();
+  show_pixel_grid_ = model_->GetShowPixelGrid();
+  show_magnifier_ = model_->GetShowMagnifier();
+  grid_size_ = model_->GetGridSizePixels();
+  mode_ = model_->GetCaptureMode();
+}
+
+void AstraScreenshotRegionOverlay::UpdateViewFromState() {
+  if (!overlay_view_) return;
+  overlay_view_->SchedulePaint();
 }
 
 // =========================================================================
@@ -229,14 +462,24 @@ void AstraScreenshotRegionOverlay::OverlayView::SetSelection(
   SchedulePaint();
 }
 
-// =========================================================================
-// Aspect ratio lock
-// =========================================================================
+std::u16string
+AstraScreenshotRegionOverlay::OverlayView::GetRegionSizeText() const {
+  return base::NumberToString16(selection_.width()) + u" x " +
+         base::NumberToString16(selection_.height()) + u" px";
+}
+
+// -- Aspect ratio lock --------------------------------------------------
 
 void AstraScreenshotRegionOverlay::OverlayView::SetAspectRatioLock(
     AstraScreenshotAspectRatioLock mode) {
   if (aspect_ratio_lock_ == mode) return;
   aspect_ratio_lock_ = mode;
+
+  // If a custom aspect ratio was set, disable it when switching to lock modes.
+  if (mode != AstraScreenshotAspectRatioLock::kFree) {
+    aspect_ratio_constrained_ = false;
+    custom_aspect_ratio_ = 0.0;
+  }
 
   // If a selection exists, snap it to the new aspect ratio.
   if (has_selection_ && mode != AstraScreenshotAspectRatioLock::kFree) {
@@ -268,9 +511,26 @@ void AstraScreenshotRegionOverlay::OverlayView::CycleAspectRatioLock() {
   SetAspectRatioLock(static_cast<AstraScreenshotAspectRatioLock>(next));
 }
 
-// =========================================================================
-// Grid / snap
-// =========================================================================
+void AstraScreenshotRegionOverlay::OverlayView::SetAspectRatioConstraint(
+    bool constrain,
+    double ratio) {
+  if (aspect_ratio_constrained_ == constrain &&
+      (!constrain || custom_aspect_ratio_ == ratio)) {
+    return;
+  }
+
+  aspect_ratio_constrained_ = constrain;
+  custom_aspect_ratio_ = constrain ? ratio : 0.0;
+
+  // When using custom constraint, disable the preset lock modes.
+  if (constrain) {
+    aspect_ratio_lock_ = AstraScreenshotAspectRatioLock::kFree;
+  }
+
+  SchedulePaint();
+}
+
+// -- Grid / snap ---------------------------------------------------------
 
 void AstraScreenshotRegionOverlay::OverlayView::SetShowGrid(bool show) {
   if (show_grid_ == show) return;
@@ -289,15 +549,21 @@ void AstraScreenshotRegionOverlay::OverlayView::SetGridSize(int size) {
   }
 }
 
+void AstraScreenshotRegionOverlay::OverlayView::SetShowPixelGrid(bool show) {
+  if (show_pixel_grid_ == show) return;
+  show_pixel_grid_ = show;
+  SchedulePaint();
+}
+
+// -- Magnifier ----------------------------------------------------------
+
 void AstraScreenshotRegionOverlay::OverlayView::SetShowMagnifier(bool show) {
   if (show_magnifier_ == show) return;
   show_magnifier_ = show;
   SchedulePaint();
 }
 
-// =========================================================================
-// Painting
-// =========================================================================
+// -- Painting ------------------------------------------------------------
 
 void AstraScreenshotRegionOverlay::OverlayView::OnPaint(gfx::Canvas* canvas) {
   views::View::OnPaint(canvas);
@@ -305,6 +571,11 @@ void AstraScreenshotRegionOverlay::OverlayView::OnPaint(gfx::Canvas* canvas) {
   // Paint grid first (under the overlay).
   if (show_grid_) {
     PaintGrid(canvas);
+  }
+
+  // Paint pixel grid (on top of regular grid but under overlay cutout).
+  if (show_pixel_grid_) {
+    PaintPixelGrid(canvas);
   }
 
   PaintOverlay(canvas);
@@ -464,6 +735,37 @@ void AstraScreenshotRegionOverlay::OverlayView::PaintGrid(
   }
 }
 
+void AstraScreenshotRegionOverlay::OverlayView::PaintPixelGrid(
+    gfx::Canvas* canvas) {
+  // Pixel grid: draw finer grid lines when the selection is small enough.
+  // This simulates a pixel-level grid that would be visible at high zoom.
+  // For simplicity, we draw 1px lines every grid_size / 4 pixels.
+  gfx::Rect bounds = GetLocalBounds();
+  if (grid_size_ <= 0) return;
+
+  int pixel_grid_size = std::max(1, grid_size_ / 4);
+  if (pixel_grid_size < 2) return;  // Too dense to be useful
+
+  // Only show pixel grid within the selected region (clear area).
+  if (!has_selection_) return;
+
+  SkColor pixel_color = pixel_grid_color_;
+
+  // Draw vertical pixel grid lines inside selection.
+  for (int x = selection_.x(); x <= selection_.right();
+       x += pixel_grid_size) {
+    gfx::Rect line(x, selection_.y(), 1, selection_.height());
+    canvas->FillRect(line, pixel_color);
+  }
+
+  // Draw horizontal pixel grid lines inside selection.
+  for (int y = selection_.y(); y <= selection_.bottom();
+       y += pixel_grid_size) {
+    gfx::Rect line(selection_.x(), y, selection_.width(), 1);
+    canvas->FillRect(line, pixel_color);
+  }
+}
+
 void AstraScreenshotRegionOverlay::OverlayView::PaintCrosshair(
     gfx::Canvas* canvas) {
   if (mode_ != Mode::kCreating && mode_ != Mode::kResizing &&
@@ -533,9 +835,7 @@ void AstraScreenshotRegionOverlay::OverlayView::PaintMagnifier(
       gfx::ALIGN_CENTER, gfx::VALIGN_MIDDLE);
 }
 
-// =========================================================================
-// Hit testing
-// =========================================================================
+// -- Hit testing ---------------------------------------------------------
 
 AstraScreenshotRegionOverlay::OverlayView::Handle
 AstraScreenshotRegionOverlay::OverlayView::HitTestHandle(
@@ -577,9 +877,7 @@ gfx::Rect AstraScreenshotRegionOverlay::OverlayView::GetHandleRect(
                    kHandleSize, kHandleSize);
 }
 
-// =========================================================================
-// Selection manipulation
-// =========================================================================
+// -- Selection manipulation ----------------------------------------------
 
 gfx::Rect AstraScreenshotRegionOverlay::OverlayView::NormalizeSelection(
     const gfx::Point& start,
@@ -644,7 +942,8 @@ void AstraScreenshotRegionOverlay::OverlayView::ResizeSelection(
   new_rect = new_rect.Standardized();
 
   // Apply aspect ratio lock if enabled.
-  if (aspect_ratio_lock_ != AstraScreenshotAspectRatioLock::kFree) {
+  double ratio = GetCurrentAspectRatio();
+  if (ratio > 0.0) {
     // Determine the fixed point (opposite corner from the handle).
     gfx::Point fixed_point;
     switch (handle) {
@@ -723,19 +1022,17 @@ void AstraScreenshotRegionOverlay::OverlayView::NudgeResize(
     new_rect.set_height(kMinSelectionSize);
   }
 
-  if (aspect_ratio_lock_ != AstraScreenshotAspectRatioLock::kFree) {
-    double ratio = GetCurrentAspectRatio();
-    if (ratio > 0.0) {
-      int w = new_rect.width();
-      int h = new_rect.height();
-      if (delta.x() != 0) {
-        h = static_cast<int>(w / ratio);
-      } else {
-        w = static_cast<int>(h * ratio);
-      }
-      new_rect.set_width(w);
-      new_rect.set_height(h);
+  double ratio = GetCurrentAspectRatio();
+  if (ratio > 0.0) {
+    int w = new_rect.width();
+    int h = new_rect.height();
+    if (delta.x() != 0) {
+      h = static_cast<int>(w / ratio);
+    } else {
+      w = static_cast<int>(h * ratio);
     }
+    new_rect.set_width(w);
+    new_rect.set_height(h);
   }
 
   selection_ = new_rect;
@@ -843,6 +1140,9 @@ void AstraScreenshotRegionOverlay::OverlayView::ApplyAspectRatioToResize(
 
 double AstraScreenshotRegionOverlay::OverlayView::GetCurrentAspectRatio()
     const {
+  if (aspect_ratio_constrained_) {
+    return custom_aspect_ratio_;
+  }
   return AstraScreenshotCaptureModel::GetAspectRatioValue(aspect_ratio_lock_);
 }
 
@@ -880,9 +1180,7 @@ void AstraScreenshotRegionOverlay::OverlayView::SnapSelectionToGrid() {
   SchedulePaint();
 }
 
-// =========================================================================
-// Confirmation / cancellation
-// =========================================================================
+// -- Confirmation / cancellation -----------------------------------------
 
 void AstraScreenshotRegionOverlay::OverlayView::ConfirmSelection() {
   if (delegate_ && !selection_.IsEmpty()) {
@@ -899,9 +1197,7 @@ void AstraScreenshotRegionOverlay::OverlayView::CancelSelection() {
   }
 }
 
-// =========================================================================
-// Cursor
-// =========================================================================
+// -- Cursor --------------------------------------------------------------
 
 gfx::NativeCursor AstraScreenshotRegionOverlay::OverlayView::GetCursor(
     const ui::MouseEvent& event) {
@@ -926,9 +1222,7 @@ gfx::NativeCursor AstraScreenshotRegionOverlay::OverlayView::GetCursor(
   return ui::mojom::CursorType::kCrosshair;
 }
 
-// =========================================================================
-// Color helpers
-// =========================================================================
+// -- Color helpers -------------------------------------------------------
 
 void AstraScreenshotRegionOverlay::OverlayView::UpdateColors() {
   const ui::ColorProvider* color_provider = GetColorProvider();
@@ -942,13 +1236,12 @@ void AstraScreenshotRegionOverlay::OverlayView::UpdateColors() {
   tooltip_bg_color_ = SkColorSetARGB(235, 0, 0, 0);
   tooltip_text_color_ = SK_ColorWHITE;
   grid_color_ = SkColorSetARGB(64, 255, 255, 255);
+  pixel_grid_color_ = SkColorSetARGB(32, 255, 255, 255);
 
   SchedulePaint();
 }
 
-// =========================================================================
-// Mouse events
-// =========================================================================
+// -- Mouse events --------------------------------------------------------
 
 bool AstraScreenshotRegionOverlay::OverlayView::OnMousePressed(
     const ui::MouseEvent& event) {
@@ -1087,9 +1380,7 @@ bool AstraScreenshotRegionOverlay::OverlayView::OnMouseWheel(
   return views::View::OnMouseWheel(event);
 }
 
-// =========================================================================
-// Keyboard events
-// =========================================================================
+// -- Keyboard events -----------------------------------------------------
 
 bool AstraScreenshotRegionOverlay::OverlayView::OnKeyPressed(
     const ui::KeyEvent& event) {
@@ -1135,14 +1426,11 @@ bool AstraScreenshotRegionOverlay::OverlayView::OnKeyPressed(
         gfx::Rect new_rect = selection_;
         new_rect.set_x(selection_.x() - nudge_distance);
         new_rect.set_width(selection_.width() + nudge_distance);
-        if (aspect_ratio_lock_ != AstraScreenshotAspectRatioLock::kFree) {
-          // Maintain aspect ratio.
-          double ratio = GetCurrentAspectRatio();
-          if (ratio > 0.0) {
-            int new_h = static_cast<int>(new_rect.width() / ratio);
-            new_rect.set_y(selection_.bottom() - new_h);
-            new_rect.set_height(new_h);
-          }
+        double ratio = GetCurrentAspectRatio();
+        if (ratio > 0.0) {
+          int new_h = static_cast<int>(new_rect.width() / ratio);
+          new_rect.set_y(selection_.bottom() - new_h);
+          new_rect.set_height(new_h);
         }
         selection_ = new_rect;
         ClampSelectionToBounds();
@@ -1171,13 +1459,11 @@ bool AstraScreenshotRegionOverlay::OverlayView::OnKeyPressed(
         gfx::Rect new_rect = selection_;
         new_rect.set_y(selection_.y() - nudge_distance);
         new_rect.set_height(selection_.height() + nudge_distance);
-        if (aspect_ratio_lock_ != AstraScreenshotAspectRatioLock::kFree) {
-          double ratio = GetCurrentAspectRatio();
-          if (ratio > 0.0) {
-            int new_w = static_cast<int>(new_rect.height() * ratio);
-            new_rect.set_x(selection_.right() - new_w);
-            new_rect.set_width(new_w);
-          }
+        double ratio = GetCurrentAspectRatio();
+        if (ratio > 0.0) {
+          int new_w = static_cast<int>(new_rect.height() * ratio);
+          new_rect.set_x(selection_.right() - new_w);
+          new_rect.set_width(new_w);
         }
         selection_ = new_rect;
         ClampSelectionToBounds();

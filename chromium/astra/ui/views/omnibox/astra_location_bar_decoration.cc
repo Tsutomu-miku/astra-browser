@@ -23,33 +23,17 @@ namespace astra {
 
 namespace {
 
-// Converts a hex color string to SkColor.
-SkColor HexToSkColor(const std::string& hex) {
-  if (hex.empty() || hex[0] != '#') {
-    return SK_ColorGRAY;
-  }
-  std::string hex_value = hex.substr(1);
-  if (hex_value.size() == 6) {
-    hex_value += "FF";
-  }
-  if (hex_value.size() != 8) {
-    return SK_ColorGRAY;
-  }
-  unsigned int r, g, b, a;
-  if (sscanf(hex_value.c_str(), "%02x%02x%02x%02x", &r, &g, &b, &a) != 4) {
-    return SK_ColorGRAY;
-  }
-  return SkColorSetARGB(a, r, g, b);
-}
-
 // Stroke width for the hover ring around the workspace indicator.
 constexpr int kHoverRingStrokeWidth = 2;
 
-// Corner radius for action buttons in chip style.
-constexpr int kChipCornerRadius = 16;
-
 // Spacing between icon and label in labeled buttons.
 constexpr int kIconLabelSpacing = 4;
+
+// Default badge size (diameter).
+constexpr int kBadgeSize = 14;
+
+// Badge text size.
+constexpr int kBadgeFontSize = 10;
 
 }  // namespace
 
@@ -90,6 +74,27 @@ void AstraLocationBarDecorationView::WorkspaceIndicatorButton::
   SchedulePaint();
 }
 
+void AstraLocationBarDecorationView::WorkspaceIndicatorButton::SetBadgeText(
+    const std::u16string& text,
+    SkColor color) {
+  if (badge_text_ == text && badge_color_ == color && has_badge_) {
+    return;
+  }
+  has_badge_ = !text.empty();
+  badge_text_ = text;
+  badge_color_ = color;
+  SchedulePaint();
+}
+
+void AstraLocationBarDecorationView::WorkspaceIndicatorButton::ClearBadge() {
+  if (!has_badge_) {
+    return;
+  }
+  has_badge_ = false;
+  badge_text_.clear();
+  SchedulePaint();
+}
+
 void AstraLocationBarDecorationView::WorkspaceIndicatorButton::OnPaint(
     gfx::Canvas* canvas) {
   views::View::OnPaint(canvas);
@@ -122,6 +127,30 @@ void AstraLocationBarDecorationView::WorkspaceIndicatorButton::OnPaint(
   flags.setStyle(cc::PaintFlags::kFill_Style);
   flags.setAntiAlias(true);
   canvas->DrawCircle(center, kDotSize / 2.0f, flags);
+
+  // Draw badge if present.
+  if (has_badge_ && !badge_text_.empty()) {
+    gfx::Point badge_center(
+        bounds.right() - kBadgeSize / 2 - 1,
+        bounds.y() + kBadgeSize / 2 + 1);
+
+    cc::PaintFlags badge_bg_flags;
+    badge_bg_flags.setColor(badge_color_);
+    badge_bg_flags.setStyle(cc::PaintFlags::kFill_Style);
+    badge_bg_flags.setAntiAlias(true);
+    canvas->DrawCircle(badge_center, kBadgeSize / 2.0f, badge_bg_flags);
+
+    // Badge text (simple approach: draw centered text).
+    // Full text rendering requires font lists; this is a simplified version.
+    if (badge_text_.size() <= 2) {
+      canvas->DrawStringRectWithFlags(
+          badge_text_, gfx::FontList(), SK_ColorWHITE,
+          gfx::Rect(badge_center.x() - kBadgeSize / 2,
+                    badge_center.y() - kBadgeSize / 2,
+                    kBadgeSize, kBadgeSize),
+          gfx::Canvas::TEXT_ALIGN_CENTER | gfx::Canvas::NO_SUBPIXEL_RENDERING);
+    }
+  }
 }
 
 bool AstraLocationBarDecorationView::WorkspaceIndicatorButton::
@@ -214,6 +243,15 @@ AstraLocationBarDecorationView::FocusModeBadge::FocusModeBadge() {
   SetTooltipText(u"Focus mode is active");
 }
 
+void AstraLocationBarDecorationView::FocusModeBadge::SetActive(bool active) {
+  if (active_ == active) {
+    return;
+  }
+  active_ = active;
+  SetVisible(active);
+  SchedulePaint();
+}
+
 void AstraLocationBarDecorationView::FocusModeBadge::OnPaint(
     gfx::Canvas* canvas) {
   views::View::OnPaint(canvas);
@@ -265,11 +303,89 @@ std::u16string AstraLocationBarDecorationView::FocusModeBadge::GetTooltipText(
 }
 
 // =========================================================================
+// DecorationButton
+// =========================================================================
+
+AstraLocationBarDecorationView::DecorationButton::DecorationButton(
+    base::RepeatingClosure callback,
+    AstraOmniboxDecorationType type)
+    : LabelButton(std::move(callback), std::u16string()),
+      type_(type) {
+  SetFocusForPlatform();
+  SetPaintToLayer();
+  layer()->SetFillsBoundsOpaquely(false);
+}
+
+void AstraLocationBarDecorationView::DecorationButton::SetBadge(
+    const std::u16string& text,
+    SkColor color) {
+  if (badge_text_ == text && badge_color_ == color && has_badge_) {
+    return;
+  }
+  has_badge_ = !text.empty();
+  badge_text_ = text;
+  badge_color_ = color;
+  SchedulePaint();
+}
+
+void AstraLocationBarDecorationView::DecorationButton::ClearBadge() {
+  if (!has_badge_) {
+    return;
+  }
+  has_badge_ = false;
+  badge_text_.clear();
+  SchedulePaint();
+}
+
+void AstraLocationBarDecorationView::DecorationButton::SetActive(bool active) {
+  if (active_ == active) {
+    return;
+  }
+  active_ = active;
+  SchedulePaint();
+}
+
+void AstraLocationBarDecorationView::DecorationButton::OnPaint(
+    gfx::Canvas* canvas) {
+  views::LabelButton::OnPaint(canvas);
+
+  // Draw badge if present.
+  if (has_badge_ && !badge_text_.empty()) {
+    gfx::Rect bounds = GetContentsBounds();
+    gfx::Point badge_center(
+        bounds.right() - kBadgeSize / 2 - 2,
+        bounds.y() + kBadgeSize / 2 + 2);
+
+    cc::PaintFlags badge_bg_flags;
+    badge_bg_flags.setColor(badge_color_);
+    badge_bg_flags.setStyle(cc::PaintFlags::kFill_Style);
+    badge_bg_flags.setAntiAlias(true);
+    canvas->DrawCircle(badge_center, kBadgeSize / 2.0f, badge_bg_flags);
+
+    // Badge text.
+    if (badge_text_.size() <= 2) {
+      canvas->DrawStringRectWithFlags(
+          badge_text_, gfx::FontList(), SK_ColorWHITE,
+          gfx::Rect(badge_center.x() - kBadgeSize / 2,
+                    badge_center.y() - kBadgeSize / 2,
+                    kBadgeSize, kBadgeSize),
+          gfx::Canvas::TEXT_ALIGN_CENTER | gfx::Canvas::NO_SUBPIXEL_RENDERING);
+    }
+  }
+}
+
+void AstraLocationBarDecorationView::DecorationButton::OnThemeChanged() {
+  views::LabelButton::OnThemeChanged();
+  SchedulePaint();
+}
+
+// =========================================================================
 // AstraLocationBarDecorationView — Construction / destruction
 // =========================================================================
 
-AstraLocationBarDecorationView::AstraLocationBarDecorationView(Edge edge)
-    : edge_(edge) {
+AstraLocationBarDecorationView::AstraLocationBarDecorationView(
+    AstraDecorationPosition position)
+    : position_(position) {
   SetPaintToLayer();
   layer()->SetFillsBoundsOpaquely(false);
 
@@ -287,21 +403,6 @@ AstraLocationBarDecorationView::AstraLocationBarDecorationView(Edge edge)
   focus_mode_badge_->SetPreferredSize(
       gfx::Size(kFocusBadgeSize, kFocusBadgeSize));
   focus_mode_badge_->SetVisible(false);
-
-  // 3. Overflow button (created but hidden until needed).
-  auto overflow = std::make_unique<views::LabelButton>(
-      base::BindRepeating(
-          &AstraLocationBarDecorationView::OnOverflowButtonPressed,
-          base::Unretained(this)),
-      u"\u2026");  // Ellipsis character
-  overflow->SetPreferredSize(
-      gfx::Size(kDefaultActionButtonSize, kDefaultActionButtonSize));
-  overflow->SetTooltipText(u"More actions");
-  overflow->SetAccessibleName(u"More actions");
-  overflow->SetVisible(false);
-  overflow_button_ = AddChildView(std::move(overflow));
-
-  SetTooltipText(std::u16string());
 }
 
 AstraLocationBarDecorationView::~AstraLocationBarDecorationView() {
@@ -326,41 +427,144 @@ void AstraLocationBarDecorationView::SetModel(
   if (model_) {
     model_->AddObserver(this);
   }
-  RebuildActionButtons();
-  UpdateVisibility();
-  UpdateVisuals();
+  RebuildDecorationButtons();
+  UpdateAllDecorations();
   InvalidateLayout();
 }
 
 // =========================================================================
-// State update (convenience setters)
+// Decoration view access
 // =========================================================================
 
-void AstraLocationBarDecorationView::UpdateWorkspace(
-    const std::string& workspace_name,
-    const std::string& accent_color) {
-  workspace_name_ = base::UTF8ToUTF16(workspace_name);
-  accent_color_ = accent_color;
-  UpdateVisuals();
+views::View* AstraLocationBarDecorationView::GetDecorationView(
+    AstraOmniboxDecorationType type) {
+  // Check special decorations first.
+  if (type == AstraOmniboxDecorationType::kWorkspaceIndicator) {
+    return workspace_indicator_;
+  }
+  if (type == AstraOmniboxDecorationType::kFocusModeBadge) {
+    return focus_mode_badge_;
+  }
+  // Check regular decoration buttons.
+  for (const auto& [t, button] : decoration_buttons_) {
+    if (t == type) {
+      return button;
+    }
+  }
+  return nullptr;
 }
 
-void AstraLocationBarDecorationView::SetFocusModeActive(bool active) {
-  if (focus_mode_active_ == active) {
+int AstraLocationBarDecorationView::GetDecorationCount() const {
+  int count = 0;
+  if (workspace_indicator_ && workspace_indicator_->GetVisible()) {
+    ++count;
+  }
+  if (focus_mode_badge_ && focus_mode_badge_->GetVisible()) {
+    ++count;
+  }
+  for (const auto& [type, button] : decoration_buttons_) {
+    if (button && button->GetVisible()) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+// =========================================================================
+// Position
+// =========================================================================
+
+void AstraLocationBarDecorationView::SetPosition(
+    AstraDecorationPosition position) {
+  if (position_ == position) {
     return;
   }
-  focus_mode_active_ = active;
-  if (focus_mode_badge_) {
-    focus_mode_badge_->SetVisible(active);
-  }
+  position_ = position;
   InvalidateLayout();
 }
 
-void AstraLocationBarDecorationView::SetDecorationVisible(bool visible) {
-  if (model_) {
-    model_->SetShowDecoration(visible);
-  } else {
-    SetVisible(visible);
+// =========================================================================
+// Compact mode
+// =========================================================================
+
+void AstraLocationBarDecorationView::SetCompactMode(bool compact) {
+  if (compact_mode_ == compact) {
+    return;
   }
+  compact_mode_ = compact;
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Icon size
+// =========================================================================
+
+void AstraLocationBarDecorationView::SetIconSize(int size_px) {
+  if (icon_size_px_ == size_px) {
+    return;
+  }
+  icon_size_px_ = size_px;
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Animation
+// =========================================================================
+
+void AstraLocationBarDecorationView::SetAnimationEnabled(bool enabled) {
+  animation_enabled_ = enabled;
+}
+
+// =========================================================================
+// Spacing
+// =========================================================================
+
+void AstraLocationBarDecorationView::SetSpacing(int spacing_px) {
+  if (spacing_px_ == spacing_px) {
+    return;
+  }
+  spacing_px_ = spacing_px;
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Bulk update
+// =========================================================================
+
+void AstraLocationBarDecorationView::UpdateAllDecorations() {
+  UpdateVisibility();
+  UpdateVisuals();
+  UpdateLayout();
+}
+
+// =========================================================================
+// Bubble management
+// =========================================================================
+
+void AstraLocationBarDecorationView::ShowBubbleForDecoration(
+    AstraOmniboxDecorationType type) {
+  if (model_) {
+    model_->ShowDecorationBubble(type);
+  }
+  if (delegate_) {
+    delegate_->ShowBubbleForDecoration(type);
+  }
+  open_bubble_type_ = type;
+}
+
+void AstraLocationBarDecorationView::HideAllBubbles() {
+  if (model_) {
+    model_->HideAllBubbles();
+  }
+  open_bubble_type_ = AstraOmniboxDecorationType::kNone;
+}
+
+AstraOmniboxDecorationType
+AstraLocationBarDecorationView::GetOpenBubbleType() const {
+  if (model_) {
+    return model_->GetOpenBubbleType();
+  }
+  return open_bubble_type_;
 }
 
 // =========================================================================
@@ -371,33 +575,27 @@ gfx::Size AstraLocationBarDecorationView::CalculatePreferredSize() const {
   int width = kHorizontalPadding * 2;
   int height = kDecorationHeight;
 
+  int spacing = GetEffectiveSpacing();
+  int btn_size = GetEffectiveIconSize() + 8;  // + padding for click target
+
   if (workspace_indicator_ && workspace_indicator_->GetVisible()) {
-    width += kWorkspaceButtonSize + kElementSpacing;
+    width += kWorkspaceButtonSize + spacing;
   }
 
   if (focus_mode_badge_ && focus_mode_badge_->GetVisible()) {
-    width += kFocusBadgeSize + kElementSpacing;
+    width += kFocusBadgeSize + spacing;
   }
 
-  // Count visible action buttons (up to max visible).
-  int direct_count = GetDirectActionCount();
-  if (model_ && model_->icon_size() == AstraDecorationIconSize::kLarge) {
-    width += direct_count * (28 + kElementSpacing);
-  } else if (model_ && model_->icon_size() == AstraDecorationIconSize::kSmall) {
-    width += direct_count * (20 + kElementSpacing);
-  } else {
-    width += direct_count * (24 + kElementSpacing);
+  // Count visible decoration buttons.
+  for (const auto& [type, button] : decoration_buttons_) {
+    if (button && button->GetVisible()) {
+      width += btn_size + spacing;
+    }
   }
 
-  // Add width for labels if shown.
-  if (model_ && model_->show_labels() &&
-      model_->button_style() != AstraDecorationButtonStyle::kIconOnly) {
-    width += direct_count * 40;  // Approximate label width.
-  }
-
-  // Overflow button if there are hidden actions.
-  if (overflow_button_ && overflow_button_->GetVisible()) {
-    width += kDefaultActionButtonSize + kElementSpacing;
+  // Remove trailing spacing if we added any elements.
+  if (width > kHorizontalPadding * 2) {
+    width -= spacing;
   }
 
   return gfx::Size(width, height);
@@ -409,9 +607,11 @@ void AstraLocationBarDecorationView::Layout() {
   gfx::Rect bounds = GetContentsBounds();
   int x = bounds.x() + kHorizontalPadding;
   int center_y = bounds.CenterPoint().y();
+  int spacing = GetEffectiveSpacing();
+  int btn_size = GetEffectiveIconSize() + 8;  // + padding for click target
 
-  // For trailing edge, lay out right-to-left.
-  bool reverse = (edge_ == Edge::kTrailing);
+  // For trailing position, lay out right-to-left.
+  bool reverse = (position_ == AstraDecorationPosition::kTrailing);
   if (reverse) {
     x = bounds.right() - kHorizontalPadding;
   }
@@ -423,10 +623,10 @@ void AstraLocationBarDecorationView::Layout() {
     if (reverse) {
       x -= size;
       workspace_indicator_->SetBounds(x, y, size, size);
-      x -= kElementSpacing;
+      x -= spacing;
     } else {
       workspace_indicator_->SetBounds(x, y, size, size);
-      x += size + kElementSpacing;
+      x += size + spacing;
     }
   }
 
@@ -437,63 +637,27 @@ void AstraLocationBarDecorationView::Layout() {
     if (reverse) {
       x -= size;
       focus_mode_badge_->SetBounds(x, y, size, size);
-      x -= kElementSpacing;
+      x -= spacing;
     } else {
       focus_mode_badge_->SetBounds(x, y, size, size);
-      x += size + kElementSpacing;
+      x += size + spacing;
     }
   }
 
-  // 3. Action buttons.
-  int direct_count = GetDirectActionCount();
-  int shown = 0;
-  for (const auto& [id, button] : action_buttons_) {
-    if (!button->GetVisible()) {
+  // 3. Decoration buttons.
+  for (const auto& [type, button] : decoration_buttons_) {
+    if (!button || !button->GetVisible()) {
       continue;
-    }
-    if (shown >= direct_count) {
-      button->SetVisible(false);
-      continue;
-    }
-    button->SetVisible(true);
-
-    int btn_size = AstraOmniboxDecorationModel::GetIconSizeDp(
-        model_ ? model_->icon_size() : AstraDecorationIconSize::kMedium);
-    btn_size += 8;  // Add padding for click target.
-
-    int btn_width = btn_size;
-    if (model_ && model_->show_labels() &&
-        model_->button_style() != AstraDecorationButtonStyle::kIconOnly) {
-      btn_width += 40;  // Label width
     }
 
     int y = center_y - btn_size / 2;
     if (reverse) {
-      x -= btn_width;
-      button->SetBounds(x, y, btn_width, btn_size);
-      x -= kElementSpacing;
+      x -= btn_size;
+      button->SetBounds(x, y, btn_size, btn_size);
+      x -= spacing;
     } else {
-      button->SetBounds(x, y, btn_width, btn_size);
-      x += btn_width + kElementSpacing;
-    }
-    ++shown;
-  }
-
-  // 4. Overflow button.
-  if (overflow_button_) {
-    bool has_overflow =
-        action_buttons_.size() > static_cast<size_t>(direct_count);
-    overflow_button_->SetVisible(has_overflow && model_ &&
-                                  model_->show_overflow_menu());
-    if (overflow_button_->GetVisible()) {
-      int size = kDefaultActionButtonSize;
-      int y = center_y - size / 2;
-      if (reverse) {
-        x -= size;
-        overflow_button_->SetBounds(x, y, size, size);
-      } else {
-        overflow_button_->SetBounds(x, y, size, size);
-      }
+      button->SetBounds(x, y, btn_size, btn_size);
+      x += btn_size + spacing;
     }
   }
 }
@@ -501,252 +665,277 @@ void AstraLocationBarDecorationView::Layout() {
 void AstraLocationBarDecorationView::OnThemeChanged() {
   views::View::OnThemeChanged();
   UpdateVisuals();
-  UpdateButtonStyles();
-}
-
-bool AstraLocationBarDecorationView::OnMousePressed(
-    const ui::MouseEvent& event) {
-  // Let child views handle their own events.
-  return views::View::OnMousePressed(event);
 }
 
 void AstraLocationBarDecorationView::OnMouseEntered(
     const ui::MouseEvent& event) {
   is_hovered_ = true;
-  if (model_ && model_->hover_expansion()) {
-    UpdateVisibility();
-    InvalidateLayout();
-  }
+  // TODO(astra): Handle hover badge visibility if
+  // show_badges_on_hover_only is enabled.
 }
 
 void AstraLocationBarDecorationView::OnMouseExited(
     const ui::MouseEvent& event) {
   is_hovered_ = false;
-  if (model_ && model_->hover_expansion()) {
-    UpdateVisibility();
-    InvalidateLayout();
-  }
+  // TODO(astra): Handle hover badge visibility if
+  // show_badges_on_hover_only is enabled.
 }
 
 // =========================================================================
-// AstraOmniboxDecorationModelObserver
+// AstraOmniboxDecorationObserver
 // =========================================================================
 
-void AstraLocationBarDecorationView::OnActionAdded(
-    const std::string& action_id) {
-  RebuildActionButtons();
-  InvalidateLayout();
-}
-
-void AstraLocationBarDecorationView::OnActionRemoved(
-    const std::string& action_id) {
-  RebuildActionButtons();
-  InvalidateLayout();
-}
-
-void AstraLocationBarDecorationView::OnActionVisibilityChanged(
-    const std::string& action_id,
+void AstraLocationBarDecorationView::OnDecorationVisibilityChanged(
+    AstraOmniboxDecorationModel* model,
+    AstraOmniboxDecorationType type,
     bool visible) {
-  // Update individual button visibility.
-  for (auto& [id, button] : action_buttons_) {
-    if (id == action_id) {
-      button->SetVisible(visible);
-      break;
+  // Update special decorations.
+  if (type == AstraOmniboxDecorationType::kWorkspaceIndicator &&
+      workspace_indicator_) {
+    workspace_indicator_->SetBadgeVisible(visible);
+  } else if (type == AstraOmniboxDecorationType::kFocusModeBadge &&
+             focus_mode_badge_) {
+    focus_mode_badge_->SetVisible(visible);
+  } else {
+    // Update regular decoration buttons.
+    for (auto& [t, button] : decoration_buttons_) {
+      if (t == type) {
+        button->SetVisible(visible);
+        break;
+      }
     }
   }
   InvalidateLayout();
 }
 
-void AstraLocationBarDecorationView::OnActionOrderChanged() {
-  RebuildActionButtons();
-  InvalidateLayout();
-}
-
-void AstraLocationBarDecorationView::OnDecorationSettingsChanged() {
-  UpdateVisibility();
-  UpdateButtonStyles();
-  UpdateVisuals();
-  InvalidateLayout();
-}
-
-void AstraLocationBarDecorationView::OnOmniboxFocusChanged(bool focused) {
-  UpdateVisibility();
-  InvalidateLayout();
-}
-
-void AstraLocationBarDecorationView::OnSecurityStateChanged(
-    AstraSecurityLevel level) {
-  // Security state affects visual styling of the decoration.
-  // TODO(astra): Adjust colors based on security level.
-  SchedulePaint();
-}
-
-// =========================================================================
-// Test helpers
-// =========================================================================
-
-views::LabelButton* AstraLocationBarDecorationView::GetActionButtonForTest(
-    const std::string& action_id) {
-  for (auto& [id, button] : action_buttons_) {
-    if (id == action_id) {
-      return button;
+void AstraLocationBarDecorationView::OnDecorationActiveChanged(
+    AstraOmniboxDecorationModel* model,
+    AstraOmniboxDecorationType type,
+    bool active) {
+  if (type == AstraOmniboxDecorationType::kFocusModeBadge &&
+      focus_mode_badge_) {
+    focus_mode_badge_->SetActive(active);
+  } else {
+    for (auto& [t, button] : decoration_buttons_) {
+      if (t == type) {
+        button->SetActive(active);
+        break;
+      }
     }
   }
-  return nullptr;
+}
+
+void AstraLocationBarDecorationView::OnDecorationBadgeChanged(
+    AstraOmniboxDecorationModel* model,
+    AstraOmniboxDecorationType type) {
+  const AstraOmniboxDecorationItem* item = model->GetDecorationByType(type);
+  if (!item) {
+    return;
+  }
+
+  if (type == AstraOmniboxDecorationType::kWorkspaceIndicator &&
+      workspace_indicator_) {
+    if (!item->badge_text.empty()) {
+      workspace_indicator_->SetBadgeText(item->badge_text,
+                                          item->badge_color);
+    } else {
+      workspace_indicator_->ClearBadge();
+    }
+  } else {
+    for (auto& [t, button] : decoration_buttons_) {
+      if (t == type) {
+        if (!item->badge_text.empty()) {
+          button->SetBadge(item->badge_text, item->badge_color);
+        } else {
+          button->ClearBadge();
+        }
+        break;
+      }
+    }
+  }
+}
+
+void AstraLocationBarDecorationView::OnDecorationsReordered(
+    AstraOmniboxDecorationModel* model) {
+  RebuildDecorationButtons();
+  InvalidateLayout();
+}
+
+void AstraLocationBarDecorationView::OnDecorationExecuted(
+    AstraOmniboxDecorationModel* model,
+    AstraOmniboxDecorationType type) {
+  if (delegate_) {
+    delegate_->OnDecorationClicked(type);
+  }
+}
+
+void AstraLocationBarDecorationView::OnBubbleShown(
+    AstraOmniboxDecorationModel* model,
+    AstraOmniboxDecorationType type) {
+  open_bubble_type_ = type;
+}
+
+void AstraLocationBarDecorationView::OnBubbleHidden(
+    AstraOmniboxDecorationModel* model,
+    AstraOmniboxDecorationType type) {
+  if (open_bubble_type_ == type) {
+    open_bubble_type_ = AstraOmniboxDecorationType::kNone;
+  }
+}
+
+void AstraLocationBarDecorationView::OnWorkspaceChanged(
+    AstraOmniboxDecorationModel* model,
+    const std::u16string& name) {
+  if (workspace_indicator_) {
+    workspace_indicator_->SetWorkspaceName(name);
+    workspace_indicator_->SetColor(model->GetWorkspaceColor());
+  }
+}
+
+void AstraLocationBarDecorationView::OnFocusModeChanged(
+    AstraOmniboxDecorationModel* model,
+    bool active) {
+  if (focus_mode_badge_) {
+    focus_mode_badge_->SetActive(active);
+    focus_mode_badge_->SetVisible(active && model->GetShowFocusModeBadge());
+  }
+  InvalidateLayout();
+}
+
+void AstraLocationBarDecorationView::OnOmniboxDecorationModelShutdown(
+    AstraOmniboxDecorationModel* model) {
+  if (model_ == model) {
+    model_ = nullptr;
+  }
 }
 
 // =========================================================================
 // Private methods
 // =========================================================================
 
-void AstraLocationBarDecorationView::RebuildActionButtons() {
-  // Remove existing action buttons.
-  for (auto& [id, button] : action_buttons_) {
+void AstraLocationBarDecorationView::RebuildDecorationButtons() {
+  // Remove existing decoration buttons.
+  for (auto& [type, button] : decoration_buttons_) {
     if (button) {
       RemoveChildViewT(button);
     }
   }
-  action_buttons_.clear();
+  decoration_buttons_.clear();
 
   if (!model_) {
     InvalidateLayout();
     return;
   }
 
-  // Create buttons for each action from the model.
-  auto actions = model_->GetAllActions();
-  for (const auto& action : actions) {
-    auto button = CreateActionButton(action);
-    button->SetVisible(action.is_visible);
-    action_buttons_.emplace_back(action.id,
-                                 AddChildView(std::move(button)));
+  // Create buttons for each decoration from the model (except the special
+  // workspace and focus mode decorations which have their own views).
+  const auto& decorations = model_->GetDecorations();
+  for (const auto& item : decorations) {
+    if (item.type == AstraOmniboxDecorationType::kWorkspaceIndicator ||
+        item.type == AstraOmniboxDecorationType::kFocusModeBadge) {
+      // These are handled by dedicated child views.
+      continue;
+    }
+    auto button = CreateDecorationButton(item);
+    button->SetVisible(item.is_visible);
+    button->SetActive(item.is_active);
+    if (!item.badge_text.empty()) {
+      button->SetBadge(item.badge_text, item.badge_color);
+    }
+    decoration_buttons_.emplace_back(item.type,
+                                     AddChildView(std::move(button)));
   }
-
-  UpdateButtonStyles();
 }
 
 void AstraLocationBarDecorationView::UpdateVisuals() {
-  if (workspace_indicator_) {
-    SkColor color = HexToSkColor(accent_color_);
-    workspace_indicator_->SetColor(color);
-    workspace_indicator_->SetWorkspaceName(workspace_name_);
+  if (model_ && workspace_indicator_) {
+    workspace_indicator_->SetColor(model_->GetWorkspaceColor());
+    workspace_indicator_->SetWorkspaceName(model_->GetCurrentWorkspaceName());
+  }
+
+  if (model_ && focus_mode_badge_) {
+    focus_mode_badge_->SetActive(model_->IsFocusModeActive());
   }
 
   SchedulePaint();
 }
 
 void AstraLocationBarDecorationView::UpdateVisibility() {
-  bool visible = ShouldBeVisible();
-  SetVisible(visible);
-
-  // Update workspace indicator visibility based on model settings.
-  if (model_ && workspace_indicator_) {
-    workspace_indicator_->SetBadgeVisible(model_->show_workspace());
-  }
-}
-
-void AstraLocationBarDecorationView::UpdateButtonStyles() {
   if (!model_) {
     return;
   }
 
-  for (auto& [id, button] : action_buttons_) {
-    const AstraDecorationAction* action = model_->GetAction(id);
-    if (!action) {
-      continue;
-    }
+  // Update workspace indicator visibility.
+  if (workspace_indicator_) {
+    workspace_indicator_->SetBadgeVisible(model_->GetShowWorkspaceIndicator());
+  }
 
-    // Update label text based on show_labels setting.
-    if (model_->button_style() == AstraDecorationButtonStyle::kIconOnly) {
-      button->SetText(std::u16string());
-      button->SetTooltipText(action->tooltip);
-    } else {
-      button->SetText(
-          AstraOmniboxDecorationModel::FormatActionLabel(action->label));
-    }
+  // Update focus mode badge visibility.
+  if (focus_mode_badge_) {
+    focus_mode_badge_->SetVisible(
+        model_->IsFocusModeActive() && model_->GetShowFocusModeBadge());
+  }
 
-    // Update button styling.
-    if (model_->button_style() == AstraDecorationButtonStyle::kChip) {
-      // Chip style: rounded, with background.
-      button->SetStyle(views::Button::STYLE_BUTTON);
-    } else {
-      button->SetStyle(views::Button::STYLE_BUTTON);
-    }
+  // Update regular decoration button visibility.
+  for (auto& [type, button] : decoration_buttons_) {
+    button->SetVisible(model_->IsDecorationVisible(type));
+  }
+}
 
-    // Update accessibility.
-    button->SetAccessibleName(action->label);
-    if (!action->shortcut.empty()) {
-      button->SetTooltipText(action->label + u" (" + action->shortcut + u")");
+void AstraLocationBarDecorationView::UpdateLayout() {
+  InvalidateLayout();
+}
+
+void AstraLocationBarDecorationView::OnDecorationButtonPressed(
+    AstraOmniboxDecorationType type) {
+  if (model_) {
+    const AstraOmniboxDecorationItem* item = model_->GetDecorationByType(type);
+    if (item && item->has_bubble) {
+      ShowBubbleForDecoration(type);
     } else {
-      button->SetTooltipText(action->tooltip);
+      model_->ExecuteDecoration(type);
     }
   }
 }
 
 void AstraLocationBarDecorationView::OnWorkspaceIndicatorPressed() {
+  if (model_) {
+    model_->ShowDecorationBubble(
+        AstraOmniboxDecorationType::kWorkspaceIndicator);
+  }
   if (delegate_) {
-    delegate_->OnWorkspaceIndicatorClicked();
+    delegate_->OnDecorationClicked(
+        AstraOmniboxDecorationType::kWorkspaceIndicator);
   }
 }
 
-void AstraLocationBarDecorationView::OnActionButtonPressed(
-    const std::string& action_id) {
-  if (delegate_) {
-    delegate_->OnActionClicked(action_id);
-  }
-}
-
-void AstraLocationBarDecorationView::OnOverflowButtonPressed() {
-  if (delegate_) {
-    delegate_->OnOverflowMenuClicked();
-  }
-}
-
-std::unique_ptr<views::LabelButton>
-AstraLocationBarDecorationView::CreateActionButton(
-    const AstraDecorationAction& action) {
-  auto button = std::make_unique<views::LabelButton>(
+std::unique_ptr<AstraLocationBarDecorationView::DecorationButton>
+AstraLocationBarDecorationView::CreateDecorationButton(
+    const AstraOmniboxDecorationItem& item) {
+  auto button = std::make_unique<DecorationButton>(
       base::BindRepeating(
-          &AstraLocationBarDecorationView::OnActionButtonPressed,
-          base::Unretained(this), action.id),
-      std::u16string());
-  button->SetPreferredSize(
-      gfx::Size(kDefaultActionButtonSize, kDefaultActionButtonSize));
-  button->SetTooltipText(action.tooltip);
-  button->SetAccessibleName(action.label);
-  button->SetFocusForPlatform();
+          &AstraLocationBarDecorationView::OnDecorationButtonPressed,
+          base::Unretained(this), item.type),
+      item.type);
+  int btn_size = GetEffectiveIconSize() + 8;
+  button->SetPreferredSize(gfx::Size(btn_size, btn_size));
+  button->SetTooltipText(item.tooltip);
+  button->SetAccessibleName(item.accessibility_label);
   return button;
 }
 
-bool AstraLocationBarDecorationView::ShouldBeVisible() const {
-  if (!model_) {
-    return GetVisible();
+int AstraLocationBarDecorationView::GetEffectiveIconSize() const {
+  if (compact_mode_) {
+    return static_cast<int>(icon_size_px_ * kCompactScaleFactor);
   }
-  if (!model_->show_decoration()) {
-    return false;
-  }
-  if (model_->show_on_focus_only() && !model_->omnibox_focused() &&
-      !is_hovered_) {
-    return false;
-  }
-  return true;
+  return icon_size_px_;
 }
 
-int AstraLocationBarDecorationView::GetDirectActionCount() const {
-  if (!model_) {
-    return 0;
+int AstraLocationBarDecorationView::GetEffectiveSpacing() const {
+  if (compact_mode_) {
+    return static_cast<int>(spacing_px_ * kCompactScaleFactor);
   }
-  size_t visible_count = model_->GetVisibleActionCount();
-  size_t max_direct = static_cast<size_t>(model_->max_visible_actions());
-
-  // If hover expansion is enabled and we're hovered, show more actions.
-  if (model_->hover_expansion() && is_hovered_) {
-    max_direct = std::min(max_direct + 2,
-                           static_cast<size_t>(AstraOmniboxDecorationModel::
-                                                   kMaxVisibleActions));
-  }
-
-  return static_cast<int>(std::min(visible_count, max_direct));
+  return spacing_px_;
 }
 
 }  // namespace astra

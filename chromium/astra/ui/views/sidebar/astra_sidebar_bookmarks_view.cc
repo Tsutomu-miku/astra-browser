@@ -1,11 +1,14 @@
 #include "astra/ui/views/sidebar/astra_sidebar_bookmarks_view.h"
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 
 #include "astra/ui/color/astra_color_ids.h"
 #include "astra/ui/views/sidebar/astra_bookmark_item_view.h"
 #include "base/check.h"
+#include "base/i18n/number_formatting.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/bookmarks/bookmark_model_factory.h"
 #include "chrome/browser/profiles/profile.h"
@@ -20,27 +23,20 @@
 #include "ui/gfx/geometry/insets.h"
 #include "ui/views/controls/button/image_button.h"
 #include "ui/views/controls/label.h"
-#include "ui/views/layout/box_layout.h"
 #include "ui/views/controls/scroll_view.h"
+#include "ui/views/layout/box_layout.h"
 #include "url/gurl.h"
 
 namespace astra {
 
 namespace {
 
-// Layout constants.
-constexpr int kBookmarksSectionHeaderHeight = 28;
-constexpr int kBookmarksSectionHorizontalPadding = 12;
-constexpr int kBookmarksSectionVerticalPadding = 8;
-constexpr int kBookmarksSectionHeaderFontSizeDelta = 1;
-constexpr int kBookmarksCollapseButtonSize = 12;
-
 // Section title.
 const char16_t kBookmarksTitle[] = u"Bookmarks";
+const char16_t kEmptyBookmarksText[] = u"No bookmarks";
+const char16_t kSearchPlaceholder[] = u"Search bookmarks...";
 
-// Astra color IDs for the bookmarks panel.
-// Uses the Astra sidebar color system from astra/ui/color/astra_color_ids.h.
-// Chromium subsystem: ui::ColorProvider (ui/color/color_provider.h)
+// Astra color IDs.
 constexpr ui::ColorId kBookmarksHeaderTextColorId =
     kColorAstraSidebarSectionHeaderText;
 constexpr ui::ColorId kBookmarksBackgroundColorId =
@@ -48,27 +44,30 @@ constexpr ui::ColorId kBookmarksBackgroundColorId =
 
 }  // namespace
 
+// =========================================================================
+// Construction
+// =========================================================================
+
 AstraSidebarBookmarksView::AstraSidebarBookmarksView(Browser* browser)
-    : browser_(browser) {
+    : AstraSidebarSectionView(kBookmarksTitle,
+                              AstraSidebarSectionType::kBookmarks),
+      browser_(browser) {
   // Get profile from the browser.
   if (browser_) {
     profile_ = browser_->profile();
   }
 
-  // TODO(astra): Get BookmarkModel from profile via BookmarkModelFactory.
-  // Currently we look it up lazily in StartObservingModel().
-  // Chromium owner: BookmarkModelFactory (chrome/browser/bookmarks/bookmark_model_factory.h)
-  // Chromium patch point: none — use public factory API.
+  BuildBookmarksLayout();
 
-  BuildLayout();
+  // Configure base section appearance.
+  SetShowChevron(true);
+  SetShowItemCount(true);
+  SetShowAddButton(true);
+  SetShowMoreButton(true);
+  SetShowSearch(true);
+  SetEmptyStateText(kEmptyBookmarksText);
 
-  // Paint background.
-  SetPaintToLayer();
-  layer()->SetFillsBoundsOpaquely(false);
-
-  // Start observing the bookmark model if it's already loaded.
-  // If not loaded yet, the BookmarkModelLoaded callback will trigger the
-  // initial build.
+  // Start observing the bookmark model.
   StartObservingModel();
 }
 
@@ -76,65 +75,20 @@ AstraSidebarBookmarksView::~AstraSidebarBookmarksView() {
   // ScopedObservation automatically cleans up on destruction.
 }
 
-void AstraSidebarBookmarksView::BuildLayout() {
-  auto* layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
-      views::BoxLayout::Orientation::kVertical));
-  layout->set_cross_axis_alignment(
-      views::BoxLayout::CrossAxisAlignment::kStretch);
+// =========================================================================
+// Layout
+// =========================================================================
 
-  // --- Header row ---
-  header_view_ = AddChildView(std::make_unique<views::View>());
-  auto* header_layout = header_view_->SetLayoutManager(
-      std::make_unique<views::BoxLayout>(
-          views::BoxLayout::Orientation::kHorizontal,
-          gfx::Insets::VH(kBookmarksSectionVerticalPadding,
-                          kBookmarksSectionHorizontalPadding),
-          0));
-  header_layout->set_cross_axis_alignment(
-      views::BoxLayout::CrossAxisAlignment::kCenter);
-  header_view_->SetPreferredSize(
-      gfx::Size(0, kBookmarksSectionHeaderHeight));
+void AstraSidebarBookmarksView::BuildBookmarksLayout() {
+  // The base class builds header, content, and footer.
+  // We just configure the content area for bookmark tree display.
 
-  // Collapse/expand chevron button.
-  collapse_button_ =
-      header_view_->AddChildView(std::make_unique<views::ImageButton>(
-          base::BindRepeating(&AstraSidebarBookmarksView::ToggleSectionCollapsed,
-                              base::Unretained(this))));
-  collapse_button_->SetPreferredSize(
-      gfx::Size(kBookmarksCollapseButtonSize, kBookmarksCollapseButtonSize));
-  collapse_button_->SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
-  // TODO(astra): Set chevron vector icon.
-  // Chromium owner: ui/views/vector_icons/chevron_*.h
-
-  // Header label.
-  header_label_ = header_view_->AddChildView(std::make_unique<views::Label>(kBookmarksTitle));
-  header_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
-  header_label_->SetAutoColorReadabilityEnabled(false);
-  header_label_->SetFontList(
-      header_label_->font_list().DeriveWithSizeDelta(
-          kBookmarksSectionHeaderFontSizeDelta));
-  header_layout->SetFlexForView(header_label_, 1);
-
-  // Also make the entire header clickable to toggle collapse.
-  // TODO(astra): The header should be clickable anywhere to toggle the
-  // section. For now, only the button works. We could make the header a
-  // LabelButton or install a mouse listener on the header view.
-
-  // --- Scrollable tree area ---
-  scroll_view_ = AddChildView(std::make_unique<views::ScrollView>());
-  scroll_view_->SetClipBounds(true);
-  scroll_view_->SetBackgroundColor(SK_ColorTRANSPARENT);
-  layout->SetFlexForView(scroll_view_, 1);
-
-  tree_container_ = scroll_view_->SetContents(
-      std::make_unique<views::View>());
-  auto* tree_layout = tree_container_->SetLayoutManager(
-      std::make_unique<views::BoxLayout>(
-          views::BoxLayout::Orientation::kVertical,
-          gfx::Insets::VH(0, 4),
-          2));
-  tree_layout->set_cross_axis_alignment(
-      views::BoxLayout::CrossAxisAlignment::kStretch);
+  // Set search placeholder text.
+  if (GetHeaderView() && GetSearchQuery().empty()) {
+    // search_field_ is in the base class; we could access it via
+    // a getter, but for now the base class default placeholder is fine.
+    // TODO(astra): Expose search_field_ or add SetSearchPlaceholder.
+  }
 
   // Initial build if model is available.
   if (bookmark_model_ && bookmark_model_->loaded()) {
@@ -142,36 +96,29 @@ void AstraSidebarBookmarksView::BuildLayout() {
   }
 }
 
+// =========================================================================
+// Model observation
+// =========================================================================
+
 void AstraSidebarBookmarksView::StartObservingModel() {
   if (!profile_) {
     return;
   }
 
-  // Get the BookmarkModel from the factory.
-  // TODO(astra): This assumes BookmarkModelFactory is available and linked.
-  // In a full Chromium build, this will return the profile's BookmarkModel.
-  // For the overlay project, the factory may not be wired yet — handle gracefully.
-  // Chromium owner: BookmarkModelFactory (chrome/browser/bookmarks/bookmark_model_factory.h)
+  // TODO(astra): Use BookmarkModelFactory::GetForBrowserContext(profile_).
+  // In a full Chromium build, this returns the profile's BookmarkModel.
   bookmark_model_ = BookmarkModelFactory::GetForBrowserContext(profile_);
 
   if (!bookmark_model_) {
-    // BookmarkModel not available yet. It will be created asynchronously.
-    // TODO(astra): Wait for BookmarkModel to be loaded. In production code,
-    // we would use BookmarkModelFactory::GetForBrowserContext which triggers
-    // creation, or observe profile initialization.
-    // Chromium owner: ProfileKeyedServiceFactory (components/keyed_service/core/)
     return;
   }
 
-  // Observe the model for changes.
   bookmark_model_observation_.Reset();
   bookmark_model_observation_.Observe(bookmark_model_);
 
-  // If the model is already loaded, build the tree now.
   if (bookmark_model_->loaded()) {
     RebuildFromModel();
   }
-  // If not loaded yet, BookmarkModelLoaded() will trigger the build.
 }
 
 void AstraSidebarBookmarksView::StopObservingModel() {
@@ -179,75 +126,356 @@ void AstraSidebarBookmarksView::StopObservingModel() {
   bookmark_model_ = nullptr;
 }
 
-void AstraSidebarBookmarksView::RebuildFromModel() {
-  if (!bookmark_model_ || !bookmark_model_->loaded() || !tree_container_) {
+bookmarks::BookmarkModel* AstraSidebarBookmarksView::GetBookmarkModel() {
+  return bookmark_model_;
+}
+
+// =========================================================================
+// Bookmark data projection
+// =========================================================================
+
+void AstraSidebarBookmarksView::SetBookmarks(
+    const std::vector<AstraBookmarkItemInfo>& bookmarks) {
+  bookmarks_ = bookmarks;
+
+  // Clear existing items and rebuild.
+  RemoveAllItems();
+
+  for (const auto& info : bookmarks) {
+    // TODO(astra): Create actual AstraBookmarkItemView from info struct.
+    // For now, we just update the count. The real implementation would
+    // create item views based on the info.
+    //
+    // Since we're extending the section view with generic item management,
+    // we need to create actual views. For the projection pattern, the
+    // bookmarks are stored as data and rendered as views.
+  }
+
+  SetItemCount(static_cast<int>(bookmarks_.size()));
+  SetEmpty(bookmarks_.empty());
+  InvalidateLayout();
+}
+
+int AstraSidebarBookmarksView::GetBookmarkCount() const {
+  return static_cast<int>(bookmarks_.size());
+}
+
+AstraBookmarkItemInfo AstraSidebarBookmarksView::GetBookmarkAt(
+    int index) const {
+  if (index < 0 || index >= static_cast<int>(bookmarks_.size())) {
+    return AstraBookmarkItemInfo();
+  }
+  return bookmarks_[index];
+}
+
+void AstraSidebarBookmarksView::AddBookmark(
+    const AstraBookmarkItemInfo& bookmark) {
+  bookmarks_.push_back(bookmark);
+  SetItemCount(static_cast<int>(bookmarks_.size()));
+  SetEmpty(false);
+  // TODO(astra): Create and add the actual item view.
+  ApplySortOrder();
+}
+
+void AstraSidebarBookmarksView::RemoveBookmark(int index) {
+  if (index < 0 || index >= static_cast<int>(bookmarks_.size())) {
+    return;
+  }
+  bookmarks_.erase(bookmarks_.begin() + index);
+  SetItemCount(static_cast<int>(bookmarks_.size()));
+  SetEmpty(bookmarks_.empty());
+  // TODO(astra): Remove the corresponding item view.
+
+  // Adjust selection if needed.
+  if (selected_index_ >= static_cast<int>(bookmarks_.size())) {
+    selected_index_ = static_cast<int>(bookmarks_.size()) - 1;
+  }
+}
+
+void AstraSidebarBookmarksView::UpdateBookmark(
+    int index,
+    const AstraBookmarkItemInfo& bookmark) {
+  if (index < 0 || index >= static_cast<int>(bookmarks_.size())) {
+    return;
+  }
+  bookmarks_[index] = bookmark;
+  // TODO(astra): Update the corresponding item view.
+}
+
+// =========================================================================
+// Selection
+// =========================================================================
+
+void AstraSidebarBookmarksView::SetSelectedBookmark(int index) {
+  selected_index_ = index;
+  // TODO(astra): Update visual selection state of item views.
+}
+
+void AstraSidebarBookmarksView::ClearSelection() {
+  selected_index_ = -1;
+  // TODO(astra): Clear visual selection on all items.
+}
+
+// =========================================================================
+// Folders first
+// =========================================================================
+
+void AstraSidebarBookmarksView::SetShowFoldersFirst(bool show_first) {
+  if (show_folders_first_ == show_first) {
+    return;
+  }
+  show_folders_first_ = show_first;
+  ApplySortOrder();
+}
+
+// =========================================================================
+// Folder navigation
+// =========================================================================
+
+void AstraSidebarBookmarksView::SetCurrentFolder(
+    const std::string& folder_id) {
+  if (current_folder_id_ == folder_id) {
+    return;
+  }
+  current_folder_id_ = folder_id;
+  // TODO(astra): Rebuild the view to show only this folder's children.
+}
+
+std::vector<std::string> AstraSidebarBookmarksView::GetFolderPath() const {
+  return folder_path_;
+}
+
+void AstraSidebarBookmarksView::NavigateToFolder(const std::string& folder_id) {
+  if (folder_id.empty() || folder_id == current_folder_id_) {
+    return;
+  }
+  folder_path_.push_back(current_folder_id_);
+  SetCurrentFolder(folder_id);
+}
+
+void AstraSidebarBookmarksView::NavigateUp() {
+  if (folder_path_.empty()) {
+    return;
+  }
+  std::string parent_id = folder_path_.back();
+  folder_path_.pop_back();
+  SetCurrentFolder(parent_id);
+}
+
+bool AstraSidebarBookmarksView::CanNavigateUp() const {
+  return !folder_path_.empty();
+}
+
+// =========================================================================
+// Folder tree display
+// =========================================================================
+
+void AstraSidebarBookmarksView::SetShowFolderTree(bool show) {
+  if (show_folder_tree_ == show) {
+    return;
+  }
+  show_folder_tree_ = show;
+  if (bookmark_model_ && bookmark_model_->loaded()) {
+    RebuildFromModel();
+  }
+}
+
+// =========================================================================
+// Folder operations (presentation-only)
+// =========================================================================
+
+void AstraSidebarBookmarksView::NewFolder(const std::u16string& name) {
+  if (delegate_) {
+    delegate_->OnNewFolderRequested();
+  }
+  // TODO(astra): If no delegate, create directly via BookmarkModel.
+  // Chromium owner: BookmarkModel::AddFolder
+}
+
+void AstraSidebarBookmarksView::DeleteFolder(const std::string& folder_id) {
+  if (delegate_) {
+    // Delegate handles deletion; view updates via observer.
+  }
+  // TODO(astra): Call BookmarkModel::Remove if no delegate.
+}
+
+void AstraSidebarBookmarksView::RenameFolder(const std::string& folder_id,
+                                              const std::u16string& new_name) {
+  if (delegate_) {
+    // Delegate handles rename; view updates via observer.
+  }
+  // TODO(astra): Call BookmarkModel::SetTitle if no delegate.
+}
+
+// =========================================================================
+// Sorting and filtering
+// =========================================================================
+
+void AstraSidebarBookmarksView::SortBookmarks(AstraSidebarSortOrder order) {
+  SetSortOrder(order);
+  ApplySortOrder();
+}
+
+void AstraSidebarBookmarksView::FilterBookmarks(AstraSidebarFilter filter) {
+  SetFilter(filter);
+  ApplyFilter();
+}
+
+void AstraSidebarBookmarksView::SearchBookmarks(const std::u16string& query) {
+  SetSearchQuery(query);
+  // Filtering is handled by OnSearchQueryChanged.
+}
+
+int AstraSidebarBookmarksView::GetVisibleBookmarkCount() const {
+  // In a real implementation, this would account for filters.
+  // For now, return the total count.
+  // TODO(astra): Account for active filter when counting visible items.
+  return static_cast<int>(bookmarks_.size());
+}
+
+void AstraSidebarBookmarksView::ApplySortOrder() {
+  if (bookmarks_.empty()) {
     return;
   }
 
-  // Clear existing items.
-  tree_container_->RemoveAllChildViews();
+  std::sort(bookmarks_.begin(), bookmarks_.end(),
+            [this](const AstraBookmarkItemInfo& a,
+                   const AstraBookmarkItemInfo& b) {
+              return CompareBookmarks(a, b, GetSortOrder(),
+                                      show_folders_first_);
+            });
+
+  // TODO(astra): Reorder item views to match sorted data.
+}
+
+void AstraSidebarBookmarksView::ApplyFilter() {
+  // TODO(astra): Show/hide item views based on current filter.
+  // For now, just update the item count to reflect visible items.
+  // SetItemCount(GetVisibleBookmarkCount());
+}
+
+// static
+bool AstraSidebarBookmarksView::CompareBookmarks(
+    const AstraBookmarkItemInfo& a,
+    const AstraBookmarkItemInfo& b,
+    AstraSidebarSortOrder order,
+    bool folders_first) {
+  // Folders first sorting.
+  if (folders_first) {
+    if (a.is_folder != b.is_folder) {
+      return a.is_folder;  // Folders come before URLs.
+    }
+  }
+
+  switch (order) {
+    case AstraSidebarSortOrder::kAlphabetical:
+      return a.title < b.title;
+
+    case AstraSidebarSortOrder::kDateAdded:
+      return a.date_added > b.date_added;  // Newest first.
+
+    case AstraSidebarSortOrder::kDateModified:
+      return a.date_modified > b.date_modified;  // Newest first.
+
+    case AstraSidebarSortOrder::kMostVisited:
+      // Bookmarks don't have visit count directly; fall back to title.
+      // TODO(astra): Use visit count from HistoryService when available.
+      return a.title < b.title;
+
+    case AstraSidebarSortOrder::kManual:
+      // Manual order — preserve original order (stable sort).
+      return false;
+  }
+  return false;
+}
+
+// =========================================================================
+// Bookmark bar filter
+// =========================================================================
+
+void AstraSidebarBookmarksView::SetShowOnlyBookmarksBar(bool show) {
+  if (show_only_bookmarks_bar_ == show) {
+    return;
+  }
+  show_only_bookmarks_bar_ = show;
+  if (bookmark_model_ && bookmark_model_->loaded()) {
+    RebuildFromModel();
+  }
+}
+
+// =========================================================================
+// Rebuild from model
+// =========================================================================
+
+void AstraSidebarBookmarksView::RebuildFromModel() {
+  if (!bookmark_model_ || !bookmark_model_->loaded()) {
+    return;
+  }
+
+  // Clear existing items via base class.
+  RemoveAllItems();
   node_to_item_.clear();
 
-  // Add the bookmark bar contents at top level.
-  // In Chromium's BookmarkModel, the root has:
-  //   - bookmark_bar_node(): the bookmarks bar
-  //   - other_node(): "Other Bookmarks"
-  //   - mobile_node(): Mobile bookmarks
-  //
-  // We show the bookmark bar's children at the top level, plus the
-  // "Other Bookmarks" and "Mobile Bookmarks" as top-level folders.
-  //
-  // TODO(astra): Consider whether to show only the bookmark bar, or also
-  // include Other Bookmarks and Mobile Bookmarks as top-level folders.
-  // Chrome's bookmarks side panel shows all three.
-  // Chromium owner: BookmarkModel::bookmark_bar_node(), other_node(), mobile_node()
-
-  const bookmarks::BookmarkNode* bookmark_bar =
-      bookmark_model_->bookmark_bar_node();
-  if (bookmark_bar) {
-    AddChildrenOf(bookmark_bar, /*depth=*/0);
-  }
-
-  // Add "Other Bookmarks" as a top-level folder if it has children.
-  const bookmarks::BookmarkNode* other_node =
-      bookmark_model_->other_node();
-  if (other_node && other_node->children().size() > 0) {
-    auto other_item = CreateItemView(other_node, /*depth=*/0);
-    other_item->SetExpanded(IsFolderExpanded(other_node));
-    AstraBookmarkItemView* item_ptr = other_item.get();
-    tree_container_->AddChildView(std::move(other_item));
-    node_to_item_[other_node] = item_ptr;
-
-    // Add children if expanded.
-    if (IsFolderExpanded(other_node)) {
-      AddChildrenOf(other_node, /*depth=*/1);
+  if (show_folder_tree_) {
+    // Tree mode: show hierarchical structure.
+    const bookmarks::BookmarkNode* bookmark_bar =
+        bookmark_model_->bookmark_bar_node();
+    if (bookmark_bar) {
+      AddChildrenOf(bookmark_bar, /*depth=*/0);
     }
-  }
 
-  // Add "Mobile Bookmarks" as a top-level folder if it has children.
-  const bookmarks::BookmarkNode* mobile_node =
-      bookmark_model_->mobile_node();
-  if (mobile_node && mobile_node->children().size() > 0) {
-    auto mobile_item = CreateItemView(mobile_node, /*depth=*/0);
-    mobile_item->SetExpanded(IsFolderExpanded(mobile_node));
-    AstraBookmarkItemView* item_ptr = mobile_item.get();
-    tree_container_->AddChildView(std::move(mobile_item));
-    node_to_item_[mobile_node] = item_ptr;
+    // Add "Other Bookmarks" as a top-level folder if it has children.
+    const bookmarks::BookmarkNode* other_node =
+        bookmark_model_->other_node();
+    if (other_node && other_node->children().size() > 0 &&
+        !show_only_bookmarks_bar_) {
+      auto other_item = CreateItemView(other_node, /*depth=*/0);
+      other_item->SetExpanded(IsFolderExpanded(other_node));
+      AstraBookmarkItemView* item_ptr = other_item.get();
+      items_container()->AddChildView(std::move(other_item));
+      node_to_item_[other_node] = item_ptr;
 
-    // Add children if expanded.
-    if (IsFolderExpanded(mobile_node)) {
-      AddChildrenOf(mobile_node, /*depth=*/1);
+      if (IsFolderExpanded(other_node)) {
+        AddChildrenOf(other_node, /*depth=*/1);
+      }
     }
+
+    // Add "Mobile Bookmarks" as a top-level folder if it has children.
+    const bookmarks::BookmarkNode* mobile_node =
+        bookmark_model_->mobile_node();
+    if (mobile_node && mobile_node->children().size() > 0 &&
+        !show_only_bookmarks_bar_) {
+      auto mobile_item = CreateItemView(mobile_node, /*depth=*/0);
+      mobile_item->SetExpanded(IsFolderExpanded(mobile_node));
+      AstraBookmarkItemView* item_ptr = mobile_item.get();
+      items_container()->AddChildView(std::move(mobile_item));
+      node_to_item_[mobile_node] = item_ptr;
+
+      if (IsFolderExpanded(mobile_node)) {
+        AddChildrenOf(mobile_node, /*depth=*/1);
+      }
+    }
+  } else {
+    // Flat mode: show only current folder's children.
+    // TODO(astra): Implement flat/folder navigation mode.
   }
+
+  // Update item count in header.
+  SetItemCount(GetItemViewCount());
+  SetEmpty(GetItemViewCount() == 0);
 
   InvalidateLayout();
 }
+
+// =========================================================================
+// Tree building helpers
+// =========================================================================
 
 void AstraSidebarBookmarksView::AddChildrenOf(
     const bookmarks::BookmarkNode* parent,
     int depth) {
   DCHECK(parent);
-  if (!tree_container_) {
+  if (!items_container()) {
     return;
   }
 
@@ -259,10 +487,9 @@ void AstraSidebarBookmarksView::AddChildrenOf(
     }
 
     AstraBookmarkItemView* item_ptr = item.get();
-    tree_container_->AddChildView(std::move(item));
+    items_container()->AddChildView(std::move(item));
     node_to_item_[child.get()] = item_ptr;
 
-    // Recursively add children for folders that are expanded.
     if (child->is_folder() && IsFolderExpanded(child.get())) {
       AddChildrenOf(child.get(), depth + 1);
     }
@@ -282,12 +509,10 @@ AstraSidebarBookmarksView::CreateItemView(
 
   auto item = std::make_unique<AstraBookmarkItemView>(node, type, depth);
 
-  // Click callback.
   item->set_click_callback(base::BindRepeating(
-      &AstraSidebarBookmarksView::OnBookmarkClicked,
+      &AstraSidebarBookmarksView::OnBookmarkItemClicked,
       base::Unretained(this)));
 
-  // Expand/collapse callback (only used for folders).
   item->set_expand_callback(base::BindRepeating(
       &AstraSidebarBookmarksView::OnFolderToggled,
       base::Unretained(this)));
@@ -295,7 +520,11 @@ AstraSidebarBookmarksView::CreateItemView(
   return item;
 }
 
-void AstraSidebarBookmarksView::OnBookmarkClicked(
+// =========================================================================
+// Click handlers
+// =========================================================================
+
+void AstraSidebarBookmarksView::OnBookmarkItemClicked(
     const bookmarks::BookmarkNode* node,
     bool open_in_new_tab) {
   if (!node) {
@@ -303,12 +532,24 @@ void AstraSidebarBookmarksView::OnBookmarkClicked(
   }
 
   if (node->is_folder()) {
-    // Clicking a folder title toggles expansion (same as clicking the arrow).
     OnFolderToggled(node);
+    if (delegate_) {
+      delegate_->OnFolderOpened(
+          base::NumberToString(node->id()));
+    }
     return;
   }
 
   // URL bookmark — open it.
+  if (delegate_) {
+    std::string bookmark_id = base::NumberToString(node->id());
+    if (open_in_new_tab) {
+      delegate_->OnBookmarkMiddleClicked(bookmark_id);
+    } else {
+      delegate_->OnBookmarkClicked(bookmark_id);
+    }
+  }
+
   OpenBookmark(node, open_in_new_tab);
 }
 
@@ -321,16 +562,12 @@ void AstraSidebarBookmarksView::OnFolderToggled(
   bool is_expanded = IsFolderExpanded(folder_node);
   SetFolderExpanded(folder_node, !is_expanded);
 
-  // Update the item view's expand state.
   auto it = node_to_item_.find(folder_node);
   if (it != node_to_item_.end()) {
     it->second->SetExpanded(!is_expanded);
   }
 
-  // TODO(astra): Instead of full rebuild, add/remove child views
-  // incrementally when a folder is toggled. Full rebuild is simple but
-  // causes flicker and loses scroll position.
-  // For now, rebuild the entire tree to show/hide children.
+  // TODO(astra): Incrementally add/remove child views instead of full rebuild.
   RebuildFromModel();
 }
 
@@ -347,47 +584,33 @@ void AstraSidebarBookmarksView::OpenBookmark(
   }
 
   if (open_in_new_tab) {
-    // Open in a new tab.
-    // TODO(astra): Use chrome::NavigateParams or Browser::OpenURL for
-    // proper URL opening with transition type, disposition, etc.
-    // Chromium owner: Browser::OpenURL (chrome/browser/ui/browser.h)
-    //   or chrome/browser/ui/browser_navigator.h
-    //
-    // For now, use AddTab with the URL.
-    // TODO(astra): Use the proper Chromium navigation API.
-    // The following is a conceptual implementation — in a real build we
-    // would use browser_->OpenURL or Navigate() with the right params.
+    // TODO(astra): Use chrome::NavigateParams for proper URL opening.
+    // Chromium owner: chrome/browser/ui/browser_navigator.h
     if (browser_->tab_strip_model()) {
-      // TODO(astra): Actually navigate to the URL. The exact API depends
-      // on the Chromium version and build configuration.
-      // Chromium owner: chrome/browser/ui/browser_navigator.h
+      // Placeholder for actual navigation.
     }
   } else {
-    // Open in the active tab.
-    // TODO(astra): Use Chromium's navigation system to open the bookmark
-    // URL in the current tab. Use Navigate() or browser_->OpenURL() with
-    // WindowOpenDisposition::CURRENT_TAB.
-    // Chromium owner: chrome/browser/ui/browser_navigator.h
     if (browser_->tab_strip_model()) {
       content::WebContents* active_contents =
           browser_->tab_strip_model()->GetActiveWebContents();
       if (active_contents) {
-        // TODO(astra): Use proper navigation with transition type
-        // (ui::PAGE_TRANSITION_AUTO_BOOKMARK).
-        // active_contents->GetController().LoadURL(...) or use OpenURL.
-        // Chromium owner: content::NavigationController or chrome::Navigate.
+        // TODO(astra): Use proper navigation with transition type.
       }
     }
   }
 }
+
+// =========================================================================
+// Folder expansion state
+// =========================================================================
 
 bool AstraSidebarBookmarksView::IsFolderExpanded(
     const bookmarks::BookmarkNode* folder_node) const {
   if (!folder_node) {
     return false;
   }
-  // Folders are expanded by default; only collapsed ones are in the set.
-  return collapsed_folders_.find(folder_node->id()) == collapsed_folders_.end();
+  return collapsed_folders_.find(folder_node->id()) ==
+         collapsed_folders_.end();
 }
 
 void AstraSidebarBookmarksView::SetFolderExpanded(
@@ -406,55 +629,41 @@ void AstraSidebarBookmarksView::SetFolderExpanded(
 
   // TODO(astra): Persist expanded state to PrefService.
   // Chromium owner: PrefService (components/prefs/pref_service.h)
-  // Patch point: none — use public PrefService API.
 }
 
-void AstraSidebarBookmarksView::SetSectionCollapsed(bool collapsed) {
-  if (is_collapsed_ == collapsed) {
-    return;
-  }
-  is_collapsed_ = collapsed;
+// =========================================================================
+// Rebuild bookmark info from views
+// =========================================================================
 
-  // Show/hide the scroll view (tree content).
-  if (scroll_view_) {
-    scroll_view_->SetVisible(!is_collapsed_);
-  }
-
-  // TODO(astra): Update chevron direction (point right when collapsed,
-  // down when expanded).
-  InvalidateLayout();
+void AstraSidebarBookmarksView::RebuildBookmarkInfoFromViews() {
+  // TODO(astra): Populate bookmarks_ vector from item views.
+  // This is needed when the model changes via observer.
 }
 
-void AstraSidebarBookmarksView::ToggleSectionCollapsed() {
-  SetSectionCollapsed(!is_collapsed_);
+// =========================================================================
+// AstraSidebarSectionView overrides
+// =========================================================================
+
+void AstraSidebarBookmarksView::OnAddButtonClicked() {
+  if (delegate_) {
+    delegate_->OnAddBookmarkRequested();
+  }
+}
+
+void AstraSidebarBookmarksView::OnSearchQueryChanged(
+    const std::u16string& query) {
+  // Filter bookmark items by search query.
+  // TODO(astra): Implement actual search filtering of item views.
+  AstraSidebarSectionView::OnSearchQueryChanged(query);
 }
 
 // =========================================================================
 // bookmarks::BookmarkModelObserver
 // =========================================================================
-//
-// Primary reactive update path for the bookmark tree. All bookmark state
-// changes originate from Chromium's BookmarkModel and flow through these
-// observer methods. The sidebar bookmark view is a pure projection — it
-// never mutates BookmarkModel directly (all mutations go through the
-// model's own API when the user interacts with context menus etc.).
-//
-// TODO(astra): Implement incremental updates in each method instead of
-// calling RebuildFromModel() (full rebuild). Full rebuilds are correct but
-// inefficient for bookmark-heavy profiles.
-//
-// Performance rationale: With many bookmarks (1000+), full rebuilds cause
-// noticeable jank on every change. Incremental updates are O(1) for single
-// node changes and O(k) where k is the number of children affected.
-//
-// Chromium owner: BookmarkModel (components/bookmarks/browser/bookmark_model.h)
-// Chromium observer: BookmarkModelObserver
-//   (components/bookmarks/browser/bookmark_model_observer.h)
 
 void AstraSidebarBookmarksView::BookmarkModelLoaded(
     bookmarks::BookmarkModel* /*model*/,
     bool /*ids_reassigned*/) {
-  // The bookmark model has finished loading. Build the tree now.
   RebuildFromModel();
 }
 
@@ -462,9 +671,7 @@ void AstraSidebarBookmarksView::BookmarkNodeAdded(
     bookmarks::BookmarkModel* /*model*/,
     const bookmarks::BookmarkNode* /*parent*/,
     size_t /*index*/) {
-  // TODO(astra): Insert the new node into the tree at the correct position
-  // instead of rebuilding everything.
-  // Chromium owner: BookmarkModel::AddURL / AddFolder
+  // TODO(astra): Insert the new node incrementally.
   RebuildFromModel();
 }
 
@@ -474,22 +681,18 @@ void AstraSidebarBookmarksView::BookmarkNodeRemoved(
     size_t /*index*/,
     const bookmarks::BookmarkNode* /*node*/,
     const std::set<GURL>& /*removed_urls*/) {
-  // TODO(astra): Remove the node and all its descendants from the tree
-  // instead of rebuilding everything.
-  // Chromium owner: BookmarkModel::Remove
+  // TODO(astra): Remove the node incrementally.
   RebuildFromModel();
 }
 
 void AstraSidebarBookmarksView::BookmarkNodeChanged(
     bookmarks::BookmarkModel* /*model*/,
     const bookmarks::BookmarkNode* node) {
-  // A node's title or URL changed. Update just that item's display.
   auto it = node_to_item_.find(node);
   if (it != node_to_item_.end()) {
     it->second->SetTitle(base::UTF8ToUTF16(node->GetTitle()));
     return;
   }
-  // Fallback: full rebuild if we couldn't find the item.
   RebuildFromModel();
 }
 
@@ -499,81 +702,61 @@ void AstraSidebarBookmarksView::BookmarkNodeMoved(
     size_t /*old_index*/,
     const bookmarks::BookmarkNode* /*new_parent*/,
     size_t /*new_index*/) {
-  // TODO(astra): Move the item in the tree without rebuilding everything.
-  // Need to handle moves within the same parent (reorder) and moves between
-  // parents (potentially changing depth).
-  // Chromium owner: BookmarkModel::Move
+  // TODO(astra): Move the item in the tree incrementally.
   RebuildFromModel();
 }
 
 void AstraSidebarBookmarksView::BookmarkNodeChildrenReordered(
     bookmarks::BookmarkModel* /*model*/,
     const bookmarks::BookmarkNode* /*node*/) {
-  // TODO(astra): Reorder child items of the given parent folder without
-  // rebuilding the entire tree.
-  // Chromium owner: BookmarkModel::ReorderChildren
+  // TODO(astra): Reorder child items incrementally.
   RebuildFromModel();
 }
 
 void AstraSidebarBookmarksView::BookmarkNodeFaviconChanged(
     bookmarks::BookmarkModel* /*model*/,
-    const bookmarks::BookmarkNode* node) {
-  // A bookmark's favicon changed.
-  // TODO(astra): Update just that item's icon once favicon loading is
-  // implemented. Currently we don't show real favicons.
-  // Chromium owner: FaviconService (components/favicon/core/favicon_service.h)
-  // For now, nothing to do — we'll handle this once icons are wired in.
+    const bookmarks::BookmarkNode* /*node*/) {
+  // TODO(astra): Update just that item's favicon.
 }
 
 void AstraSidebarBookmarksView::BookmarkAllUserNodesRemoved(
     bookmarks::BookmarkModel* /*model*/,
     const std::set<GURL>& /*removed_urls*/) {
-  // All user bookmarks were removed (e.g., on profile reset).
   RebuildFromModel();
 }
 
 void AstraSidebarBookmarksView::BookmarkModelBeingDeleted(
     bookmarks::BookmarkModel* /*model*/) {
-  // The model is being destroyed — stop observing and clear the tree.
   StopObservingModel();
-  if (tree_container_) {
-    tree_container_->RemoveAllChildViews();
-  }
+  RemoveAllItems();
   node_to_item_.clear();
 }
 
 // =========================================================================
-// views::View
+// views::View overrides
 // =========================================================================
 
 gfx::Size AstraSidebarBookmarksView::CalculatePreferredSize(
     const views::SizeBounds& available_size) const {
-  return views::View::CalculatePreferredSize(available_size);
+  return AstraSidebarSectionView::CalculatePreferredSize(available_size);
 }
 
 void AstraSidebarBookmarksView::GetAccessibleNodeData(
     ui::AXNodeData* node_data) {
-  views::View::GetAccessibleNodeData(node_data);
+  AstraSidebarSectionView::GetAccessibleNodeData(node_data);
   node_data->role = ax::mojom::Role::kTree;
   node_data->SetName("Bookmarks");
 }
 
 void AstraSidebarBookmarksView::OnThemeChanged() {
-  views::View::OnThemeChanged();
+  AstraSidebarSectionView::OnThemeChanged();
 
   const auto* color_provider = GetColorProvider();
   if (!color_provider) {
     return;
   }
 
-  if (header_label_) {
-    header_label_->SetEnabledColor(
-        color_provider->GetColor(kBookmarksHeaderTextColorId));
-  }
-
-  if (layer()) {
-    layer()->SetColor(color_provider->GetColor(kBookmarksBackgroundColorId));
-  }
+  // Additional bookmark-specific theming can go here.
 }
 
 }  // namespace astra

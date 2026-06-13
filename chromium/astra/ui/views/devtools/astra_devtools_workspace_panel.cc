@@ -1,5 +1,6 @@
 #include "astra/ui/views/devtools/astra_devtools_workspace_panel.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -8,6 +9,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "astra/browser/astra_tab_features.h"
 #include "astra/browser/astra_workspace_service.h"
+#include "astra/ui/views/devtools/astra_devtools_model.h"
 #include "content/public/browser/web_contents.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/views/background.h"
@@ -38,11 +40,14 @@ constexpr int kButtonSpacing = 6;
 // Font size delta for section headers.
 constexpr int kSectionHeaderFontDelta = 2;
 
-// Height of workspace list items.
-constexpr int kWorkspaceItemHeight = 28;
+// Height of workspace list items (cards).
+constexpr int kWorkspaceItemHeight = 56;
 
 // Height of tab list items.
 constexpr int kTabItemHeight = 24;
+
+// Workspace card padding.
+constexpr int kWorkspaceCardPadding = 8;
 
 // Dark theme colors.
 constexpr SkColor kDarkPanelBg = SkColorSetRGB(0x20, 0x20, 0x20);
@@ -55,6 +60,7 @@ constexpr SkColor kDarkItemHoverBg = SkColorSetRGB(0x3A, 0x3A, 0x3A);
 constexpr SkColor kDarkItemSelectedBg = SkColorSetRGB(0x1A, 0x5A, 0x9A);
 constexpr SkColor kDarkButtonBg = SkColorSetRGB(0x3A, 0x3A, 0x3A);
 constexpr SkColor kDarkBorder = SkColorSetRGB(0x44, 0x44, 0x44);
+constexpr SkColor kDarkStatsText = SkColorSetRGB(0x9A, 0x9A, 0x9A);
 
 // Light theme colors.
 constexpr SkColor kLightPanelBg = SkColorSetRGB(0xFA, 0xFA, 0xFA);
@@ -67,10 +73,38 @@ constexpr SkColor kLightItemHoverBg = SkColorSetRGB(0xF0, 0xF0, 0xF0);
 constexpr SkColor kLightItemSelectedBg = SkColorSetRGB(0xC8, 0xE0, 0xFC);
 constexpr SkColor kLightButtonBg = SkColorSetRGB(0xE8, 0xE8, 0xE8);
 constexpr SkColor kLightBorder = SkColorSetRGB(0xDD, 0xDD, 0xDD);
+constexpr SkColor kLightStatsText = SkColorSetRGB(0x66, 0x66, 0x66);
 
 // Helper: returns the color for a given theme.
 SkColor ThemeColor(bool dark, SkColor dark_color, SkColor light_color) {
   return dark ? dark_color : light_color;
+}
+
+// Helper: get accent color for a workspace info.
+SkColor GetWorkspaceAccentColor(const AstraWorkspaceInfo& info) {
+  if (info.accent_color == AstraWorkspaceAccentColor::kCustom) {
+    return info.custom_color;
+  }
+  switch (info.color) {
+    case AstraWorkspaceColor::kBlue:
+      return SkColorSetRGB(0x1A, 0x73, 0xE8);
+    case AstraWorkspaceColor::kRed:
+      return SkColorSetRGB(0xEA, 0x43, 0x35);
+    case AstraWorkspaceColor::kGreen:
+      return SkColorSetRGB(0x34, 0xA8, 0x53);
+    case AstraWorkspaceColor::kYellow:
+      return SkColorSetRGB(0xFB, 0xBC, 0x04);
+    case AstraWorkspaceColor::kPurple:
+      return SkColorSetRGB(0xA1, 0x42, 0xF4);
+    case AstraWorkspaceColor::kPink:
+      return SkColorSetRGB(0xEC, 0x40, 0x7A);
+    case AstraWorkspaceColor::kCyan:
+      return SkColorSetRGB(0x00, 0xBC, 0xD4);
+    case AstraWorkspaceColor::kOrange:
+      return SkColorSetRGB(0xFA, 0x90, 0x2F);
+    default:
+      return SkColorSetRGB(0x1A, 0x73, 0xE8);
+  }
 }
 
 }  // namespace
@@ -108,8 +142,57 @@ void AstraDevToolsWorkspacePanel::BuildPanel() {
   search_box_->set_placeholder_text(u"Search workspaces and tabs...");
   search_box_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
   search_box_->set_controller(
-      base::BindRepeating(&AstraDevToolsWorkspacePanel::SetSearchFilter,
+      base::BindRepeating(&AstraDevToolsWorkspacePanel::SetSearchQuery,
                           base::Unretained(this)));
+
+  // --- Stats section.
+
+  stats_label_ = AddChildView(std::make_unique<views::Label>());
+  stats_label_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  stats_label_->SetEnabledColor(
+      ThemeColor(dark_theme_, kDarkStatsText, kLightStatsText));
+  stats_label_->SetFontList(stats_label_->font_list().Derive(
+      -1, gfx::Font::FontStyle::NORMAL, gfx::Font::Weight::NORMAL));
+
+  // --- Quick actions row.
+
+  quick_actions_container_ = AddChildView(std::make_unique<views::View>());
+  auto* actions_layout = quick_actions_container_->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets(),
+          kButtonSpacing));
+  actions_layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kStart);
+  actions_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  auto* merge_button = quick_actions_container_->AddChildView(
+      std::make_unique<views::LabelButton>(
+          base::BindRepeating(
+              &AstraDevToolsWorkspacePanel::OnMergeWorkspacesButton,
+              base::Unretained(this)),
+          u"Merge"));
+  merge_button->SetMinSize(gfx::Size(60, 24));
+  merge_button->SetFocusForPlatform();
+
+  auto* import_button = quick_actions_container_->AddChildView(
+      std::make_unique<views::LabelButton>(
+          base::BindRepeating(
+              &AstraDevToolsWorkspacePanel::OnImportWorkspacesButton,
+              base::Unretained(this)),
+          u"Import"));
+  import_button->SetMinSize(gfx::Size(60, 24));
+  import_button->SetFocusForPlatform();
+
+  auto* export_button = quick_actions_container_->AddChildView(
+      std::make_unique<views::LabelButton>(
+          base::BindRepeating(
+              &AstraDevToolsWorkspacePanel::OnExportWorkspacesButton,
+              base::Unretained(this)),
+          u"Export"));
+  export_button->SetMinSize(gfx::Size(60, 24));
+  export_button->SetFocusForPlatform();
 
   // --- Workspace info section.
 
@@ -208,7 +291,7 @@ void AstraDevToolsWorkspacePanel::BuildPanel() {
   workspace_scroll_view_->SetClipToBounds(true);
   workspace_scroll_view_->SetBackgroundColor(
       ThemeColor(dark_theme_, kDarkPanelBg, kLightPanelBg));
-  workspace_scroll_view_->SetPreferredSize(gfx::Size(0, 140));
+  workspace_scroll_view_->SetPreferredSize(gfx::Size(0, 200));
   workspace_scroll_view_->SetBorder(views::CreateSolidBorder(
       1, ThemeColor(dark_theme_, kDarkBorder, kLightBorder)));
 
@@ -218,7 +301,7 @@ void AstraDevToolsWorkspacePanel::BuildPanel() {
       std::make_unique<views::BoxLayout>(
           views::BoxLayout::Orientation::kVertical,
           gfx::Insets(),
-          0));
+          kRowSpacing));
 
   // --- Tab list section.
 
@@ -292,12 +375,313 @@ void AstraDevToolsWorkspacePanel::AddKeyValueRow(
     const std::string& key,
     const std::string& value) {
   // TODO(astra): Implement proper two-column key-value rows.
-  //   The current implementation uses a single monospaced label.
-  //   This helper is reserved for future use with a two-column layout.
+}
+
+void AstraDevToolsWorkspacePanel::AddWorkspaceCard(
+    const AstraWorkspaceInfo& info, int index) {
+  auto* card = workspace_list_container_->AddChildView(
+      std::make_unique<views::LabelButton>(
+          base::BindRepeating(
+              &AstraDevToolsWorkspacePanel::OnWorkspaceItemClicked,
+              base::Unretained(this), info.id),
+          info.name));
+  card->SetMinSize(gfx::Size(0, kWorkspaceItemHeight));
+  card->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  card->SetBorder(views::CreateEmptyBorder(
+      gfx::Insets(kWorkspaceCardPadding)));
+  card->SetFocusForPlatform();
+  card->SetTooltipText(info.name);
+
+  SkColor accent = GetWorkspaceAccentColor(info);
+  SkColor text_color = ThemeColor(dark_theme_, kDarkValueText, kLightValueText);
+  SkColor secondary_color =
+      ThemeColor(dark_theme_, kDarkKeyText, kLightKeyText);
+
+  card->SetTextColor(views::Button::STATE_NORMAL, text_color);
+  card->SetTextColor(views::Button::STATE_HOVERED, text_color);
+  card->SetTextColor(views::Button::STATE_PRESSED, text_color);
+
+  // Set background based on selection state.
+  bool is_selected = (index == selected_index_);
+  if (is_selected) {
+    card->SetBackground(views::CreateSolidBackground(
+        ThemeColor(dark_theme_,
+                   kDarkItemSelectedBg, kLightItemSelectedBg)));
+  } else {
+    card->SetBackground(views::CreateSolidBackground(
+        ThemeColor(dark_theme_, kDarkItemBg, kLightItemBg)));
+  }
+
+  // Set border color based on accent color.
+  card->SetBorder(views::CreateSolidSidedBorder(
+      0, 4, 0, 0, accent));
 }
 
 // ---------------------------------------------------------------------------
-// Public API
+// Model integration
+// ---------------------------------------------------------------------------
+
+void AstraDevToolsWorkspacePanel::SetModel(AstraDevToolsModel* model) {
+  if (model_ == model) {
+    return;
+  }
+  model_ = model;
+
+  if (workspace_name_label_) {
+    Refresh();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Workspace list management (model-driven)
+// ---------------------------------------------------------------------------
+
+void AstraDevToolsWorkspacePanel::SetWorkspaces(
+    const std::vector<AstraWorkspaceInfo>& workspaces) {
+  workspaces_ = workspaces;
+
+  // If selected index is out of range, reset it.
+  if (selected_index_ >= 0 &&
+      static_cast<size_t>(selected_index_) >= workspaces_.size()) {
+    selected_index_ = workspaces_.empty() ? -1 : 0;
+  }
+
+  // Also keep legacy selected_workspace_id_ in sync.
+  if (selected_index_ >= 0 &&
+      static_cast<size_t>(selected_index_) < workspaces_.size()) {
+    selected_workspace_id_ = workspaces_[selected_index_].id;
+  } else {
+    selected_workspace_id_.clear();
+  }
+
+  if (workspace_list_container_) {
+    RefreshWorkspaceList();
+    RefreshStats();
+    RefreshTabList();
+  }
+}
+
+const AstraWorkspaceInfo* AstraDevToolsWorkspacePanel::GetWorkspaceAt(
+    int index) const {
+  if (index < 0 || static_cast<size_t>(index) >= workspaces_.size()) {
+    return nullptr;
+  }
+  return &workspaces_[static_cast<size_t>(index)];
+}
+
+// ---------------------------------------------------------------------------
+// Selection
+// ---------------------------------------------------------------------------
+
+void AstraDevToolsWorkspacePanel::SelectWorkspace(int index) {
+  if (index < -1 || static_cast<size_t>(index) >= workspaces_.size()) {
+    return;
+  }
+
+  if (selected_index_ == index) {
+    return;
+  }
+
+  selected_index_ = index;
+
+  // Sync with legacy selected ID.
+  if (index >= 0) {
+    selected_workspace_id_ = workspaces_[index].id;
+  } else {
+    selected_workspace_id_.clear();
+  }
+
+  if (workspace_list_container_) {
+    RefreshWorkspaceList();
+    RefreshTabList();
+  }
+
+  if (delegate_ && index >= 0) {
+    delegate_->OnWorkspaceSelected(workspaces_[index].id);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Workspace operations
+// ---------------------------------------------------------------------------
+
+void AstraDevToolsWorkspacePanel::NewWorkspace() {
+  // Create a new workspace info with a default name.
+  int new_index = static_cast<int>(workspaces_.size());
+  std::string new_id = "workspace-" + std::to_string(new_index + 1);
+
+  AstraWorkspaceInfo info;
+  info.id = new_id;
+  info.name = u"New Workspace " + base::NumberToString16(new_index + 1);
+  info.order_index = new_index;
+  info.color = static_cast<AstraWorkspaceColor>(
+      new_index % static_cast<int>(AstraWorkspaceColor::kMaxValue) + 1);
+  info.tab_count = 0;
+  info.window_count = 1;
+
+  workspaces_.push_back(info);
+
+  // Select the new workspace.
+  SelectWorkspace(new_index);
+
+  if (delegate_) {
+    delegate_->OnNewWorkspace();
+  }
+
+  if (workspace_list_container_) {
+    RefreshWorkspaceList();
+    RefreshStats();
+  }
+}
+
+void AstraDevToolsWorkspacePanel::DeleteWorkspace(int index) {
+  if (index < 0 || static_cast<size_t>(index) >= workspaces_.size()) {
+    return;
+  }
+
+  std::string deleted_id = workspaces_[index].id;
+  workspaces_.erase(workspaces_.begin() + index);
+
+  // Update selected index.
+  if (workspaces_.empty()) {
+    selected_index_ = -1;
+    selected_workspace_id_.clear();
+  } else if (selected_index_ >= static_cast<int>(workspaces_.size())) {
+    selected_index_ = static_cast<int>(workspaces_.size()) - 1;
+    selected_workspace_id_ = workspaces_[selected_index_].id;
+  } else if (selected_index_ > index) {
+    selected_index_--;
+  }
+
+  // Renormalize order indices.
+  for (size_t i = 0; i < workspaces_.size(); ++i) {
+    workspaces_[i].order_index = i;
+  }
+
+  if (delegate_) {
+    delegate_->OnDeleteWorkspace(deleted_id);
+  }
+
+  if (workspace_list_container_) {
+    RefreshWorkspaceList();
+    RefreshStats();
+    RefreshTabList();
+  }
+}
+
+void AstraDevToolsWorkspacePanel::RenameWorkspace(int index,
+                                                  const std::u16string& new_name) {
+  if (index < 0 || static_cast<size_t>(index) >= workspaces_.size()) {
+    return;
+  }
+
+  if (workspaces_[index].name == new_name) {
+    return;
+  }
+
+  workspaces_[index].name = new_name;
+
+  if (delegate_) {
+    delegate_->OnRenameWorkspace(
+        workspaces_[index].id, base::UTF16ToUTF8(new_name));
+  }
+
+  if (workspace_list_container_) {
+    RefreshWorkspaceList();
+  }
+}
+
+void AstraDevToolsWorkspacePanel::SetWorkspaceColor(int index, SkColor color) {
+  if (index < 0 || static_cast<size_t>(index) >= workspaces_.size()) {
+    return;
+  }
+
+  workspaces_[index].accent_color = AstraWorkspaceAccentColor::kCustom;
+  workspaces_[index].custom_color = color;
+
+  if (delegate_) {
+    delegate_->OnWorkspaceColorChanged(workspaces_[index].id, color);
+  }
+
+  if (workspace_list_container_) {
+    RefreshWorkspaceList();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Workspace stats
+// ---------------------------------------------------------------------------
+
+int AstraDevToolsWorkspacePanel::GetTabCountForWorkspace(int index) const {
+  const auto* ws = GetWorkspaceAt(index);
+  if (!ws) {
+    return 0;
+  }
+  return ws->tab_count;
+}
+
+int AstraDevToolsWorkspacePanel::GetWindowCountForWorkspace(int index) const {
+  const auto* ws = GetWorkspaceAt(index);
+  if (!ws) {
+    return 0;
+  }
+  return ws->window_count;
+}
+
+// ---------------------------------------------------------------------------
+// New workspace button visibility
+// ---------------------------------------------------------------------------
+
+void AstraDevToolsWorkspacePanel::ShowNewWorkspaceButton(bool show) {
+  new_workspace_button_visible_ = show;
+  if (new_workspace_button_) {
+    new_workspace_button_->SetVisible(show);
+  }
+}
+
+bool AstraDevToolsWorkspacePanel::IsNewWorkspaceButtonVisible() const {
+  if (!new_workspace_button_) {
+    return new_workspace_button_visible_;
+  }
+  return new_workspace_button_->GetVisible();
+}
+
+// ---------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------
+
+void AstraDevToolsWorkspacePanel::SetSearchQuery(
+    const std::u16string& query) {
+  if (search_query_ == query) {
+    return;
+  }
+  search_query_ = query;
+
+  // Also update legacy search filter.
+  search_filter_ = query;
+
+  if (workspace_list_container_) {
+    RefreshWorkspaceList();
+    RefreshTabList();
+  }
+}
+
+void AstraDevToolsWorkspacePanel::ShowSearch(bool show) {
+  search_visible_ = show;
+  if (search_box_) {
+    search_box_->SetVisible(show);
+  }
+}
+
+bool AstraDevToolsWorkspacePanel::IsSearchVisible() const {
+  if (!search_box_) {
+    return search_visible_;
+  }
+  return search_box_->GetVisible();
+}
+
+// ---------------------------------------------------------------------------
+// Public API (legacy compatibility)
 // ---------------------------------------------------------------------------
 
 void AstraDevToolsWorkspacePanel::SetInspectedWebContents(
@@ -331,25 +715,22 @@ void AstraDevToolsWorkspacePanel::Refresh() {
   if (!workspace_name_label_) {
     BuildPanel();
     ApplyTheme();
+    // Apply initial visibility states.
+    ShowSearch(search_visible_);
+    ShowNewWorkspaceButton(new_workspace_button_visible_);
   }
 
   RefreshWorkspaceInfo();
   RefreshWorkspaceList();
   RefreshTabList();
   RefreshTabMetadata();
+  RefreshStats();
 }
 
 void AstraDevToolsWorkspacePanel::SetSearchFilter(
     const std::u16string& filter) {
-  if (search_filter_ == filter) {
-    return;
-  }
-  search_filter_ = filter;
-
-  if (workspace_list_container_) {
-    RefreshWorkspaceList();
-    RefreshTabList();
-  }
+  // Update both new and legacy search.
+  SetSearchQuery(filter);
 }
 
 void AstraDevToolsWorkspacePanel::SetTheme(bool dark_theme) {
@@ -372,8 +753,13 @@ void AstraDevToolsWorkspacePanel::ApplyTheme() {
   SkColor mono = ThemeColor(dark_theme_, kDarkMonoText, kLightMonoText);
   SkColor border = ThemeColor(dark_theme_, kDarkBorder, kLightBorder);
   SkColor button_bg = ThemeColor(dark_theme_, kDarkButtonBg, kLightButtonBg);
+  SkColor stats_color = ThemeColor(dark_theme_, kDarkStatsText, kLightStatsText);
 
   SetBackground(views::CreateSolidBackground(bg));
+
+  if (stats_label_) {
+    stats_label_->SetEnabledColor(stats_color);
+  }
 
   if (workspace_name_label_) {
     workspace_name_label_->SetEnabledColor(value);
@@ -409,6 +795,14 @@ void AstraDevToolsWorkspacePanel::ApplyTheme() {
   style_button(new_workspace_button_);
   style_button(rename_workspace_button_);
   style_button(delete_workspace_button_);
+
+  // Update quick action buttons.
+  if (quick_actions_container_) {
+    for (auto* child : quick_actions_container_->children()) {
+      auto* btn = static_cast<views::LabelButton*>(child);
+      style_button(btn);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -420,6 +814,20 @@ void AstraDevToolsWorkspacePanel::RefreshWorkspaceInfo() {
     return;
   }
 
+  // If we have workspaces data, show the selected one.
+  if (!workspaces_.empty() && selected_index_ >= 0) {
+    const auto& ws = workspaces_[selected_index_];
+    workspace_name_label_->SetText(u"Name: " + ws.name);
+    workspace_id_label_->SetText(
+        base::UTF8ToUTF16("ID: " + ws.id));
+    workspace_color_label_->SetText(
+        base::UTF8ToUTF16(
+            base::StringPrintf(
+                "Color: #%06X", GetWorkspaceAccentColor(ws) & 0xFFFFFF)));
+    return;
+  }
+
+  // Fall back to workspace service.
   if (!workspace_service_) {
     workspace_name_label_->SetText(u"No workspace service");
     workspace_id_label_->SetText(u"");
@@ -448,71 +856,87 @@ void AstraDevToolsWorkspacePanel::RefreshWorkspaceList() {
 
   workspace_list_container_->RemoveAllChildViews();
 
-  if (!workspace_service_) {
+  // Use model-driven workspaces if available, otherwise fall back to service.
+  if (!workspaces_.empty()) {
+    auto filtered_indices = GetFilteredWorkspaceIndices();
+
+    if (filtered_indices.empty()) {
+      auto* label = workspace_list_container_->AddChildView(
+          std::make_unique<views::Label>(u"No matching workspaces"));
+      label->SetEnabledColor(
+          ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+      label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+      label->SetBorder(views::CreateEmptyBorder(
+          gfx::Insets::VH(4, 8)));
+    } else {
+      for (int idx : filtered_indices) {
+        AddWorkspaceCard(workspaces_[idx], idx);
+      }
+    }
+  } else if (workspace_service_) {
+    const auto& workspaces_svc = workspace_service_->workspaces();
+    std::u16string filter_lower = base::ToLowerASCII(search_query_);
+
+    for (size_t i = 0; i < workspaces_svc.size(); ++i) {
+      const auto& ws = workspaces_svc[i];
+
+      // Apply filter.
+      if (!filter_lower.empty()) {
+        std::string ws_text = ws.name + " " + ws.id;
+        std::u16string ws_text16 = base::UTF8ToUTF16(ws_text);
+        if (base::ToLowerASCII(ws_text16).find(filter_lower) ==
+            std::u16string::npos) {
+          continue;
+        }
+      }
+
+      std::string line = base::StringPrintf(
+          "%s (%zu tabs)",
+          ws.name.c_str(),
+          workspace_service_->GetTabCount(ws.id));
+
+      auto* item = workspace_list_container_->AddChildView(
+          std::make_unique<views::LabelButton>(
+              base::BindRepeating(
+                  &AstraDevToolsWorkspacePanel::OnWorkspaceItemClicked,
+                  base::Unretained(this), ws.id),
+              base::UTF8ToUTF16(line)));
+      item->SetMinSize(gfx::Size(0, kWorkspaceItemHeight / 2));
+      item->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+      item->SetBorder(views::CreateEmptyBorder(
+          gfx::Insets::VH(0, 8)));
+      item->SetFocusForPlatform();
+
+      item->SetTextColor(views::Button::STATE_NORMAL,
+          ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+      item->SetTextColor(views::Button::STATE_HOVERED,
+          ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+      item->SetTextColor(views::Button::STATE_PRESSED,
+          ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+
+      bool is_active = (ws.id == workspace_service_->active_workspace_id());
+      bool is_selected = (ws.id == selected_workspace_id_);
+
+      if (is_selected) {
+        item->SetBackground(views::CreateSolidBackground(
+            ThemeColor(dark_theme_,
+                       kDarkItemSelectedBg, kLightItemSelectedBg)));
+      } else if (is_active) {
+        item->SetBackground(views::CreateSolidBackground(
+            ThemeColor(dark_theme_, kDarkItemBg, kLightItemBg)));
+        item->SetFontList(
+            item->font_list().Derive(0, gfx::Font::FontStyle::NORMAL,
+                                      gfx::Font::Weight::BOLD));
+      }
+    }
+  } else {
     auto* label = workspace_list_container_->AddChildView(
-        std::make_unique<views::Label>(u"No workspace service available"));
+        std::make_unique<views::Label>(u"No workspace data available"));
     label->SetEnabledColor(
         ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
     label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
     label->SetBorder(views::CreateEmptyBorder(
         gfx::Insets::VH(4, 8)));
-    return;
-  }
-
-  const auto& workspaces = workspace_service_->workspaces();
-  std::u16string filter_lower = base::ToLowerASCII(search_filter_);
-
-  for (const auto& ws : workspaces) {
-    // Apply filter.
-    if (!filter_lower.empty()) {
-      std::string ws_text = ws.name + " " + ws.id;
-      std::u16string ws_text16 = base::UTF8ToUTF16(ws_text);
-      if (base::ToLowerASCII(ws_text16).find(filter_lower) ==
-          std::u16string::npos) {
-        continue;
-      }
-    }
-
-    std::string line = base::StringPrintf(
-        "%s (%zu tabs)",
-        ws.name.c_str(),
-        workspace_service_->GetTabCount(ws.id));
-
-    auto* item = workspace_list_container_->AddChildView(
-        std::make_unique<views::LabelButton>(
-            base::BindRepeating(
-                &AstraDevToolsWorkspacePanel::OnWorkspaceItemClicked,
-                base::Unretained(this), ws.id),
-            base::UTF8ToUTF16(line)));
-    item->SetMinSize(gfx::Size(0, kWorkspaceItemHeight));
-    item->SetHorizontalAlignment(gfx::ALIGN_LEFT);
-    item->SetBorder(views::CreateEmptyBorder(
-        gfx::Insets::VH(0, 8)));
-    item->SetFocusForPlatform();
-
-    // Set colors.
-    item->SetTextColor(views::Button::STATE_NORMAL,
-        ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
-    item->SetTextColor(views::Button::STATE_HOVERED,
-        ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
-    item->SetTextColor(views::Button::STATE_PRESSED,
-        ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
-
-    // Highlight active workspace and selected workspace.
-    bool is_active = (ws.id == workspace_service_->active_workspace_id());
-    bool is_selected = (ws.id == selected_workspace_id_);
-
-    if (is_selected) {
-      item->SetBackground(views::CreateSolidBackground(
-          ThemeColor(dark_theme_,
-                     kDarkItemSelectedBg, kLightItemSelectedBg)));
-    } else if (is_active) {
-      item->SetBackground(views::CreateSolidBackground(
-          ThemeColor(dark_theme_, kDarkItemBg, kLightItemBg)));
-      item->SetFontList(
-          item->font_list().Derive(0, gfx::Font::FontStyle::NORMAL,
-                                    gfx::Font::Weight::BOLD));
-    }
   }
 
   workspace_list_container_->InvalidateLayout();
@@ -520,10 +944,27 @@ void AstraDevToolsWorkspacePanel::RefreshWorkspaceList() {
 
 void AstraDevToolsWorkspacePanel::OnWorkspaceItemClicked(
     const std::string& workspace_id) {
+  // If using model-driven workspaces, find the index.
+  int idx = FindWorkspaceIndexById(workspace_id);
+  if (idx >= 0) {
+    SelectWorkspace(idx);
+    return;
+  }
+
+  // Legacy path: use selected_workspace_id_.
   if (selected_workspace_id_ == workspace_id) {
     return;
   }
   selected_workspace_id_ = workspace_id;
+
+  // Also update selected_index_ if possible.
+  for (size_t i = 0; i < workspaces_.size(); ++i) {
+    if (workspaces_[i].id == workspace_id) {
+      selected_index_ = static_cast<int>(i);
+      break;
+    }
+  }
+
   RefreshWorkspaceList();
   RefreshTabList();
 
@@ -543,7 +984,91 @@ void AstraDevToolsWorkspacePanel::RefreshTabList() {
 
   tab_list_container_->RemoveAllChildViews();
 
-  if (!workspace_service_ || selected_workspace_id_.empty()) {
+  // Use model-driven workspace data.
+  if (!workspaces_.empty() && selected_index_ >= 0 &&
+      static_cast<size_t>(selected_index_) < workspaces_.size()) {
+    const auto& ws = workspaces_[selected_index_];
+    int tab_count = ws.tab_count;
+
+    if (tab_count == 0) {
+      auto* label = tab_list_container_->AddChildView(
+          std::make_unique<views::Label>(u"No tabs in this workspace"));
+      label->SetEnabledColor(
+          ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+      label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+      label->SetBorder(views::CreateEmptyBorder(
+          gfx::Insets::VH(4, 8)));
+    } else {
+      std::u16string filter_lower = base::ToLowerASCII(search_query_);
+
+      for (int i = 0; i < tab_count; ++i) {
+        std::string tab_label = base::StringPrintf("Tab %d", i + 1);
+
+        // Apply filter.
+        if (!filter_lower.empty()) {
+          std::u16string label16 = base::UTF8ToUTF16(tab_label);
+          if (base::ToLowerASCII(label16).find(filter_lower) ==
+              std::u16string::npos) {
+            continue;
+          }
+        }
+
+        auto* item = tab_list_container_->AddChildView(
+            std::make_unique<views::LabelButton>(
+                base::BindRepeating(
+                    &AstraDevToolsWorkspacePanel::OnTabSelected,
+                    base::Unretained(this), i),
+                base::UTF8ToUTF16(tab_label)));
+        item->SetMinSize(gfx::Size(0, kTabItemHeight));
+        item->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+        item->SetBorder(views::CreateEmptyBorder(
+            gfx::Insets::VH(0, 12)));
+        item->SetFocusForPlatform();
+        item->SetTextColor(views::Button::STATE_NORMAL,
+            ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+        item->SetTextColor(views::Button::STATE_HOVERED,
+            ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+        item->SetTextColor(views::Button::STATE_PRESSED,
+            ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+      }
+    }
+  } else if (workspace_service_ && !selected_workspace_id_.empty()) {
+    // Legacy path: use workspace service.
+    // TODO(astra): Get actual tab list for the workspace from TabStripModel.
+    size_t tab_count = workspace_service_->GetTabCount(selected_workspace_id_);
+
+    std::u16string filter_lower = base::ToLowerASCII(search_query_);
+
+    for (size_t i = 0; i < tab_count; ++i) {
+      std::string tab_label = base::StringPrintf("Tab %zu", i + 1);
+
+      if (!filter_lower.empty()) {
+        std::u16string label16 = base::UTF8ToUTF16(tab_label);
+        if (base::ToLowerASCII(label16).find(filter_lower) ==
+            std::u16string::npos) {
+          continue;
+        }
+      }
+
+      auto* item = tab_list_container_->AddChildView(
+          std::make_unique<views::LabelButton>(
+              base::BindRepeating(
+                  &AstraDevToolsWorkspacePanel::OnTabSelected,
+                  base::Unretained(this), static_cast<int>(i)),
+              base::UTF8ToUTF16(tab_label)));
+      item->SetMinSize(gfx::Size(0, kTabItemHeight));
+      item->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+      item->SetBorder(views::CreateEmptyBorder(
+          gfx::Insets::VH(0, 12)));
+      item->SetFocusForPlatform();
+      item->SetTextColor(views::Button::STATE_NORMAL,
+          ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+      item->SetTextColor(views::Button::STATE_HOVERED,
+          ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+      item->SetTextColor(views::Button::STATE_PRESSED,
+          ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
+    }
+  } else {
     auto* label = tab_list_container_->AddChildView(
         std::make_unique<views::Label>(u"Select a workspace to see tabs"));
     label->SetEnabledColor(
@@ -551,45 +1076,6 @@ void AstraDevToolsWorkspacePanel::RefreshTabList() {
     label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
     label->SetBorder(views::CreateEmptyBorder(
         gfx::Insets::VH(4, 8)));
-    return;
-  }
-
-  // TODO(astra): Get actual tab list for the workspace from TabStripModel
-  //   or AstraWorkspaceService.  For now, show a placeholder count.
-  //   Chromium owner: TabStripModel (chrome/browser/ui/tabs/tab_strip_model.h)
-  size_t tab_count = workspace_service_->GetTabCount(selected_workspace_id_);
-
-  std::u16string filter_lower = base::ToLowerASCII(search_filter_);
-
-  for (size_t i = 0; i < tab_count; ++i) {
-    std::string tab_label = base::StringPrintf("Tab %zu", i + 1);
-
-    // Apply filter.
-    if (!filter_lower.empty()) {
-      std::u16string label16 = base::UTF8ToUTF16(tab_label);
-      if (base::ToLowerASCII(label16).find(filter_lower) ==
-          std::u16string::npos) {
-        continue;
-      }
-    }
-
-    auto* item = tab_list_container_->AddChildView(
-        std::make_unique<views::LabelButton>(
-            base::BindRepeating(
-                &AstraDevToolsWorkspacePanel::OnTabSelected,
-                base::Unretained(this), static_cast<int>(i)),
-            base::UTF8ToUTF16(tab_label)));
-    item->SetMinSize(gfx::Size(0, kTabItemHeight));
-    item->SetHorizontalAlignment(gfx::ALIGN_LEFT);
-    item->SetBorder(views::CreateEmptyBorder(
-        gfx::Insets::VH(0, 12)));
-    item->SetFocusForPlatform();
-    item->SetTextColor(views::Button::STATE_NORMAL,
-        ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
-    item->SetTextColor(views::Button::STATE_HOVERED,
-        ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
-    item->SetTextColor(views::Button::STATE_PRESSED,
-        ThemeColor(dark_theme_, kDarkValueText, kLightValueText));
   }
 
   tab_list_container_->InvalidateLayout();
@@ -665,27 +1151,79 @@ void AstraDevToolsWorkspacePanel::RefreshTabMetadata() {
 }
 
 // ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+
+void AstraDevToolsWorkspacePanel::RefreshStats() {
+  if (!stats_label_) {
+    return;
+  }
+
+  size_t workspace_count = 0;
+  int total_tabs = 0;
+  int total_windows = 0;
+
+  if (!workspaces_.empty()) {
+    workspace_count = workspaces_.size();
+    for (const auto& ws : workspaces_) {
+      total_tabs += ws.tab_count;
+      total_windows += ws.window_count;
+    }
+  } else if (workspace_service_) {
+    workspace_count = workspace_service_->workspaces().size();
+    // TODO(astra): Calculate total tabs from all workspaces.
+  }
+
+  std::u16string stats_text = base::UTF8ToUTF16(
+      base::StringPrintf(
+          "%zu workspaces  \u00B7  %d tabs  \u00B7  %d windows",
+          workspace_count, total_tabs, total_windows));
+  stats_label_->SetText(stats_text);
+}
+
+// ---------------------------------------------------------------------------
 // Button handlers
 // ---------------------------------------------------------------------------
 
 void AstraDevToolsWorkspacePanel::OnNewWorkspaceButton() {
-  if (delegate_) {
-    delegate_->OnNewWorkspace();
-  }
+  NewWorkspace();
 }
 
 void AstraDevToolsWorkspacePanel::OnDeleteWorkspaceButton() {
-  if (delegate_ && !selected_workspace_id_.empty()) {
-    delegate_->OnDeleteWorkspace(selected_workspace_id_);
+  if (selected_index_ >= 0) {
+    DeleteWorkspace(selected_index_);
+  } else if (!selected_workspace_id_.empty()) {
+    if (delegate_) {
+      delegate_->OnDeleteWorkspace(selected_workspace_id_);
+    }
   }
 }
 
 void AstraDevToolsWorkspacePanel::OnRenameWorkspaceButton() {
-  if (delegate_ && !selected_workspace_id_.empty()) {
-    // TODO(astra): Show a rename dialog or inline editor.
-    //   For now, we just dispatch with a placeholder name.
-    delegate_->OnRenameWorkspace(selected_workspace_id_, "Renamed Workspace");
+  if (selected_index_ >= 0) {
+    RenameWorkspace(selected_index_, u"Renamed Workspace");
+  } else if (!selected_workspace_id_.empty()) {
+    if (delegate_) {
+      delegate_->OnRenameWorkspace(
+          selected_workspace_id_, "Renamed Workspace");
+    }
   }
+}
+
+void AstraDevToolsWorkspacePanel::OnMergeWorkspacesButton() {
+  // TODO(astra): Implement workspace merge functionality.
+  //   For now, just notify delegate that merge was requested.
+  VLOG(1) << "Astra DevTools: Merge workspaces requested";
+}
+
+void AstraDevToolsWorkspacePanel::OnImportWorkspacesButton() {
+  // TODO(astra): Implement workspace import functionality.
+  VLOG(1) << "Astra DevTools: Import workspaces requested";
+}
+
+void AstraDevToolsWorkspacePanel::OnExportWorkspacesButton() {
+  // TODO(astra): Implement workspace export functionality.
+  VLOG(1) << "Astra DevTools: Export workspaces requested";
 }
 
 // ---------------------------------------------------------------------------
@@ -696,6 +1234,46 @@ void AstraDevToolsWorkspacePanel::OnTabSelected(int tab_index) {
   if (delegate_) {
     delegate_->OnTabSelected(tab_index);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+int AstraDevToolsWorkspacePanel::FindWorkspaceIndexById(
+    const std::string& id) const {
+  for (size_t i = 0; i < workspaces_.size(); ++i) {
+    if (workspaces_[i].id == id) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+std::vector<int> AstraDevToolsWorkspacePanel::GetFilteredWorkspaceIndices()
+    const {
+  std::vector<int> result;
+
+  if (search_query_.empty()) {
+    for (size_t i = 0; i < workspaces_.size(); ++i) {
+      result.push_back(static_cast<int>(i));
+    }
+    return result;
+  }
+
+  std::u16string filter_lower = base::ToLowerASCII(search_query_);
+  for (size_t i = 0; i < workspaces_.size(); ++i) {
+    const auto& ws = workspaces_[i];
+    std::u16string ws_name_lower = base::ToLowerASCII(ws.name);
+    std::u16string ws_id_lower = base::ToLowerASCII(base::UTF8ToUTF16(ws.id));
+
+    if (ws_name_lower.find(filter_lower) != std::u16string::npos ||
+        ws_id_lower.find(filter_lower) != std::u16string::npos) {
+      result.push_back(static_cast<int>(i));
+    }
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -714,6 +1292,15 @@ size_t AstraDevToolsWorkspacePanel::tab_item_count_for_testing() const {
     return 0;
   }
   return tab_list_container_->children().size();
+}
+
+std::string AstraDevToolsWorkspacePanel::selected_workspace_id_for_testing()
+    const {
+  if (selected_index_ >= 0 &&
+      static_cast<size_t>(selected_index_) < workspaces_.size()) {
+    return workspaces_[selected_index_].id;
+  }
+  return selected_workspace_id_;
 }
 
 }  // namespace astra

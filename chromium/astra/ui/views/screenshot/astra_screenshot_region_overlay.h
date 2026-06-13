@@ -1,9 +1,12 @@
 #ifndef ASTRA_UI_VIEWS_SCREENSHOT_ASTRA_SCREENSHOT_REGION_OVERLAY_H_
 #define ASTRA_UI_VIEWS_SCREENSHOT_ASTRA_SCREENSHOT_REGION_OVERLAY_H_
 
+#include <string>
+
 #include "base/memory/raw_ptr.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/geometry/size.h"
 #include "ui/views/widget/widget_delegate.h"
 
 #include "astra/ui/views/screenshot/astra_screenshot_capture_model.h"
@@ -45,6 +48,7 @@ namespace astra {
 //   - Dimension tooltip showing width x height and position
 //   - Crosshair cursor while selecting
 //   - Optional grid display (configurable via model settings)
+//   - Optional pixel grid (visible when zoomed in close)
 //   - Optional magnifier (stub, configurable via model settings)
 //   - Aspect ratio lock toggle button
 //   - Snap-to-grid toggle button
@@ -60,7 +64,7 @@ namespace astra {
 //
 // Chromium pattern reference:
 //   - Chrome DevTools element picker overlay
-//   - Chrome screenshot region selection (chrome/browser/screenshot/)
+//   - Chrome screenshot region selection (chrome/browser/screenshots/)
 //   - Native screenshot tools (macOS shift-cmd-4, Windows Snipping Tool)
 //
 // TODO(astra): Integrate with Chromium's region capture feature if available.
@@ -98,10 +102,108 @@ class AstraScreenshotRegionOverlay
       const AstraScreenshotRegionOverlay&) = delete;
   ~AstraScreenshotRegionOverlay() override;
 
+  // -- Region management ---------------------------------------------------
+
+  // Set the selected region.
+  void SetRegion(const gfx::Rect& region);
+
+  // Get the current selected region.
+  gfx::Rect GetRegion() const;
+
+  // Reset the selection (clear it).
+  void ResetRegion();
+
+  // Get the region size text (e.g. "1920 x 1080").
+  std::string GetRegionSizeText() const;
+
+  // -- Capture mode --------------------------------------------------------
+
+  // Set the current capture mode.
+  void SetMode(AstraScreenshotMode mode);
+
+  // Get the current capture mode.
+  AstraScreenshotMode GetMode() const { return mode_; }
+
+  // -- Magnifier -----------------------------------------------------------
+
+  // Set whether the magnifier is shown.
+  void SetShowMagnifier(bool show);
+
+  // Get whether the magnifier is shown.
+  bool GetShowMagnifier() const { return show_magnifier_; }
+
+  // Set the position of the magnifier (center point).
+  void SetMagnifierPosition(const gfx::Point& position);
+
+  // Get the current magnifier position.
+  gfx::Point GetMagnifierPosition() const { return magnifier_position_; }
+
+  // -- Grid ----------------------------------------------------------------
+
+  // Set whether the grid overlay is shown.
+  void SetShowGrid(bool show);
+
+  // Get whether the grid overlay is shown.
+  bool GetShowGrid() const { return show_grid_; }
+
+  // Set the grid size in pixels.
+  void SetGridSize(int size_px);
+
+  // Get the grid size in pixels.
+  int GetGridSize() const { return grid_size_; }
+
+  // -- Pixel grid ----------------------------------------------------------
+
+  // Set whether pixel-level grid is shown (when zoomed in).
+  void SetShowPixelGrid(bool show);
+
+  // Get whether pixel-level grid is shown.
+  bool GetShowPixelGrid() const { return show_pixel_grid_; }
+
+  // -- Aspect ratio constraint ---------------------------------------------
+
+  // Set whether aspect ratio is constrained, and the ratio value.
+  // Passing |constrain| = false disables the constraint (ratio is ignored).
+  void SetAspectRatioConstraint(bool constrain, double ratio);
+
+  // Whether aspect ratio is currently constrained.
+  bool IsAspectRatioConstrained() const { return aspect_ratio_constrained_; }
+
+  // Get the current aspect ratio (width / height). Returns 0.0 if not
+  // constrained.
+  double GetAspectRatio() const {
+    return aspect_ratio_constrained_ ? aspect_ratio_ : 0.0;
+  }
+
+  // -- Selection state -----------------------------------------------------
+
+  // Set whether the user is currently creating a selection (dragging).
+  void SetIsSelecting(bool selecting);
+
+  // Whether the user is currently selecting a region.
+  bool IsSelecting() const { return is_selecting_; }
+
+  // -- Resize state --------------------------------------------------------
+
+  // Set whether the user is currently resizing the selection.
+  void SetIsResizing(bool resizing);
+
+  // Whether the user is currently resizing.
+  bool IsResizing() const { return is_resizing_; }
+
+  // -- Resize handle -------------------------------------------------------
+
+  // Set the currently active resize handle.
+  void SetResizeHandle(AstraResizeHandle handle);
+
+  // Get the currently active resize handle.
+  AstraResizeHandle GetResizeHandle() const { return resize_handle_; }
+
   // -- AstraScreenshotCaptureModelObserver --------------------------------
 
   void OnRegionChanged(const gfx::Rect& region) override;
   void OnCaptureSettingsChanged() override;
+  void OnSettingsChanged(AstraScreenshotCaptureModel* model) override;
 
  private:
   // The actual overlay view.
@@ -116,10 +218,34 @@ class AstraScreenshotRegionOverlay
   // Apply model settings to the overlay view.
   void ApplySettingsFromModel();
 
+  // Update overlay view from current state.
+  void UpdateViewFromState();
+
   raw_ptr<OverlayView> overlay_view_ = nullptr;
   raw_ptr<views::Widget> widget_ = nullptr;
   raw_ptr<Delegate> delegate_ = nullptr;
   raw_ptr<AstraScreenshotCaptureModel> model_ = nullptr;
+
+  // Current capture mode.
+  AstraScreenshotMode mode_ = AstraScreenshotMode::kRegion;
+
+  // Magnifier state.
+  bool show_magnifier_ = true;
+  gfx::Point magnifier_position_;
+
+  // Grid state.
+  bool show_grid_ = false;
+  int grid_size_ = 20;
+  bool show_pixel_grid_ = false;
+
+  // Aspect ratio constraint state.
+  bool aspect_ratio_constrained_ = false;
+  double aspect_ratio_ = 0.0;
+
+  // Interaction state.
+  bool is_selecting_ = false;
+  bool is_resizing_ = false;
+  AstraResizeHandle resize_handle_ = AstraResizeHandle::kNone;
 };
 
 // =========================================================================
@@ -135,6 +261,7 @@ class AstraScreenshotRegionOverlay
 //   - Handles mouse events to create, move, and resize the selection.
 //   - Handles keyboard events (Escape, Enter, arrow keys, Shift+arrows).
 //   - Optionally shows grid lines for alignment.
+//   - Optionally shows pixel grid (for high zoom levels).
 //   - Optionally shows a magnifier at the cursor.
 //   - Provides aspect ratio lock and snap-to-grid controls.
 //
@@ -189,9 +316,14 @@ class AstraScreenshotRegionOverlay::OverlayView : public views::View {
   // Set the selection directly.
   void SetSelection(const gfx::Rect& selection);
 
+  // -- Region size text ---------------------------------------------------
+
+  // Get the region size as a human-readable string like "1920 x 1080".
+  std::u16string GetRegionSizeText() const;
+
   // -- Aspect ratio lock --------------------------------------------------
 
-  // Get/set aspect ratio lock mode.
+  // Get/set aspect ratio lock mode (legacy enum).
   AstraScreenshotAspectRatioLock aspect_ratio_lock() const {
     return aspect_ratio_lock_;
   }
@@ -199,6 +331,19 @@ class AstraScreenshotRegionOverlay::OverlayView : public views::View {
 
   // Cycle through aspect ratio modes (free -> 4:3 -> 16:9 -> 1:1 -> free).
   void CycleAspectRatioLock();
+
+  // Set a custom aspect ratio constraint.
+  void SetAspectRatioConstraint(bool constrain, double ratio);
+
+  // Whether a custom aspect ratio is currently constrained.
+  bool is_aspect_ratio_constrained() const {
+    return aspect_ratio_constrained_;
+  }
+
+  // Get the custom aspect ratio. Returns 0.0 if not constrained.
+  double custom_aspect_ratio() const {
+    return aspect_ratio_constrained_ ? custom_aspect_ratio_ : 0.0;
+  }
 
   // -- Grid / snap --------------------------------------------------------
 
@@ -214,9 +359,29 @@ class AstraScreenshotRegionOverlay::OverlayView : public views::View {
   int grid_size() const { return grid_size_; }
   void SetGridSize(int size);
 
+  // Whether the pixel grid is shown.
+  bool show_pixel_grid() const { return show_pixel_grid_; }
+  void SetShowPixelGrid(bool show);
+
+  // -- Magnifier ----------------------------------------------------------
+
   // Whether the magnifier is shown.
   bool show_magnifier() const { return show_magnifier_; }
   void SetShowMagnifier(bool show);
+
+  // -- Selection / resize state -------------------------------------------
+
+  // Get the current interaction mode.
+  Mode interaction_mode() const { return mode_; }
+
+  // Get the active resize handle (only valid when mode_ == kResizing).
+  Handle active_handle() const { return active_handle_; }
+
+  // Whether the user is currently creating a selection.
+  bool is_selecting() const { return mode_ == Mode::kCreating; }
+
+  // Whether the user is currently resizing.
+  bool is_resizing() const { return mode_ == Mode::kResizing; }
 
   // -- views::View -------------------------------------------------------
 
@@ -254,6 +419,9 @@ class AstraScreenshotRegionOverlay::OverlayView : public views::View {
 
   // Paint grid lines.
   void PaintGrid(gfx::Canvas* canvas);
+
+  // Paint pixel grid (for high zoom levels).
+  void PaintPixelGrid(gfx::Canvas* canvas);
 
   // Paint the crosshair / guide lines.
   void PaintCrosshair(gfx::Canvas* canvas);
@@ -348,9 +516,13 @@ class AstraScreenshotRegionOverlay::OverlayView : public views::View {
 
   AstraScreenshotAspectRatioLock aspect_ratio_lock_ =
       AstraScreenshotAspectRatioLock::kFree;
+  bool aspect_ratio_constrained_ = false;
+  double custom_aspect_ratio_ = 0.0;
+
   bool show_grid_ = false;
   bool snap_to_grid_ = false;
   int grid_size_ = 20;
+  bool show_pixel_grid_ = false;
   bool show_magnifier_ = true;
 
   // -- Colors (cached from ColorProvider on theme change) ----------------
@@ -361,6 +533,7 @@ class AstraScreenshotRegionOverlay::OverlayView : public views::View {
   SkColor tooltip_bg_color_ = SkColorSetARGB(230, 0, 0, 0);
   SkColor tooltip_text_color_ = SK_ColorWHITE;
   SkColor grid_color_ = SkColorSetARGB(64, 255, 255, 255);
+  SkColor pixel_grid_color_ = SkColorSetARGB(32, 255, 255, 255);
 
   // -- Constants ---------------------------------------------------------
 
@@ -384,6 +557,8 @@ class AstraScreenshotRegionOverlay::OverlayView : public views::View {
   static constexpr int kMinGridSize = 5;
   static constexpr int kMaxGridSize = 200;
   static constexpr int kDefaultGridSize = 20;
+
+  static constexpr int kPixelGridThreshold = 400;  // Zoom threshold for pixel grid
 };
 
 }  // namespace astra

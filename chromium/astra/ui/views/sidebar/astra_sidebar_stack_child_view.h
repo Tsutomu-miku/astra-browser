@@ -2,167 +2,198 @@
 #define ASTRA_UI_VIEWS_SIDEBAR_ASTRA_SIDEBAR_STACK_CHILD_VIEW_H_
 
 #include <string>
+#include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "ui/views/controls/button/label_button.h"
 #include "ui/views/view.h"
 
 namespace views {
-class ImageButton;
-class ImageView;
-class Label;
+class BoxLayout;
 }  // namespace views
 
 namespace astra {
 
+struct AstraStackTabInfo;
+class AstraSidebarStackTabItemView;
+
 // Delegate interface for AstraSidebarStackChildView actions.
-// Implemented by the parent sidebar view to handle tab activation and
-// close actions for child tabs in a stack.
+// Implemented by the parent stack view to handle tab actions within
+// the child area of an expanded stack.
 //
 // The child view is presentation-only — it never mutates tab or stack state
 // directly.  All user actions are forwarded to the delegate.
+//
+// Chromium owner: TabStrip (chrome/browser/ui/views/tabs/tab_strip.h)
 class AstraSidebarStackChildDelegate {
  public:
   virtual ~AstraSidebarStackChildDelegate() = default;
 
-  // Called when the user clicks a child tab in a stack.
-  // |tab_index| is the TabStripModel index of the child tab.
-  virtual void OnStackChildClicked(int tab_index) = 0;
+  // Called when the user clicks a tab item.
+  // |tab_index| is the index within the stack.
+  virtual void OnStackTabClicked(int tab_index) = 0;
 
-  // Called when the user clicks the close button on a child tab.
-  // |tab_index| is the TabStripModel index of the child tab.
-  virtual void OnStackChildClosed(int tab_index) = 0;
+  // Called when the user middle-clicks a tab item.
+  virtual void OnStackTabMiddleClicked(int tab_index) = 0;
 
-  // Called when the user starts dragging a child tab.
-  // |tab_index| is the TabStripModel index of the child tab.
-  // |mouse_location| is in the child view's local coordinates.
-  virtual void OnStackChildDragStarted(int tab_index,
-                                       const gfx::Point& mouse_location) = 0;
+  // Called when the user clicks the close button on a tab item.
+  virtual void OnStackTabClosed(int tab_index) = 0;
+
+  // Called when the user starts dragging a tab item.
+  virtual void OnStackTabDragStarted(int tab_index,
+                                     const gfx::Point& mouse_location) = 0;
+
+  // Called when a tab is dropped onto this child view.
+  virtual void OnStackTabDropped(int to_tab_index,
+                                 const std::string& from_stack_id,
+                                 int from_tab_index) = 0;
 };
 
-// A sidebar item that represents a child tab within a stack.
+// =========================================================================
+// AstraSidebarStackChildView — child content area of an expanded stack
+// =========================================================================
 //
-// Stack child items are indented from the left edge to visually show they
-// belong to a parent stack.  They show:
-//   - Favicon (or placeholder icon)
-//   - Tab title
-//   - Audio indicator if the tab is playing audio
-//   - Close button on hover
+// Container view that holds the tab items within an expanded named stack.
+// This is the area that appears below a stack header when the stack is
+// expanded.  It manages a list of AstraSidebarStackTabItemView instances.
 //
-// The text may be slightly smaller or lighter than top-level tabs to
-// visually de-emphasize child tabs.
+// The child view handles:
+//   - Displaying tab items in a vertical list
+//   - Tab item add/remove/update operations
+//   - Active tab tracking
+//   - Tab reordering within the stack
+//   - Drag-drop target state
 //
 // Truth source:
-//   - Tab title/favicon/audio: Chromium WebContents / TabStripModel
-//   - Stack membership: AstraTabFeatures (stack_parent_id)
+//   - Tab items: derived from tabs with this stack_id
+//   - Active state: TabStripModel active tab
+//   - Order: follows TabStripModel order within the stack
 //
-// This extends views::View rather than AstraSidebarItemView because
-// the indentation and close button layout differ from regular sidebar
-// items.  However, it follows the same presentation-only pattern.
-//
-// Chromium owner: TreeView/TreeViewController (ui/views/controls/tree/)
-// TODO(astra): Consider migrating to views::TreeView for proper tree UI.
+// Chromium owner: TabStrip (chrome/browser/ui/views/tabs/tab_strip.h)
+// TODO(astra): Consider whether to use views::RecyclerView for large tab
+//   counts to improve performance.
 class AstraSidebarStackChildView : public views::View {
  public:
-  // Audio indicator state, mirroring AstraSidebarItemView::AudioState.
-  enum class AudioState {
-    kNone,    // No audio playing — indicator hidden.
-    kPlaying, // Audio is playing — speaker icon shown.
-    kMuted,   // Tab is muted — muted speaker icon shown.
-  };
-
-  explicit AstraSidebarStackChildView(const std::u16string& title);
+  AstraSidebarStackChildView();
   AstraSidebarStackChildView(const AstraSidebarStackChildView&) = delete;
-  AstraSidebarStackChildView& operator=(
-      const AstraSidebarStackChildView&) = delete;
+  AstraSidebarStackChildView& operator=(const AstraSidebarStackChildView&) =
+      delete;
   ~AstraSidebarStackChildView() override;
 
-  // Update the displayed title.
-  void SetTitle(const std::u16string& title);
+  // -- Tab data management ------------------------------------------------
 
-  // Set this child tab as active (highlighted).
-  void SetActive(bool active);
-  bool IsActive() const { return is_active_; }
+  // Replace all tabs with the given list.  Rebuilds all tab item views.
+  void SetTabs(const std::vector<AstraStackTabInfo>& tabs);
 
-  // Set the audio state of the tab this child represents.
-  void SetAudioState(AudioState state);
-  AudioState audio_state() const { return audio_state_; }
+  // Returns the number of tabs in this stack.
+  int GetTabCount() const;
 
-  // Set whether the close button is visible (typically shown on hover).
-  void SetCloseButtonVisible(bool visible);
+  // Returns the tab info at the given index.  Returns a default-constructed
+  // AstraStackTabInfo if the index is out of range.
+  AstraStackTabInfo GetTabAt(int index) const;
 
-  // Set the delegate for child tab actions. Not owned.
-  void set_delegate(AstraSidebarStackChildDelegate* delegate) {
-    delegate_ = delegate;
-  }
+  // Add a new tab at the given position.  If position is -1, appends to end.
+  void AddTab(const AstraStackTabInfo& tab, int position = -1);
 
-  // -- Tab metadata -------------------------------------------------------
+  // Remove the tab at the given index.
+  void RemoveTab(int index);
 
-  // TabStripModel index of the tab this child represents.
-  void set_tab_index(int index) { tab_index_ = index; }
-  int tab_index() const { return tab_index_; }
+  // Update the tab at the given index with new info.
+  void UpdateTab(int index, const AstraStackTabInfo& tab);
+
+  // -- Active tab ---------------------------------------------------------
+
+  // Set the active tab by index.  -1 clears active state.
+  void SetActiveTab(int index);
+
+  // Returns the index of the active tab, or -1 if none.
+  int GetActiveTabIndex() const;
+
+  // -- Reordering ---------------------------------------------------------
+
+  // Move a tab from one position to another within the stack.
+  void MoveTab(int from_index, int to_index);
+
+  // -- Display options ----------------------------------------------------
+
+  // Set the height of individual tab items in pixels.
+  void SetTabHeight(int height);
+  int GetTabHeight() const { return tab_height_; }
+
+  // Set whether favicons are shown on tab items.
+  void SetShowFavicons(bool show);
+  bool GetShowFavicons() const { return show_favicons_; }
+
+  // Set whether close buttons are shown on tab items.
+  void SetShowCloseButtons(bool show);
+  bool GetShowCloseButtons() const { return show_close_buttons_; }
 
   // -- Drag and drop ------------------------------------------------------
 
-  // Set whether this child can be dragged. Defaults to false.
-  void SetDraggable(bool draggable);
-  bool draggable() const { return draggable_; }
+  // Enable or disable drag-and-drop for tabs within this child view.
+  void SetDragDropEnabled(bool enabled);
+  bool GetDragDropEnabled() const { return drag_drop_enabled_; }
+
+  // -- View access --------------------------------------------------------
+
+  // Returns the tab item view at the given index.  Returns nullptr if
+  // the index is out of range.
+  AstraSidebarStackTabItemView* GetTabViewAt(int index);
+
+  // Remove all tabs.
+  void ClearAllTabs();
+
+  // -- Stack ID -----------------------------------------------------------
+
+  // Get/set the ID of the stack this child view belongs to.
+  const std::string& stack_id() const { return stack_id_; }
+  void set_stack_id(const std::string& stack_id) { stack_id_ = stack_id; }
+
+  // -- Delegate -----------------------------------------------------------
+
+  // Set the delegate for child view actions.  Not owned.
+  void set_delegate(AstraSidebarStackChildDelegate* delegate) {
+    delegate_ = delegate;
+  }
+  AstraSidebarStackChildDelegate* delegate() const { return delegate_; }
 
   // -- views::View --------------------------------------------------------
 
   gfx::Size CalculatePreferredSize(
       const views::SizeBounds& available_size) const override;
-  void Layout() override;
   void OnThemeChanged() override;
-  bool OnMousePressed(const ui::MouseEvent& event) override;
-  bool OnMouseDragged(const ui::MouseEvent& event) override;
-  void OnMouseReleased(const ui::MouseEvent& event) override;
-  void OnMouseCaptureLost() override;
-  void OnMouseEntered(const ui::MouseEvent& event) override;
-  void OnMouseExited(const ui::MouseEvent& event) override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
  private:
-  // Handler for close button clicks.
-  void OnCloseButtonClicked();
+  // Create a tab item view from tab info.
+  std::unique_ptr<AstraSidebarStackTabItemView> CreateTabItemView(
+      const AstraStackTabInfo& info);
 
-  // Handler for audio button clicks — toggles mute state.
-  void OnAudioButtonClicked();
+  // Update all tab item display options (favicons, close buttons, etc.).
+  void UpdateAllTabItemOptions();
 
-  // Update the audio button's icon and tooltip.
-  void UpdateAudioButtonVisuals();
+  // Rebuild the tab list from tab_infos_.  Used after operations that
+  // change the order or count of tabs.
+  void RebuildTabViews();
 
-  // Indentation from the left edge for child tabs (in DIPs).
-  // This is extra indent beyond the normal sidebar item padding, to
-  // visually show the hierarchical relationship.
-  static constexpr int kChildIndent = 20;
+  // Stack ID this child view belongs to.
+  std::string stack_id_;
 
-  // Height of a stack child item.
-  static constexpr int kChildItemHeight = 28;
+  // Cached tab data (presentation-model data).
+  std::vector<AstraStackTabInfo> tab_infos_;
 
-  // Horizontal padding within the child item.
-  static constexpr int kChildHorizontalPadding = 12;
+  // Index of the active tab, or -1 if none.
+  int active_tab_index_ = -1;
 
-  // Icon size and spacing.
-  static constexpr int kChildIconSize = 14;
-  static constexpr int kChildIconSpacing = 8;
+  // Display options.
+  int tab_height_ = 28;
+  bool show_favicons_ = true;
+  bool show_close_buttons_ = true;
+  bool drag_drop_enabled_ = true;
 
-  // Close button size.
-  static constexpr int kCloseButtonSize = 16;
+  // Layout.
+  raw_ptr<views::BoxLayout> layout_ = nullptr;
 
-  raw_ptr<views::Label> title_label_ = nullptr;
-  raw_ptr<views::ImageButton> close_button_ = nullptr;
-  raw_ptr<views::ImageButton> audio_button_ = nullptr;
-
-  bool is_active_ = false;
-  bool is_hovered_ = false;
-  AudioState audio_state_ = AudioState::kNone;
-
-  bool draggable_ = false;
-  gfx::Point drag_start_point_;
-  bool is_dragging_ = false;
-
-  int tab_index_ = -1;
-
+  // Delegate.
   raw_ptr<AstraSidebarStackChildDelegate> delegate_ = nullptr;
 };
 

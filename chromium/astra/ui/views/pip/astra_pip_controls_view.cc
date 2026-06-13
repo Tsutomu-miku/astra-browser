@@ -35,6 +35,7 @@ namespace {
 constexpr int kTopBarHeight = 32;
 constexpr int kBottomBarHeight = 56;  // Increased to accommodate sliders.
 constexpr int kMinimizedBottomBarHeight = 28;  // Height when minimized.
+constexpr int kProgressBarHeight = 4;
 constexpr int kControlButtonSpacing = 6;
 constexpr int kBarHorizontalPadding = 12;
 constexpr int kBarVerticalPadding = 4;
@@ -71,6 +72,10 @@ constexpr SkColor kControlsIconColor = SK_ColorWHITE;
 constexpr SkColor kSnapIndicatorColor = SkColorSetARGB(0x80, 255, 255, 255);
 constexpr SkColor kSnapIndicatorActiveColor =
     SkColorSetARGB(0xFF, 0x4CAF50, 255, 0x90);  // Green tint.
+constexpr SkColor kProgressBarForeground =
+    SkColorSetARGB(0xFF, 0x4CAF50, 255, 0x90);  // Green tint.
+constexpr SkColor kProgressBarBackground =
+    SkColorSetARGB(0x40, 255, 255, 255);
 
 // Creates a semi-transparent rounded background for a control bar.
 std::unique_ptr<views::Background> CreateBarBackground(double opacity) {
@@ -126,7 +131,7 @@ AstraPipControlsView::AstraPipControlsView(AstraPipControlsModel* model,
   layer()->SetFillsBoundsOpaquely(false);
 
   // Observe the model for state changes.
-  model_->AddObserver(this);
+  model_->AddControlsObserver(this);
 
   // The overlay fills the entire PiP window.
   BuildLayout();
@@ -139,22 +144,160 @@ AstraPipControlsView::AstraPipControlsView(AstraPipControlsModel* model,
 
 AstraPipControlsView::~AstraPipControlsView() {
   if (model_) {
-    model_->RemoveObserver(this);
+    model_->RemoveControlsObserver(this);
   }
 }
 
-// -- State updates (convenience — delegate to model) ------------------------
+// -- Model management -------------------------------------------------------
 
-void AstraPipControlsView::SetPlaying(bool playing) {
+void AstraPipControlsView::SetModel(AstraPipControlsModel* model) {
+  if (model_ == model) {
+    return;
+  }
+  if (model_) {
+    model_->RemoveControlsObserver(this);
+  }
+  model_ = model;
+  if (model_) {
+    model_->AddControlsObserver(this);
+    UpdateAllFromModel();
+    UpdateControlVisibilityFromSettings();
+  }
+}
+
+// -- Video content view -----------------------------------------------------
+
+void AstraPipControlsView::SetVideoView(views::View* video_view) {
+  if (video_view_ == video_view) {
+    return;
+  }
+  // TODO(astra): Replace video content in the view hierarchy.
+  //   For now, we just track the pointer.
+  video_view_ = video_view;
+}
+
+// -- Controls visibility ----------------------------------------------------
+
+void AstraPipControlsView::SetControlsVisible(bool visible) {
+  if (model_) {
+    model_->SetControlsVisible(visible);
+  }
+}
+
+bool AstraPipControlsView::GetControlsVisible() const {
+  return model_ && model_->GetShowControls();
+}
+
+void AstraPipControlsView::ShowControlsTemporarily() {
+  if (!model_ || !model_->GetAutoHideControls()) {
+    return;
+  }
+
+  if (!model_->GetShowControls()) {
+    model_->SetShowControls(true);
+  }
+  StartAutoHideTimer();
+}
+
+// -- State setters/getters --------------------------------------------------
+
+void AstraPipControlsView::SetTitle(const std::u16string& title) {
+  title_text_ = title;
+  if (title_label_) {
+    title_label_->SetText(title);
+    title_label_->SetTooltipText(title);
+  }
+  // Update model if available.
+  if (model_) {
+    model_->SetTabTitle(title);
+  }
+}
+
+void AstraPipControlsView::SetIsPlaying(bool playing) {
   if (model_) {
     model_->SetPlaying(playing);
   }
+}
+
+bool AstraPipControlsView::IsPlaying() const {
+  return model_ && model_->IsPlaying();
+}
+
+void AstraPipControlsView::SetProgress(double progress) {
+  if (model_) {
+    model_->SetPlaybackProgress(progress);
+  }
+}
+
+double AstraPipControlsView::GetProgress() const {
+  return model_ ? model_->GetPlaybackProgress() : 0.0;
+}
+
+void AstraPipControlsView::SetVolume(double volume) {
+  if (model_) {
+    model_->SetVolume(volume);
+  }
+}
+
+double AstraPipControlsView::GetVolume() const {
+  return model_ ? model_->GetVolume() : 0.0;
 }
 
 void AstraPipControlsView::SetMuted(bool muted) {
   if (model_) {
     model_->SetMuted(muted);
   }
+}
+
+bool AstraPipControlsView::IsMuted() const {
+  return model_ && model_->IsMuted();
+}
+
+void AstraPipControlsView::SetPlaybackSpeed(AstraPipPlaybackSpeed speed) {
+  if (model_) {
+    model_->SetPlaybackSpeed(speed);
+  }
+}
+
+AstraPipPlaybackSpeed AstraPipControlsView::GetPlaybackSpeed() const {
+  return model_ ? model_->GetPlaybackSpeed()
+                : AstraPipPlaybackSpeed::k1_0x;
+}
+
+void AstraPipControlsView::SetAlwaysOnTop(bool on_top) {
+  if (model_) {
+    model_->SetAlwaysOnTop(on_top);
+  }
+}
+
+bool AstraPipControlsView::GetAlwaysOnTop() const {
+  return model_ && model_->GetAlwaysOnTop();
+}
+
+void AstraPipControlsView::SetIsDraggable(bool draggable) {
+  is_draggable_ = draggable;
+  // TODO(astra): Update widget draggable state.
+  //   Chromium owner: views::Widget / NonClientFrameView
+}
+
+void AstraPipControlsView::SetIsResizable(bool resizable) {
+  is_resizable_ = resizable;
+  if (resize_handle_) {
+    resize_handle_->SetVisible(resizable);
+  }
+  if (model_) {
+    model_->SetResizable(resizable);
+  }
+}
+
+// -- Backward-compatible state updates --------------------------------------
+
+void AstraPipControlsView::SetPlaying(bool playing) {
+  SetIsPlaying(playing);
+}
+
+void AstraPipControlsView::SetMuted(bool muted) {
+  SetMuted(muted);
 }
 
 void AstraPipControlsView::SetActiveSizePreset(PipSizePreset preset) {
@@ -164,23 +307,11 @@ void AstraPipControlsView::SetActiveSizePreset(PipSizePreset preset) {
 }
 
 void AstraPipControlsView::SetAlwaysOnTop(bool pinned) {
-  if (model_) {
-    model_->SetAlwaysOnTop(pinned);
-  }
-}
-
-void AstraPipControlsView::SetTitle(const std::u16string& title) {
-  title_text_ = title;
-  if (title_label_) {
-    title_label_->SetText(title);
-    title_label_->SetTooltipText(title);
-  }
+  SetAlwaysOnTop(pinned);
 }
 
 void AstraPipControlsView::SetVolume(double volume) {
-  if (model_) {
-    model_->SetVolume(volume);
-  }
+  SetVolume(volume);
 }
 
 void AstraPipControlsView::SetPlaybackRate(double rate) {
@@ -222,8 +353,8 @@ void AstraPipControlsView::OnMuteStateChanged(bool muted) {
     mute_button_->SetAccessibleName(muted ? u"Unmute" : u"Mute");
   }
   if (volume_slider_ && model_) {
-    volume_slider_->SetValue(model_->is_muted() ? 0.0f
-                                                : static_cast<float>(model_->volume()));
+    volume_slider_->SetValue(model_->IsMuted() ? 0.0f
+                                                : static_cast<float>(model_->GetVolume()));
   }
 }
 
@@ -344,6 +475,23 @@ void AstraPipControlsView::OnControlsMinimizedChanged(bool minimized) {
   InvalidateLayout();
 }
 
+void AstraPipControlsView::OnProgressChanged(double progress) {
+  if (progress_bar_) {
+    progress_bar_->SetValue(static_cast<float>(progress));
+  }
+}
+
+void AstraPipControlsView::OnPlaybackSpeedChanged(AstraPipPlaybackSpeed speed) {
+  double rate = AstraPipControlsModel::PlaybackSpeedToRate(speed);
+  if (playback_rate_label_) {
+    playback_rate_label_->SetText(base::NumberToString16(rate) + u"x");
+  }
+}
+
+void AstraPipControlsView::OnLoopingChanged(bool looping) {
+  // TODO(astra): Update loop button visual state if/when added.
+}
+
 // -- views::View -------------------------------------------------------------
 
 gfx::Size AstraPipControlsView::CalculatePreferredSize(
@@ -352,7 +500,7 @@ gfx::Size AstraPipControlsView::CalculatePreferredSize(
   int bottom_height = model_ && model_->controls_minimized()
                           ? kMinimizedBottomBarHeight
                           : kBottomBarHeight;
-  int height = kTopBarHeight + bottom_height + 100;  // Content area.
+  int height = kTopBarHeight + kProgressBarHeight + bottom_height + 100;  // Content area.
   if (available_size.width().is_bounded()) {
     width = available_size.width().value();
   }
@@ -380,8 +528,8 @@ void AstraPipControlsView::OnMouseEntered(const ui::MouseEvent& event) {
   CancelAutoHideTimer();
 
   // If controls were hidden, show them.
-  if (model_ && !model_->controls_visible()) {
-    model_->SetControlsVisible(true);
+  if (model_ && !model_->GetShowControls()) {
+    model_->SetShowControls(true);
   }
 }
 
@@ -414,13 +562,16 @@ void AstraPipControlsView::SliderValueChanged(views::Slider* sender,
   if (sender == volume_slider_ && model_) {
     model_->SetVolume(static_cast<double>(value));
     if (delegate_) {
-      delegate_->OnVolumeChanged(model_->volume());
+      delegate_->OnVolumeChanged(model_->GetVolume());
     }
   } else if (sender == opacity_slider_ && model_) {
     model_->SetOpacity(static_cast<double>(value));
     if (delegate_) {
       delegate_->OnOpacityChanged(model_->opacity());
     }
+  } else if (sender == progress_bar_ && model_) {
+    model_->SetPlaybackProgress(static_cast<double>(value));
+    // TODO(astra): Seek to the new position via delegate.
   }
 }
 
@@ -429,9 +580,25 @@ void AstraPipControlsView::SliderValueChanged(views::Slider* sender,
 void AstraPipControlsView::Layout() {
   views::View::Layout();
 
-  // Position snap indicators at corners.
   gfx::Rect bounds = GetLocalBounds();
+  int bottom_bar_y = bounds.height();
 
+  // Position bottom bar.
+  if (bottom_bar_ && bottom_bar_->GetVisible()) {
+    int bottom_bar_height = model_ && model_->controls_minimized()
+                                ? kMinimizedBottomBarHeight
+                                : kBottomBarHeight;
+    bottom_bar_y = bounds.height() - bottom_bar_height;
+    bottom_bar_->SetBounds(0, bottom_bar_y, bounds.width(), bottom_bar_height);
+  }
+
+  // Position progress bar above bottom bar.
+  if (progress_bar_ && progress_bar_->GetVisible()) {
+    int progress_y = bottom_bar_y - kProgressBarHeight;
+    progress_bar_->SetBounds(0, progress_y, bounds.width(), kProgressBarHeight);
+  }
+
+  // Position snap indicators at corners.
   if (snap_indicator_tl_ && snap_indicator_tl_->GetVisible()) {
     snap_indicator_tl_->SetBounds(
         kSnapIndicatorMargin,
@@ -447,22 +614,18 @@ void AstraPipControlsView::Layout() {
         kSnapIndicatorSize);
   }
   if (snap_indicator_bl_ && snap_indicator_bl_->GetVisible()) {
-    int bottom_bar_y = bounds.height() -
-        (model_ && model_->controls_minimized() ? kMinimizedBottomBarHeight
-                                                : kBottomBarHeight);
+    int bottom_bar_top = bottom_bar_y;
     snap_indicator_bl_->SetBounds(
         kSnapIndicatorMargin,
-        bottom_bar_y - kSnapIndicatorSize - kSnapIndicatorMargin,
+        bottom_bar_top - kSnapIndicatorSize - kSnapIndicatorMargin,
         kSnapIndicatorSize,
         kSnapIndicatorSize);
   }
   if (snap_indicator_br_ && snap_indicator_br_->GetVisible()) {
-    int bottom_bar_y = bounds.height() -
-        (model_ && model_->controls_minimized() ? kMinimizedBottomBarHeight
-                                                : kBottomBarHeight);
+    int bottom_bar_top = bottom_bar_y;
     snap_indicator_br_->SetBounds(
         bounds.width() - kSnapIndicatorSize - kSnapIndicatorMargin,
-        bottom_bar_y - kSnapIndicatorSize - kSnapIndicatorMargin,
+        bottom_bar_top - kSnapIndicatorSize - kSnapIndicatorMargin,
         kSnapIndicatorSize,
         kSnapIndicatorSize);
   }
@@ -491,7 +654,7 @@ void AstraPipControlsView::BuildLayout() {
   BuildTopBar();
   AddChildView(top_bar_.ExtractAsOwned());
 
-  // Flexible spacer — fills the middle area.
+  // Flexible spacer — fills the middle area (video content area).
   auto* spacer = AddChildView(std::make_unique<views::View>());
   layout->SetFlexForView(spacer, 1);
 
@@ -501,6 +664,10 @@ void AstraPipControlsView::BuildLayout() {
   AddChildView(snap_indicator_tr_.ExtractAsOwned());
   AddChildView(snap_indicator_bl_.ExtractAsOwned());
   AddChildView(snap_indicator_br_.ExtractAsOwned());
+
+  // Progress bar (above bottom bar).
+  BuildProgressBar();
+  AddChildView(progress_bar_.ExtractAsOwned());
 
   // Bottom bar.
   BuildBottomBar();
@@ -519,6 +686,7 @@ void AstraPipControlsView::BuildTopBar() {
   top_bar_->SetPaintToLayer();
   top_bar_->layer()->SetFillsBoundsOpaquely(false);
   top_bar_->SetBackground(CreateBarBackground(1.0));
+  top_bar_->SetPreferredSize(gfx::Size(0, kTopBarHeight));
 
   auto* layout = top_bar_->SetLayoutManager(
       std::make_unique<views::BoxLayout>(
@@ -555,7 +723,10 @@ void AstraPipControlsView::BuildTopBar() {
   // Minimize button.
   BuildMinimizeButton(top_bar_);
 
-  // Return-to-tab button.
+  // Maximize/restore button.
+  BuildMaximizeButton(top_bar_);
+
+  // Return-to-tab button (PiP expand/back button).
   return_to_tab_button_ =
       top_bar_->AddChildView(std::make_unique<views::ImageButton>(
           base::BindRepeating(
@@ -709,6 +880,21 @@ void AstraPipControlsView::BuildSnapIndicators() {
   snap_indicator_br_->SetTooltipText(u"Snap to bottom-right");
 }
 
+void AstraPipControlsView::BuildProgressBar() {
+  progress_bar_ = std::make_unique<views::Slider>(this);
+  progress_bar_->SetPreferredSize(gfx::Size(0, kProgressBarHeight));
+  progress_bar_->SetMinValue(0.0f);
+  progress_bar_->SetMaxValue(1.0f);
+  progress_bar_->SetValue(0.0f);
+  progress_bar_->SetAccessibleName(u"Playback progress");
+  progress_bar_->SetTooltipText(u"Seek");
+  progress_bar_->SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+  progress_bar_->SetPaintToLayer();
+
+  // TODO(astra): Style the progress bar with custom colors.
+  //   For now it uses default slider styling.
+}
+
 void AstraPipControlsView::BuildVolumeControls(views::View* container) {
   // Mute button.
   mute_button_ = container->AddChildView(std::make_unique<views::ImageButton>(
@@ -774,11 +960,21 @@ void AstraPipControlsView::BuildMinimizeButton(views::View* container) {
   minimize_button_->SetAccessibleName(u"Minimize PiP controls");
 }
 
+void AstraPipControlsView::BuildMaximizeButton(views::View* container) {
+  maximize_button_ =
+      container->AddChildView(std::make_unique<views::ImageButton>(
+          base::BindRepeating(
+              &AstraPipControlsView::OnMaximizeClicked,
+              base::Unretained(this))));
+  ConfigureImageButton(maximize_button_, u"Maximize", kSmallButtonSize);
+  maximize_button_->SetAccessibleName(u"Maximize PiP window");
+}
+
 // -- Button callbacks -------------------------------------------------------
 
 void AstraPipControlsView::OnPlayPauseClicked(const ui::Event& /*event*/) {
   if (model_) {
-    model_->TogglePlay();
+    model_->TogglePlayPause();
   }
   if (delegate_) {
     delegate_->OnPlayPause();
@@ -875,6 +1071,13 @@ void AstraPipControlsView::OnMinimizeClicked(const ui::Event& /*event*/) {
   }
 }
 
+void AstraPipControlsView::OnMaximizeClicked(const ui::Event& /*event*/) {
+  if (model_) {
+    model_->SetMaximized(!model_->IsMaximized());
+  }
+  // TODO(astra): Actually maximize/restore the PiP widget.
+}
+
 void AstraPipControlsView::OnPlaybackRateClicked(const ui::Event& event) {
   if (!model_) return;
 
@@ -898,15 +1101,17 @@ void AstraPipControlsView::OnSnapIndicatorClicked(const ui::Event& /*event*/) {
 void AstraPipControlsView::UpdateAllFromModel() {
   if (!model_) return;
 
-  OnPlayStateChanged(model_->is_playing());
-  OnMuteStateChanged(model_->is_muted());
-  OnVolumeChanged(model_->volume());
+  OnPlayStateChanged(model_->IsPlaying());
+  OnMuteStateChanged(model_->IsMuted());
+  OnVolumeChanged(model_->GetVolume());
   OnPlaybackRateChanged(model_->playback_rate());
   OnSizePresetChanged(model_->active_preset());
-  OnAlwaysOnTopChanged(model_->is_pinned());
+  OnAlwaysOnTopChanged(model_->GetAlwaysOnTop());
   OnOpacityChanged(model_->opacity());
   OnSnapPositionChanged(model_->snap_position());
   OnControlsMinimizedChanged(model_->controls_minimized());
+  OnProgressChanged(model_->GetPlaybackProgress());
+  OnPlaybackSpeedChanged(model_->GetPlaybackSpeed());
 }
 
 void AstraPipControlsView::UpdateControlVisibilityFromSettings() {
@@ -922,9 +1127,15 @@ void AstraPipControlsView::UpdateControlVisibilityFromSettings() {
     bottom_bar_->SetVisible(model_->GetShowBottomBar());
   }
 
+  // Progress bar visibility.
+  if (progress_bar_) {
+    progress_bar_->SetVisible(model_->GetShowProgressBar());
+  }
+
   // Resize handle visibility.
   if (resize_handle_) {
-    resize_handle_->SetVisible(model_->GetShowResizeHandle());
+    resize_handle_->SetVisible(
+        model_->GetShowResizeHandle() && is_resizable_);
   }
 
   // Always-on-top button.
@@ -944,6 +1155,11 @@ void AstraPipControlsView::UpdateControlVisibilityFromSettings() {
   bool show_skip = model_->GetShowSkipButtons() && show_playback;
   if (skip_backward_button_) skip_backward_button_->SetVisible(show_skip);
   if (skip_forward_button_) skip_forward_button_->SetVisible(show_skip);
+
+  // Title visibility.
+  if (title_label_) {
+    title_label_->SetVisible(model_->GetShowTitle());
+  }
 }
 
 void AstraPipControlsView::UpdateBarBackgrounds() {
@@ -960,21 +1176,33 @@ void AstraPipControlsView::UpdateBarBackgrounds() {
 void AstraPipControlsView::UpdateAccessibilityInfo() {
   if (play_pause_button_ && model_) {
     play_pause_button_->SetAccessibleName(
-        model_->is_playing() ? u"Pause" : u"Play");
+        model_->IsPlaying() ? u"Pause" : u"Play");
   }
   if (mute_button_ && model_) {
     mute_button_->SetAccessibleName(
-        model_->is_muted() ? u"Unmute" : u"Mute");
+        model_->IsMuted() ? u"Unmute" : u"Mute");
   }
   if (volume_slider_ && model_) {
     volume_slider_->SetAccessibleName(
         u"Volume: " + base::NumberToString16(
-            static_cast<int>(model_->volume() * 100)) + u"%");
+            static_cast<int>(model_->GetVolume() * 100)) + u"%");
   }
   if (opacity_slider_ && model_) {
     opacity_slider_->SetAccessibleName(
         u"Opacity: " + base::NumberToString16(
             static_cast<int>(model_->opacity() * 100)) + u"%");
+  }
+  if (progress_bar_ && model_) {
+    progress_bar_->SetAccessibleName(
+        u"Progress: " + base::NumberToString16(
+            static_cast<int>(model_->GetPlaybackProgress() * 100)) + u"%");
+  }
+}
+
+void AstraPipControlsView::UpdateProgressFromModel() {
+  if (progress_bar_ && model_) {
+    progress_bar_->SetValue(
+        static_cast<float>(model_->GetPlaybackProgress()));
   }
 }
 
@@ -984,14 +1212,14 @@ void AstraPipControlsView::StartAutoHideTimer() {
   if (!model_ || !model_->GetAutoHideControls()) {
     return;
   }
-  base::TimeDelta delay = model_->GetAutoHideDelay();
-  if (delay.is_zero()) {
+  int delay_ms = model_->GetControlsAutoHideDelay();
+  if (delay_ms <= 0) {
     // Hide immediately if delay is zero.
     OnAutoHideTimerFired();
     return;
   }
   auto_hide_timer_.Start(
-      FROM_HERE, delay,
+      FROM_HERE, base::Milliseconds(delay_ms),
       base::BindOnce(&AstraPipControlsView::OnAutoHideTimerFired,
                      base::Unretained(this)));
 }
@@ -1005,8 +1233,8 @@ void AstraPipControlsView::OnAutoHideTimerFired() {
     // Mouse is still hovering — don't hide.
     return;
   }
-  if (model_ && model_->controls_visible()) {
-    model_->SetControlsVisible(false);
+  if (model_ && model_->GetShowControls()) {
+    model_->SetShowControls(false);
   }
 }
 
@@ -1020,7 +1248,7 @@ bool AstraPipControlsView::HandleKeyboardShortcut(const ui::KeyEvent& event) {
     case ui::VKEY_SPACE:
     case ui::VKEY_K:
       // Play/pause toggle.
-      model_->TogglePlay();
+      model_->TogglePlayPause();
       if (delegate_) delegate_->OnPlayPause();
       break;
     case ui::VKEY_M:
@@ -1032,7 +1260,7 @@ bool AstraPipControlsView::HandleKeyboardShortcut(const ui::KeyEvent& event) {
       if (event.IsControlDown()) {
         // Volume up.
         model_->IncreaseVolume();
-        if (delegate_) delegate_->OnVolumeChanged(model_->volume());
+        if (delegate_) delegate_->OnVolumeChanged(model_->GetVolume());
       } else {
         handled = false;
       }
@@ -1041,7 +1269,7 @@ bool AstraPipControlsView::HandleKeyboardShortcut(const ui::KeyEvent& event) {
       if (event.IsControlDown()) {
         // Volume down.
         model_->DecreaseVolume();
-        if (delegate_) delegate_->OnVolumeChanged(model_->volume());
+        if (delegate_) delegate_->OnVolumeChanged(model_->GetVolume());
       } else {
         handled = false;
       }
@@ -1103,6 +1331,10 @@ bool AstraPipControlsView::HandleKeyboardShortcut(const ui::KeyEvent& event) {
     case ui::VKEY_I:
       // Toggle controls minimization.
       model_->ToggleControlsMinimized();
+      break;
+    case ui::VKEY_L:
+      // Toggle loop.
+      model_->ToggleLoop();
       break;
     case ui::VKEY_ESCAPE:
       // Close PiP.

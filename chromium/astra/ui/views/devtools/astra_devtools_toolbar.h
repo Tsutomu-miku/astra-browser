@@ -8,14 +8,13 @@
 #include "ui/views/controls/button/label_button.h"
 #include "ui/views/controls/textfield/textfield.h"
 #include "ui/views/view.h"
+#include "astra/ui/views/devtools/astra_devtools_model.h"
 
 namespace content {
 class WebContents;
 }  // namespace content
 
 namespace astra {
-
-class AstraDevToolsModel;
 
 // =========================================================================
 // AstraDevToolsToolbar — Astra-branded toolbar extension for DevTools
@@ -29,15 +28,16 @@ class AstraDevToolsModel;
 // All state comes from the AstraDevToolsModel.  Button clicks dispatch
 // through the delegate interface.
 //
-// Features:
-//   - Panel selection tabs (one tab per visible Astra panel)
-//   - Back/forward navigation buttons
+// Features (deepened):
+//   - Astra tab/button (opens Astra panel drawer)
+//   - Panel selector buttons (one per visible Astra panel)
+//   - Dock state button (cycles dock positions)
+//   - Close button (closes DevTools)
+//   - Menu button (more actions)
 //   - Search box for filtering panel content
 //   - Settings button (opens settings drawer)
-//   - Detach button (undocks DevTools)
-//   - Menu button (more actions)
+//   - Back/forward navigation buttons
 //   - Theming support (light/dark)
-//   - Keyboard shortcuts for panel switching
 //
 // Design principles:
 //   - Minimal footprint — matches Chromium DevTools visual style.
@@ -63,10 +63,6 @@ class AstraDevToolsModel;
 //     (chrome/browser/devtools/devtools_window.h)
 //   Chromium owner: DevToolsUIBindings
 //     (chrome/browser/devtools/devtools_ui_bindings.h)
-//
-// For the overlay skeleton, this view is a standalone Views widget that
-// can be shown/hidden programmatically. Real integration requires the
-// DevToolsWindow patch listed above.
 // =========================================================================
 
 class AstraDevToolsToolbar : public views::View {
@@ -99,6 +95,15 @@ class AstraDevToolsToolbar : public views::View {
 
     // Called when focus mode is toggled.
     virtual void OnFocusModeToggled() = 0;
+
+    // Called when the close button is clicked.
+    virtual void OnCloseClicked() = 0;
+
+    // Called when the Astra tab button is clicked.
+    virtual void OnAstraTabClicked() = 0;
+
+    // Called when the dock button is clicked.
+    virtual void OnDockClicked() = 0;
   };
 
   explicit AstraDevToolsToolbar(Delegate* delegate);
@@ -107,32 +112,109 @@ class AstraDevToolsToolbar : public views::View {
   AstraDevToolsToolbar(const AstraDevToolsToolbar&) = delete;
   AstraDevToolsToolbar& operator=(const AstraDevToolsToolbar&) = delete;
 
+  // -- Model integration ---------------------------------------------------
+
   // Sets the model to read panel and setting state from.
   // The model must outlive this toolbar.
   void SetModel(AstraDevToolsModel* model);
 
+  // Returns the current model, or null if none is set.
+  AstraDevToolsModel* GetModel() const { return model_; }
+
   // Refreshes all UI from the model state.
   void UpdateFromModel();
+
+  // -- Dock state ----------------------------------------------------------
+
+  // Sets the displayed dock state.
+  void SetDockState(AstraDevToolsDockState state);
+
+  // Returns the current dock state displayed by the toolbar.
+  AstraDevToolsDockState GetDockState() const { return dock_state_; }
+
+  // -- Active panel --------------------------------------------------------
+
+  // Sets the active panel by ID and updates the UI.
+  void SetActivePanel(const std::string& panel_id);
+
+  // Returns the active panel ID.
+  std::string GetActivePanel() const { return active_panel_id_; }
+
+  // -- Panel button visibility --------------------------------------------
+
+  // Shows or hides a specific panel button by ID.
+  void ShowPanelButton(const std::string& panel_id, bool show);
+
+  // Returns true if the panel button is currently visible.
+  bool IsPanelButtonVisible(const std::string& panel_id) const;
+
+  // -- Astra tab visibility ------------------------------------------------
+
+  // Sets whether the "Astra" tab/button is visible.
+  void SetAstraTabVisible(bool visible);
+
+  // Returns whether the Astra tab is visible.
+  bool IsAstraTabVisible() const;
+
+  // -- Panel button access -------------------------------------------------
+
+  // Returns the number of panel buttons currently shown.
+  size_t GetPanelButtonCount() const { return panel_tabs_.size(); }
+
+  // Returns the panel button at the given index, or null if out of bounds.
+  views::LabelButton* GetPanelButtonAt(int index) const;
+
+  // -- Toolbar visibility --------------------------------------------------
+
+  // Sets whether the entire toolbar is visible.
+  void SetToolbarVisible(bool visible);
+
+  // Returns whether the toolbar is visible.
+  bool IsToolbarVisible() const { return GetVisible(); }
+
+  // -- Dock/close button visibility ---------------------------------------
+
+  // Sets whether the dock button is visible.
+  void SetDockButtonVisible(bool visible);
+
+  // Sets whether the close button is visible.
+  void SetCloseButtonVisible(bool visible);
+
+  // -- WebContents ---------------------------------------------------------
 
   // Sets the inspected WebContents.  The toolbar reads Astra metadata
   // (focus mode state, workspace) from this tab's services.
   void SetInspectedWebContents(content::WebContents* web_contents);
 
-  // Sets the theme for the toolbar.
+  // -- Theme ---------------------------------------------------------------
+
+  // Sets the theme for the toolbar (dark = true, light = false).
   void SetTheme(bool dark_theme);
 
   // Returns the current search text.
-  std::u16string search_text() const { return search_box_ ? search_box_->GetText() : std::u16string(); }
+  std::u16string search_text() const {
+    return search_box_ ? search_box_->GetText() : std::u16string();
+  }
 
-  // Accessors for testing.
+  // -- Accessors for testing -----------------------------------------------
+
   views::LabelButton* back_button_for_testing() { return back_button_; }
   views::LabelButton* forward_button_for_testing() { return forward_button_; }
   views::Textfield* search_box_for_testing() { return search_box_; }
   views::LabelButton* settings_button_for_testing() { return settings_button_; }
   views::LabelButton* detach_button_for_testing() { return detach_button_; }
   views::LabelButton* menu_button_for_testing() { return menu_button_; }
-  views::LabelButton* focus_mode_button_for_testing() { return focus_mode_button_; }
-  views::View* panel_tabs_container_for_testing() { return panel_tabs_container_; }
+  views::LabelButton* focus_mode_button_for_testing() {
+    return focus_mode_button_;
+  }
+  views::LabelButton* astra_tab_button_for_testing() {
+    return astra_tab_button_;
+  }
+  views::LabelButton* dock_button_for_testing() { return dock_button_; }
+  views::LabelButton* close_button_for_testing() { return close_button_; }
+  views::View* panel_tabs_container_for_testing() {
+    return panel_tabs_container_;
+  }
   size_t panel_tab_count_for_testing() const;
 
  private:
@@ -145,6 +227,9 @@ class AstraDevToolsToolbar : public views::View {
   // Updates the active panel tab appearance.
   void UpdateActivePanelTab();
 
+  // Updates the dock button appearance based on current dock state.
+  void UpdateDockButton();
+
   // Button click handlers.
   void OnBackButtonPressed();
   void OnForwardButtonPressed();
@@ -153,9 +238,10 @@ class AstraDevToolsToolbar : public views::View {
   void OnMenuButtonPressed();
   void OnFocusModeButtonPressed();
   void OnPanelTabPressed(const std::string& panel_id);
-
-  // Search text changed handler.
   void OnSearchTextChanged();
+  void OnCloseButtonPressed();
+  void OnAstraTabPressed();
+  void OnDockButtonPressed();
 
   // Applies the current theme to all toolbar elements.
   void ApplyTheme();
@@ -172,25 +258,39 @@ class AstraDevToolsToolbar : public views::View {
   // Whether dark theme is active.
   bool dark_theme_ = true;
 
-  // Container for panel tab buttons.
+  // Current dock state displayed in the toolbar.
+  AstraDevToolsDockState dock_state_ = AstraDevToolsDockState::kDockedBottom;
+
+  // Currently active panel ID.
+  std::string active_panel_id_;
+
+  // Container for panel tab buttons.  Owned by views hierarchy.
   raw_ptr<views::View> panel_tabs_container_ = nullptr;
 
-  // Navigation buttons.
+  // Navigation buttons.  Owned by views hierarchy.
   raw_ptr<views::LabelButton> back_button_ = nullptr;
   raw_ptr<views::LabelButton> forward_button_ = nullptr;
 
-  // Search box.
+  // Astra tab button.  Owned by views hierarchy.
+  raw_ptr<views::LabelButton> astra_tab_button_ = nullptr;
+
+  // Search box.  Owned by views hierarchy.
   raw_ptr<views::Textfield> search_box_ = nullptr;
 
-  // Action buttons.
+  // Action buttons.  Owned by views hierarchy.
   raw_ptr<views::LabelButton> focus_mode_button_ = nullptr;
   raw_ptr<views::LabelButton> settings_button_ = nullptr;
   raw_ptr<views::LabelButton> detach_button_ = nullptr;
+  raw_ptr<views::LabelButton> dock_button_ = nullptr;
   raw_ptr<views::LabelButton> menu_button_ = nullptr;
+  raw_ptr<views::LabelButton> close_button_ = nullptr;
 
-  // Panel tab buttons, mapped by panel ID.
-  // Stored as raw_ptrs since they're owned by the views hierarchy.
+  // Panel tab buttons.  Owned by panel_tabs_container_'s children.
   std::vector<raw_ptr<views::LabelButton>> panel_tabs_;
+
+  // Map from panel ID to its tab button index in panel_tabs_.
+  // Used for fast lookup by panel ID.
+  std::vector<std::string> panel_tab_ids_;
 };
 
 }  // namespace astra

@@ -19,6 +19,7 @@ namespace astra {
 class AstraPipControlsModel;
 enum class PipSizePreset;
 enum class PipSnapPosition;
+enum class AstraPipPlaybackSpeed;
 
 // =========================================================================
 // AstraPipControlsView — custom PiP window controls overlay
@@ -136,13 +137,62 @@ class AstraPipControlsView : public views::View,
   AstraPipControlsView& operator=(const AstraPipControlsView&) = delete;
   ~AstraPipControlsView() override;
 
+  // -- Model management ----------------------------------------------------
+
+  void SetModel(AstraPipControlsModel* model);
+  AstraPipControlsModel* GetModel() { return model_; }
+  const AstraPipControlsModel* GetModel() const { return model_; }
+
+  // -- Video content view --------------------------------------------------
+
+  void SetVideoView(views::View* video_view);
+  views::View* GetVideoView() { return video_view_; }
+  const views::View* GetVideoView() const { return video_view_; }
+
+  // -- Controls visibility -------------------------------------------------
+
+  void SetControlsVisible(bool visible);
+  bool GetControlsVisible() const;
+
+  // Show controls temporarily — they will auto-hide after the configured
+  // delay if auto-hide is enabled.
+  void ShowControlsTemporarily();
+
   // -- State updates (convenience — delegates to model) -------------------
+
+  void SetTitle(const std::u16string& title);
+  const std::u16string& GetTitle() const { return title_text_; }
+
+  void SetIsPlaying(bool playing);
+  bool IsPlaying() const;
+
+  void SetProgress(double progress);
+  double GetProgress() const;
+
+  void SetVolume(double volume);
+  double GetVolume() const;
+
+  void SetMuted(bool muted);
+  bool IsMuted() const;
+
+  void SetPlaybackSpeed(AstraPipPlaybackSpeed speed);
+  AstraPipPlaybackSpeed GetPlaybackSpeed() const;
+
+  void SetAlwaysOnTop(bool on_top);
+  bool GetAlwaysOnTop() const;
+
+  void SetIsDraggable(bool draggable);
+  bool IsDraggable() const { return is_draggable_; }
+
+  void SetIsResizable(bool resizable);
+  bool IsResizable() const { return is_resizable_; }
+
+  // -- Backward-compatible state updates -----------------------------------
 
   void SetPlaying(bool playing);
   void SetMuted(bool muted);
   void SetActiveSizePreset(PipSizePreset preset);
   void SetAlwaysOnTop(bool pinned);
-  void SetTitle(const std::u16string& title);
   void SetVolume(double volume);
   void SetPlaybackRate(double rate);
   void SetOpacity(double opacity);
@@ -154,6 +204,24 @@ class AstraPipControlsView : public views::View,
 
   bool IsControlsVisible() const;
   bool IsControlsMinimized() const;
+
+  // Control element accessors for testing.
+  views::ImageButton* close_button() { return close_button_; }
+  views::ImageButton* minimize_button() { return minimize_button_; }
+  views::ImageButton* maximize_button() { return maximize_button_; }
+  views::ImageButton* play_pause_button() { return play_pause_button_; }
+  views::ImageButton* skip_backward_button() { return skip_backward_button_; }
+  views::ImageButton* skip_forward_button() { return skip_forward_button_; }
+  views::ImageButton* mute_button() { return mute_button_; }
+  views::Slider* volume_slider() { return volume_slider_; }
+  views::Slider* progress_bar() { return progress_bar_; }
+  views::ImageButton* speed_button() { return playback_rate_button_; }
+  views::ImageButton* pip_expand_button() { return return_to_tab_button_; }
+  views::ImageButton* always_on_top_button() { return always_on_top_button_; }
+  views::View* resize_handle() { return resize_handle_; }
+  views::Label* title_label() { return title_label_; }
+  views::View* top_bar() { return top_bar_; }
+  views::View* bottom_bar() { return bottom_bar_; }
 
   // -- AstraPipControlsModelObserver --------------------------------------
 
@@ -168,6 +236,9 @@ class AstraPipControlsView : public views::View,
   void OnControlsSettingsChanged() override;
   void OnSnapPositionChanged(PipSnapPosition position) override;
   void OnControlsMinimizedChanged(bool minimized) override;
+  void OnProgressChanged(double progress) override;
+  void OnPlaybackSpeedChanged(AstraPipPlaybackSpeed speed) override;
+  void OnLoopingChanged(bool looping) override;
 
   // -- views::View --------------------------------------------------------
 
@@ -195,7 +266,7 @@ class AstraPipControlsView : public views::View,
   // Build the child views and layout.
   void BuildLayout();
 
-  // Creates the top bar (badge, title, close button).
+  // Creates the top bar (badge, title, window buttons).
   void BuildTopBar();
 
   // Creates the bottom bar (playback, size, pin controls).
@@ -206,6 +277,9 @@ class AstraPipControlsView : public views::View,
 
   // Creates snap position indicators (corner highlights).
   void BuildSnapIndicators();
+
+  // Creates the progress bar (above the bottom bar).
+  void BuildProgressBar();
 
   // Creates the volume control row (slider + mute button).
   void BuildVolumeControls(views::View* container);
@@ -222,6 +296,9 @@ class AstraPipControlsView : public views::View,
   // Creates the minimize controls button.
   void BuildMinimizeButton(views::View* container);
 
+  // Creates the maximize/restore button.
+  void BuildMaximizeButton(views::View* container);
+
   // Button callbacks.
   void OnPlayPauseClicked(const ui::Event& event);
   void OnSkipBackwardClicked(const ui::Event& event);
@@ -235,6 +312,7 @@ class AstraPipControlsView : public views::View,
   void OnAlwaysOnTopClicked(const ui::Event& event);
   void OnSettingsClicked(const ui::Event& event);
   void OnMinimizeClicked(const ui::Event& event);
+  void OnMaximizeClicked(const ui::Event& event);
   void OnPlaybackRateClicked(const ui::Event& event);
   void OnSnapIndicatorClicked(const ui::Event& event);
 
@@ -251,6 +329,9 @@ class AstraPipControlsView : public views::View,
   // Updates accessibility names and descriptions for all controls.
   void UpdateAccessibilityInfo();
 
+  // Updates the progress bar value.
+  void UpdateProgressFromModel();
+
   // Auto-hide: starts the hide timer.
   void StartAutoHideTimer();
 
@@ -264,10 +345,13 @@ class AstraPipControlsView : public views::View,
   bool HandleKeyboardShortcut(const ui::KeyEvent& event);
 
   // Not owned.  The delegate outlives the view.
-  raw_ptr<Delegate> delegate_;
+  raw_ptr<Delegate> delegate_ = nullptr;
 
   // Not owned.  The model outlives the view.
-  raw_ptr<AstraPipControlsModel> model_;
+  raw_ptr<AstraPipControlsModel> model_ = nullptr;
+
+  // Not owned.  Video content view, if any.
+  raw_ptr<views::View> video_view_ = nullptr;
 
   // -- Child views (owned by the view hierarchy) -------------------------
 
@@ -276,8 +360,12 @@ class AstraPipControlsView : public views::View,
   raw_ptr<views::Label> badge_label_ = nullptr;
   raw_ptr<views::Label> title_label_ = nullptr;
   raw_ptr<views::ImageButton> minimize_button_ = nullptr;
+  raw_ptr<views::ImageButton> maximize_button_ = nullptr;
   raw_ptr<views::ImageButton> return_to_tab_button_ = nullptr;
   raw_ptr<views::ImageButton> close_button_ = nullptr;
+
+  // Progress bar (between video and bottom bar).
+  raw_ptr<views::Slider> progress_bar_ = nullptr;
 
   // Bottom bar container.
   raw_ptr<views::View> bottom_bar_ = nullptr;
@@ -316,6 +404,12 @@ class AstraPipControlsView : public views::View,
 
   // Current title text.
   std::u16string title_text_;
+
+  // Whether the window is draggable.
+  bool is_draggable_ = true;
+
+  // Whether the window is resizable (cached for view state).
+  bool is_resizable_ = true;
 };
 
 }  // namespace astra

@@ -409,7 +409,7 @@ AstraExtensionHelper::GetRecommendedExtensions() const {
   // Productivity / workspace recommendations.
   {
     AstraExtensionInfo info;
-    info.id = "astra.recommended.tab-suspender";
+    info.extension_id = "astra.recommended.tab-suspender";
     info.name = u"Tab Suspender";
     info.description = u"Automatically suspend inactive tabs to save memory";
     info.category = AstraExtensionCategory::kProductivityTab;
@@ -420,7 +420,7 @@ AstraExtensionHelper::GetRecommendedExtensions() const {
 
   {
     AstraExtensionInfo info;
-    info.id = "astra.recommended.ad-blocker";
+    info.extension_id = "astra.recommended.ad-blocker";
     info.name = u"Ad Blocker";
     info.description = u"Block ads and trackers for faster browsing";
     info.category = AstraExtensionCategory::kPrivacySecurity;
@@ -431,7 +431,7 @@ AstraExtensionHelper::GetRecommendedExtensions() const {
 
   {
     AstraExtensionInfo info;
-    info.id = "astra.recommended.password-manager";
+    info.extension_id = "astra.recommended.password-manager";
     info.name = u"Password Manager";
     info.description = u"Secure password management with auto-fill";
     info.category = AstraExtensionCategory::kPrivacySecurity;
@@ -442,7 +442,7 @@ AstraExtensionHelper::GetRecommendedExtensions() const {
 
   {
     AstraExtensionInfo info;
-    info.id = "astra.recommended.reader-mode";
+    info.extension_id = "astra.recommended.reader-mode";
     info.name = u"Reader Mode";
     info.description = u"Distraction-free reading view";
     info.category = AstraExtensionCategory::kProductivity;
@@ -453,7 +453,7 @@ AstraExtensionHelper::GetRecommendedExtensions() const {
 
   {
     AstraExtensionInfo info;
-    info.id = "astra.recommended.devtools-theme";
+    info.extension_id = "astra.recommended.devtools-theme";
     info.name = u"DevTools Theme";
     info.description = u"Custom themes for Chrome DevTools";
     info.category = AstraExtensionCategory::kDeveloperTools;
@@ -473,7 +473,7 @@ bool AstraExtensionHelper::IsRecommendedExtension(
     const std::string& extension_id) const {
   auto recommended = GetRecommendedExtensions();
   for (const auto& ext : recommended) {
-    if (ext.id == extension_id) {
+    if (ext.extension_id == extension_id) {
       return true;
     }
   }
@@ -1057,7 +1057,7 @@ AstraExtensionInfo AstraExtensionHelper::CreateExtensionInfo(
     return info;
   }
 
-  info.id = extension->id();
+  info.extension_id = extension->id();
   info.name = base::UTF8ToUTF16(extension->name());
   info.description = base::UTF8ToUTF16(extension->description());
   info.version = extension->VersionString();

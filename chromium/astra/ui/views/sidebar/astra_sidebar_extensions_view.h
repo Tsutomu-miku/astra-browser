@@ -13,12 +13,69 @@
 
 namespace views {
 class Label;
+class Textfield;
 class View;
 }  // namespace views
 
 class Profile;
 
 namespace astra {
+
+// Sort order for extension icons in the sidebar.
+enum class AstraExtensionSortBy {
+  kManual,       // Manual order (drag-and-drop)
+  kName,         // Alphabetical by name
+  kInstallDate,  // Most recently installed first
+  kLastUsed,     // Most recently used first
+};
+
+// Delegate interface for AstraSidebarExtensionsView events.
+// Implemented by the controller to handle extension actions.
+//
+// Chromium owner: ExtensionsToolbarContainer delegate
+//   (chrome/browser/ui/views/toolbar/extensions_toolbar_container.h)
+class AstraSidebarExtensionsDelegate {
+ public:
+  virtual ~AstraSidebarExtensionsDelegate() = default;
+
+  // Called when an extension icon is left-clicked.
+  virtual void OnExtensionClicked(const std::string& extension_id) = 0;
+
+  // Called when an extension icon is middle-clicked.
+  virtual void OnExtensionMiddleClicked(const std::string& extension_id) = 0;
+
+  // Called when an extension icon is right-clicked.
+  virtual void OnExtensionRightClicked(const std::string& extension_id,
+                                       const gfx::Point& point) = 0;
+
+  // Called when an extension is pinned or unpinned.
+  virtual void OnExtensionPinned(const std::string& extension_id,
+                                 bool pinned) = 0;
+
+  // Called when extensions are reordered via drag-and-drop.
+  virtual void OnExtensionReordered(int from_index, int to_index) = 0;
+
+  // Called when "Manage extensions" is requested.
+  virtual void OnManageExtensionsRequested() = 0;
+
+  // Called when an extension popup is shown.
+  virtual void OnExtensionPopupShown(const std::string& extension_id) = 0;
+
+  // Called when an extension popup is closed.
+  virtual void OnExtensionPopupClosed(const std::string& extension_id) = 0;
+
+  // Called when enabling an extension is requested.
+  virtual void OnEnableExtensionRequested(const std::string& extension_id) = 0;
+
+  // Called when disabling an extension is requested.
+  virtual void OnDisableExtensionRequested(const std::string& extension_id) = 0;
+
+  // Called when removing an extension is requested.
+  virtual void OnRemoveExtensionRequested(const std::string& extension_id) = 0;
+
+  // Called when extension options are requested.
+  virtual void OnExtensionOptionsRequested(const std::string& extension_id) = 0;
+};
 
 // Sidebar section that displays extension browser action icons.
 //
@@ -28,10 +85,17 @@ namespace astra {
 // ExtensionRegistry is the single source of truth.
 //
 // Layout:
-//   - Header with "Extensions" label
-//   - Grid of extension icons (browser actions)
-//   - Each icon is clickable to open the extension popup
-//   - Right-clicking an icon shows the extension context menu
+//   +------------------------------+
+//   | [>] Extensions          [+] |  <- Header (collapsible)
+//   +------------------------------+
+//   | [pinned ext icons]           |  <- Pinned section (top)
+//   +------------------------------+
+//   | [search box]                 |  <- Search (optional)
+//   +------------------------------+
+//   | [all extension icons]        |  <- All extensions grid (scrollable)
+//   +------------------------------+
+//   | Manage extensions...         |  <- Footer link
+//   +------------------------------+
 //
 // Implements AstraExtensionHelperObserver to receive live updates when
 // extensions are installed, uninstalled, enabled, or disabled.
@@ -42,7 +106,6 @@ namespace astra {
 // Implements AstraExtensionPopupDelegate to handle popup lifecycle events.
 //
 // Chromium owner: ExtensionRegistry (extensions/browser/extension_registry.h)
-// Chromium owner: ExtensionAction (extensions/browser/extension_action.h)
 // Chromium owner: ToolbarActionsModel
 //   (chrome/browser/ui/toolbar/toolbar_actions_model.h)
 // Chromium owner: ExtensionsToolbarContainer
@@ -56,21 +119,164 @@ namespace astra {
 //     (extensions/browser/extension_registry.h)
 //   Patch point: None needed — ExtensionRegistryObserver is a public
 //     observer interface that any KeyedService can implement.
-class AstraSidebarExtensionsView : public views::View,
-                                   public AstraExtensionHelperObserver,
-                                   public AstraExtensionIconDelegate,
-                                   public AstraExtensionPopupDelegate {
+class AstraSidebarExtensionsView
+    : public views::View,
+      public AstraExtensionHelperObserver,
+      public AstraExtensionIconDelegate,
+      public AstraExtensionPopupDelegate {
  public:
   // |profile| is used to look up the AstraExtensionHelper. Not owned.
   explicit AstraSidebarExtensionsView(Profile* profile);
   AstraSidebarExtensionsView(const AstraSidebarExtensionsView&) = delete;
-  AstraSidebarExtensionsView& operator=(const AstraSidebarExtensionsView&) = delete;
+  AstraSidebarExtensionsView& operator=(const AstraSidebarExtensionsView&) =
+      delete;
   ~AstraSidebarExtensionsView() override;
+
+  // -- Delegate ----------------------------------------------------------
+
+  void SetDelegate(AstraSidebarExtensionsDelegate* delegate);
+  AstraSidebarExtensionsDelegate* GetDelegate() const;
+
+  // -- Extension list management ----------------------------------------
+
+  // Set the full list of extensions. Rebuilds the entire grid.
+  void SetExtensions(const std::vector<AstraExtensionInfo>& extensions);
+
+  // Get the total number of extensions shown.
+  int GetExtensionCount() const;
+
+  // Get the extension info at the given index (across all extensions,
+  // not just visible ones). Returns default info if index is out of bounds.
+  AstraExtensionInfo GetExtensionAt(int index) const;
+
+  // Add a single extension.
+  void AddExtension(const AstraExtensionInfo& info);
+
+  // Remove an extension by ID.
+  void RemoveExtension(const std::string& extension_id);
+
+  // Update an existing extension's info.
+  void UpdateExtension(const AstraExtensionInfo& info);
+
+  // Returns true if the extension with the given ID is present.
+  bool HasExtension(const std::string& extension_id) const;
+
+  // -- Selection ---------------------------------------------------------
+
+  // Set the selected/active extension (e.g., the one whose popup is open).
+  void SetSelectedExtension(const std::string& extension_id);
+  std::string GetSelectedExtensionId() const;
+  void ClearSelection();
+
+  // -- Pinned extensions -------------------------------------------------
+
+  // Set the list of pinned extension IDs.
+  void SetPinnedExtensions(const std::vector<std::string>& extension_ids);
+  std::vector<std::string> GetPinnedExtensions() const;
+
+  // Returns true if the extension is pinned.
+  bool IsExtensionPinned(const std::string& extension_id) const;
+
+  // Pin an extension (moves it to the pinned section).
+  void PinExtension(const std::string& extension_id);
+
+  // Unpin an extension (moves it to the all extensions section).
+  void UnpinExtension(const std::string& extension_id);
+
+  // -- Reordering --------------------------------------------------------
+
+  // Move an extension from one position to another (within the same section).
+  void MoveExtension(int from_index, int to_index);
+
+  // -- Grid layout -------------------------------------------------------
+
+  // Set the number of extensions per row in the grid.
+  void SetExtensionsPerRow(int count);
+  int GetExtensionsPerRow() const;
+
+  // Set the icon size in pixels.
+  void SetIconSize(int size_px);
+  int GetIconSize() const;
+
+  // Set the spacing between icons in pixels.
+  void SetSpacing(int spacing_px);
+  int GetSpacing() const;
+
+  // -- Sections ----------------------------------------------------------
+
+  // Set whether the pinned extensions section is shown.
+  void SetShowPinnedSection(bool show);
+  bool GetShowPinnedSection() const;
+
+  // Set whether the "all extensions" section is shown.
+  void SetShowAllExtensionsSection(bool show);
+  bool GetShowAllExtensionsSection() const;
+
+  // Set whether disabled extensions are shown in the grid.
+  void SetShowDisabledExtensions(bool show);
+  bool GetShowDisabledExtensions() const;
+
+  // -- Sorting -----------------------------------------------------------
+
+  // Set the sort order for the extensions grid.
+  void SetSortExtensionsBy(AstraExtensionSortBy sort_by);
+  AstraExtensionSortBy GetSortExtensionsBy() const;
+
+  // -- Counts ------------------------------------------------------------
+
+  // Get the number of pinned extensions.
+  int GetPinnedExtensionCount() const;
+
+  // Get the number of enabled extensions.
+  int GetEnabledExtensionCount() const;
+
+  // Get the number of disabled extensions.
+  int GetDisabledExtensionCount() const;
+
+  // -- Search ------------------------------------------------------------
+
+  // Filter visible extensions by name (case-insensitive substring match).
+  void SearchExtensions(const std::u16string& query);
+  int GetSearchResultsCount() const;
+
+  // -- Icon view access --------------------------------------------------
+
+  // Get the icon view for a given extension ID, or nullptr if not found.
+  AstraExtensionIconView* GetExtensionIconView(
+      const std::string& extension_id) const;
+
+  // -- Popup management --------------------------------------------------
+
+  // Show the popup for an extension, anchored to its icon view.
+  void ShowExtensionPopup(const std::string& extension_id,
+                          views::View* anchor);
+
+  // Hide the currently showing popup, if any.
+  void HideExtensionPopup();
+
+  // Returns true if a popup is currently visible.
+  bool IsPopupVisible() const;
+
+  // Returns the extension ID of the currently showing popup, or empty string.
+  std::string GetCurrentPopupExtensionId() const;
+
+  // -- Badge / notifications --------------------------------------------
+
+  // Set whether to show the extensions badge (total notification count).
+  void SetShowExtensionsBadge(bool show);
+  bool GetShowExtensionsBadge() const;
+
+  // Get the total notification count across all extensions.
+  int GetExtensionNotificationCount() const;
+
+  // -- Refresh / rebuild -------------------------------------------------
 
   // Refresh the extensions list from the underlying helper.
   // Full rebuild — used for initial sync and when incremental updates
   // are not available.
   void RefreshFromHelper();
+
+  // -- Collapse / expand ------------------------------------------------
 
   // Set section visibility and update layout accordingly.
   void SetSectionVisible(bool visible);
@@ -87,6 +293,18 @@ class AstraSidebarExtensionsView : public views::View,
 
   // -- AstraExtensionIconDelegate ---------------------------------------
 
+  void OnExtensionClicked(const std::string& extension_id) override;
+  void OnExtensionMiddleClicked(const std::string& extension_id) override;
+  void OnExtensionRightClicked(const std::string& extension_id,
+                               const gfx::Point& point) override;
+  void OnExtensionPopupShown(const std::string& extension_id) override;
+  void OnExtensionPopupClosed(const std::string& extension_id) override;
+  void OnPinExtension(const std::string& extension_id, bool pinned) override;
+  void OnManageExtensionRequested(const std::string& extension_id) override;
+  void OnRemoveExtensionRequested(const std::string& extension_id) override;
+  void OnDisableExtensionRequested(const std::string& extension_id) override;
+  void OnExtensionOptionsRequested(const std::string& extension_id) override;
+  // Legacy delegate methods (kept for backward compatibility).
   void OnExtensionIconClicked(const std::string& extension_id,
                               views::View* anchor_view) override;
   void OnExtensionIconContextMenu(const std::string& extension_id,
@@ -95,6 +313,7 @@ class AstraSidebarExtensionsView : public views::View,
   // -- AstraExtensionPopupDelegate --------------------------------------
 
   void OnExtensionPopupClosed(const std::string& extension_id) override;
+  void OnExtensionPopupShown(const std::string& extension_id) override;
 
   // -- views::View -------------------------------------------------------
 
@@ -114,8 +333,11 @@ class AstraSidebarExtensionsView : public views::View,
   std::unique_ptr<AstraExtensionIconView> CreateIconView(
       const AstraExtensionInfo& info);
 
-  // Rebuild the icons grid from the current extension helper state.
+  // Rebuild the icons grid from the current extension list.
   void RebuildIcons();
+
+  // Sort the extension list according to the current sort setting.
+  void SortExtensionList();
 
   // Update the visibility of the section based on whether there are
   // any extensions with browser actions.
@@ -138,6 +360,13 @@ class AstraSidebarExtensionsView : public views::View,
   void ShowExtensionContextMenu(const std::string& extension_id,
                                 const gfx::Point& screen_point);
 
+  // Get the list of extensions in display order (pinned first, then all
+  // others, respecting sort order and filters).
+  std::vector<AstraExtensionInfo> GetDisplayedExtensions() const;
+
+  // Check if an extension should be visible given current filters.
+  bool ShouldShowExtension(const AstraExtensionInfo& info) const;
+
   // The profile this view is associated with. Not owned.
   raw_ptr<Profile> profile_ = nullptr;
 
@@ -148,10 +377,18 @@ class AstraSidebarExtensionsView : public views::View,
   base::ScopedObservation<AstraExtensionHelper, AstraExtensionHelperObserver>
       extension_helper_observation_{this};
 
+  // Delegate for extension actions. Not owned.
+  raw_ptr<AstraSidebarExtensionsDelegate> delegate_ = nullptr;
+
   // Child views (owned by the view hierarchy).
   raw_ptr<views::View> header_row_ = nullptr;
   raw_ptr<views::Label> header_label_ = nullptr;
-  raw_ptr<views::View> icons_container_ = nullptr;
+  raw_ptr<views::View> pinned_section_ = nullptr;
+  raw_ptr<views::View> pinned_icons_container_ = nullptr;
+  raw_ptr<views::View> all_section_ = nullptr;
+  raw_ptr<views::View> all_icons_container_ = nullptr;
+  raw_ptr<views::Textfield> search_field_ = nullptr;
+  raw_ptr<views::Label> manage_link_ = nullptr;
 
   // The currently showing extension popup, if any. Not owned — the
   // popup view is owned by its widget (BubbleDialogDelegate pattern).
@@ -160,12 +397,50 @@ class AstraSidebarExtensionsView : public views::View,
   // Extension ID of the currently showing popup. Empty if no popup.
   std::string active_popup_extension_id_;
 
+  // The selected/active extension ID.
+  std::string selected_extension_id_;
+
+  // Full list of extension infos (all extensions, unsorted).
+  std::vector<AstraExtensionInfo> extensions_;
+
+  // List of pinned extension IDs (in display order).
+  std::vector<std::string> pinned_ids_;
+
+  // Current search query (empty = no filter).
+  std::u16string search_query_;
+
   // Whether the section is expanded (icons visible) or collapsed.
   bool expanded_ = true;
 
+  // Whether to show the pinned section.
+  bool show_pinned_section_ = true;
+
+  // Whether to show the all extensions section.
+  bool show_all_section_ = true;
+
+  // Whether to show disabled extensions.
+  bool show_disabled_extensions_ = true;
+
+  // Whether to show the search box.
+  bool show_search_ = false;
+
+  // Whether to show the manage extensions link.
+  bool show_manage_link_ = true;
+
+  // Whether to show the extension badge (total notifications).
+  bool show_extensions_badge_ = false;
+
   // Number of columns in the icon grid.
-  // TODO(astra): Make this responsive based on sidebar width.
-  static constexpr int kIconGridColumns = 4;
+  int extensions_per_row_ = 4;
+
+  // Icon size in pixels.
+  int icon_size_ = 24;
+
+  // Spacing between icons in pixels.
+  int icon_spacing_ = 4;
+
+  // Sort order for the extensions grid.
+  AstraExtensionSortBy sort_by_ = AstraExtensionSortBy::kName;
 };
 
 }  // namespace astra

@@ -6,6 +6,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
+#include "base/observer_list_types.h"
 #include "astra/ui/views/devtools/astra_devtools_model.h"
 #include "astra/ui/views/devtools/astra_devtools_toolbar.h"
 #include "astra/ui/views/devtools/astra_devtools_workspace_panel.h"
@@ -27,6 +28,37 @@ namespace astra {
 class AstraWorkspaceService;
 
 // =========================================================================
+// AstraDevToolsIntegrationObserver — observer for integration events
+// =========================================================================
+//
+// Observer interface for high-level Astra DevTools integration events.
+// All methods have empty default implementations.
+//
+// Follows Chromium observer conventions:
+//   - base::CheckedObserver base class
+//   - base::ObserverList for management
+//   - Empty default implementations
+// =========================================================================
+class AstraDevToolsIntegrationObserver : public base::CheckedObserver {
+ public:
+  // Called when DevTools is opened.
+  virtual void OnDevToolsOpened(AstraDevToolsIntegration* integration) {}
+
+  // Called when DevTools is closed.
+  virtual void OnDevToolsClosed(AstraDevToolsIntegration* integration) {}
+
+  // Called when an Astra panel is shown (made active).
+  virtual void OnPanelShown(AstraDevToolsIntegration* integration,
+                            AstraDevToolsPanelType type) {}
+
+  // Called when the Astra panel is hidden / closed.
+  virtual void OnPanelHidden(AstraDevToolsIntegration* integration) {}
+
+ protected:
+  ~AstraDevToolsIntegrationObserver() override = default;
+};
+
+// =========================================================================
 // AstraDevToolsIntegration — coordinator for Astra DevTools extensions
 // =========================================================================
 //
@@ -34,27 +66,24 @@ class AstraWorkspaceService;
 // owns the model, all panels, the toolbar, and coordinates their
 // integration with Chromium's DevTools subsystem.
 //
-// Responsibilities:
+// Responsibilities (deepened):
 //   - Creates and owns AstraDevToolsModel (the single source of truth).
 //   - Creates and owns all Astra DevTools panels (workspace, notes, etc.).
 //   - Creates and owns AstraDevToolsToolbar.
 //   - Bridges Astra services to the DevTools UI components.
 //   - Handles panel switching via the model.
-//   - Manages the panel container (which panel is currently visible).
-//   - Provides a sidebar for panel tab selection.
-//   - Handles settings drawer open/close.
-//   - Applies theming to all components.
+//   - Manages DevTools open/close state.
+//   - Manages dock state.
+//   - Manages zoom level.
+//   - Provides inspect element mode toggle.
+//   - Provides device mode toggle.
+//   - Provides reload functionality.
 //
 // Relationship to Chromium DevTools:
 //   - Chromium owns the full DevTools experience.
 //   - Astra only adds panels, toolbar, and presentation settings.
 //   - This coordinator is the glue between Chromium's DevToolsWindow
 //     and Astra's Views-based UI additions.
-//
-// Model/View separation:
-//   - Model: AstraDevToolsModel owns all state (panels, settings, theme).
-//   - Views: Toolbar, panels, sidebar render state from the model.
-//   - Integration: Coordinates between views and the model.
 //
 // Chromium subsystems reused:
 //   - DevToolsWindow — hosts all Astra DevTools additions.
@@ -63,20 +92,10 @@ class AstraWorkspaceService;
 //   - PrefService — for persistence of presentation settings.
 //
 // Chromium patch points (documented):
-//
 //   1. DevToolsWindow creation / destruction
-//      - Hook: DevToolsWindow::DevToolsWindow() / ~DevToolsWindow()
-//      - Action: Create / destroy an AstraDevToolsIntegration instance.
-//
 //   2. DevTools panel injection
-//      - Hook: DevToolsWindow's panel container construction.
-//      - Action: Insert the Astra panel container into the panel area.
-//
 //   3. Custom panel registration
-//      - Hook: DevToolsUIBindings / DevToolsPanel registration.
-//
 //   4. Inspected tab change
-//      - Hook: DevToolsWindow::SetInspectedWebContents()
 //
 //   TODO(astra): Implement all patch points in a Chromium checkout.
 //     For the overlay repository, this coordinator operates as a
@@ -86,9 +105,10 @@ class AstraWorkspaceService;
 class AstraDevToolsIntegration
     : public AstraDevToolsToolbar::Delegate,
       public AstraDevToolsWorkspacePanel::Delegate,
-      public AstraDevToolsModelObserver {
+      public AstraDevToolsModelObserver,
+      public AstraDevToolsObserver {
  public:
-  // Observer interface for Astra DevTools integration events.
+  // Observer interface for Astra DevTools integration events (legacy).
   class Observer {
    public:
     virtual ~Observer() = default;
@@ -104,65 +124,100 @@ class AstraDevToolsIntegration
   };
 
   // Constructs the integration coordinator for a given profile.
-  // The profile is used to look up Astra services and PrefService.
   explicit AstraDevToolsIntegration(Profile* profile);
   ~AstraDevToolsIntegration() override;
 
   AstraDevToolsIntegration(const AstraDevToolsIntegration&) = delete;
   AstraDevToolsIntegration& operator=(const AstraDevToolsIntegration&) = delete;
 
+  // -- DevTools lifecycle --------------------------------------------------
+
+  // Opens DevTools.  No-op if already open.
+  void ShowDevTools();
+
+  // Closes DevTools.  No-op if already closed.
+  void CloseDevTools();
+
+  // Returns true if DevTools is currently open.
+  bool IsDevToolsOpen() const;
+
+  // Toggles DevTools open/closed.
+  void ToggleDevTools();
+
+  // Reloads DevTools (reloads the DevTools frontend).
+  void ReloadDevTools();
+
+  // -- Panel management ----------------------------------------------------
+
+  // Opens DevTools (if not already open) and shows the panel of the
+  // given type.  Returns true if the panel was successfully shown.
+  bool ShowPanel(AstraDevToolsPanelType panel_type);
+
+  // Closes (hides) the active Astra panel.
+  void ClosePanel();
+
+  // Returns true if an Astra panel is currently open/active.
+  bool IsPanelOpen() const;
+
   // -- Model access --------------------------------------------------------
+
+  // Returns the DevTools model.
+  AstraDevToolsModel* GetModel() { return model_.get(); }
+  const AstraDevToolsModel* GetModel() const { return model_.get(); }
+
+  // -- Dock state ----------------------------------------------------------
+
+  // Sets the dock state.
+  void SetDockState(AstraDevToolsDockState state);
+
+  // Returns the current dock state.
+  AstraDevToolsDockState GetDockState() const;
+
+  // -- Zoom ----------------------------------------------------------------
+
+  // Returns the current zoom level (1.0 = 100%).
+  double GetZoomLevel() const;
+
+  // Sets the zoom level.
+  void SetZoomLevel(double level);
+
+  // -- Inspection & emulation ----------------------------------------------
+
+  // Toggles element inspection mode.
+  void InspectElement();
+
+  // Toggles device emulation mode.
+  void ToggleDeviceMode();
+
+  // -- Legacy API (kept for backward compatibility) ------------------------
 
   AstraDevToolsModel* model() { return model_.get(); }
   const AstraDevToolsModel* model() const { return model_.get(); }
 
-  // -- Inspected tab management -------------------------------------------
-
-  // Sets the WebContents currently being inspected by DevTools.
   void SetInspectedWebContents(content::WebContents* web_contents);
   content::WebContents* inspected_contents() const {
     return inspected_contents_;
   }
 
-  // -- UI component access ------------------------------------------------
-
-  // Returns the top-level container view for all Astra DevTools UI.
-  // This view contains the toolbar, panel sidebar, and active panel content.
   views::View* container_view();
-
-  // Returns the Astra DevTools toolbar.
   AstraDevToolsToolbar* toolbar();
-
-  // Returns the Workspace Inspector panel.
   AstraDevToolsWorkspacePanel* workspace_panel();
 
-  // -- Panel management ----------------------------------------------------
-
-  // Switches to the panel with the given ID.
-  // Returns false if the panel doesn't exist or isn't visible.
   bool SwitchToPanel(const std::string& panel_id);
-
-  // Returns the ID of the currently active panel.
   std::string active_panel_id() const;
 
-  // -- Settings drawer -----------------------------------------------------
-
-  // Opens or closes the settings drawer.
   void SetSettingsDrawerOpen(bool open);
   bool IsSettingsDrawerOpen() const { return settings_drawer_open_; }
   void ToggleSettingsDrawer();
 
-  // -- Theming -------------------------------------------------------------
-
-  // Applies the current theme from the model to all UI components.
   void ApplyTheme();
-
-  // -- Observer management -------------------------------------------------
 
   void AddObserver(Observer* observer);
   void RemoveObserver(Observer* observer);
 
-  // -- Service access -----------------------------------------------------
+  // Deepened observer management.
+  void AddIntegrationObserver(AstraDevToolsIntegrationObserver* observer);
+  void RemoveIntegrationObserver(AstraDevToolsIntegrationObserver* observer);
 
   AstraWorkspaceService* workspace_service() const {
     return workspace_service_;
@@ -178,6 +233,9 @@ class AstraDevToolsIntegration
   void OnForwardClicked() override;
   void OnSearchTextChanged(const std::u16string& text) override;
   void OnFocusModeToggled() override;
+  void OnCloseClicked() override;
+  void OnAstraTabClicked() override;
+  void OnDockClicked() override;
 
   // -- AstraDevToolsWorkspacePanel::Delegate -----------------------------
 
@@ -187,8 +245,10 @@ class AstraDevToolsIntegration
                          const std::string& new_name) override;
   void OnWorkspaceSelected(const std::string& workspace_id) override;
   void OnTabSelected(int tab_index) override;
+  void OnWorkspaceColorChanged(const std::string& workspace_id,
+                               SkColor color) override;
 
-  // -- AstraDevToolsModelObserver ----------------------------------------
+  // -- AstraDevToolsModelObserver (legacy) --------------------------------
 
   void OnActivePanelChanged(const std::string& panel_id) override;
   void OnPanelOpened(const std::string& panel_id) override;
@@ -198,18 +258,28 @@ class AstraDevToolsIntegration
   void OnDockPositionChanged(AstraDevToolsDockPosition position) override;
   void OnThemeChanged(AstraDevToolsTheme theme) override;
 
+  // -- AstraDevToolsObserver (deepened) ------------------------------------
+
+  void OnDevToolsOpened(AstraDevToolsModel* model) override;
+  void OnDevToolsClosed(AstraDevToolsModel* model) override;
+  void OnPanelActivated(AstraDevToolsModel* model,
+                        const std::string& panel_id) override;
+  void OnPanelEnabledChanged(AstraDevToolsModel* model,
+                             const std::string& panel_id,
+                             bool enabled) override;
+  void OnPanelVisibilityChanged(AstraDevToolsModel* model,
+                                const std::string& panel_id,
+                                bool visible) override;
+  void OnPanelsReordered(AstraDevToolsModel* model) override;
+  void OnDockStateChanged(AstraDevToolsModel* model,
+                          AstraDevToolsDockState state) override;
+  void OnDevToolsModelShutdown(AstraDevToolsModel* model) override;
+
   // -- Manual install helpers (for testing / overlay) --------------------
 
-  // Installs the toolbar and panel into their target containers.
-  // For the overlay skeleton, this creates standalone widgets so
-  // components can be tested independently.
   void InstallForTesting();
-
-  // Builds the full container view with toolbar + panel area.
-  // Useful for embedding in a test widget.
   void BuildContainerView();
 
-  // Accessors for testing.
   views::View* panel_container_for_testing() { return panel_container_; }
   views::View* sidebar_view_for_testing() { return sidebar_view_; }
   views::View* settings_drawer_for_testing() { return settings_drawer_; }
@@ -240,6 +310,12 @@ class AstraDevToolsIntegration
   // Rebuilds sidebar tabs from the model.
   void RebuildSidebarTabs();
 
+  // Notifies integration observers of panel shown event.
+  void NotifyPanelShown(AstraDevToolsPanelType type);
+
+  // Notifies integration observers of panel hidden event.
+  void NotifyPanelHidden();
+
   // The profile associated with this DevTools instance.  Not owned.
   raw_ptr<Profile> profile_;
 
@@ -251,6 +327,15 @@ class AstraDevToolsIntegration
 
   // Astra services — not owned, looked up from profile.
   raw_ptr<AstraWorkspaceService> workspace_service_ = nullptr;
+
+  // Whether element inspection mode is active.
+  bool inspect_element_active_ = false;
+
+  // Whether device mode is active.
+  bool device_mode_active_ = false;
+
+  // Whether the Astra panel is currently open/active.
+  bool panel_open_ = false;
 
   // The model — owned by this coordinator.
   std::unique_ptr<AstraDevToolsModel> model_;
@@ -276,8 +361,12 @@ class AstraDevToolsIntegration
   // Whether the settings drawer is currently open.
   bool settings_drawer_open_ = false;
 
-  // Observers for Astra DevTools events.
+  // Legacy observers.
   base::ObserverList<Observer> observers_;
+
+  // Deepened integration observers.
+  base::ObserverList<AstraDevToolsIntegrationObserver>
+      integration_observers_;
 
   // Sidebar tab buttons.  Owned by sidebar_view_'s children.
   std::vector<raw_ptr<views::LabelButton>> sidebar_tabs_;

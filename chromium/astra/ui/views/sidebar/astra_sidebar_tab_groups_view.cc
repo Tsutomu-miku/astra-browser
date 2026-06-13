@@ -1,5 +1,6 @@
 #include "astra/ui/views/sidebar/astra_sidebar_tab_groups_view.h"
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 
@@ -7,6 +8,7 @@
 #include "astra/ui/views/sidebar/astra_tab_group_header_view.h"
 #include "astra/ui/views/sidebar/astra_tab_group_tab_item_view.h"
 #include "base/containers/flat_map.h"
+#include "base/ranges/algorithm.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/browser.h"
@@ -16,13 +18,14 @@
 #include "chrome/browser/ui/tabs/tab_strip_model_observer.h"
 #include "chrome/browser/ui/tabs/tab_utils.h"
 #include "content/public/browser/web_contents.h"
-#include "tab_groups/tab_group_color.h"
+#include "third_party/skia/include/core/SkColor.h"
 #include "ui/accessibility/ax_enums.mojom.h"
 #include "ui/accessibility/ax_node_data.h"
 #include "ui/color/color_id.h"
 #include "ui/color/color_provider.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/views/controls/label.h"
+#include "ui/views/controls/label_button.h"
 #include "ui/views/layout/box_layout.h"
 #include "ui/views/view.h"
 
@@ -35,26 +38,80 @@ constexpr int kTabGroupsSectionHeaderHeight = 28;
 constexpr int kTabGroupsSectionHorizontalPadding = 12;
 constexpr int kTabGroupsSectionVerticalPadding = 8;
 constexpr int kTabGroupsSectionHeaderFontSizeDelta = 1;
-constexpr int kTabGroupsSectionItemSpacing = 2;
 constexpr int kTabGroupsGroupSpacing = 4;
+constexpr int kTabGroupsAddButtonHeight = 28;
 
 // Astra color ID for the tab groups panel.
-// Uses the Astra sidebar section header color from the Astra color system.
-// Chromium subsystem: ui::ColorProvider (ui/color/color_provider.h)
 constexpr ui::ColorId kTabGroupsSectionTitleTextColorId =
     kColorAstraSidebarSectionHeaderText;
+constexpr ui::ColorId kTabGroupsAddButtonTextColorId =
+    kColorAstraSidebarItemText;
 
 // Default section title.
 const char16_t kTabGroupsTitle[] = u"Tab Groups";
 
+// Default "add group" button text.
+const char16_t kAddGroupText[] = u"+ New group";
+
+// Comparator for sorting groups by name (ascending).
+bool CompareGroupsByName(const AstraTabGroupInfo& a,
+                         const AstraTabGroupInfo& b) {
+  return base::i18n::CompareString16WithCollator(a.name, b.name) < 0;
+}
+
+// Comparator for sorting groups by tab count (descending).
+bool CompareGroupsByTabCount(const AstraTabGroupInfo& a,
+                             const AstraTabGroupInfo& b) {
+  if (a.tab_count != b.tab_count) {
+    return a.tab_count > b.tab_count;
+  }
+  return CompareGroupsByName(a, b);
+}
+
+// Comparator for sorting groups by last accessed (descending).
+bool CompareGroupsByLastAccessed(const AstraTabGroupInfo& a,
+                                 const AstraTabGroupInfo& b) {
+  if (a.last_accessed != b.last_accessed) {
+    return a.last_accessed > b.last_accessed;
+  }
+  return CompareGroupsByName(a, b);
+}
+
+// Comparator for sorting groups by color ID (ascending).
+bool CompareGroupsByColor(const AstraTabGroupInfo& a,
+                          const AstraTabGroupInfo& b) {
+  if (a.color_id != b.color_id) {
+    return a.color_id < b.color_id;
+  }
+  return CompareGroupsByName(a, b);
+}
+
+// Comparator for sorting groups by manual order (ascending).
+bool CompareGroupsByOrderIndex(const AstraTabGroupInfo& a,
+                               const AstraTabGroupInfo& b) {
+  if (a.order_index != b.order_index) {
+    return a.order_index < b.order_index;
+  }
+  return CompareGroupsByName(a, b);
+}
+
 }  // namespace
+
+// =========================================================================
+// Construction / destruction
+// =========================================================================
+
+AstraSidebarTabGroupsView::AstraSidebarTabGroupsView() {
+  SetPaintToLayer();
+  layer()->SetFillsBoundsOpaquely(false);
+  BuildLayout();
+}
 
 AstraSidebarTabGroupsView::AstraSidebarTabGroupsView(Browser* browser)
     : browser_(browser) {
   DCHECK(browser_);
   SetPaintToLayer();
   layer()->SetFillsBoundsOpaquely(false);
-
   BuildLayout();
 
   // Initial model sync.
@@ -63,8 +120,12 @@ AstraSidebarTabGroupsView::AstraSidebarTabGroupsView(Browser* browser)
 
 AstraSidebarTabGroupsView::~AstraSidebarTabGroupsView() = default;
 
+// =========================================================================
+// Layout
+// =========================================================================
+
 void AstraSidebarTabGroupsView::BuildLayout() {
-  // Vertical box layout: section title + groups container.
+  // Vertical box layout: section title + groups container + add button.
   auto* layout = SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::Orientation::kVertical));
   layout->set_cross_axis_alignment(
@@ -91,11 +152,755 @@ void AstraSidebarTabGroupsView::BuildLayout() {
       views::BoxLayout::CrossAxisAlignment::kStretch);
 
   layout->SetFlexForView(groups_container_, 1);
+
+  // "Add group" button (hidden by default).
+  add_group_button_ = AddChildView(std::make_unique<views::LabelButton>(
+      base::BindRepeating(&AstraSidebarTabGroupsView::HandleAddGroupClicked,
+                          base::Unretained(this)),
+      kAddGroupText));
+  add_group_button_->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  add_group_button_->SetBorder(views::CreateEmptyBorder(gfx::Insets::VH(
+      4, kTabGroupsSectionHorizontalPadding)));
+  add_group_button_->SetFocusBehavior(views::View::FocusBehavior::ALWAYS);
+  add_group_button_->SetVisible(false);
 }
+
+// =========================================================================
+// Title
+// =========================================================================
 
 void AstraSidebarTabGroupsView::SetTitle(const std::u16string& title) {
   section_title_->SetText(title);
 }
+
+// =========================================================================
+// Group management
+// =========================================================================
+
+void AstraSidebarTabGroupsView::SetTabGroups(
+    const std::vector<AstraTabGroupInfo>& groups) {
+  // Store new groups data.
+  groups_.clear();
+  groups_.reserve(groups.size());
+  for (const auto& info : groups) {
+    GroupEntry entry;
+    entry.info = info;
+    groups_.push_back(std::move(entry));
+  }
+
+  ApplySortOrder();
+  RebuildAllViews();
+}
+
+int AstraSidebarTabGroupsView::GetGroupCount() const {
+  return static_cast<int>(groups_.size());
+}
+
+AstraTabGroupInfo AstraSidebarTabGroupsView::GetGroupAt(int index) const {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+  return groups_[index].info;
+}
+
+void AstraSidebarTabGroupsView::AddGroup(const AstraTabGroupInfo& group) {
+  GroupEntry entry;
+  entry.info = group;
+  groups_.push_back(std::move(entry));
+  ApplySortOrder();
+  RebuildAllViews();
+}
+
+void AstraSidebarTabGroupsView::RemoveGroup(int index) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+
+  // Adjust selection if needed.
+  if (selected_group_index_ == index) {
+    selected_group_index_ = -1;
+  } else if (selected_group_index_ > index) {
+    selected_group_index_--;
+  }
+
+  groups_.erase(groups_.begin() + index);
+  RebuildAllViews();
+}
+
+void AstraSidebarTabGroupsView::UpdateGroup(int index,
+                                            const AstraTabGroupInfo& group) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+
+  groups_[index].info = group;
+  ApplySortOrder();
+  // TODO(astra): Optimize — only update the affected header + tabs
+  // instead of rebuilding everything.
+  RebuildAllViews();
+}
+
+// =========================================================================
+// Selection
+// =========================================================================
+
+void AstraSidebarTabGroupsView::SetSelectedGroup(int index) {
+  if (index < -1 || index >= static_cast<int>(groups_.size())) {
+    return;
+  }
+  if (selected_group_index_ == index) {
+    return;
+  }
+
+  // Clear old selection.
+  if (selected_group_index_ >= 0 &&
+      selected_group_index_ < static_cast<int>(groups_.size()) &&
+      groups_[selected_group_index_].header) {
+    groups_[selected_group_index_].header->SetSelected(false);
+  }
+
+  selected_group_index_ = index;
+
+  // Set new selection.
+  if (selected_group_index_ >= 0 &&
+      groups_[selected_group_index_].header) {
+    groups_[selected_group_index_].header->SetSelected(true);
+  }
+}
+
+int AstraSidebarTabGroupsView::GetSelectedGroupIndex() const {
+  return selected_group_index_;
+}
+
+void AstraSidebarTabGroupsView::ClearSelection() {
+  SetSelectedGroup(-1);
+}
+
+// =========================================================================
+// Expansion
+// =========================================================================
+
+void AstraSidebarTabGroupsView::SetGroupExpanded(int index, bool expanded) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+
+  if (groups_[index].info.is_expanded == expanded) {
+    return;
+  }
+
+  groups_[index].info.is_expanded = expanded;
+  if (groups_[index].header) {
+    groups_[index].header->SetExpanded(expanded);
+  }
+
+  // Rebuild to show/hide tab items.
+  // TODO(astra): Optimize by toggling visibility of the tab container
+  // instead of rebuilding all views.
+  RebuildAllViews();
+
+  // Notify delegate.
+  if (delegate_) {
+    delegate_->OnGroupExpandedChanged(groups_[index].info.group_id, expanded);
+  }
+}
+
+bool AstraSidebarTabGroupsView::IsGroupExpanded(int index) const {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+  return groups_[index].info.is_expanded;
+}
+
+void AstraSidebarTabGroupsView::ToggleGroupExpanded(int index) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+  SetGroupExpanded(index, !groups_[index].info.is_expanded);
+}
+
+void AstraSidebarTabGroupsView::ExpandAllGroups() {
+  for (size_t i = 0; i < groups_.size(); ++i) {
+    groups_[i].info.is_expanded = true;
+  }
+  RebuildAllViews();
+}
+
+void AstraSidebarTabGroupsView::CollapseAllGroups() {
+  for (size_t i = 0; i < groups_.size(); ++i) {
+    groups_[i].info.is_expanded = false;
+  }
+  RebuildAllViews();
+}
+
+int AstraSidebarTabGroupsView::GetExpandedGroupCount() const {
+  int count = 0;
+  for (const auto& entry : groups_) {
+    if (entry.info.is_expanded) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+// =========================================================================
+// Reordering
+// =========================================================================
+
+void AstraSidebarTabGroupsView::MoveGroup(int from_index, int to_index) {
+  int count = static_cast<int>(groups_.size());
+  if (from_index < 0 || from_index >= count || to_index < 0 ||
+      to_index >= count || from_index == to_index) {
+    return;
+  }
+
+  // Perform the move.
+  AstraTabGroupInfo moved = groups_[from_index].info;
+  groups_.erase(groups_.begin() + from_index);
+  groups_.insert(groups_.begin() + to_index, GroupEntry());
+  groups_[to_index].info = moved;
+
+  // Update order indices for kManual sort mode.
+  if (sort_by_ == AstraTabGroupSortBy::kManual) {
+    for (size_t i = 0; i < groups_.size(); ++i) {
+      groups_[i].info.order_index = static_cast<int>(i);
+    }
+  }
+
+  // Adjust selection if needed.
+  if (selected_group_index_ == from_index) {
+    selected_group_index_ = to_index;
+  } else if (from_index < selected_group_index_ &&
+             to_index >= selected_group_index_) {
+    selected_group_index_--;
+  } else if (from_index > selected_group_index_ &&
+             to_index <= selected_group_index_) {
+    selected_group_index_++;
+  }
+
+  RebuildAllViews();
+
+  // Notify delegate.
+  if (delegate_) {
+    delegate_->OnGroupReordered(from_index, to_index);
+  }
+}
+
+// =========================================================================
+// Color
+// =========================================================================
+
+void AstraSidebarTabGroupsView::SetGroupColor(int index, SkColor color) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+
+  groups_[index].info.color = color;
+  if (groups_[index].header) {
+    groups_[index].header->SetColor(color);
+  }
+
+  // Notify delegate.
+  if (delegate_) {
+    delegate_->OnGroupColorChanged(groups_[index].info.group_id, color);
+  }
+}
+
+SkColor AstraSidebarTabGroupsView::GetGroupColor(int index) const {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+  return groups_[index].info.color;
+}
+
+// =========================================================================
+// Naming
+// =========================================================================
+
+void AstraSidebarTabGroupsView::RenameGroup(int index,
+                                            const std::u16string& new_name) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+
+  groups_[index].info.name = new_name;
+  if (groups_[index].header) {
+    groups_[index].header->SetName(new_name);
+  }
+
+  // Re-sort if sorting by name.
+  if (sort_by_ == AstraTabGroupSortBy::kName) {
+    ApplySortOrder();
+    RebuildAllViews();
+  }
+
+  // Notify delegate.
+  if (delegate_) {
+    delegate_->OnGroupRenamed(groups_[index].info.group_id, new_name);
+  }
+}
+
+std::u16string AstraSidebarTabGroupsView::GetGroupName(int index) const {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+  return groups_[index].info.name;
+}
+
+// =========================================================================
+// Tab counts
+// =========================================================================
+
+int AstraSidebarTabGroupsView::GetTabCountInGroup(int index) const {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+  return groups_[index].info.tab_count;
+}
+
+int AstraSidebarTabGroupsView::GetTotalTabCount() const {
+  int total = 0;
+  for (const auto& entry : groups_) {
+    total += entry.info.tab_count;
+  }
+  return total;
+}
+
+// =========================================================================
+// Display options
+// =========================================================================
+
+void AstraSidebarTabGroupsView::SetShowTabCount(bool show) {
+  if (show_tab_count_ == show) {
+    return;
+  }
+  show_tab_count_ = show;
+  ApplyDisplayOptions();
+}
+
+bool AstraSidebarTabGroupsView::GetShowTabCount() const {
+  return show_tab_count_;
+}
+
+void AstraSidebarTabGroupsView::SetShowAddGroupButton(bool show) {
+  if (show_add_group_button_ == show) {
+    return;
+  }
+  show_add_group_button_ = show;
+  if (add_group_button_) {
+    add_group_button_->SetVisible(show);
+  }
+}
+
+bool AstraSidebarTabGroupsView::GetShowAddGroupButton() const {
+  return show_add_group_button_;
+}
+
+// =========================================================================
+// Sorting
+// =========================================================================
+
+void AstraSidebarTabGroupsView::SetSortGroupsBy(AstraTabGroupSortBy sort_by) {
+  if (sort_by_ == sort_by) {
+    return;
+  }
+  sort_by_ = sort_by;
+  ApplySortOrder();
+  RebuildAllViews();
+}
+
+AstraTabGroupSortBy AstraSidebarTabGroupsView::GetSortGroupsBy() const {
+  return sort_by_;
+}
+
+void AstraSidebarTabGroupsView::ApplySortOrder() {
+  // Remember selected group ID to restore selection after sort.
+  std::string selected_id;
+  if (selected_group_index_ >= 0 &&
+      selected_group_index_ < static_cast<int>(groups_.size())) {
+    selected_id = groups_[selected_group_index_].info.group_id;
+  }
+
+  switch (sort_by_) {
+    case AstraTabGroupSortBy::kManual:
+      base::ranges::sort(groups_, [](const GroupEntry& a, const GroupEntry& b) {
+        return CompareGroupsByOrderIndex(a.info, b.info);
+      });
+      break;
+    case AstraTabGroupSortBy::kName:
+      base::ranges::sort(groups_, [](const GroupEntry& a, const GroupEntry& b) {
+        return CompareGroupsByName(a.info, b.info);
+      });
+      break;
+    case AstraTabGroupSortBy::kColor:
+      base::ranges::sort(groups_, [](const GroupEntry& a, const GroupEntry& b) {
+        return CompareGroupsByColor(a.info, b.info);
+      });
+      break;
+    case AstraTabGroupSortBy::kTabCount:
+      base::ranges::sort(groups_, [](const GroupEntry& a, const GroupEntry& b) {
+        return CompareGroupsByTabCount(a.info, b.info);
+      });
+      break;
+    case AstraTabGroupSortBy::kLastAccessed:
+      base::ranges::sort(groups_, [](const GroupEntry& a, const GroupEntry& b) {
+        return CompareGroupsByLastAccessed(a.info, b.info);
+      });
+      break;
+  }
+
+  // Restore selection by ID.
+  if (!selected_id.empty()) {
+    selected_group_index_ = FindGroupIndexById(selected_id);
+  }
+}
+
+// =========================================================================
+// Group operations
+// =========================================================================
+
+void AstraSidebarTabGroupsView::NewGroup(const std::u16string& name,
+                                         SkColor color) {
+  // In presentation mode, we forward to delegate.
+  // The actual group creation happens in Chromium's TabStripModel.
+  if (delegate_) {
+    delegate_->OnNewGroupRequested();
+  }
+}
+
+void AstraSidebarTabGroupsView::DeleteGroup(int index) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+
+  std::string group_id = groups_[index].info.group_id;
+
+  // Remove from our projection.
+  RemoveGroup(index);
+
+  // Notify delegate.
+  if (delegate_) {
+    delegate_->OnDeleteGroupRequested(group_id);
+  }
+}
+
+void AstraSidebarTabGroupsView::CloseAllTabsInGroup(int index) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+
+  std::string group_id = groups_[index].info.group_id;
+
+  // In presentation mode, forward to delegate.
+  if (delegate_) {
+    delegate_->OnCloseAllTabsInGroupRequested(group_id);
+  }
+}
+
+// =========================================================================
+// Tab operations between groups
+// =========================================================================
+
+void AstraSidebarTabGroupsView::MoveTabToGroup(int from_group, int from_tab,
+                                               int to_group, int to_tab) {
+  DCHECK_GE(from_group, 0);
+  DCHECK_LT(from_group, static_cast<int>(groups_.size()));
+  DCHECK_GE(to_group, 0);
+  DCHECK_LT(to_group, static_cast<int>(groups_.size()));
+  DCHECK_GE(from_tab, 0);
+  DCHECK_GE(to_tab, 0);
+
+  // Adjust tab counts.
+  groups_[from_group].info.tab_count--;
+  groups_[to_group].info.tab_count++;
+
+  // Update headers.
+  if (groups_[from_group].header) {
+    groups_[from_group].header->SetTabCount(groups_[from_group].info.tab_count);
+  }
+  if (groups_[to_group].header) {
+    groups_[to_group].header->SetTabCount(groups_[to_group].info.tab_count);
+  }
+
+  // Re-sort if needed.
+  if (sort_by_ == AstraTabGroupSortBy::kTabCount) {
+    ApplySortOrder();
+  }
+
+  RebuildAllViews();
+
+  // Notify delegate.
+  if (delegate_) {
+    delegate_->OnTabDropped(
+        groups_[to_group].info.group_id, to_tab,
+        groups_[from_group].info.group_id, from_tab);
+  }
+}
+
+void AstraSidebarTabGroupsView::UngroupTab(int group_index, int tab_index) {
+  DCHECK_GE(group_index, 0);
+  DCHECK_LT(group_index, static_cast<int>(groups_.size()));
+  DCHECK_GE(tab_index, 0);
+
+  std::string group_id = groups_[group_index].info.group_id;
+
+  // Adjust tab count.
+  groups_[group_index].info.tab_count--;
+  if (groups_[group_index].header) {
+    groups_[group_index].header->SetTabCount(
+        groups_[group_index].info.tab_count);
+  }
+
+  // Re-sort if needed.
+  if (sort_by_ == AstraTabGroupSortBy::kTabCount) {
+    ApplySortOrder();
+  }
+
+  RebuildAllViews();
+
+  // Notify delegate.
+  if (delegate_) {
+    delegate_->OnUngroupTabRequested(group_id, tab_index);
+  }
+}
+
+// =========================================================================
+// Drag and drop
+// =========================================================================
+
+void AstraSidebarTabGroupsView::SetDragDropEnabled(bool enabled) {
+  drag_drop_enabled_ = enabled;
+}
+
+bool AstraSidebarTabGroupsView::GetDragDropEnabled() const {
+  return drag_drop_enabled_;
+}
+
+// =========================================================================
+// Color display
+// =========================================================================
+
+void AstraSidebarTabGroupsView::SetShowGroupColors(bool show) {
+  if (show_group_colors_ == show) {
+    return;
+  }
+  show_group_colors_ = show;
+  ApplyDisplayOptions();
+}
+
+bool AstraSidebarTabGroupsView::GetShowGroupColors() const {
+  return show_group_colors_;
+}
+
+// =========================================================================
+// Compact mode
+// =========================================================================
+
+void AstraSidebarTabGroupsView::SetCompactMode(bool compact) {
+  if (compact_mode_ == compact) {
+    return;
+  }
+  compact_mode_ = compact;
+  ApplyDisplayOptions();
+}
+
+bool AstraSidebarTabGroupsView::GetCompactMode() const {
+  return compact_mode_;
+}
+
+// =========================================================================
+// View access
+// =========================================================================
+
+AstraTabGroupHeaderView* AstraSidebarTabGroupsView::GetGroupHeaderViewAt(
+    int index) {
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, static_cast<int>(groups_.size()));
+  return groups_[index].header;
+}
+
+AstraTabGroupTabItemView* AstraSidebarTabGroupsView::GetGroupTabItemAt(
+    int group_index, int tab_index) {
+  DCHECK_GE(group_index, 0);
+  DCHECK_LT(group_index, static_cast<int>(groups_.size()));
+  DCHECK_GE(tab_index, 0);
+  DCHECK_LT(tab_index, static_cast<int>(groups_[group_index].tabs.size()));
+  return groups_[group_index].tabs[tab_index];
+}
+
+int AstraSidebarTabGroupsView::GetGroupTabCountAt(int group_index) const {
+  DCHECK_GE(group_index, 0);
+  DCHECK_LT(group_index, static_cast<int>(groups_.size()));
+  return static_cast<int>(groups_[group_index].tabs.size());
+}
+
+// =========================================================================
+// Display options application
+// =========================================================================
+
+void AstraSidebarTabGroupsView::ApplyDisplayOptions() {
+  for (auto& entry : groups_) {
+    if (entry.header) {
+      entry.header->SetShowTabCount(show_tab_count_);
+      entry.header->SetShowColorDot(show_group_colors_);
+      entry.header->SetCompact(compact_mode_);
+    }
+  }
+}
+
+// =========================================================================
+// View rebuilding
+// =========================================================================
+
+void AstraSidebarTabGroupsView::RebuildAllViews() {
+  ClearGroups();
+
+  for (size_t i = 0; i < groups_.size(); ++i) {
+    auto& entry = groups_[i];
+
+    // Create header.
+    auto header = CreateGroupHeader(entry.info);
+    entry.header = header.get();
+    groups_container_->AddChildView(std::move(header));
+
+    // Set selection state.
+    if (static_cast<int>(i) == selected_group_index_) {
+      entry.header->SetSelected(true);
+    }
+
+    // Create tab items if expanded.
+    if (entry.info.is_expanded) {
+      RebuildGroupTabs(entry);
+    } else {
+      entry.tabs.clear();
+      entry.tab_container = nullptr;
+    }
+  }
+
+  InvalidateLayout();
+}
+
+void AstraSidebarTabGroupsView::RebuildGroupTabs(GroupEntry& entry) {
+  entry.tabs.clear();
+
+  // Create dummy tab items based on tab_count for presentation purposes.
+  // In a real Chromium build, these would be populated from TabStripModel.
+  // TODO(astra): Replace with real tab data when fully integrated with
+  //   TabStripModel and WebContents.
+  //   Chromium owner: TabStripModel (chrome/browser/ui/tabs/tab_strip_model.h)
+  for (int i = 0; i < entry.info.tab_count; ++i) {
+    AstraTabGroupTabInfo tab_info;
+    tab_info.tab_id = entry.info.group_id + "_tab_" + base::NumberToString(i);
+    tab_info.title = u"Tab " + base::NumberToString16(i + 1);
+    tab_info.index_in_group = i;
+    tab_info.group_id = entry.info.group_id;
+    tab_info.is_active = i == 0;  // First tab is "active" in dummy data.
+
+    auto tab_item = CreateGroupTabItem(tab_info);
+    raw_ptr<AstraTabGroupTabItemView> raw = tab_item.get();
+    entry.tabs.push_back(raw);
+    groups_container_->AddChildView(std::move(tab_item));
+  }
+}
+
+void AstraSidebarTabGroupsView::ClearGroups() {
+  groups_container_->RemoveAllChildViews();
+  for (auto& entry : groups_) {
+    entry.header = nullptr;
+    entry.tabs.clear();
+    entry.tab_container = nullptr;
+  }
+}
+
+std::unique_ptr<AstraTabGroupHeaderView>
+AstraSidebarTabGroupsView::CreateGroupHeader(const AstraTabGroupInfo& info) {
+  int group_index = FindGroupIndexById(info.group_id);
+
+  auto header = std::make_unique<AstraTabGroupHeaderView>(
+      info.name, info.color,
+      base::BindRepeating(&AstraSidebarTabGroupsView::HandleGroupHeaderClicked,
+                          base::Unretained(this), group_index),
+      base::BindRepeating(
+          [](AstraSidebarTabGroupsView* view, int idx) {
+            // New tab in group.
+            // TODO(astra): Implement proper "new tab in group" flow.
+          },
+          base::Unretained(this), group_index));
+
+  header->SetGroupInfo(info);
+  header->SetShowTabCount(show_tab_count_);
+  header->SetShowColorDot(show_group_colors_);
+  header->SetCompact(compact_mode_);
+
+  return header;
+}
+
+std::unique_ptr<AstraTabGroupTabItemView>
+AstraSidebarTabGroupsView::CreateGroupTabItem(
+    const AstraTabGroupTabInfo& info) {
+  int group_index = FindGroupIndexById(info.group_id);
+
+  auto item = std::make_unique<AstraTabGroupTabItemView>(
+      info.title, info.index_in_group,
+      base::BindRepeating(
+          [](AstraSidebarTabGroupsView* view, int g_idx, int t_idx,
+             const ui::Event& event) {
+            view->HandleTabClicked(g_idx, t_idx);
+          },
+          base::Unretained(this), group_index, info.index_in_group),
+      base::BindRepeating(
+          &AstraSidebarTabGroupsView::HandleTabClosed, base::Unretained(this),
+          group_index, info.index_in_group));
+
+  item->SetTabInfo(info);
+  item->SetShowFavicon(show_group_colors_);  // Reuse flag for favicons
+
+  return item;
+}
+
+int AstraSidebarTabGroupsView::FindGroupIndexById(
+    const std::string& group_id) const {
+  for (size_t i = 0; i < groups_.size(); ++i) {
+    if (groups_[i].info.group_id == group_id) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+// =========================================================================
+// Handlers for user actions
+// =========================================================================
+
+void AstraSidebarTabGroupsView::HandleGroupHeaderClicked(int group_index) {
+  if (group_index < 0 || group_index >= static_cast<int>(groups_.size())) {
+    return;
+  }
+
+  // Set selection.
+  SetSelectedGroup(group_index);
+
+  // Toggle expanded state.
+  ToggleGroupExpanded(group_index);
+
+  // Notify delegate of click.
+  if (delegate_) {
+    delegate_->OnGroupClicked(groups_[group_index].info.group_id);
+  }
+}
+
+void AstraSidebarTabGroupsView::HandleTabClicked(int group_index,
+                                                 int tab_index) {
+  if (delegate_ && group_index >= 0 &&
+      group_index < static_cast<int>(groups_.size())) {
+    delegate_->OnTabClicked(groups_[group_index].info.group_id, tab_index);
+  }
+}
+
+void AstraSidebarTabGroupsView::HandleTabClosed(int group_index,
+                                                int tab_index) {
+  if (delegate_ && group_index >= 0 &&
+      group_index < static_cast<int>(groups_.size())) {
+    delegate_->OnTabClosed(groups_[group_index].info.group_id, tab_index);
+  }
+}
+
+void AstraSidebarTabGroupsView::HandleAddGroupClicked() {
+  if (delegate_) {
+    delegate_->OnNewGroupRequested();
+  }
+}
+
+// =========================================================================
+// TabStripModel integration
+// =========================================================================
 
 void AstraSidebarTabGroupsView::UpdateFromModel() {
   if (!browser_ || !browser_->tab_strip_model()) {
@@ -103,329 +908,112 @@ void AstraSidebarTabGroupsView::UpdateFromModel() {
   }
 
   TabStripModel* tab_strip = browser_->tab_strip_model();
-  ClearGroups();
-  PopulateGroups(tab_strip);
-
-  InvalidateLayout();
+  PopulateGroupsFromModel(tab_strip);
+  RebuildAllViews();
 }
 
-void AstraSidebarTabGroupsView::ClearGroups() {
-  // Remove all group views. Each "group" in the container is actually a
-  // sub-view containing the header + tab items, or we interleave headers
-  // and items. For simplicity, we use a flat list where headers and items
-  // are siblings in the container, with items indented under their header.
-  //
-  // TODO(astra): Consider a tree structure where each group has its own
-  // container view (header + items), making expand/collapse a simple
-  // visibility toggle on the items container. This is the cleaner approach
-  // but requires one extra view per group.
-  groups_container_->RemoveAllChildViews();
-}
-
-void AstraSidebarTabGroupsView::PopulateGroups(TabStripModel* tab_strip) {
+void AstraSidebarTabGroupsView::PopulateGroupsFromModel(
+    TabStripModel* tab_strip) {
   TabGroupModel* group_model = tab_strip->group_model();
   if (!group_model) {
-    // TODO(astra): Handle case where TabStripModel doesn't expose a
-    // group_model(). In some Chromium configurations, groups may not be
-    // available. We should gracefully hide the tab groups section.
-    // Chromium owner: TabStripModel::group_model()
+    groups_.clear();
     return;
   }
 
-  const std::vector<tab_groups::TabGroupId>& group_ids = group_model->ListTabGroups();
-  if (group_ids.empty()) {
-    // No groups — section will be empty. The parent sidebar may choose
-    // to hide the entire section when there are no groups.
-    return;
-  }
+  const std::vector<tab_groups::TabGroupId>& group_ids =
+      group_model->ListTabGroups();
 
+  groups_.clear();
+  groups_.reserve(group_ids.size());
+
+  int order_index = 0;
   for (const auto& group_id : group_ids) {
     const TabGroup* group = group_model->GetTabGroup(group_id);
     if (!group) {
       continue;
     }
 
-    // Create and add the group header.
-    auto header = CreateGroupHeader(group_id, group);
-    groups_container_->AddChildView(std::move(header));
-
-    // Determine if this group is expanded in the sidebar.
-    bool expanded = true;
-    auto it = expanded_state_.find(group_id);
-    if (it != expanded_state_.end()) {
-      expanded = it->second;
-    } else {
-      // Default to expanded for new groups.
-      expanded_state_[group_id] = true;
-    }
-
-    if (expanded) {
-      // Create and add tab items for each tab in the group.
-      gfx::Range tab_range = group->ListTabs();
-      for (size_t i = tab_range.start(); i < tab_range.end(); ++i) {
-        auto tab_item = CreateGroupTabItem(static_cast<int>(i), group_id);
-        groups_container_->AddChildView(std::move(tab_item));
-      }
-    }
+    GroupEntry entry;
+    entry.info = TabGroupToInfo(group_id, group);
+    entry.info.order_index = order_index++;
+    groups_.push_back(std::move(entry));
   }
+
+  ApplySortOrder();
 }
 
-std::unique_ptr<views::View> AstraSidebarTabGroupsView::CreateGroupHeader(
-    const tab_groups::TabGroupId& group_id,
-    const TabGroup* group) {
-  // Get group display name.
-  std::u16string title;
+AstraTabGroupInfo AstraSidebarTabGroupsView::TabGroupToInfo(
+    const tab_groups::TabGroupId& group_id, const TabGroup* group) const {
+  AstraTabGroupInfo info;
+
+  // Convert TabGroupId to string for our use.
+  // TODO(astra): Use TabGroupId directly instead of string conversion.
+  // Chromium's TabGroupId is a token type; we convert to string for
+  // simplicity in the Astra layer.
+  info.group_id = base::NumberToString(group_id.ToString());
+
+  // Get display name.
   if (group->visual_data()) {
-    title = group->visual_data()->title();
+    info.name = group->visual_data()->title();
+    info.color_id = static_cast<int>(group->visual_data()->color());
+    // TODO(astra): Resolve actual SkColor from color ID via ColorProvider.
+    info.color = SK_ColorGRAY;
   }
-  if (title.empty()) {
-    // Fallback: use group id or a default name.
-    // TODO(astra): Use the same default naming as Chromium's tab strip.
-    // Chromium shows "Group" or a color-based name for unnamed groups.
-    title = u"Untitled Group";
+  if (info.name.empty()) {
+    info.name = u"Untitled Group";
   }
 
   // Get tab count.
-  int tab_count = 0;
   gfx::Range tab_range = group->ListTabs();
-  tab_count = static_cast<int>(tab_range.length());
+  info.tab_count = static_cast<int>(tab_range.length());
 
-  // Get group color.
-  tab_groups::TabGroupColorId color = tab_groups::TabGroupColorId::kGrey;
-  if (group->visual_data()) {
-    color = group->visual_data()->color();
-  }
+  // Collapsed state.
+  info.is_collapsed_in_tabstrip = group->IsCollapsed();
 
-  auto header = std::make_unique<AstraTabGroupHeaderView>(
-      title, color,
-      base::BindRepeating(&AstraSidebarTabGroupsView::ToggleGroupExpanded,
-                          base::Unretained(this), group_id),
-      base::BindRepeating(&AstraSidebarTabGroupsView::NewTabInGroup,
-                          base::Unretained(this), group_id));
+  // Default expanded state for sidebar.
+  info.is_expanded = true;
 
-  header->SetTabCount(tab_count);
-
-  // Set initial expanded state.
-  auto it = expanded_state_.find(group_id);
-  if (it != expanded_state_.end()) {
-    header->SetExpanded(it->second);
-  }
-
-  return header;
-}
-
-std::unique_ptr<AstraTabGroupTabItemView>
-AstraSidebarTabGroupsView::CreateGroupTabItem(
-    int tab_index,
-    const tab_groups::TabGroupId& /*group_id*/) {
-  content::WebContents* web_contents =
-      browser_->tab_strip_model()->GetWebContentsAt(tab_index);
-
-  // Determine the tab title.
-  std::u16string title;
-  if (web_contents && !web_contents->GetTitle().empty()) {
-    title = web_contents->GetTitle();
-  } else {
-    title = u"Tab " + base::NumberToString16(tab_index + 1);
-  }
-
-  auto item = std::make_unique<AstraTabGroupTabItemView>(
-      title, tab_index,
-      base::BindRepeating(
-          [](AstraSidebarTabGroupsView* view, int idx,
-             const ui::Event& /*event*/) {
-            view->ActivateTab(idx);
-          },
-          base::Unretained(this), tab_index),
-      base::BindRepeating(&AstraSidebarTabGroupsView::CloseTab,
-                          base::Unretained(this), tab_index));
-
-  // Mark as active if this is the currently selected tab.
-  if (browser_->tab_strip_model()->active_index() == tab_index) {
-    item->SetActive(true);
-  }
-
-  return item;
-}
-
-void AstraSidebarTabGroupsView::ToggleGroupExpanded(
-    const tab_groups::TabGroupId& group_id) {
-  // Toggle sidebar-local expanded state.
-  bool new_state = true;
-  auto it = expanded_state_.find(group_id);
-  if (it != expanded_state_.end()) {
-    new_state = !it->second;
-  }
-  expanded_state_[group_id] = new_state;
-
-  // Rebuild from model to reflect the new expanded state.
-  // TODO(astra): Optimize by only toggling visibility of the tab items
-  // for this group, instead of rebuilding everything. Each group's tab
-  // items could be in a dedicated container view that we just show/hide.
-  UpdateFromModel();
-}
-
-void AstraSidebarTabGroupsView::NewTabInGroup(
-    const tab_groups::TabGroupId& group_id) {
-  if (!browser_ || !browser_->tab_strip_model()) {
-    return;
-  }
-
-  TabStripModel* tab_strip = browser_->tab_strip_model();
-
-  // Add a new tab and add it to the group.
-  //
-  // TODO(astra): Use Chromium's proper "new tab in group" flow.
-  // The correct approach is to:
-  //   1. Create a new tab (Browser::AddNewTab or similar)
-  //   2. Add it to the target group via TabStripModel::AddToGroup or
-  //      TabGroupController::AddTab
-  //
-  // Chromium owner:
-  //   - TabGroupController (chrome/browser/ui/tabs/tab_group_controller.h)
-  //   - TabStripModel::AddToGroup() or similar method
-  //   - Browser::AddNewTabWithWebContents() or AddSelectedTab()
-  //
-  // For now, we add a new tab at the end of the group as a proof of concept.
-  // The sidebar will update via TabStripModelObserver.
-  //
-  // TODO(astra): This creates a tab but doesn't add it to the group.
-  // We need to use TabGroupController or TabStripModel::SetTabGroup()
-  // to actually add the new tab to the target group.
-  // Chromium owner: TabGroupController::AddNewTabInGroup()
-
-  // For now, use the standard "new tab" action.
-  // TODO(astra): Actually route through Chromium's command system (IDC_NEW_TAB)
-  // and then move the new tab into the group, or find the proper
-  // "add tab to group" API.
-  //
-  // The proper Chromium API is:
-  //   TabStripModel::AddToGroup(int index, const TabGroupId& group)
-  //
-  // But creating a new tab goes through Browser::AddNewTab(). We need to
-  // chain these: create tab, then add to group.
-  //
-  // For this proof of concept, we'll dispatch to Chromium's new tab command.
-  // The tab will be created but not automatically added to the group —
-  // that's a TODO(astra) item for when we have the full TabGroupController integration.
-  browser_->ExecuteCommand(IDC_NEW_TAB);
-}
-
-void AstraSidebarTabGroupsView::ActivateTab(int tab_index) {
-  if (!browser_ || !browser_->tab_strip_model()) {
-    return;
-  }
-  if (tab_index < 0 || tab_index >= browser_->tab_strip_model()->GetTabCount()) {
-    return;
-  }
-  browser_->tab_strip_model()->ActivateTabAt(tab_index);
-}
-
-void AstraSidebarTabGroupsView::CloseTab(int tab_index) {
-  if (!browser_ || !browser_->tab_strip_model()) {
-    return;
-  }
-  if (tab_index < 0 || tab_index >= browser_->tab_strip_model()->GetTabCount()) {
-    return;
-  }
-  // Dispatch close through Chromium's tab strip model.
-  // TODO(astra): Use the proper tab close API. Options:
-  //   - TabStripModel::CloseWebContentsAt()
-  //   - Browser::CloseTabAt()
-  //   - BrowserCommandController::ExecuteCommand(IDC_CLOSE_TAB)
-  //
-  // Chromium owner: TabStripModel (chrome/browser/ui/tabs/tab_strip_model.h)
-  browser_->tab_strip_model()->CloseWebContentsAt(
-      tab_index, TabStripModel::CLOSE_NONE);
-}
-
-tab_groups::TabGroupColorId AstraSidebarTabGroupsView::GetGroupColor(
-    const tab_groups::TabGroupId& group_id) const {
-  if (!browser_ || !browser_->tab_strip_model()) {
-    return tab_groups::TabGroupColorId::kGrey;
-  }
-  TabGroupModel* group_model = browser_->tab_strip_model()->group_model();
-  if (!group_model) {
-    return tab_groups::TabGroupColorId::kGrey;
-  }
-  const TabGroup* group = group_model->GetTabGroup(group_id);
-  if (!group || !group->visual_data()) {
-    return tab_groups::TabGroupColorId::kGrey;
-  }
-  return group->visual_data()->color();
+  return info;
 }
 
 // =========================================================================
-// TabStripModelObserver
+// TabStripModelObserver implementations
 // =========================================================================
-//
-// Primary reactive update path. All group and tab state changes originate
-// from Chromium's TabStripModel and flow through these observer methods.
-// The tab groups view is a pure projection — it never mutates TabStripModel
-// directly except in response to explicit user actions (click to activate,
-// close button, etc.).
-//
-// TODO(astra): Implement incremental updates for each change type instead
-// of calling UpdateFromModel() (full rebuild) on every change. Full rebuilds
-// are correct but inefficient for frequent operations. The main challenge
-// is mapping TabStripModel indices to sidebar view indices when groups
-// are interleaved in a flat list.
-//
-// Performance note: With many groups and tabs, full rebuilds cause
-// noticeable jank on every tab change. Incremental updates would be O(1)
-// for most operations.
+// All of these currently call UpdateFromModel() (full rebuild).
+// TODO(astra): Implement incremental updates for better performance.
 
 void AstraSidebarTabGroupsView::OnTabStripModelChanged(
     TabStripModel* /*tab_strip_model*/,
     const TabStripModelChange& /*change*/,
     const TabStripSelectionChange& /*selection*/) {
-  // Generic change handler — catches any change not handled by more
-  // specific methods. Full rebuild is the safe default.
   UpdateFromModel();
 }
 
-void AstraSidebarTabGroupsView::OnTabGroupChanged(const TabGroupChange& change) {
-  // A tab group was added, removed, or had tabs moved into/out of it.
-  // TODO(astra): Handle each case incrementally:
-  //   - kCreated: insert a new group header at the right position
-  //   - kDeleted: remove the group header and its tab items
-  //   - kMoved: reorder the group in the list
-  //   - kContentsChanged: update tab items for this group
-  //
-  // Chromium owner: TabGroupChange (chrome/browser/ui/tabs/tab_strip_model_observer.h)
+void AstraSidebarTabGroupsView::OnTabGroupChanged(const TabGroupChange& /*change*/) {
   UpdateFromModel();
 }
 
 void AstraSidebarTabGroupsView::OnTabGroupVisualsChanged(
     TabStripModel* /*tab_strip_model*/,
     const tab_groups::TabGroupId& /*group*/) {
-  // Group visual state changed (name, color, etc.).
-  // TODO(astra): Incrementally update just the header view for this group
-  // instead of rebuilding everything.
   UpdateFromModel();
 }
 
 void AstraSidebarTabGroupsView::OnTabInsertedAt(TabStripModel* /*tab_strip_model*/,
                                                 int /*index*/,
                                                 bool /*foreground*/) {
-  // A new tab was inserted. It might belong to a group.
-  // TODO(astra): Incrementally insert a tab item into the appropriate group.
   UpdateFromModel();
 }
 
 void AstraSidebarTabGroupsView::OnTabRemovedAt(TabStripModel* /*tab_strip_model*/,
                                                int /*index*/,
                                                bool /*was_active*/) {
-  // A tab was removed. It might have been in a group.
-  // TODO(astra): Incrementally remove the tab item from its group.
   UpdateFromModel();
 }
 
 void AstraSidebarTabGroupsView::OnTabMoved(TabStripModel* /*tab_strip_model*/,
                                            int /*from_index*/,
                                            int /*to_index*/) {
-  // A tab was moved. It may have moved into, out of, or within a group.
-  // TODO(astra): Handle group membership changes incrementally.
   UpdateFromModel();
 }
 
@@ -434,17 +1022,12 @@ void AstraSidebarTabGroupsView::OnActiveTabChanged(
     int /*old_index*/,
     int /*new_index*/,
     const TabStripSelectionChange& /*selection*/) {
-  // The active tab changed. Update the active highlight.
-  // TODO(astra): Incrementally update the active highlight by finding
-  // the old and new tab items and toggling their active state.
   UpdateFromModel();
 }
 
 void AstraSidebarTabGroupsView::OnTabChanged(TabStripModel* /*tab_strip_model*/,
                                              int /*index*/,
                                              TabChangeType /*change_type*/) {
-  // A tab's display state changed (title, favicon, etc.).
-  // TODO(astra): Incrementally update just that tab item's title/icon.
   UpdateFromModel();
 }
 
@@ -474,6 +1057,11 @@ void AstraSidebarTabGroupsView::OnThemeChanged() {
 
   section_title_->SetEnabledColor(
       color_provider->GetColor(kTabGroupsSectionTitleTextColorId));
+
+  if (add_group_button_) {
+    add_group_button_->SetEnabledTextColors(
+        color_provider->GetColor(kTabGroupsAddButtonTextColorId));
+  }
 }
 
 }  // namespace astra

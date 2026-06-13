@@ -1084,6 +1084,683 @@ TEST_F(AstraDevToolsModelTest, NullPrefServiceWorks) {
 }
 
 // =========================================================================
+// Deepened model tests (AstraDevToolsPanelInfo / AstraDevToolsPanelType)
+// =========================================================================
+
+// Test observer for the deepened AstraDevToolsObserver interface.
+class TestDeepenedObserver : public AstraDevToolsObserver {
+ public:
+  int devtools_opened_count = 0;
+  int devtools_closed_count = 0;
+  int panel_activated_count = 0;
+  std::string last_activated_panel;
+  int panel_enabled_changed_count = 0;
+  std::string last_enabled_panel;
+  bool last_enabled_value = false;
+  int panel_visibility_changed_count = 0;
+  std::string last_visibility_panel;
+  bool last_visibility_value = false;
+  int panels_reordered_count = 0;
+  int dock_state_changed_count = 0;
+  AstraDevToolsDockState last_dock_state = AstraDevToolsDockState::kDockedBottom;
+  int model_shutdown_count = 0;
+
+  void OnDevToolsOpened(AstraDevToolsModel* model) override {
+    devtools_opened_count++;
+  }
+  void OnDevToolsClosed(AstraDevToolsModel* model) override {
+    devtools_closed_count++;
+  }
+  void OnPanelActivated(AstraDevToolsModel* model,
+                        const std::string& panel_id) override {
+    panel_activated_count++;
+    last_activated_panel = panel_id;
+  }
+  void OnPanelEnabledChanged(AstraDevToolsModel* model,
+                             const std::string& panel_id,
+                             bool enabled) override {
+    panel_enabled_changed_count++;
+    last_enabled_panel = panel_id;
+    last_enabled_value = enabled;
+  }
+  void OnPanelVisibilityChanged(AstraDevToolsModel* model,
+                                const std::string& panel_id,
+                                bool visible) override {
+    panel_visibility_changed_count++;
+    last_visibility_panel = panel_id;
+    last_visibility_value = visible;
+  }
+  void OnPanelsReordered(AstraDevToolsModel* model) override {
+    panels_reordered_count++;
+  }
+  void OnDockStateChanged(AstraDevToolsModel* model,
+                          AstraDevToolsDockState state) override {
+    dock_state_changed_count++;
+    last_dock_state = state;
+  }
+  void OnDevToolsModelShutdown(AstraDevToolsModel* model) override {
+    model_shutdown_count++;
+  }
+};
+
+// Empty deepened observer — tests default implementations.
+class EmptyDeepenedObserver : public AstraDevToolsObserver {
+ public:
+  // Intentionally empty — all methods use default implementations.
+};
+
+// -- Panel type and struct ------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedDefaultPanelsCount) {
+  auto panels = model_->GetPanels();
+  EXPECT_EQ(6u, panels.size());
+  EXPECT_EQ(6u, model_->GetPanelCount());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedPanelTypesAllPresent) {
+  EXPECT_NE(nullptr, model_->GetPanelByType(AstraDevToolsPanelType::kWorkspacePanel));
+  EXPECT_NE(nullptr, model_->GetPanelByType(AstraDevToolsPanelType::kTabStackPanel));
+  EXPECT_NE(nullptr, model_->GetPanelByType(AstraDevToolsPanelType::kNotesPanel));
+  EXPECT_NE(nullptr, model_->GetPanelByType(AstraDevToolsPanelType::kPerformancePanel));
+  EXPECT_NE(nullptr, model_->GetPanelByType(AstraDevToolsPanelType::kAccessibilityPanel));
+  EXPECT_NE(nullptr, model_->GetPanelByType(AstraDevToolsPanelType::kA11yTreePanel));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedGetPanelByIdExists) {
+  const auto* panel = model_->GetPanel("workspace-panel");
+  ASSERT_NE(nullptr, panel);
+  EXPECT_EQ(AstraDevToolsPanelType::kWorkspacePanel, panel->type);
+  EXPECT_FALSE(panel->title.empty());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedGetPanelByIdNotFound) {
+  EXPECT_EQ(nullptr, model_->GetPanel("nonexistent"));
+  EXPECT_EQ(nullptr, model_->GetPanel(""));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedPanelInfoHasAllFields) {
+  const auto* panel = model_->GetPanelByType(AstraDevToolsPanelType::kWorkspacePanel);
+  ASSERT_NE(nullptr, panel);
+  EXPECT_FALSE(panel->panel_id.empty());
+  EXPECT_FALSE(panel->title.empty());
+  EXPECT_FALSE(panel->icon_name.empty());
+  EXPECT_TRUE(panel->is_enabled);
+  EXPECT_TRUE(panel->is_visible);
+  EXPECT_GE(panel->order_index, 0);
+  EXPECT_TRUE(panel->is_default);
+  EXPECT_FALSE(panel->description.empty());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedPanelsAreOrdered) {
+  auto panels = model_->GetPanels();
+  for (size_t i = 0; i < panels.size(); ++i) {
+    EXPECT_EQ(static_cast<int>(i), panels[i].order_index);
+  }
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedGetDefaultPanelsStatic) {
+  auto defaults = AstraDevToolsModel::GetDefaultPanels();
+  EXPECT_EQ(6u, defaults.size());
+  EXPECT_EQ(AstraDevToolsPanelType::kWorkspacePanel, defaults[0].type);
+  EXPECT_TRUE(defaults[0].is_default);
+}
+
+// -- Panel enable/disable -------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedIsPanelEnabledDefaultTrue) {
+  const auto* ws = model_->GetPanelByType(AstraDevToolsPanelType::kWorkspacePanel);
+  ASSERT_NE(nullptr, ws);
+  EXPECT_TRUE(model_->IsPanelEnabled(ws->panel_id));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetPanelEnabledFalse) {
+  const auto* notes = model_->GetPanelByType(AstraDevToolsPanelType::kNotesPanel);
+  ASSERT_NE(nullptr, notes);
+  std::string id = notes->panel_id;
+
+  EXPECT_TRUE(model_->SetPanelEnabled(id, false));
+  EXPECT_FALSE(model_->IsPanelEnabled(id));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetPanelEnabledTrue) {
+  const auto* notes = model_->GetPanelByType(AstraDevToolsPanelType::kNotesPanel);
+  ASSERT_NE(nullptr, notes);
+  std::string id = notes->panel_id;
+
+  model_->SetPanelEnabled(id, false);
+  EXPECT_TRUE(model_->SetPanelEnabled(id, true));
+  EXPECT_TRUE(model_->IsPanelEnabled(id));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetPanelEnabledNotFound) {
+  EXPECT_FALSE(model_->SetPanelEnabled("nonexistent", false));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedDisabledPanelCannotBeActivated) {
+  const auto* notes = model_->GetPanelByType(AstraDevToolsPanelType::kNotesPanel);
+  ASSERT_NE(nullptr, notes);
+  std::string id = notes->panel_id;
+
+  model_->SetPanelEnabled(id, false);
+  EXPECT_FALSE(model_->SetActivePanel(id));
+}
+
+// -- Panel visibility -----------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedIsPanelVisibleDefaultTrue) {
+  const auto* perf = model_->GetPanelByType(AstraDevToolsPanelType::kPerformancePanel);
+  ASSERT_NE(nullptr, perf);
+  EXPECT_TRUE(model_->IsPanelVisible(perf->panel_id));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetPanelVisibleFalse) {
+  const auto* perf = model_->GetPanelByType(AstraDevToolsPanelType::kPerformancePanel);
+  ASSERT_NE(nullptr, perf);
+  std::string id = perf->panel_id;
+
+  EXPECT_TRUE(model_->SetPanelVisible(id, false));
+  EXPECT_FALSE(model_->IsPanelVisible(id));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetPanelVisibleTrue) {
+  const auto* perf = model_->GetPanelByType(AstraDevToolsPanelType::kPerformancePanel);
+  ASSERT_NE(nullptr, perf);
+  std::string id = perf->panel_id;
+
+  model_->SetPanelVisible(id, false);
+  EXPECT_TRUE(model_->SetPanelVisible(id, true));
+  EXPECT_TRUE(model_->IsPanelVisible(id));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetPanelVisibleNotFound) {
+  EXPECT_FALSE(model_->SetPanelVisible("nonexistent", false));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedHiddenPanelCannotBeActivated) {
+  const auto* a11y = model_->GetPanelByType(AstraDevToolsPanelType::kA11yTreePanel);
+  ASSERT_NE(nullptr, a11y);
+  std::string id = a11y->panel_id;
+
+  model_->SetPanelVisible(id, false);
+  EXPECT_FALSE(model_->SetActivePanel(id));
+}
+
+// -- Active panel ---------------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedDefaultActivePanel) {
+  // Default active panel should be the first panel (workspace).
+  const auto* ws = model_->GetPanelByType(AstraDevToolsPanelType::kWorkspacePanel);
+  ASSERT_NE(nullptr, ws);
+  EXPECT_EQ(ws->panel_id, model_->GetActivePanel());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetActivePanel) {
+  const auto* notes = model_->GetPanelByType(AstraDevToolsPanelType::kNotesPanel);
+  ASSERT_NE(nullptr, notes);
+  std::string id = notes->panel_id;
+
+  EXPECT_TRUE(model_->SetActivePanel(id));
+  EXPECT_EQ(id, model_->GetActivePanel());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetActivePanelNotFound) {
+  EXPECT_FALSE(model_->SetActivePanel("nonexistent"));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetActivePanelSameIsNoop) {
+  const auto* ws = model_->GetPanelByType(AstraDevToolsPanelType::kWorkspacePanel);
+  ASSERT_NE(nullptr, ws);
+
+  // Should succeed without error.
+  EXPECT_TRUE(model_->SetActivePanel(ws->panel_id));
+  // Still the active panel.
+  EXPECT_EQ(ws->panel_id, model_->GetActivePanel());
+}
+
+// -- Panel reordering -----------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedReorderPanels) {
+  auto original = model_->GetPanels();
+  ASSERT_GE(original.size(), 3u);
+
+  // Reverse the first three panels.
+  std::vector<std::string> new_order = {
+    original[2].panel_id,
+    original[1].panel_id,
+    original[0].panel_id,
+  };
+  // Add remaining panels in original order.
+  for (size_t i = 3; i < original.size(); ++i) {
+    new_order.push_back(original[i].panel_id);
+  }
+
+  model_->ReorderPanels(new_order);
+
+  auto reordered = model_->GetPanels();
+  EXPECT_EQ(new_order.size(), reordered.size());
+  for (size_t i = 0; i < new_order.size(); ++i) {
+    EXPECT_EQ(new_order[i], reordered[i].panel_id);
+    EXPECT_EQ(static_cast<int>(i), reordered[i].order_index);
+  }
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedReorderPanelsPartialList) {
+  auto original = model_->GetPanels();
+  ASSERT_GE(original.size(), 4u);
+
+  // Only specify first two panels in new order.
+  std::vector<std::string> new_order = {
+    original[1].panel_id,
+    original[0].panel_id,
+  };
+
+  model_->ReorderPanels(new_order);
+
+  auto reordered = model_->GetPanels();
+  // First two should be in the specified order.
+  EXPECT_EQ(new_order[0], reordered[0].panel_id);
+  EXPECT_EQ(new_order[1], reordered[1].panel_id);
+  // Total count should be the same.
+  EXPECT_EQ(original.size(), reordered.size());
+  // All order indices should be contiguous.
+  for (size_t i = 0; i < reordered.size(); ++i) {
+    EXPECT_EQ(static_cast<int>(i), reordered[i].order_index);
+  }
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedResetPanelsToDefaults) {
+  // Modify panels.
+  const auto* perf = model_->GetPanelByType(AstraDevToolsPanelType::kPerformancePanel);
+  ASSERT_NE(nullptr, perf);
+  model_->SetPanelVisible(perf->panel_id, false);
+  model_->SetPanelEnabled(perf->panel_id, false);
+
+  auto original = model_->GetPanels();
+  std::vector<std::string> reversed_order;
+  for (auto it = original.rbegin(); it != original.rend(); ++it) {
+    reversed_order.push_back(it->panel_id);
+  }
+  model_->ReorderPanels(reversed_order);
+
+  // Reset.
+  model_->ResetPanelsToDefaults();
+
+  auto reset = model_->GetPanels();
+  EXPECT_EQ(6u, reset.size());
+  EXPECT_TRUE(model_->IsPanelVisible(perf->panel_id));
+  EXPECT_TRUE(model_->IsPanelEnabled(perf->panel_id));
+  // Workspace should be first again.
+  EXPECT_EQ(AstraDevToolsPanelType::kWorkspacePanel, reset[0].type);
+}
+
+// -- ShowAstraPanel -------------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedShowAstraPanelOpensDevTools) {
+  ASSERT_FALSE(model_->IsDevToolsOpen());
+
+  EXPECT_TRUE(model_->ShowAstraPanel(AstraDevToolsPanelType::kNotesPanel));
+
+  EXPECT_TRUE(model_->IsDevToolsOpen());
+  const auto* notes = model_->GetPanelByType(AstraDevToolsPanelType::kNotesPanel);
+  ASSERT_NE(nullptr, notes);
+  EXPECT_EQ(notes->panel_id, model_->GetActivePanel());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedShowAstraPanelWhenAlreadyOpen) {
+  model_->SetDevToolsOpen(true);
+
+  EXPECT_TRUE(model_->ShowAstraPanel(AstraDevToolsPanelType::kPerformancePanel));
+
+  EXPECT_TRUE(model_->IsDevToolsOpen());
+  const auto* perf = model_->GetPanelByType(AstraDevToolsPanelType::kPerformancePanel);
+  ASSERT_NE(nullptr, perf);
+  EXPECT_EQ(perf->panel_id, model_->GetActivePanel());
+}
+
+// -- DevTools open/close state -------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedDevToolsClosedByDefault) {
+  EXPECT_FALSE(model_->IsDevToolsOpen());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetDevToolsOpenTrue) {
+  model_->SetDevToolsOpen(true);
+  EXPECT_TRUE(model_->IsDevToolsOpen());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetDevToolsOpenFalse) {
+  model_->SetDevToolsOpen(true);
+  ASSERT_TRUE(model_->IsDevToolsOpen());
+
+  model_->SetDevToolsOpen(false);
+  EXPECT_FALSE(model_->IsDevToolsOpen());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetDevToolsOpenNoopWhenSame) {
+  TestDeepenedObserver observer;
+  model_->AddObserver(&observer);
+
+  model_->SetDevToolsOpen(false);  // Already false.
+  EXPECT_EQ(0, observer.devtools_closed_count);
+
+  model_->SetDevToolsOpen(true);
+  EXPECT_EQ(1, observer.devtools_opened_count);
+
+  model_->SetDevToolsOpen(true);   // Already true.
+  EXPECT_EQ(1, observer.devtools_opened_count);
+
+  model_->RemoveObserver(&observer);
+}
+
+// -- Dock state -----------------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedDefaultDockState) {
+  EXPECT_EQ(AstraDevToolsDockState::kDockedBottom, model_->GetDockState());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetDockStateAllValues) {
+  model_->SetDockState(AstraDevToolsDockState::kDockedLeft);
+  EXPECT_EQ(AstraDevToolsDockState::kDockedLeft, model_->GetDockState());
+
+  model_->SetDockState(AstraDevToolsDockState::kDockedRight);
+  EXPECT_EQ(AstraDevToolsDockState::kDockedRight, model_->GetDockState());
+
+  model_->SetDockState(AstraDevToolsDockState::kUndocked);
+  EXPECT_EQ(AstraDevToolsDockState::kUndocked, model_->GetDockState());
+
+  model_->SetDockState(AstraDevToolsDockState::kMinimized);
+  EXPECT_EQ(AstraDevToolsDockState::kMinimized, model_->GetDockState());
+
+  model_->SetDockState(AstraDevToolsDockState::kDockedBottom);
+  EXPECT_EQ(AstraDevToolsDockState::kDockedBottom, model_->GetDockState());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedIsDocked) {
+  model_->SetDockState(AstraDevToolsDockState::kDockedBottom);
+  EXPECT_TRUE(model_->IsDocked());
+
+  model_->SetDockState(AstraDevToolsDockState::kDockedLeft);
+  EXPECT_TRUE(model_->IsDocked());
+
+  model_->SetDockState(AstraDevToolsDockState::kDockedRight);
+  EXPECT_TRUE(model_->IsDocked());
+
+  model_->SetDockState(AstraDevToolsDockState::kUndocked);
+  EXPECT_FALSE(model_->IsDocked());
+
+  model_->SetDockState(AstraDevToolsDockState::kMinimized);
+  EXPECT_FALSE(model_->IsDocked());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedToggleDockSideCycles) {
+  // Start at bottom.
+  ASSERT_EQ(AstraDevToolsDockState::kDockedBottom, model_->GetDockState());
+
+  model_->ToggleDockSide();
+  EXPECT_EQ(AstraDevToolsDockState::kDockedLeft, model_->GetDockState());
+
+  model_->ToggleDockSide();
+  EXPECT_EQ(AstraDevToolsDockState::kDockedRight, model_->GetDockState());
+
+  model_->ToggleDockSide();
+  EXPECT_EQ(AstraDevToolsDockState::kUndocked, model_->GetDockState());
+
+  model_->ToggleDockSide();
+  EXPECT_EQ(AstraDevToolsDockState::kDockedBottom, model_->GetDockState());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedToggleDockSideFromMinimized) {
+  model_->SetDockState(AstraDevToolsDockState::kMinimized);
+
+  model_->ToggleDockSide();
+  // From minimized, should go to bottom (first docked state).
+  EXPECT_EQ(AstraDevToolsDockState::kDockedBottom, model_->GetDockState());
+}
+
+// -- Zoom level -----------------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedDefaultZoomLevel) {
+  EXPECT_DOUBLE_EQ(1.0, model_->GetZoomLevel());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetZoomLevel) {
+  model_->SetZoomLevel(1.5);
+  EXPECT_DOUBLE_EQ(1.5, model_->GetZoomLevel());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedZoomLevelClampedToMin) {
+  model_->SetZoomLevel(0.1);  // Below minimum.
+  EXPECT_DOUBLE_EQ(AstraDevToolsModel::kMinZoomLevel, model_->GetZoomLevel());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedZoomLevelClampedToMax) {
+  model_->SetZoomLevel(5.0);  // Above maximum.
+  EXPECT_DOUBLE_EQ(AstraDevToolsModel::kMaxZoomLevel, model_->GetZoomLevel());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedZoomLevelAtMinBoundary) {
+  model_->SetZoomLevel(AstraDevToolsModel::kMinZoomLevel);
+  EXPECT_DOUBLE_EQ(AstraDevToolsModel::kMinZoomLevel, model_->GetZoomLevel());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedZoomLevelAtMaxBoundary) {
+  model_->SetZoomLevel(AstraDevToolsModel::kMaxZoomLevel);
+  EXPECT_DOUBLE_EQ(AstraDevToolsModel::kMaxZoomLevel, model_->GetZoomLevel());
+}
+
+// -- Pref keys ------------------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedPrefKeysAreDefined) {
+  // All 12+ pref keys should be defined as non-empty strings.
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefEnableAstraPanels).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefDefaultActivePanel).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefDefaultDockState).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefPanelOrder).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefShowPanelIcons).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefShowAstraTab).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefDevToolsTheme).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefFontSize).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefPanelVisibilityDefaults).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefAutoOpenOnError).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefWorkspaceAutoSync).empty());
+  EXPECT_FALSE(std::string(AstraDevToolsModel::kPrefPerformanceAutoRecord).empty());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedDefaultFontSize) {
+  EXPECT_EQ(AstraDevToolsModel::kDefaultFontSize, 12);
+}
+
+// -- Deepened observer notifications -------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedObserverDevToolsOpened) {
+  TestDeepenedObserver observer;
+  model_->AddObserver(&observer);
+
+  model_->SetDevToolsOpen(true);
+  EXPECT_EQ(1, observer.devtools_opened_count);
+  EXPECT_EQ(0, observer.devtools_closed_count);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedObserverDevToolsClosed) {
+  model_->SetDevToolsOpen(true);
+
+  TestDeepenedObserver observer;
+  model_->AddObserver(&observer);
+
+  model_->SetDevToolsOpen(false);
+  EXPECT_EQ(0, observer.devtools_opened_count);
+  EXPECT_EQ(1, observer.devtools_closed_count);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedObserverPanelActivated) {
+  TestDeepenedObserver observer;
+  model_->AddObserver(&observer);
+
+  const auto* notes = model_->GetPanelByType(AstraDevToolsPanelType::kNotesPanel);
+  ASSERT_NE(nullptr, notes);
+  model_->SetActivePanel(notes->panel_id);
+
+  EXPECT_EQ(1, observer.panel_activated_count);
+  EXPECT_EQ(notes->panel_id, observer.last_activated_panel);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedObserverPanelEnabledChanged) {
+  TestDeepenedObserver observer;
+  model_->AddObserver(&observer);
+
+  const auto* perf = model_->GetPanelByType(AstraDevToolsPanelType::kPerformancePanel);
+  ASSERT_NE(nullptr, perf);
+  model_->SetPanelEnabled(perf->panel_id, false);
+
+  EXPECT_EQ(1, observer.panel_enabled_changed_count);
+  EXPECT_EQ(perf->panel_id, observer.last_enabled_panel);
+  EXPECT_FALSE(observer.last_enabled_value);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedObserverPanelVisibilityChanged) {
+  TestDeepenedObserver observer;
+  model_->AddObserver(&observer);
+
+  const auto* a11y = model_->GetPanelByType(AstraDevToolsPanelType::kA11yTreePanel);
+  ASSERT_NE(nullptr, a11y);
+  model_->SetPanelVisible(a11y->panel_id, false);
+
+  EXPECT_EQ(1, observer.panel_visibility_changed_count);
+  EXPECT_EQ(a11y->panel_id, observer.last_visibility_panel);
+  EXPECT_FALSE(observer.last_visibility_value);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedObserverPanelsReordered) {
+  TestDeepenedObserver observer;
+  model_->AddObserver(&observer);
+
+  auto panels = model_->GetPanels();
+  std::vector<std::string> order;
+  for (auto it = panels.rbegin(); it != panels.rend(); ++it) {
+    order.push_back(it->panel_id);
+  }
+  model_->ReorderPanels(order);
+
+  EXPECT_GE(observer.panels_reordered_count, 1);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedObserverDockStateChanged) {
+  TestDeepenedObserver observer;
+  model_->AddObserver(&observer);
+
+  model_->SetDockState(AstraDevToolsDockState::kDockedLeft);
+
+  EXPECT_EQ(1, observer.dock_state_changed_count);
+  EXPECT_EQ(AstraDevToolsDockState::kDockedLeft, observer.last_dock_state);
+
+  model_->RemoveObserver(&observer);
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedObserverEmptyDefaultsDoNotCrash) {
+  EmptyDeepenedObserver observer;
+  model_->AddObserver(&observer);
+
+  // Trigger all deepened observer methods.
+  model_->SetDevToolsOpen(true);
+  model_->SetDevToolsOpen(false);
+  const auto* notes = model_->GetPanelByType(AstraDevToolsPanelType::kNotesPanel);
+  if (notes) {
+    model_->SetActivePanel(notes->panel_id);
+    model_->SetPanelEnabled(notes->panel_id, false);
+    model_->SetPanelEnabled(notes->panel_id, true);
+    model_->SetPanelVisible(notes->panel_id, false);
+    model_->SetPanelVisible(notes->panel_id, true);
+  }
+  model_->ReorderPanels({});
+  model_->SetDockState(AstraDevToolsDockState::kUndocked);
+
+  // No crash = success.
+  model_->RemoveObserver(&observer);
+  SUCCEED();
+}
+
+// -- Edge cases -----------------------------------------------------------
+
+TEST_F(AstraDevToolsModelTest, DeepenedShowAstraPanelOnEmptyModel) {
+  // Remove all panels.
+  auto all = model_->GetPanels();
+  for (const auto& p : all) {
+    model_->SetPanelEnabled(p.panel_id, false);
+    model_->SetPanelVisible(p.panel_id, false);
+  }
+
+  // Should fail gracefully.
+  EXPECT_FALSE(model_->ShowAstraPanel(AstraDevToolsPanelType::kWorkspacePanel));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedSetActivePanelWhenAllDisabled) {
+  auto all = model_->GetPanels();
+  for (const auto& p : all) {
+    model_->SetPanelEnabled(p.panel_id, false);
+  }
+
+  // Trying to set any panel should fail.
+  for (const auto& p : all) {
+    EXPECT_FALSE(model_->SetActivePanel(p.panel_id));
+  }
+  EXPECT_TRUE(model_->GetActivePanel().empty());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedGetPanelByTypeInvalid) {
+  // Cast an invalid int to the enum type.
+  auto invalid_type = static_cast<AstraDevToolsPanelType>(999);
+  EXPECT_EQ(nullptr, model_->GetPanelByType(invalid_type));
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedReorderPanelsEmptyList) {
+  auto before = model_->GetPanels();
+  model_->ReorderPanels({});
+  auto after = model_->GetPanels();
+
+  // Empty list should not change order.
+  EXPECT_EQ(before.size(), after.size());
+  for (size_t i = 0; i < before.size(); ++i) {
+    EXPECT_EQ(before[i].panel_id, after[i].panel_id);
+  }
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedDockStateEnumHasFiveValues) {
+  // Verify the five dock states are distinct.
+  std::set<AstraDevToolsDockState> states = {
+    AstraDevToolsDockState::kDockedBottom,
+    AstraDevToolsDockState::kDockedLeft,
+    AstraDevToolsDockState::kDockedRight,
+    AstraDevToolsDockState::kUndocked,
+    AstraDevToolsDockState::kMinimized,
+  };
+  EXPECT_EQ(5u, states.size());
+}
+
+TEST_F(AstraDevToolsModelTest, DeepenedPanelTypeEnumHasSixValues) {
+  std::set<AstraDevToolsPanelType> types = {
+    AstraDevToolsPanelType::kWorkspacePanel,
+    AstraDevToolsPanelType::kTabStackPanel,
+    AstraDevToolsPanelType::kNotesPanel,
+    AstraDevToolsPanelType::kPerformancePanel,
+    AstraDevToolsPanelType::kAccessibilityPanel,
+    AstraDevToolsPanelType::kA11yTreePanel,
+  };
+  EXPECT_EQ(6u, types.size());
+}
+
+// =========================================================================
 // AstraDevToolsToolbar views tests
 // =========================================================================
 
@@ -1519,6 +2196,195 @@ TEST_F(AstraDevToolsIntegrationTest, ObserverAddRemove) {
 
   integration_->RemoveObserver(&observer);
   // No crash after removal = success.
+}
+
+// =========================================================================
+// Deepened integration tests
+// =========================================================================
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedDevToolsClosedByDefault) {
+  EXPECT_FALSE(integration_->IsDevToolsOpen());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedShowDevTools) {
+  integration_->ShowDevTools();
+  EXPECT_TRUE(integration_->IsDevToolsOpen());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedCloseDevTools) {
+  integration_->ShowDevTools();
+  ASSERT_TRUE(integration_->IsDevToolsOpen());
+
+  integration_->CloseDevTools();
+  EXPECT_FALSE(integration_->IsDevToolsOpen());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedToggleDevTools) {
+  ASSERT_FALSE(integration_->IsDevToolsOpen());
+
+  integration_->ToggleDevTools();
+  EXPECT_TRUE(integration_->IsDevToolsOpen());
+
+  integration_->ToggleDevTools();
+  EXPECT_FALSE(integration_->IsDevToolsOpen());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedShowPanel) {
+  EXPECT_TRUE(integration_->ShowPanel(AstraDevToolsPanelType::kNotesPanel));
+  EXPECT_TRUE(integration_->IsDevToolsOpen());
+  EXPECT_TRUE(integration_->IsPanelOpen());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedClosePanel) {
+  integration_->ShowPanel(AstraDevToolsPanelType::kWorkspacePanel);
+  ASSERT_TRUE(integration_->IsPanelOpen());
+
+  integration_->ClosePanel();
+  EXPECT_FALSE(integration_->IsPanelOpen());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedGetModel) {
+  EXPECT_NE(nullptr, integration_->GetModel());
+  EXPECT_EQ(integration_->model(), integration_->GetModel());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedDockStateDefault) {
+  EXPECT_EQ(AstraDevToolsDockState::kDockedBottom, integration_->GetDockState());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedSetDockState) {
+  integration_->SetDockState(AstraDevToolsDockState::kDockedLeft);
+  EXPECT_EQ(AstraDevToolsDockState::kDockedLeft, integration_->GetDockState());
+
+  integration_->SetDockState(AstraDevToolsDockState::kUndocked);
+  EXPECT_EQ(AstraDevToolsDockState::kUndocked, integration_->GetDockState());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedZoomLevelDefault) {
+  EXPECT_DOUBLE_EQ(1.0, integration_->GetZoomLevel());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedSetZoomLevel) {
+  integration_->SetZoomLevel(1.5);
+  EXPECT_DOUBLE_EQ(1.5, integration_->GetZoomLevel());
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedInspectElementToggles) {
+  // Inspect element toggles the internal flag.
+  integration_->InspectElement();
+  // No crash = success. TODO(astra): Wire to actual DevTools integration.
+  SUCCEED();
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedToggleDeviceMode) {
+  integration_->ToggleDeviceMode();
+  // No crash = success.
+  SUCCEED();
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedReloadDevTools) {
+  integration_->ReloadDevTools();
+  // No crash = success.
+  SUCCEED();
+}
+
+// -- Integration observer tests ------------------------------------------
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedIntegrationObserverOnOpened) {
+  class TestIntegrationObserver : public AstraDevToolsIntegrationObserver {
+   public:
+    int opened_count = 0;
+    void OnDevToolsOpened(AstraDevToolsIntegration*) override {
+      opened_count++;
+    }
+  };
+
+  TestIntegrationObserver observer;
+  integration_->AddIntegrationObserver(&observer);
+
+  integration_->ShowDevTools();
+  EXPECT_EQ(1, observer.opened_count);
+
+  integration_->RemoveIntegrationObserver(&observer);
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedIntegrationObserverOnClosed) {
+  class TestIntegrationObserver : public AstraDevToolsIntegrationObserver {
+   public:
+    int closed_count = 0;
+    void OnDevToolsClosed(AstraDevToolsIntegration*) override {
+      closed_count++;
+    }
+  };
+
+  integration_->ShowDevTools();
+
+  TestIntegrationObserver observer;
+  integration_->AddIntegrationObserver(&observer);
+
+  integration_->CloseDevTools();
+  EXPECT_EQ(1, observer.closed_count);
+
+  integration_->RemoveIntegrationObserver(&observer);
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedIntegrationObserverOnPanelShown) {
+  class TestIntegrationObserver : public AstraDevToolsIntegrationObserver {
+   public:
+    int shown_count = 0;
+    AstraDevToolsPanelType last_type = AstraDevToolsPanelType::kWorkspacePanel;
+    void OnPanelShown(AstraDevToolsIntegration*,
+                      AstraDevToolsPanelType type) override {
+      shown_count++;
+      last_type = type;
+    }
+  };
+
+  TestIntegrationObserver observer;
+  integration_->AddIntegrationObserver(&observer);
+
+  integration_->ShowPanel(AstraDevToolsPanelType::kNotesPanel);
+  EXPECT_GE(observer.shown_count, 1);
+
+  integration_->RemoveIntegrationObserver(&observer);
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedIntegrationObserverOnPanelHidden) {
+  class TestIntegrationObserver : public AstraDevToolsIntegrationObserver {
+   public:
+    int hidden_count = 0;
+    void OnPanelHidden(AstraDevToolsIntegration*) override {
+      hidden_count++;
+    }
+  };
+
+  integration_->ShowPanel(AstraDevToolsPanelType::kWorkspacePanel);
+
+  TestIntegrationObserver observer;
+  integration_->AddIntegrationObserver(&observer);
+
+  integration_->ClosePanel();
+  EXPECT_GE(observer.hidden_count, 1);
+
+  integration_->RemoveIntegrationObserver(&observer);
+}
+
+TEST_F(AstraDevToolsIntegrationTest, DeepenedIntegrationObserverDefaultsDoNotCrash) {
+  class EmptyIntegrationObserver : public AstraDevToolsIntegrationObserver {
+   public:
+    // All methods use default implementations.
+  };
+
+  EmptyIntegrationObserver observer;
+  integration_->AddIntegrationObserver(&observer);
+
+  integration_->ShowDevTools();
+  integration_->ShowPanel(AstraDevToolsPanelType::kWorkspacePanel);
+  integration_->ClosePanel();
+  integration_->CloseDevTools();
+
+  integration_->RemoveIntegrationObserver(&observer);
+  SUCCEED();
 }
 
 // =========================================================================

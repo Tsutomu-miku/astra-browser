@@ -5,6 +5,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "ui/gfx/geometry/size.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/views/bubble/bubble_dialog_delegate_view.h"
 #include "ui/views/view.h"
 
@@ -13,15 +14,30 @@ class WebContents;
 }  // namespace content
 
 namespace views {
+class ImageView;
 class Label;
+class LabelButton;
 class Widget;
 }  // namespace views
 
 namespace astra {
 
+// Position of the popup relative to its anchor.
+// Mirrors views::BubbleBorder::Arrow but is presentation-facing.
+enum class AstraPopupPosition {
+  kAuto,   // Automatically choose the best position
+  kAbove,  // Popup appears above the anchor
+  kBelow,  // Popup appears below the anchor
+  kLeft,   // Popup appears to the left of the anchor
+  kRight,  // Popup appears to the right of the anchor
+};
+
 // Delegate interface for AstraExtensionPopupView events.
 // Implemented by the controller (sidebar extensions section) to handle
 // popup lifecycle events.
+//
+// Chromium owner: ExtensionPopup delegate / observer
+//   (chrome/browser/ui/views/extensions/extension_popup.h)
 class AstraExtensionPopupDelegate {
  public:
   virtual ~AstraExtensionPopupDelegate() = default;
@@ -29,6 +45,9 @@ class AstraExtensionPopupDelegate {
   // Called when the popup widget is about to close.
   // |extension_id| identifies which extension's popup is closing.
   virtual void OnExtensionPopupClosed(const std::string& extension_id) = 0;
+
+  // Called when the popup widget is shown.
+  virtual void OnExtensionPopupShown(const std::string& extension_id) = 0;
 };
 
 // A bubble that shows an extension's popup content.
@@ -37,17 +56,21 @@ class AstraExtensionPopupDelegate {
 // via WebContents. The actual extension popup content is owned by the
 // Chromium extension system. This view is just the container/bubble.
 //
-// Similar to Chromium's ExtensionPopup but simplified for the sidebar.
+// Layout:
+//   +-----------------------------------+
+//   | [icon] Extension Name   [opts][x] |  <- Header (optional)
+//   +-----------------------------------+
+//   |                                   |
+//   |     Extension HTML content        |  <- Content area
+//   |                                   |
+//   +-----------------------------------+
 //
-// The popup is anchored to the extension icon in the sidebar and auto-
-// dismisses when the user clicks outside or switches tabs.
+// Similar to Chromium's ExtensionPopup but simplified for the sidebar.
 //
 // Chromium owner: ExtensionPopup
 //   (chrome/browser/ui/views/extensions/extension_popup.h)
 // Chromium owner: ExtensionPopupViewViews
 //   (chrome/browser/ui/views/extensions/extension_popup_view_views.h)
-// Chromium owner: ExtensionActionPlatformView
-//   (chrome/browser/ui/views/extensions/extension_action_platform_view.h)
 //
 // TODO(astra): Real WebContents-based extension popup view.
 //   Currently this is a placeholder bubble with the extension name.
@@ -73,11 +96,82 @@ class AstraExtensionPopupView : public views::BubbleDialogDelegateView {
   AstraExtensionPopupView& operator=(const AstraExtensionPopupView&) = delete;
   ~AstraExtensionPopupView() override;
 
+  // -- Extension identity -------------------------------------------------
+
+  void SetExtensionId(const std::string& extension_id);
+  const std::string& GetExtensionId() const;
+
+  // -- Title / header ----------------------------------------------------
+
+  void SetTitle(const std::u16string& title);
+  const std::u16string& GetTitle() const;
+
+  void SetIcon(const gfx::ImageSkia& icon);
+
+  void SetShowTitle(bool show);
+  bool GetShowTitle() const;
+
+  void SetShowCloseButton(bool show);
+  bool GetShowCloseButton() const;
+
+  void SetShowOptionsButton(bool show);
+  bool GetShowOptionsButton() const;
+
+  // -- Sizing -------------------------------------------------------------
+
+  void SetContentSize(const gfx::Size& size);
+  gfx::Size GetContentSize() const;
+
+  void SetMinSize(const gfx::Size& size);
+  gfx::Size GetMinSize() const;
+
+  void SetMaxSize(const gfx::Size& size);
+  gfx::Size GetMaxSize() const;
+
+  // -- Behavior -----------------------------------------------------------
+
+  void SetIsResizable(bool resizable);
+  bool IsResizable() const;
+
+  void SetDismissOnDeactivate(bool dismiss);
+  bool GetDismissOnDeactivate() const;
+
+  // -- Visibility ---------------------------------------------------------
+
   // Show the popup widget. Returns the Widget* for the popup.
   views::Widget* Show();
 
-  // Close the popup widget. Safe to call multiple times.
-  void ClosePopup();
+  // Hide (close) the popup widget. Safe to call multiple times.
+  void Hide();
+
+  // Returns true if the popup widget is currently visible.
+  bool IsVisible() const;
+
+  // -- Anchor & position --------------------------------------------------
+
+  void SetAnchorView(views::View* anchor);
+  views::View* GetAnchorView() const;
+
+  void SetPopupPosition(AstraPopupPosition position);
+  AstraPopupPosition GetPopupPosition() const;
+
+  // -- Header access ------------------------------------------------------
+
+  void SetHeaderVisible(bool visible);
+  bool IsHeaderVisible() const;
+
+  views::View* GetHeaderView();
+
+  // -- Content access -----------------------------------------------------
+
+  views::View* GetContentView();
+
+  // -- Extension view hosting --------------------------------------------
+
+  // Set the view that contains the actual extension content (e.g., a
+  // WebContents view). The view is reparented into the content area.
+  void SetExtensionView(views::View* extension_view);
+  views::View* GetExtensionView() const;
 
   // -- WebContents hosting (placeholder for future implementation) -------
 
@@ -86,12 +180,26 @@ class AstraExtensionPopupView : public views::BubbleDialogDelegateView {
   //   missing piece for real extension popup support. The WebContents
   //   should be created by ExtensionHost and rendered inside this view.
   // Chromium owner: ExtensionHost (extensions/browser/extension_host.h)
-  // Chromium owner: ExtensionPopup
-  //   (chrome/browser/ui/views/extensions/extension_popup.h)
   void SetPopupWebContents(content::WebContents* web_contents);
 
-  // Get the extension ID this popup belongs to.
-  const std::string& extension_id() const { return extension_id_; }
+  // -- Loading state ------------------------------------------------------
+
+  void SetLoading(bool loading);
+  bool IsLoading() const;
+
+  // -- Error state --------------------------------------------------------
+
+  void SetErrorState(bool error, const std::u16string& error_message);
+  bool HasError() const;
+  const std::u16string& GetErrorMessage() const;
+
+  // -- Actions ------------------------------------------------------------
+
+  // Reload the extension popup content.
+  void ReloadExtension();
+
+  // Open DevTools for the popup (for debugging).
+  void InspectPopup();
 
   // -- views::BubbleDialogDelegateView -----------------------------------
 
@@ -99,18 +207,29 @@ class AstraExtensionPopupView : public views::BubbleDialogDelegateView {
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
 
  private:
-  // Build the popup content view hierarchy.
+  // Build the popup content view hierarchy. Called once from constructor.
   void BuildLayout();
 
-  // Resize the popup to fit the WebContents preferred size.
-  // TODO(astra): Implement proper resize logic based on WebContents
-  //   size requests, similar to ExtensionPopup::OnExtensionSizeChanged.
+  // Update the header visibility based on show_title, show_close_button,
+  // and show_options_button settings.
+  void UpdateHeaderVisibility();
+
+  // Resize the popup to fit the content size.
   void ResizeToContent();
+
+  // Convert AstraPopupPosition to views::BubbleBorder::Arrow.
+  static views::BubbleBorder::Arrow PositionToArrow(AstraPopupPosition pos);
+
+  // Handle close button click.
+  void OnCloseButtonPressed();
+
+  // Handle options button click.
+  void OnOptionsButtonPressed();
 
   // The extension ID this popup belongs to.
   std::string extension_id_;
 
-  // The extension display name (for placeholder content).
+  // The extension display name (shown in the header).
   std::u16string extension_name_;
 
   // Delegate for lifecycle events. Not owned.
@@ -120,13 +239,62 @@ class AstraExtensionPopupView : public views::BubbleDialogDelegateView {
   // TODO(astra): Wire up real WebContents from ExtensionHost.
   raw_ptr<content::WebContents> popup_web_contents_ = nullptr;
 
-  // Placeholder content views.
+  // The extension content view (hosts WebContents or placeholder).
+  raw_ptr<views::View> extension_view_ = nullptr;
+
+  // Header child views.
+  raw_ptr<views::View> header_view_ = nullptr;
+  raw_ptr<views::ImageView> header_icon_ = nullptr;
   raw_ptr<views::Label> title_label_ = nullptr;
+  raw_ptr<views::LabelButton> options_button_ = nullptr;
+  raw_ptr<views::LabelButton> close_button_ = nullptr;
+
+  // Content area (hosts the extension view).
   raw_ptr<views::View> content_area_ = nullptr;
 
-  // Default popup size (used as fallback when WebContents has no size yet).
+  // Current popup position relative to anchor.
+  AstraPopupPosition popup_position_ = AstraPopupPosition::kRight;
+
+  // Whether the popup is resizable by the user.
+  bool is_resizable_ = false;
+
+  // Whether to show the title in the header.
+  bool show_title_ = true;
+
+  // Whether to show the close button in the header.
+  bool show_close_button_ = true;
+
+  // Whether to show the options button in the header.
+  bool show_options_button_ = false;
+
+  // Whether the popup is currently in a loading state.
+  bool is_loading_ = false;
+
+  // Whether the popup is in an error state.
+  bool has_error_ = false;
+  std::u16string error_message_;
+
+  // Minimum and maximum popup sizes.
+  gfx::Size min_size_;
+  gfx::Size max_size_;
+
+  // Default popup size (used as fallback when content has no size yet).
   static constexpr int kDefaultPopupWidth = 320;
   static constexpr int kDefaultPopupHeight = 400;
+
+  // Minimum popup size constraints.
+  static constexpr int kMinPopupWidth = 25;
+  static constexpr int kMinPopupHeight = 25;
+
+  // Maximum popup size constraints.
+  static constexpr int kMaxPopupWidth = 800;
+  static constexpr int kMaxPopupHeight = 600;
+
+  // Header height in dp.
+  static constexpr int kPopupHeaderHeight = 32;
+
+  // Header padding.
+  static constexpr int kPopupHeaderPadding = 8;
 };
 
 }  // namespace astra

@@ -75,16 +75,68 @@ std::u16string FormatFileSize(int64_t bytes) {
 }
 
 // Get extension for a given image format.
-const char* GetFormatExtension(AstraScreenshotImageFormatModel format) {
+const char* GetFormatExtension(AstraScreenshotFormat format) {
   switch (format) {
-    case AstraScreenshotImageFormatModel::kPng:
+    case AstraScreenshotFormat::kPng:
       return "png";
-    case AstraScreenshotImageFormatModel::kJpeg:
+    case AstraScreenshotFormat::kJpeg:
       return "jpg";
-    case AstraScreenshotImageFormatModel::kWebP:
+    case AstraScreenshotFormat::kWebP:
       return "webp";
   }
   return "png";
+}
+
+// Get the label for a capture mode.
+std::u16string GetCaptureModeLabel(AstraScreenshotMode mode) {
+  switch (mode) {
+    case AstraScreenshotMode::kFullPage:
+      return u"Full Page";
+    case AstraScreenshotMode::kVisibleArea:
+      return u"Visible Area";
+    case AstraScreenshotMode::kRegion:
+      return u"Region";
+    case AstraScreenshotMode::kWindow:
+      return u"Window";
+    case AstraScreenshotMode::kElement:
+      return u"Element";
+  }
+  return u"Screenshot";
+}
+
+// Get the label for a format.
+std::u16string GetFormatLabel(AstraScreenshotFormat format) {
+  switch (format) {
+    case AstraScreenshotFormat::kPng:
+      return u"PNG";
+    case AstraScreenshotFormat::kJpeg:
+      return u"JPEG";
+    case AstraScreenshotFormat::kWebP:
+      return u"WebP";
+  }
+  return u"PNG";
+}
+
+// Get the label for a quality level.
+std::u16string GetQualityLabel(AstraScreenshotQuality quality) {
+  switch (quality) {
+    case AstraScreenshotQuality::kLow:
+      return u"Low";
+    case AstraScreenshotQuality::kMedium:
+      return u"Medium";
+    case AstraScreenshotQuality::kHigh:
+      return u"High";
+    case AstraScreenshotQuality::kMaximum:
+      return u"Maximum";
+  }
+  return u"High";
+}
+
+// Get the label for a delay in seconds.
+std::u16string GetDelayLabel(int seconds) {
+  if (seconds == 0) return u"None";
+  if (seconds == 1) return u"1 second";
+  return base::NumberToString16(seconds) + u" seconds";
 }
 
 }  // namespace
@@ -107,6 +159,38 @@ views::Widget* AstraScreenshotCaptureBubble::ShowBubble(
   auto* bubble = new AstraScreenshotCaptureBubble(
       anchor_view, browser, bitmap, capture_type, source_bounds, delegate,
       model);
+
+  views::Widget* widget = views::BubbleDialogDelegateView::CreateBubble(bubble);
+  bubble->SetArrow(views::BubbleBorder::BOTTOM_RIGHT);
+
+  widget->Show();
+
+  return widget;
+}
+
+// static
+views::Widget* AstraScreenshotCaptureBubble::Show(
+    const gfx::Rect& anchor_rect,
+    Browser* browser,
+    Delegate* delegate,
+    AstraScreenshotCaptureModel* model) {
+  DCHECK(browser);
+  DCHECK(delegate);
+
+  // Create an empty bitmap for the capture-mode bubble.
+  SkBitmap empty_bitmap;
+
+  // Create a dummy anchor view from the rect.
+  // TODO(astra): Use BubbleDialogDelegateView with anchor rect properly.
+  //   For now we create a temporary view as anchor.
+  auto* anchor_view = new views::View();
+  anchor_view->SetBoundsRect(anchor_rect);
+
+  auto* bubble = new AstraScreenshotCaptureBubble(
+      anchor_view, browser, empty_bitmap,
+      static_cast<AstraScreenshotType>(
+          model ? static_cast<int>(model->GetCaptureMode()) : 1),
+      anchor_rect, delegate, model);
 
   views::Widget* widget = views::BubbleDialogDelegateView::CreateBubble(bubble);
   bubble->SetArrow(views::BubbleBorder::BOTTOM_RIGHT);
@@ -144,7 +228,7 @@ AstraScreenshotCaptureBubble::AstraScreenshotCaptureBubble(
   SetCancelCallback(base::DoNothing());
   SetButtons(ui::DIALOG_BUTTON_NONE);
   SetShowTitle(true);
-  SetTitle(u"Screenshot Captured");
+  SetTitle(u"Screenshot");
   SetShowCloseButton(true);
   set_fixed_width(kBubbleWidth);
 
@@ -153,10 +237,14 @@ AstraScreenshotCaptureBubble::AstraScreenshotCaptureBubble(
   SetAccessibleRole(ax::mojom::Role::kDialog);
   SetAccessibleName(GetAccessibleName());
 
-  // Load auto-dismiss delay from model if available.
+  // Load settings from model if available.
   if (model_) {
-    auto_dismiss_delay_ =
-        base::Seconds(model_->GetAutoDismissDelaySeconds());
+    capture_mode_ = model_->GetCaptureMode();
+    format_ = model_->GetFormat();
+    quality_ = model_->GetQuality();
+    capture_delay_seconds_ = model_->GetCaptureDelay();
+    active_tool_ = model_->GetActiveTool();
+    auto_dismiss_delay_ = base::Seconds(model_->GetAutoDismissDelaySeconds());
     auto_dismiss_kept_ = !model_->GetAutoDismissBubble();
   } else {
     auto_dismiss_delay_ = base::Seconds(5);
@@ -173,7 +261,228 @@ AstraScreenshotCaptureBubble::~AstraScreenshotCaptureBubble() {
 }
 
 // =========================================================================
-// Public API
+// Visibility
+// =========================================================================
+
+void AstraScreenshotCaptureBubble::Hide() {
+  if (GetWidget()) {
+    GetWidget()->Close();
+  }
+}
+
+bool AstraScreenshotCaptureBubble::IsVisible() const {
+  return GetWidget() && GetWidget()->IsVisible();
+}
+
+// =========================================================================
+// Model management
+// =========================================================================
+
+void AstraScreenshotCaptureBubble::SetModel(AstraScreenshotCaptureModel* model) {
+  if (model_ == model) return;
+
+  if (model_) {
+    model_->RemoveObserver(this);
+  }
+  model_ = model;
+  if (model_) {
+    model_->AddObserver(this);
+    ApplySettingsFromModel();
+  }
+}
+
+// =========================================================================
+// Capture mode
+// =========================================================================
+
+void AstraScreenshotCaptureBubble::SetCaptureMode(AstraScreenshotMode mode) {
+  if (capture_mode_ == mode) return;
+  capture_mode_ = mode;
+
+  if (model_) {
+    model_->SetCaptureMode(mode);
+  }
+
+  if (mode_combobox_) {
+    mode_combobox_->SetSelectedIndex(static_cast<int>(mode));
+  }
+}
+
+// =========================================================================
+// Format / quality
+// =========================================================================
+
+void AstraScreenshotCaptureBubble::SetFormat(AstraScreenshotFormat format) {
+  if (format_ == format) return;
+  format_ = format;
+
+  if (model_) {
+    model_->SetFormat(format);
+  }
+
+  if (format_combobox_) {
+    format_combobox_->SetSelectedIndex(static_cast<int>(format));
+  }
+  UpdateQualityVisibility();
+
+  // Re-estimate file size.
+  file_size_bytes_ = EstimateFileSize();
+  if (file_size_label_) {
+    file_size_label_->SetText(FormatFileSize(file_size_bytes_));
+  }
+}
+
+void AstraScreenshotCaptureBubble::SetQuality(AstraScreenshotQuality quality) {
+  if (quality_ == quality) return;
+  quality_ = quality;
+
+  if (model_) {
+    model_->SetQuality(quality);
+  }
+
+  if (quality_combobox_) {
+    quality_combobox_->SetSelectedIndex(static_cast<int>(quality));
+  }
+
+  // Re-estimate file size.
+  file_size_bytes_ = EstimateFileSize();
+  if (file_size_label_) {
+    file_size_label_->SetText(FormatFileSize(file_size_bytes_));
+  }
+}
+
+// =========================================================================
+// Capture delay
+// =========================================================================
+
+void AstraScreenshotCaptureBubble::SetCaptureDelay(int delay_seconds) {
+  if (capture_delay_seconds_ == delay_seconds) return;
+  capture_delay_seconds_ = delay_seconds;
+
+  if (model_) {
+    model_->SetCaptureDelay(delay_seconds);
+  }
+
+  if (delay_combobox_) {
+    // Find the index matching the delay.
+    for (int i = 0; i <= 10; i++) {
+      if (i == delay_seconds) {
+        delay_combobox_->SetSelectedIndex(i);
+        break;
+      }
+    }
+  }
+}
+
+// =========================================================================
+// Capture operations
+// =========================================================================
+
+void AstraScreenshotCaptureBubble::StartCapture() {
+  if (state_ == State::kCapturing) return;
+
+  SetState(State::kCapturing);
+
+  if (model_) {
+    model_->StartCapture();
+  }
+
+  if (delegate_) {
+    delegate_->OnScreenshotCaptureStarted();
+  }
+
+  if (placeholder_label_) {
+    placeholder_label_->SetVisible(true);
+    placeholder_label_->SetText(u"Capturing...");
+  }
+  if (preview_image_) {
+    preview_image_->SetVisible(false);
+  }
+  if (preview_throbber_) {
+    preview_throbber_->SetVisible(true);
+    preview_throbber_->Start();
+  }
+}
+
+void AstraScreenshotCaptureBubble::CancelCapture() {
+  if (state_ != State::kCapturing) return;
+
+  SetState(State::kReady);
+
+  if (model_) {
+    model_->CancelCapture();
+  }
+
+  if (delegate_) {
+    delegate_->OnScreenshotCaptureCancelled();
+  }
+
+  if (preview_throbber_) {
+    preview_throbber_->Stop();
+    preview_throbber_->SetVisible(false);
+  }
+}
+
+// =========================================================================
+// Annotation tools
+// =========================================================================
+
+void AstraScreenshotCaptureBubble::SetShowAnnotationTools(bool show) {
+  if (show_annotation_tools_ == show) return;
+  show_annotation_tools_ = show;
+  UpdateAnnotationToolsVisibility();
+}
+
+void AstraScreenshotCaptureBubble::SetActiveTool(AstraAnnotationTool tool) {
+  if (active_tool_ == tool) return;
+  active_tool_ = tool;
+
+  if (model_) {
+    model_->SetActiveTool(tool);
+  }
+
+  // Update tool button states.
+  // TODO(astra): Update individual tool button states.
+}
+
+void AstraScreenshotCaptureBubble::UndoAnnotation() {
+  if (model_) {
+    model_->UndoAnnotation();
+  }
+}
+
+void AstraScreenshotCaptureBubble::RedoAnnotation() {
+  if (model_) {
+    model_->RedoAnnotation();
+  }
+}
+
+// =========================================================================
+// Post-capture actions
+// =========================================================================
+
+void AstraScreenshotCaptureBubble::CopyToClipboard() {
+  if (!delegate_) return;
+  CancelAutoDismissTimer();
+  SetState(State::kCopying);
+  delegate_->OnScreenshotCopy();
+}
+
+void AstraScreenshotCaptureBubble::SaveToFile() {
+  if (!delegate_) return;
+  CancelAutoDismissTimer();
+  SetState(State::kSaving);
+  delegate_->OnScreenshotSave();
+}
+
+void AstraScreenshotCaptureBubble::Share() {
+  if (!delegate_) return;
+  CancelAutoDismissTimer();
+  delegate_->OnScreenshotShare();
+}
+
+// =========================================================================
+// Legacy post-capture API
 // =========================================================================
 
 void AstraScreenshotCaptureBubble::UpdateFileSize(int64_t file_size_bytes) {
@@ -274,7 +583,7 @@ void AstraScreenshotCaptureBubble::SetPreviewBitmap(const SkBitmap& bitmap) {
 // =========================================================================
 
 void AstraScreenshotCaptureBubble::OnCaptureStarted() {
-  SetState(State::kReady);
+  SetState(State::kCapturing);
   if (placeholder_label_) {
     placeholder_label_->SetVisible(true);
     placeholder_label_->SetText(u"Capturing...");
@@ -297,7 +606,7 @@ void AstraScreenshotCaptureBubble::OnCaptureCompleted(const SkBitmap& bitmap) {
   SetState(State::kReady);
 
   // Auto-copy if enabled in settings.
-  if (model_ && model_->GetCopyToClipboardAfterCapture() && delegate_) {
+  if (model_ && model_->GetAutoCopyToClipboard() && delegate_) {
     delegate_->OnScreenshotCopy();
   }
 }
@@ -308,7 +617,6 @@ void AstraScreenshotCaptureBubble::OnCaptureFailed(const std::string& error) {
 
 void AstraScreenshotCaptureBubble::OnSaveCompleted(const base::FilePath& path) {
   SetSaveCompleted();
-  // Update file size from model if available.
 }
 
 void AstraScreenshotCaptureBubble::OnCopyCompleted() {
@@ -324,7 +632,7 @@ void AstraScreenshotCaptureBubble::OnCaptureSettingsChanged() {
     file_size_label_->SetText(FormatFileSize(file_size_bytes_));
   }
   UpdateInfoVisibility();
-  UpdateQualitySliderVisibility();
+  UpdateQualityVisibility();
 }
 
 void AstraScreenshotCaptureBubble::OnCaptureStateChanged(
@@ -347,6 +655,55 @@ void AstraScreenshotCaptureBubble::OnCaptureStateChanged(
         SetError(base::UTF8ToUTF16(model_->last_error()));
       }
       break;
+  }
+}
+
+void AstraScreenshotCaptureBubble::OnCaptureModeChanged(
+    AstraScreenshotMode mode) {
+  capture_mode_ = mode;
+  if (mode_combobox_) {
+    mode_combobox_->SetSelectedIndex(static_cast<int>(mode));
+  }
+}
+
+void AstraScreenshotCaptureBubble::OnCaptureProgress(
+    AstraScreenshotCaptureModel* model,
+    double progress) {
+  // Update progress indicator if we have one.
+  // TODO(astra): Add a progress bar or update the throbber.
+}
+
+void AstraScreenshotCaptureBubble::OnAnnotationAdded(
+    AstraScreenshotCaptureModel* model) {
+  // Update undo/redo button states.
+  if (undo_button_) {
+    undo_button_->SetEnabled(model->CanUndo());
+  }
+  if (redo_button_) {
+    redo_button_->SetEnabled(model->CanRedo());
+  }
+}
+
+void AstraScreenshotCaptureBubble::OnAnnotationUndoRedoChanged(
+    AstraScreenshotCaptureModel* model) {
+  if (undo_button_) {
+    undo_button_->SetEnabled(model->CanUndo());
+  }
+  if (redo_button_) {
+    redo_button_->SetEnabled(model->CanRedo());
+  }
+}
+
+void AstraScreenshotCaptureBubble::OnSettingsChanged(
+    AstraScreenshotCaptureModel* model) {
+  ApplySettingsFromModel();
+}
+
+void AstraScreenshotCaptureBubble::OnScreenshotModelShutdown(
+    AstraScreenshotCaptureModel* model) {
+  if (model_ == model) {
+    model_->RemoveObserver(this);
+    model_ = nullptr;
   }
 }
 
@@ -488,6 +845,78 @@ void AstraScreenshotCaptureBubble::Init() {
 
   AddChildView(std::move(status_row));
 
+  // --- Capture controls section: mode + delay ---
+  auto capture_controls_container = std::make_unique<views::View>();
+  auto* capture_layout = capture_controls_container->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kVertical,
+          gfx::Insets::VH(8, 0),
+          kSettingsRowSpacing));
+  capture_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kStretch);
+
+  // Mode selector row.
+  auto mode_row = std::make_unique<views::View>();
+  auto* mode_layout = mode_row->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(0, 0),
+          8));
+  mode_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  auto mode_label = std::make_unique<views::Label>(u"Capture:");
+  mode_label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  mode_row->AddChildView(std::move(mode_label));
+
+  auto mode_combobox = std::make_unique<views::Combobox>();
+  mode_combobox_ = mode_combobox.get();
+  mode_combobox_->SetAccessibleName(u"Capture mode");
+  mode_combobox_->AppendText(u"Full Page");
+  mode_combobox_->AppendText(u"Visible Area");
+  mode_combobox_->AppendText(u"Region");
+  mode_combobox_->AppendText(u"Window");
+  mode_combobox_->AppendText(u"Element");
+  mode_combobox_->SetSelectedIndex(static_cast<int>(capture_mode_));
+  mode_combobox_->SetCallback(base::BindRepeating(
+      &AstraScreenshotCaptureBubble::OnModeChanged,
+      base::Unretained(this)));
+  mode_layout->SetFlexForView(mode_combobox_, 1);
+  mode_row->AddChildView(std::move(mode_combobox));
+
+  capture_controls_container->AddChildView(std::move(mode_row));
+
+  // Delay selector row.
+  auto delay_row = std::make_unique<views::View>();
+  auto* delay_layout = delay_row->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(0, 0),
+          8));
+  delay_layout->set_cross_axis_alignment(
+      views::BoxLayout::CrossAxisAlignment::kCenter);
+
+  auto delay_label = std::make_unique<views::Label>(u"Delay:");
+  delay_label->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+  delay_row->AddChildView(std::move(delay_label));
+
+  auto delay_combobox = std::make_unique<views::Combobox>();
+  delay_combobox_ = delay_combobox.get();
+  delay_combobox_->SetAccessibleName(u"Capture delay");
+  for (int i = 0; i <= 10; i++) {
+    delay_combobox_->AppendText(GetDelayLabel(i));
+  }
+  delay_combobox_->SetSelectedIndex(capture_delay_seconds_);
+  delay_combobox_->SetCallback(base::BindRepeating(
+      &AstraScreenshotCaptureBubble::OnDelayChanged,
+      base::Unretained(this)));
+  delay_layout->SetFlexForView(delay_combobox_, 1);
+  delay_row->AddChildView(std::move(delay_combobox));
+
+  capture_controls_container->AddChildView(std::move(delay_row));
+
+  AddChildView(std::move(capture_controls_container));
+
   // --- Settings section: format + quality + copy toggle ---
   //
   // This section provides quick access to capture settings right in the
@@ -519,11 +948,10 @@ void AstraScreenshotCaptureBubble::Init() {
   auto format_combobox = std::make_unique<views::Combobox>();
   format_combobox_ = format_combobox.get();
   format_combobox_->SetAccessibleName(u"Image format");
-  // Populate format options.
   format_combobox_->AppendText(u"PNG");
   format_combobox_->AppendText(u"JPEG");
   format_combobox_->AppendText(u"WebP");
-  format_combobox_->SetSelectedIndex(0);  // PNG by default
+  format_combobox_->SetSelectedIndex(static_cast<int>(format_));
   format_combobox_->SetCallback(base::BindRepeating(
       &AstraScreenshotCaptureBubble::OnFormatChanged,
       base::Unretained(this)));
@@ -532,7 +960,7 @@ void AstraScreenshotCaptureBubble::Init() {
 
   settings_container->AddChildView(std::move(format_row));
 
-  // Quality slider row (only visible for JPEG/WebP).
+  // Quality selector row (only visible for JPEG/WebP).
   auto quality_row = std::make_unique<views::View>();
   auto* quality_layout = quality_row->SetLayoutManager(
       std::make_unique<views::BoxLayout>(
@@ -546,24 +974,23 @@ void AstraScreenshotCaptureBubble::Init() {
   quality_label_ = quality_label.get();
   quality_row->AddChildView(std::move(quality_label));
 
-  auto quality_slider = std::make_unique<views::Slider>(
-      views::Slider::Orientation::kHorizontal);
-  quality_slider_ = quality_slider.get();
-  quality_slider_->SetAccessibleName(u"Image quality");
-  quality_slider_->SetValue(0.85f);  // 85% default
-  quality_slider_->SetValueChangedCallback(base::BindRepeating(
+  auto quality_combobox = std::make_unique<views::Combobox>();
+  quality_combobox_ = quality_combobox.get();
+  quality_combobox_->SetAccessibleName(u"Image quality");
+  quality_combobox_->AppendText(u"Low");
+  quality_combobox_->AppendText(u"Medium");
+  quality_combobox_->AppendText(u"High");
+  quality_combobox_->AppendText(u"Maximum");
+  quality_combobox_->SetSelectedIndex(static_cast<int>(quality_));
+  quality_combobox_->SetCallback(base::BindRepeating(
       &AstraScreenshotCaptureBubble::OnQualityChanged,
       base::Unretained(this)));
-  quality_layout->SetFlexForView(quality_slider_, 1);
-  quality_row->AddChildView(std::move(quality_slider));
+  quality_layout->SetFlexForView(quality_combobox_, 1);
+  quality_row->AddChildView(std::move(quality_combobox));
 
-  auto quality_value_label = std::make_unique<views::Label>(u"85%");
-  quality_value_label->SetHorizontalAlignment(gfx::ALIGN_RIGHT);
-  quality_value_label->SetPreferredSize(gfx::Size(40, 0));
-  quality_row->AddChildView(std::move(quality_value_label));
-
-  // Start with quality slider hidden (PNG default).
-  quality_row->SetVisible(false);
+  // Start with quality visible (or not, based on format).
+  bool quality_visible = (format_ != AstraScreenshotFormat::kPng);
+  quality_row->SetVisible(quality_visible);
 
   settings_container->AddChildView(std::move(quality_row));
 
@@ -586,7 +1013,7 @@ void AstraScreenshotCaptureBubble::Init() {
   auto copy_toggle = std::make_unique<views::ToggleButton>();
   copy_toggle_ = copy_toggle.get();
   copy_toggle_->SetAccessibleName(u"Copy to clipboard automatically");
-  copy_toggle_->SetIsOn(false);
+  copy_toggle_->SetIsOn(auto_copy_to_clipboard_);
   copy_toggle_->SetToggledCallback(base::BindRepeating(
       &AstraScreenshotCaptureBubble::OnCopyToggleToggled,
       base::Unretained(this)));
@@ -595,6 +1022,82 @@ void AstraScreenshotCaptureBubble::Init() {
   settings_container->AddChildView(std::move(copy_toggle_row));
 
   AddChildView(std::move(settings_container));
+
+  // --- Annotation tools toggle ---
+  auto annotation_toggle_row = std::make_unique<views::View>();
+  auto* annotation_toggle_layout = annotation_toggle_row->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(0, 0),
+          kButtonRowSpacing));
+  annotation_toggle_layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kStart);
+
+  auto annotation_toggle_button = views::MdTextButton::CreateSecondary(
+      base::BindRepeating(
+          &AstraScreenshotCaptureBubble::OnAnnotationToolsToggled,
+          base::Unretained(this)),
+      u"Edit");
+  annotation_toggle_button_ = annotation_toggle_button.get();
+  annotation_toggle_button_->SetAccessibleName(u"Show annotation tools");
+  annotation_toggle_row->AddChildView(std::move(annotation_toggle_button));
+
+  auto undo_button = views::MdTextButton::CreateSecondary(
+      base::BindRepeating(&AstraScreenshotCaptureBubble::OnUndoClicked,
+                          base::Unretained(this)),
+      u"Undo");
+  undo_button_ = undo_button.get();
+  undo_button_->SetAccessibleName(u"Undo annotation");
+  undo_button_->SetEnabled(false);
+  annotation_toggle_row->AddChildView(std::move(undo_button));
+
+  auto redo_button = views::MdTextButton::CreateSecondary(
+      base::BindRepeating(&AstraScreenshotCaptureBubble::OnRedoClicked,
+                          base::Unretained(this)),
+      u"Redo");
+  redo_button_ = redo_button.get();
+  redo_button_->SetAccessibleName(u"Redo annotation");
+  redo_button_->SetEnabled(false);
+  annotation_toggle_row->AddChildView(std::move(redo_button));
+
+  AddChildView(std::move(annotation_toggle_row));
+
+  // --- Annotation tools section (collapsible) ---
+  auto annotation_tools_section = std::make_unique<views::View>();
+  auto* annotation_layout = annotation_tools_section->SetLayoutManager(
+      std::make_unique<views::BoxLayout>(
+          views::BoxLayout::Orientation::kHorizontal,
+          gfx::Insets::VH(4, 0),
+          4));
+  annotation_layout->set_main_axis_alignment(
+      views::BoxLayout::MainAxisAlignment::kStart);
+  annotation_tools_section_ = annotation_tools_section.get();
+  annotation_tools_section_->SetVisible(show_annotation_tools_);
+
+  // Tool buttons (simplified as text buttons for now).
+  // TODO(astra): Replace with icon buttons for annotation tools.
+  const std::pair<AstraAnnotationTool, const char*> kTools[] = {
+      {AstraAnnotationTool::kArrow, "Arrow"},
+      {AstraAnnotationTool::kRectangle, "Rect"},
+      {AstraAnnotationTool::kCircle, "Circle"},
+      {AstraAnnotationTool::kText, "Text"},
+      {AstraAnnotationTool::kBlur, "Blur"},
+      {AstraAnnotationTool::kHighlight, "Highlight"},
+      {AstraAnnotationTool::kCrop, "Crop"},
+      {AstraAnnotationTool::kPen, "Pen"},
+  };
+
+  for (const auto& tool : kTools) {
+    auto tool_button = views::MdTextButton::CreateSecondary(
+        base::BindRepeating(&AstraScreenshotCaptureBubble::OnToolSelected,
+                            base::Unretained(this), tool.first),
+        base::UTF8ToUTF16(tool.second));
+    tool_button->SetAccessibleName(
+        base::UTF8ToUTF16(std::string("Annotation tool: ") + tool.second));
+    annotation_tools_section_->AddChildView(std::move(tool_button));
+  }
+
+  AddChildView(std::move(annotation_tools_section));
 
   // --- Action button row ---
   auto button_row = std::make_unique<views::View>();
@@ -606,7 +1109,17 @@ void AstraScreenshotCaptureBubble::Init() {
   button_layout->set_main_axis_alignment(
       views::BoxLayout::MainAxisAlignment::kStart);
 
-  // Save button (primary).
+  // Capture button (primary).
+  auto capture_button = views::MdTextButton::Create(
+      base::BindRepeating(&AstraScreenshotCaptureBubble::OnCaptureButtonClicked,
+                          base::Unretained(this)),
+      u"Capture");
+  capture_button_ = capture_button.get();
+  capture_button_->SetProminent(true);
+  capture_button_->SetAccessibleName(u"Take screenshot");
+  button_row->AddChildView(std::move(capture_button));
+
+  // Save button.
   auto save_button = views::MdTextButton::Create(
       base::BindRepeating(&AstraScreenshotCaptureBubble::OnSaveButtonClicked,
                           base::Unretained(this)),
@@ -699,7 +1212,8 @@ void AstraScreenshotCaptureBubble::Init() {
   // Initialize states.
   UpdateButtonStates();
   UpdateInfoVisibility();
-  UpdateQualitySliderVisibility();
+  UpdateQualityVisibility();
+  UpdateAnnotationToolsVisibility();
 
   // Start the auto-dismiss timer.
   StartAutoDismissTimer();
@@ -729,7 +1243,7 @@ void AstraScreenshotCaptureBubble::OnThemeChanged() {
 // =========================================================================
 
 std::u16string AstraScreenshotCaptureBubble::GetAccessibleName() const {
-  return u"Screenshot captured: " + GetCaptureTypeLabel() + u", " +
+  return u"Screenshot: " + GetCaptureTypeLabel() + u", " +
          FormatDimensions(source_bounds_.width(), source_bounds_.height());
 }
 
@@ -784,7 +1298,8 @@ void AstraScreenshotCaptureBubble::SetState(State state) {
 
 void AstraScreenshotCaptureBubble::UpdateButtonStates() {
   if (!save_button_ || !copy_button_ || !edit_button_ ||
-      !share_button_ || !delete_button_ || !open_in_editor_button_) {
+      !share_button_ || !delete_button_ || !open_in_editor_button_ ||
+      !capture_button_) {
     return;
   }
 
@@ -792,6 +1307,7 @@ void AstraScreenshotCaptureBubble::UpdateButtonStates() {
 
   switch (state_) {
     case State::kReady:
+      capture_button_->SetEnabled(true);
       save_button_->SetEnabled(has_image);
       copy_button_->SetEnabled(has_image);
       edit_button_->SetEnabled(has_image);
@@ -799,7 +1315,17 @@ void AstraScreenshotCaptureBubble::UpdateButtonStates() {
       open_in_editor_button_->SetEnabled(has_image);
       delete_button_->SetEnabled(true);
       break;
+    case State::kCapturing:
+      capture_button_->SetEnabled(false);
+      save_button_->SetEnabled(false);
+      copy_button_->SetEnabled(false);
+      edit_button_->SetEnabled(false);
+      share_button_->SetEnabled(false);
+      open_in_editor_button_->SetEnabled(false);
+      delete_button_->SetEnabled(false);
+      break;
     case State::kSaving:
+      capture_button_->SetEnabled(false);
       save_button_->SetEnabled(false);
       copy_button_->SetEnabled(false);
       edit_button_->SetEnabled(false);
@@ -808,6 +1334,7 @@ void AstraScreenshotCaptureBubble::UpdateButtonStates() {
       delete_button_->SetEnabled(false);
       break;
     case State::kCopying:
+      capture_button_->SetEnabled(false);
       save_button_->SetEnabled(false);
       copy_button_->SetEnabled(false);
       edit_button_->SetEnabled(false);
@@ -817,6 +1344,7 @@ void AstraScreenshotCaptureBubble::UpdateButtonStates() {
       break;
     case State::kSuccess:
       // Keep other actions available after one succeeds.
+      capture_button_->SetEnabled(true);
       copy_button_->SetEnabled(has_image);
       edit_button_->SetEnabled(has_image);
       share_button_->SetEnabled(has_image);
@@ -824,6 +1352,7 @@ void AstraScreenshotCaptureBubble::UpdateButtonStates() {
       delete_button_->SetEnabled(true);
       break;
     case State::kError:
+      capture_button_->SetEnabled(true);
       save_button_->SetEnabled(has_image);
       copy_button_->SetEnabled(has_image);
       edit_button_->SetEnabled(has_image);
@@ -844,6 +1373,12 @@ void AstraScreenshotCaptureBubble::UpdateStatusIndicator() {
       status_label_->SetVisible(false);
       status_throbber_->SetVisible(false);
       status_throbber_->Stop();
+      break;
+    case State::kCapturing:
+      status_label_->SetText(u"Capturing...");
+      status_label_->SetVisible(true);
+      status_throbber_->SetVisible(true);
+      status_throbber_->Start();
       break;
     case State::kSaving:
       status_label_->SetText(u"Saving...");
@@ -922,19 +1457,29 @@ void AstraScreenshotCaptureBubble::UpdateInfoVisibility() {
   }
 }
 
-void AstraScreenshotCaptureBubble::UpdateQualitySliderVisibility() {
-  if (!quality_slider_ || !format_combobox_) return;
+void AstraScreenshotCaptureBubble::UpdateQualityVisibility() {
+  if (!quality_combobox_ || !format_combobox_) return;
 
-  // Quality slider is only relevant for lossy formats (JPEG, WebP).
+  // Quality selector is only relevant for lossy formats (JPEG, WebP).
   int selected = format_combobox_->GetSelectedIndex().value_or(0);
   bool show_quality = (selected == 1 || selected == 2);  // JPEG or WebP
 
   // Find the quality row parent and set visibility.
-  // The quality slider is in a row view. We need to hide/show the whole row.
-  views::View* quality_row = quality_slider_->parent();
+  views::View* quality_row = quality_combobox_->parent();
   if (quality_row) {
     quality_row->SetVisible(show_quality);
   }
+}
+
+void AstraScreenshotCaptureBubble::UpdateAnnotationToolsVisibility() {
+  if (annotation_tools_section_) {
+    annotation_tools_section_->SetVisible(show_annotation_tools_);
+  }
+}
+
+void AstraScreenshotCaptureBubble::UpdateModeSelectorFromModel() {
+  if (!model_ || !mode_combobox_) return;
+  mode_combobox_->SetSelectedIndex(static_cast<int>(model_->GetCaptureMode()));
 }
 
 // =========================================================================
@@ -960,6 +1505,10 @@ std::u16string AstraScreenshotCaptureBubble::GetCaptureTypeLabel() const {
   return u"Screenshot";
 }
 
+std::u16string AstraScreenshotCaptureBubble::GetCaptureModeLabel() const {
+  return astra::GetCaptureModeLabel(capture_mode_);
+}
+
 std::u16string AstraScreenshotCaptureBubble::GenerateDefaultFilename() const {
   base::Time now = base::Time::Now();
   std::u16string date_str = base::TimeFormatShortDate(now);
@@ -972,32 +1521,18 @@ int64_t AstraScreenshotCaptureBubble::EstimateFileSize() const {
   }
 
   int pixel_count = bitmap_.width() * bitmap_.height();
-
-  // Determine format.
-  AstraScreenshotImageFormatModel format =
-      AstraScreenshotImageFormatModel::kPng;
-  int quality = 85;
-
-  if (model_) {
-    format = model_->GetImageFormat();
-    quality = model_->GetJpegQuality();
-  } else if (format_combobox_) {
-    int idx = format_combobox_->GetSelectedIndex().value_or(0);
-    format = static_cast<AstraScreenshotImageFormatModel>(idx);
-    if (quality_slider_) {
-      quality = static_cast<int>(quality_slider_->GetValue() * 100);
-    }
-  }
+  AstraScreenshotFormat format = format_;
+  int quality_percent = AstraScreenshotCaptureModel::QualityToPercent(quality_);
 
   switch (format) {
-    case AstraScreenshotImageFormatModel::kPng:
+    case AstraScreenshotFormat::kPng:
       return pixel_count;
-    case AstraScreenshotImageFormatModel::kJpeg: {
-      double quality_factor = quality / 100.0;
+    case AstraScreenshotFormat::kJpeg: {
+      double quality_factor = quality_percent / 100.0;
       double bytes_per_pixel = 0.05 + quality_factor * 1.45;
       return static_cast<int64_t>(pixel_count * bytes_per_pixel);
     }
-    case AstraScreenshotImageFormatModel::kWebP:
+    case AstraScreenshotFormat::kWebP:
       return static_cast<int64_t>(pixel_count * 0.6);
   }
   return pixel_count;
@@ -1015,22 +1550,38 @@ std::u16string AstraScreenshotCaptureBubble::FormatFileSize(
 void AstraScreenshotCaptureBubble::ApplySettingsFromModel() {
   if (!model_) return;
 
+  // Capture mode
+  capture_mode_ = model_->GetCaptureMode();
+  if (mode_combobox_) {
+    mode_combobox_->SetSelectedIndex(static_cast<int>(capture_mode_));
+  }
+
   // Format
-  AstraScreenshotImageFormatModel format = model_->GetImageFormat();
+  format_ = model_->GetFormat();
   if (format_combobox_) {
-    format_combobox_->SetSelectedIndex(static_cast<int>(format));
+    format_combobox_->SetSelectedIndex(static_cast<int>(format_));
   }
 
   // Quality
-  int quality = model_->GetJpegQuality();
-  if (quality_slider_) {
-    quality_slider_->SetValue(quality / 100.0f);
+  quality_ = model_->GetQuality();
+  if (quality_combobox_) {
+    quality_combobox_->SetSelectedIndex(static_cast<int>(quality_));
+  }
+
+  // Delay
+  capture_delay_seconds_ = model_->GetCaptureDelay();
+  if (delay_combobox_) {
+    delay_combobox_->SetSelectedIndex(capture_delay_seconds_);
   }
 
   // Copy toggle
+  auto_copy_to_clipboard_ = model_->GetAutoCopyToClipboard();
   if (copy_toggle_) {
-    copy_toggle_->SetIsOn(model_->GetCopyToClipboardAfterCapture());
+    copy_toggle_->SetIsOn(auto_copy_to_clipboard_);
   }
+
+  // Active tool
+  active_tool_ = model_->GetActiveTool();
 
   // Auto-dismiss
   auto_dismiss_delay_ = base::Seconds(model_->GetAutoDismissDelaySeconds());
@@ -1044,20 +1595,20 @@ void AstraScreenshotCaptureBubble::ApplySettingsFromModel() {
 // Button handlers
 // =========================================================================
 
+void AstraScreenshotCaptureBubble::OnCaptureButtonClicked() {
+  StartCapture();
+}
+
+void AstraScreenshotCaptureBubble::OnCancelButtonClicked() {
+  CancelCapture();
+}
+
 void AstraScreenshotCaptureBubble::OnSaveButtonClicked() {
-  CancelAutoDismissTimer();
-  SetState(State::kSaving);
-  if (delegate_) {
-    delegate_->OnScreenshotSave();
-  }
+  SaveToFile();
 }
 
 void AstraScreenshotCaptureBubble::OnCopyButtonClicked() {
-  CancelAutoDismissTimer();
-  SetState(State::kCopying);
-  if (delegate_) {
-    delegate_->OnScreenshotCopy();
-  }
+  CopyToClipboard();
 }
 
 void AstraScreenshotCaptureBubble::OnEditButtonClicked() {
@@ -1078,10 +1629,7 @@ void AstraScreenshotCaptureBubble::OnDeleteButtonClicked() {
 }
 
 void AstraScreenshotCaptureBubble::OnShareButtonClicked() {
-  CancelAutoDismissTimer();
-  if (delegate_) {
-    delegate_->OnScreenshotShare();
-  }
+  Share();
 }
 
 void AstraScreenshotCaptureBubble::OnKeepButtonClicked() {
@@ -1101,61 +1649,64 @@ void AstraScreenshotCaptureBubble::OnOpenInEditorClicked() {
 void AstraScreenshotCaptureBubble::OnCopyToggleToggled() {
   if (!copy_toggle_ || !model_) return;
   bool enabled = copy_toggle_->GetIsOn();
-  model_->SetCopyToClipboardAfterCapture(enabled);
+  model_->SetAutoCopyToClipboard(enabled);
+  auto_copy_to_clipboard_ = enabled;
 }
 
 void AstraScreenshotCaptureBubble::OnFormatChanged() {
   if (!format_combobox_) return;
 
   int idx = format_combobox_->GetSelectedIndex().value_or(0);
-  auto format = static_cast<AstraScreenshotImageFormatModel>(idx);
-
-  if (model_) {
-    model_->SetImageFormat(format);
-  }
-
-  UpdateQualitySliderVisibility();
-
-  // Update estimated file size.
-  file_size_bytes_ = EstimateFileSize();
-  if (file_size_label_) {
-    file_size_label_->SetText(FormatFileSize(file_size_bytes_));
-  }
-
-  // Update filename extension.
-  if (filename_field_) {
-    std::u16string current = filename_field_->GetText();
-    // Find and replace the extension.
-    size_t last_dot = current.rfind('.');
-    if (last_dot != std::u16string::npos) {
-      std::u16string base = current.substr(0, last_dot);
-      const char* ext = GetFormatExtension(format);
-      filename_field_->SetText(base + u"." + base::UTF8ToUTF16(ext));
-    }
-  }
+  auto format = static_cast<AstraScreenshotFormat>(idx);
+  SetFormat(format);
 }
 
 void AstraScreenshotCaptureBubble::OnQualityChanged() {
-  if (!quality_slider_) return;
+  if (!quality_combobox_) return;
 
-  float value = quality_slider_->GetValue();
-  int quality = static_cast<int>(value * 100);
-  quality = std::max(1, std::min(100, quality));
-
-  if (model_) {
-    model_->SetJpegQuality(quality);
-  }
-
-  // Update file size estimate.
-  file_size_bytes_ = EstimateFileSize();
-  if (file_size_label_) {
-    file_size_label_->SetText(FormatFileSize(file_size_bytes_));
-  }
+  int idx = quality_combobox_->GetSelectedIndex().value_or(0);
+  auto quality = static_cast<AstraScreenshotQuality>(idx);
+  SetQuality(quality);
 }
 
 void AstraScreenshotCaptureBubble::OnFilenameChanged() {
   if (!filename_field_) return;
   filename_ = filename_field_->GetText();
+}
+
+void AstraScreenshotCaptureBubble::OnModeChanged() {
+  if (!mode_combobox_) return;
+
+  int idx = mode_combobox_->GetSelectedIndex().value_or(0);
+  auto mode = static_cast<AstraScreenshotMode>(idx);
+  SetCaptureMode(mode);
+}
+
+void AstraScreenshotCaptureBubble::OnDelayChanged() {
+  if (!delay_combobox_) return;
+
+  int idx = delay_combobox_->GetSelectedIndex().value_or(0);
+  SetCaptureDelay(idx);
+}
+
+void AstraScreenshotCaptureBubble::OnAnnotationToolsToggled() {
+  SetShowAnnotationTools(!show_annotation_tools_);
+}
+
+void AstraScreenshotCaptureBubble::OnToolSelected(AstraAnnotationTool tool) {
+  SetActiveTool(tool);
+}
+
+void AstraScreenshotCaptureBubble::OnUndoClicked() {
+  UndoAnnotation();
+}
+
+void AstraScreenshotCaptureBubble::OnRedoClicked() {
+  RedoAnnotation();
+}
+
+void AstraScreenshotCaptureBubble::OnShareClicked() {
+  Share();
 }
 
 }  // namespace astra

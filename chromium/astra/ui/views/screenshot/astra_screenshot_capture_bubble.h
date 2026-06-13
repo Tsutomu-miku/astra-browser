@@ -7,6 +7,7 @@
 #include "base/time/time.h"
 #include "base/timer/timer.h"
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "third_party/skia/include/core/SkColor.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/views/bubble/bubble_dialog_delegate_view.h"
 
@@ -23,6 +24,7 @@ class Textfield;
 class ToggleButton;
 class Combobox;
 class Slider;
+class View;
 }  // namespace views
 
 namespace astra {
@@ -33,27 +35,27 @@ class AstraScreenshotService;
 // Astra screenshot capture bubble
 // =========================================================================
 //
-// Bubble shown after a screenshot is captured. Provides a quick preview
-// of the captured image along with action buttons and settings:
+// The capture control bubble / toolbar shown during and after screenshot
+// capture. Provides capture mode selection, format/quality settings,
+// capture delay, annotation tools, and action buttons (copy, save, share).
+//
+// Bubble sections:
+//   - Mode selector (full page, visible, region, window, element)
+//   - Format selector (PNG, JPEG, WebP)
+//   - Quality selector
+//   - Delay selector
+//   - Capture button
+//   - Cancel button
+//   - Annotation tools (collapsible)
+//   - Copy/Save/Share actions
+//
+// Also shown after a screenshot is captured as a quick preview with:
+//   - Preview image
 //   - Save to downloads
 //   - Copy to clipboard
-//   - Edit (opens image editor, stub)
-//   - Share (opens share menu, stub)
+//   - Edit
+//   - Share
 //   - Discard
-//   - Keep (cancel auto-dismiss)
-//
-// Presentation settings:
-//   - Image format selector (PNG / JPEG / WebP)
-//   - JPEG quality slider
-//   - Copy-to-clipboard toggle
-//   - Filename editable field
-//
-// Visual states:
-//   - Loading / placeholder: shown while the capture is in progress
-//   - Ready: default state with preview and action buttons
-//   - In-progress: saving or copying, shows progress indicator
-//   - Success: action completed, shows confirmation
-//   - Error: action failed, shows error message
 //
 // Model/view pattern: The bubble observes an AstraScreenshotCaptureModel
 // for state changes. User actions are dispatched to the model and/or
@@ -67,11 +69,11 @@ class AstraScreenshotService;
 //
 // Chromium pattern reference:
 //   chrome/browser/ui/views/share/share_bubble_view.h
-//   chrome/browser/ui/views/screenshot/screenshot_bubble.h
+//   chrome/browser/ui/views/screenshots/screenshot_bubble.h
 //
 // TODO(astra): Integrate with Chromium's share/screenshot UI system.
 //   Chromium owner: Share bubble / screenshot preview UI
-//   (chrome/browser/share/, chrome/browser/screenshot/)
+//   (chrome/browser/share/, chrome/browser/screenshots/)
 //   Patch point: ShareManager or ScreenshotManager UI delegate.
 // =========================================================================
 
@@ -105,6 +107,12 @@ class AstraScreenshotCaptureBubble
     // Called when the user clicks "Open in Editor".
     virtual void OnScreenshotOpenInEditor() = 0;
 
+    // Called when the user starts a capture from the bubble.
+    virtual void OnScreenshotCaptureStarted() = 0;
+
+    // Called when the user cancels a capture from the bubble.
+    virtual void OnScreenshotCaptureCancelled() = 0;
+
    protected:
     ~Delegate() = default;
   };
@@ -112,6 +120,7 @@ class AstraScreenshotCaptureBubble
   // State of the bubble's action buttons and status indicator.
   enum class State {
     kReady,       // Default: all actions available
+    kCapturing,   // Capture in progress
     kSaving,      // Save in progress
     kCopying,     // Copy in progress
     kSuccess,     // Last action succeeded
@@ -139,11 +148,107 @@ class AstraScreenshotCaptureBubble
                                    Delegate* delegate,
                                    AstraScreenshotCaptureModel* model = nullptr);
 
+  // Show the bubble anchored to |anchor_rect|.
+  static views::Widget* Show(const gfx::Rect& anchor_rect,
+                             Browser* browser,
+                             Delegate* delegate,
+                             AstraScreenshotCaptureModel* model = nullptr);
+
   ~AstraScreenshotCaptureBubble() override;
 
   AstraScreenshotCaptureBubble(const AstraScreenshotCaptureBubble&) = delete;
   AstraScreenshotCaptureBubble& operator=(
       const AstraScreenshotCaptureBubble&) = delete;
+
+  // -- Visibility ----------------------------------------------------------
+
+  // Hide the bubble (closes the widget).
+  void Hide();
+
+  // Whether the bubble is currently visible.
+  bool IsVisible() const;
+
+  // -- Model management ----------------------------------------------------
+
+  // Get the associated capture model.
+  AstraScreenshotCaptureModel* GetModel() const { return model_; }
+
+  // Set the associated capture model.
+  void SetModel(AstraScreenshotCaptureModel* model);
+
+  // -- Capture mode --------------------------------------------------------
+
+  // Set the active capture mode.
+  void SetCaptureMode(AstraScreenshotMode mode);
+
+  // Get the active capture mode.
+  AstraScreenshotMode GetCaptureMode() const { return capture_mode_; }
+
+  // -- Format / quality ----------------------------------------------------
+
+  // Set the output image format.
+  void SetFormat(AstraScreenshotFormat format);
+
+  // Get the output image format.
+  AstraScreenshotFormat GetFormat() const { return format_; }
+
+  // Set the output quality level.
+  void SetQuality(AstraScreenshotQuality quality);
+
+  // Get the output quality level.
+  AstraScreenshotQuality GetQuality() const { return quality_; }
+
+  // -- Capture delay -------------------------------------------------------
+
+  // Set the capture delay in seconds.
+  void SetCaptureDelay(int delay_seconds);
+
+  // Get the capture delay in seconds.
+  int GetCaptureDelay() const { return capture_delay_seconds_; }
+
+  // -- Capture operations --------------------------------------------------
+
+  // Start the capture process.
+  void StartCapture();
+
+  // Cancel the capture process.
+  void CancelCapture();
+
+  // Whether a capture is currently in progress.
+  bool IsCapturing() const { return state_ == State::kCapturing; }
+
+  // -- Annotation tools ----------------------------------------------------
+
+  // Set whether annotation tools are visible/expanded.
+  void SetShowAnnotationTools(bool show);
+
+  // Get whether annotation tools are visible/expanded.
+  bool GetShowAnnotationTools() const { return show_annotation_tools_; }
+
+  // Set the active annotation tool.
+  void SetActiveTool(AstraAnnotationTool tool);
+
+  // Get the active annotation tool.
+  AstraAnnotationTool GetActiveTool() const { return active_tool_; }
+
+  // Undo the last annotation.
+  void UndoAnnotation();
+
+  // Redo the last undone annotation.
+  void RedoAnnotation();
+
+  // -- Post-capture actions ------------------------------------------------
+
+  // Copy the screenshot to clipboard.
+  void CopyToClipboard();
+
+  // Save the screenshot to file.
+  void SaveToFile();
+
+  // Share the screenshot (opens share sheet).
+  void Share();
+
+  // -- Legacy post-capture API ---------------------------------------------
 
   // Update the displayed file size after the save completes.
   void UpdateFileSize(int64_t file_size_bytes);
@@ -172,6 +277,14 @@ class AstraScreenshotCaptureBubble
   void OnCopyCompleted() override;
   void OnCaptureSettingsChanged() override;
   void OnCaptureStateChanged(AstraScreenshotCaptureState state) override;
+  void OnCaptureModeChanged(AstraScreenshotMode mode) override;
+  void OnCaptureProgress(AstraScreenshotCaptureModel* model,
+                         double progress) override;
+  void OnAnnotationAdded(AstraScreenshotCaptureModel* model) override;
+  void OnAnnotationUndoRedoChanged(
+      AstraScreenshotCaptureModel* model) override;
+  void OnSettingsChanged(AstraScreenshotCaptureModel* model) override;
+  void OnScreenshotModelShutdown(AstraScreenshotCaptureModel* model) override;
 
   // -- views::BubbleDialogDelegateView -----------------------------------
 
@@ -225,8 +338,14 @@ class AstraScreenshotCaptureBubble
   // Update visibility of info labels based on settings.
   void UpdateInfoVisibility();
 
-  // Update the quality slider visibility based on image format.
-  void UpdateQualitySliderVisibility();
+  // Update the quality selector visibility based on image format.
+  void UpdateQualityVisibility();
+
+  // Update annotation tools section visibility.
+  void UpdateAnnotationToolsVisibility();
+
+  // Update capture mode selector from model.
+  void UpdateModeSelectorFromModel();
 
   // -- Formatting helpers ------------------------------------------------
 
@@ -238,6 +357,9 @@ class AstraScreenshotCaptureBubble
 
   // Get a user-facing label for the capture type.
   std::u16string GetCaptureTypeLabel() const;
+
+  // Get a user-facing label for the capture mode.
+  std::u16string GetCaptureModeLabel() const;
 
   // Generate a default filename for the screenshot.
   std::u16string GenerateDefaultFilename() const;
@@ -252,6 +374,8 @@ class AstraScreenshotCaptureBubble
 
   // -- Button handlers ---------------------------------------------------
 
+  void OnCaptureButtonClicked();
+  void OnCancelButtonClicked();
   void OnSaveButtonClicked();
   void OnCopyButtonClicked();
   void OnEditButtonClicked();
@@ -263,6 +387,13 @@ class AstraScreenshotCaptureBubble
   void OnFormatChanged();
   void OnQualityChanged();
   void OnFilenameChanged();
+  void OnModeChanged();
+  void OnDelayChanged();
+  void OnAnnotationToolsToggled();
+  void OnToolSelected(AstraAnnotationTool tool);
+  void OnUndoClicked();
+  void OnRedoClicked();
+  void OnShareClicked();
 
   // -- Members -----------------------------------------------------------
 
@@ -282,6 +413,18 @@ class AstraScreenshotCaptureBubble
 
   // The region of the page that was captured (in page/viewport coordinates).
   gfx::Rect source_bounds_;
+
+  // Current capture mode (full page, visible, region, window, element).
+  AstraScreenshotMode capture_mode_ = AstraScreenshotMode::kVisibleArea;
+
+  // Current output format.
+  AstraScreenshotFormat format_ = AstraScreenshotFormat::kPng;
+
+  // Current output quality.
+  AstraScreenshotQuality quality_ = AstraScreenshotQuality::kHigh;
+
+  // Capture delay in seconds.
+  int capture_delay_seconds_ = 0;
 
   // Estimated or actual file size in bytes.
   int64_t file_size_bytes_ = 0;
@@ -304,20 +447,38 @@ class AstraScreenshotCaptureBubble
   // Timer for auto-dismiss.
   base::OneShotTimer auto_dismiss_timer_;
 
+  // Whether annotation tools section is expanded.
+  bool show_annotation_tools_ = false;
+
+  // Currently active annotation tool.
+  AstraAnnotationTool active_tool_ = AstraAnnotationTool::kNone;
+
   // -- Child views (owned by the view hierarchy) ------------------------
 
+  // Preview section.
   raw_ptr<views::ImageView> preview_image_ = nullptr;
   raw_ptr<views::Label> placeholder_label_ = nullptr;
   raw_ptr<views::Throbber> preview_throbber_ = nullptr;
 
+  // Info section.
   raw_ptr<views::Textfield> filename_field_ = nullptr;
   raw_ptr<views::Label> dimensions_label_ = nullptr;
   raw_ptr<views::Label> file_size_label_ = nullptr;
   raw_ptr<views::Label> capture_type_label_ = nullptr;
 
+  // Status section.
   raw_ptr<views::Label> status_label_ = nullptr;
   raw_ptr<views::Throbber> status_throbber_ = nullptr;
 
+  // Capture controls section.
+  raw_ptr<views::Combobox> mode_combobox_ = nullptr;
+  raw_ptr<views::Combobox> format_combobox_ = nullptr;
+  raw_ptr<views::Combobox> quality_combobox_ = nullptr;
+  raw_ptr<views::Combobox> delay_combobox_ = nullptr;
+  raw_ptr<views::MdTextButton> capture_button_ = nullptr;
+  raw_ptr<views::MdTextButton> cancel_button_ = nullptr;
+
+  // Action buttons.
   raw_ptr<views::MdTextButton> save_button_ = nullptr;
   raw_ptr<views::MdTextButton> copy_button_ = nullptr;
   raw_ptr<views::MdTextButton> edit_button_ = nullptr;
@@ -326,11 +487,17 @@ class AstraScreenshotCaptureBubble
   raw_ptr<views::MdTextButton> keep_button_ = nullptr;
   raw_ptr<views::MdTextButton> open_in_editor_button_ = nullptr;
 
-  raw_ptr<views::Combobox> format_combobox_ = nullptr;
+  // Settings controls.
   raw_ptr<views::Slider> quality_slider_ = nullptr;
   raw_ptr<views::Label> quality_label_ = nullptr;
   raw_ptr<views::ToggleButton> copy_toggle_ = nullptr;
   raw_ptr<views::Label> copy_toggle_label_ = nullptr;
+
+  // Annotation tools section.
+  raw_ptr<views::View> annotation_tools_section_ = nullptr;
+  raw_ptr<views::MdTextButton> annotation_toggle_button_ = nullptr;
+  raw_ptr<views::MdTextButton> undo_button_ = nullptr;
+  raw_ptr<views::MdTextButton> redo_button_ = nullptr;
 };
 
 }  // namespace astra

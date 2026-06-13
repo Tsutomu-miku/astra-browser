@@ -71,8 +71,169 @@ AstraDevToolsIntegration::AstraDevToolsIntegration(Profile* profile)
 
 AstraDevToolsIntegration::~AstraDevToolsIntegration() {
   if (model_) {
-    model_->RemoveObserver(this);
+    model_->RemoveObserver(static_cast<AstraDevToolsModelObserver*>(this));
+    model_->RemoveObserver(static_cast<AstraDevToolsObserver*>(this));
   }
+}
+
+// =========================================================================
+// DevTools lifecycle (deepened)
+// =========================================================================
+
+void AstraDevToolsIntegration::ShowDevTools() {
+  if (!model_) {
+    return;
+  }
+  if (model_->IsDevToolsOpen()) {
+    return;
+  }
+  model_->SetDevToolsOpen(true);
+}
+
+void AstraDevToolsIntegration::CloseDevTools() {
+  if (!model_) {
+    return;
+  }
+  if (!model_->IsDevToolsOpen()) {
+    return;
+  }
+  model_->SetDevToolsOpen(false);
+}
+
+bool AstraDevToolsIntegration::IsDevToolsOpen() const {
+  if (!model_) {
+    return false;
+  }
+  return model_->IsDevToolsOpen();
+}
+
+void AstraDevToolsIntegration::ToggleDevTools() {
+  if (IsDevToolsOpen()) {
+    CloseDevTools();
+  } else {
+    ShowDevTools();
+  }
+}
+
+void AstraDevToolsIntegration::ReloadDevTools() {
+  // TODO(astra): Implement actual DevTools reload via DevToolsWindow.
+  //   In a full Chromium build, this would call
+  //   DevToolsWindow::ReloadInspectedWebContents() or similar.
+  //   For the overlay skeleton, this is a no-op that logs.
+  VLOG(1) << "Astra DevTools: Reload requested";
+
+  // Refresh UI as if a reload happened.
+  RefreshAll();
+}
+
+// =========================================================================
+// Panel management (deepened)
+// =========================================================================
+
+bool AstraDevToolsIntegration::ShowPanel(AstraDevToolsPanelType panel_type) {
+  if (!model_) {
+    return false;
+  }
+
+  // Open DevTools if not already open.
+  if (!model_->IsDevToolsOpen()) {
+    model_->SetDevToolsOpen(true);
+  }
+
+  // Show the panel via the model.
+  bool result = model_->ShowAstraPanel(panel_type);
+
+  if (result) {
+    panel_open_ = true;
+    NotifyPanelShown(panel_type);
+
+    // Update UI.
+    if (toolbar_) {
+      toolbar_->UpdateFromModel();
+    }
+    UpdateActivePanelView();
+  }
+
+  return result;
+}
+
+void AstraDevToolsIntegration::ClosePanel() {
+  if (!panel_open_) {
+    return;
+  }
+
+  panel_open_ = false;
+  NotifyPanelHidden();
+
+  // Update active panel view (hide panel content).
+  if (panel_container_) {
+    panel_container_->SetVisible(false);
+  }
+}
+
+bool AstraDevToolsIntegration::IsPanelOpen() const {
+  return panel_open_;
+}
+
+// =========================================================================
+// Dock state (deepened)
+// =========================================================================
+
+void AstraDevToolsIntegration::SetDockState(AstraDevToolsDockState state) {
+  if (!model_) {
+    return;
+  }
+  model_->SetDockState(state);
+}
+
+AstraDevToolsDockState AstraDevToolsIntegration::GetDockState() const {
+  if (!model_) {
+    return AstraDevToolsDockState::kDockedBottom;
+  }
+  return model_->GetDockState();
+}
+
+// =========================================================================
+// Zoom (deepened)
+// =========================================================================
+
+double AstraDevToolsIntegration::GetZoomLevel() const {
+  if (!model_) {
+    return AstraDevToolsModel::kDefaultZoomLevel;
+  }
+  return model_->GetZoomLevel();
+}
+
+void AstraDevToolsIntegration::SetZoomLevel(double level) {
+  if (!model_) {
+    return;
+  }
+  model_->SetZoomLevel(level);
+}
+
+// =========================================================================
+// Inspection & emulation (deepened)
+// =========================================================================
+
+void AstraDevToolsIntegration::InspectElement() {
+  // TODO(astra): Implement actual element inspection via DevToolsWindow.
+  //   In a full Chromium build, this would call
+  //   DevToolsWindow::ToggleInspectElementMode() or similar.
+  //   For the overlay skeleton, this toggles a local flag.
+  //   Chromium owner: chrome/browser/devtools/devtools_window.h
+  inspect_element_active_ = !inspect_element_active_;
+  VLOG(1) << "Astra DevTools: Inspect element mode: "
+          << (inspect_element_active_ ? "on" : "off");
+}
+
+void AstraDevToolsIntegration::ToggleDeviceMode() {
+  // TODO(astra): Implement device mode toggle via DevToolsWindow.
+  //   In a full Chromium build, this would toggle device emulation mode
+  //   via DevToolsWindow::ToggleDeviceMode() or similar.
+  //   Chromium owner: chrome/browser/devtools/devtools_window.h
+  device_mode_active_ = !device_mode_active_;
+  VLOG(1) << "Astra DevTools: Device mode: "
+          << (device_mode_active_ ? "on" : "off");
 }
 
 // =========================================================================
@@ -98,7 +259,8 @@ void AstraDevToolsIntegration::EnsureModel() {
   //   in-memory mode (no persistence).
   //   Chromium owner: Profile::GetPrefs()
   model_ = std::make_unique<AstraDevToolsModel>(nullptr);
-  model_->AddObserver(this);
+  model_->AddObserver(static_cast<AstraDevToolsModelObserver*>(this));
+  model_->AddObserver(static_cast<AstraDevToolsObserver*>(this));
 }
 
 void AstraDevToolsIntegration::EnsureWorkspacePanel() {
@@ -107,61 +269,10 @@ void AstraDevToolsIntegration::EnsureWorkspacePanel() {
   }
   workspace_panel_ = std::make_unique<AstraDevToolsWorkspacePanel>();
   workspace_panel_->SetDelegate(this);
+  workspace_panel_->SetModel(model_.get());
   workspace_panel_->SetWorkspaceService(workspace_service_);
   workspace_panel_->SetInspectedWebContents(inspected_contents_);
   workspace_panel_->Refresh();
-
-  // If the container is built, add the panel to the panel container.
-  if (panel_container_) {
-    workspace_panel_->SetVisible(false);
-    // We add it to the panel container but keep it hidden until activated.
-    // Since we want to keep ownership via unique_ptr, we add via raw
-    // pointer by releasing and re-acquiring... no, that's messy.
-    //
-    // Actually, let's use a different ownership model: the panel_container_
-    // owns the panel views via the views hierarchy, and we hold raw_ptrs.
-    // But we already have unique_ptr in the header.
-    //
-    // For simplicity: we own the panel via unique_ptr, and we add it
-    // to the container using AddChildView with release().  But then
-    // we lose ownership...
-    //
-    // Let's change the approach: panels are owned by the views hierarchy.
-    // We store raw_ptrs for access.  But the header already has unique_ptr.
-    //
-    // OK let's just accept: we own panels via unique_ptr, and when we
-    // want to show them, we add them to panel_container_ as children.
-    // But AddChildView takes unique_ptr...
-    //
-    // Actually, looking at views::View more carefully:
-    //   AddChildView(std::unique_ptr<View> view) — takes ownership
-    //   The view is owned by the parent View.
-    //
-    // So we can't have both unique_ptr ownership AND be in the hierarchy.
-    //
-    // Solution: store raw_ptr and let the views hierarchy own everything.
-    // But the header already has unique_ptr<>.
-
-    // Hmm, this is a design conflict.  Let me keep unique_ptr ownership
-    // and add/remove from the container as needed.  When we add, we
-    // temporarily release ownership and re-acquire it when removing?
-    // No, that's error-prone.
-
-    // Better approach: the panel is always a child of panel_container_,
-    // but its visibility is controlled.  We own it via unique_ptr but
-    // it's also in the views hierarchy... no, that doesn't work either.
-
-    // Let me change the ownership model in the implementation:
-    // Panel views are owned by panel_container_ (via views hierarchy).
-    // We hold raw_ptrs for access.  The unique_ptr in the header is
-    // only for lazy creation before the container is built.
-
-    // Actually, the simplest fix: don't add panels to the container
-    // during EnsureWorkspacePanel().  Only add them when building
-    // the container or switching panels.  And use raw_ptrs.
-
-    // Let me just defer this to UpdateActivePanelView().
-  }
 }
 
 // =========================================================================
@@ -268,102 +379,6 @@ void AstraDevToolsIntegration::BuildContainerView() {
   panel_container_->SetBackground(views::CreateSolidBackground(panel_bg));
   main_layout->SetFlexForView(panel_container_, 1);
 
-  // Add panels to the container (all hidden initially).
-  // Panels are owned by their unique_ptrs; we add them to the container
-  // but need to handle ownership carefully.
-  //
-  // To keep both unique_ptr ownership AND views hierarchy presence,
-  // we use a workaround: we add the panel as a child but DON'T transfer
-  // ownership.  Wait, AddChildView takes unique_ptr and owns it.
-  //
-  // So let's just release the unique_ptr and use raw_ptr instead.
-  // But the header uses unique_ptr...
-
-  // OK, I'll simplify: the container view owns all panel views.
-  // We access them via raw_ptrs.  The unique_ptrs in the header are
-  // used for lazy creation before the container is built, and once
-  // the container is built, ownership transfers to the views hierarchy.
-
-  // For now, let's ensure the workspace panel exists and add it.
-  if (workspace_panel_) {
-    panel_container_->AddChildView(std::move(workspace_panel_));
-    // workspace_panel_ is now null (moved from).
-    // We need a raw_ptr for access.  But the header has unique_ptr.
-    // Let me add a raw_ptr accessor too... no, let's just keep using
-    // the unique_ptr but accept it may be null after container build.
-
-    // Actually, let's just get the raw pointer back.
-    // No, that's messy.
-
-    // Simple approach: don't use the unique_ptr after container build.
-    // Use a separate raw_ptr for access.
-    // But the header only has unique_ptr...
-
-    // I think the cleanest approach is:
-    // - Keep unique_ptr for pre-container ownership
-    // - After container build, release and use raw_ptr
-    // - Add raw_ptr members to the class
-
-    // The header already has unique_ptr.  Let me add raw_ptr members
-    // for post-container access, or just access via container children.
-
-    // For now, let me just not add panels to the container during
-    // BuildContainerView().  Instead, UpdateActivePanelView() will
-    // handle adding/removing.
-
-    // Wait, that's also complex because of ownership.
-
-    // Let me take the simplest possible approach:
-    // Panels are owned by the integration (unique_ptr).
-    // The panel container uses FillLayout.
-    // When switching panels, we remove the old panel from the container
-    // and add the new one.  We use release() and re-wrap in unique_ptr.
-
-    // Actually, let's just do:
-    // - panel_container_ has FillLayout
-    // - UpdateActivePanelView() removes all children
-    //   and adds the active panel (if we have one)
-    // - We use AddChildView with the unique_ptr, but we need to keep
-    //   ownership... ugh.
-
-    // FINAL APPROACH:
-    // Store raw_ptr for each panel type.
-    // Ownership: if container_view_ exists, panels are owned by the
-    // views hierarchy.  Otherwise, they're owned by unique_ptrs.
-    // Access: always use raw_ptr.
-
-    // I need to add raw_ptr members to the class.  But the header
-    // already has unique_ptr members.  Let me just use the unique_ptr
-    // get() for access and accept the move semantics.
-
-    // Actually you know what, let's just keep it simple:
-    // Only the workspace panel is implemented.
-    // It's owned by unique_ptr<>.
-    // When container is built, we add it as a child (releasing ownership).
-    // After that, we access it via raw_ptr.
-
-    // Let me add a raw_ptr member for each panel to the header...
-    // but I'm trying to keep header changes minimal.  The header already
-    // has unique_ptr<AstraDevToolsWorkspacePanel> workspace_panel_.
-
-    // OK, I'll just convert: after adding to the views hierarchy,
-    // the unique_ptr is null.  We'll store the raw pointer separately.
-    // Let me add a raw_ptr workspace_panel_raw_ to the private section.
-
-    // Actually, the header already has the member.  Let me just use
-    // the unique_ptr and accept the move.  When panel_container_ is
-    // built, we move the panel into it.  After that, workspace_panel_
-    // is null and we access via other means.
-
-    // Hmm, this is getting too complicated for the overlay skeleton.
-    // Let's just take the simplest approach:
-    // - Panel container owns all panels
-    // - We keep raw_ptrs for access
-    // - unique_ptrs are only for pre-container creation
-
-    // I'll just modify the implementation to be practical.
-  }
-
   // --- Settings drawer.
   settings_drawer_ = container_view_->AddChildView(
       std::make_unique<views::View>());
@@ -433,7 +448,7 @@ AstraDevToolsWorkspacePanel* AstraDevToolsIntegration::workspace_panel() {
 }
 
 // =========================================================================
-// Panel management
+// Panel management (legacy)
 // =========================================================================
 
 bool AstraDevToolsIntegration::SwitchToPanel(const std::string& panel_id) {
@@ -546,6 +561,32 @@ void AstraDevToolsIntegration::RemoveObserver(Observer* observer) {
   observers_.RemoveObserver(observer);
 }
 
+void AstraDevToolsIntegration::AddIntegrationObserver(
+    AstraDevToolsIntegrationObserver* observer) {
+  integration_observers_.AddObserver(observer);
+}
+
+void AstraDevToolsIntegration::RemoveIntegrationObserver(
+    AstraDevToolsIntegrationObserver* observer) {
+  integration_observers_.RemoveObserver(observer);
+}
+
+// =========================================================================
+// Private: notify integration observers
+// =========================================================================
+
+void AstraDevToolsIntegration::NotifyPanelShown(AstraDevToolsPanelType type) {
+  for (auto& observer : integration_observers_) {
+    observer.OnPanelShown(this, type);
+  }
+}
+
+void AstraDevToolsIntegration::NotifyPanelHidden() {
+  for (auto& observer : integration_observers_) {
+    observer.OnPanelHidden(this);
+  }
+}
+
 // =========================================================================
 // AstraDevToolsToolbar::Delegate
 // =========================================================================
@@ -565,8 +606,28 @@ void AstraDevToolsIntegration::OnDetachClicked() {
   }
 }
 
+void AstraDevToolsIntegration::OnDockClicked() {
+  if (model_) {
+    model_->ToggleDockSide();
+  }
+}
+
 void AstraDevToolsIntegration::OnMenuClicked() {
   VLOG(1) << "Astra DevTools: Menu button clicked";
+}
+
+void AstraDevToolsIntegration::OnCloseClicked() {
+  CloseDevTools();
+}
+
+void AstraDevToolsIntegration::OnAstraTabClicked() {
+  VLOG(1) << "Astra DevTools: Astra tab clicked";
+  // Toggle Astra panel visibility.
+  if (panel_open_) {
+    ClosePanel();
+  } else {
+    ShowPanel(AstraDevToolsPanelType::kWorkspacePanel);
+  }
 }
 
 void AstraDevToolsIntegration::OnBackClicked() {
@@ -620,8 +681,14 @@ void AstraDevToolsIntegration::OnTabSelected(int tab_index) {
   VLOG(1) << "Astra DevTools: Tab selected: " << tab_index;
 }
 
+void AstraDevToolsIntegration::OnWorkspaceColorChanged(
+    const std::string& workspace_id, SkColor color) {
+  VLOG(1) << "Astra DevTools: Workspace color changed: " << workspace_id
+          << " -> " << base::StringPrintf("#%06X", color & 0xFFFFFF);
+}
+
 // =========================================================================
-// AstraDevToolsModelObserver
+// AstraDevToolsModelObserver (legacy)
 // =========================================================================
 
 void AstraDevToolsIntegration::OnActivePanelChanged(
@@ -677,6 +744,70 @@ void AstraDevToolsIntegration::OnThemeChanged(AstraDevToolsTheme theme) {
 }
 
 // =========================================================================
+// AstraDevToolsObserver (deepened)
+// =========================================================================
+
+void AstraDevToolsIntegration::OnDevToolsOpened(AstraDevToolsModel* model) {
+  for (auto& observer : integration_observers_) {
+    observer.OnDevToolsOpened(this);
+  }
+}
+
+void AstraDevToolsIntegration::OnDevToolsClosed(AstraDevToolsModel* model) {
+  for (auto& observer : integration_observers_) {
+    observer.OnDevToolsClosed(this);
+  }
+}
+
+void AstraDevToolsIntegration::OnPanelActivated(
+    AstraDevToolsModel* model, const std::string& panel_id) {
+  VLOG(1) << "Astra DevTools: Panel activated: " << panel_id;
+  UpdateActivePanelView();
+}
+
+void AstraDevToolsIntegration::OnPanelEnabledChanged(
+    AstraDevToolsModel* model,
+    const std::string& panel_id,
+    bool enabled) {
+  VLOG(1) << "Astra DevTools: Panel " << panel_id
+          << " enabled: " << (enabled ? "true" : "false");
+  if (toolbar_) {
+    toolbar_->UpdateFromModel();
+  }
+}
+
+void AstraDevToolsIntegration::OnPanelVisibilityChanged(
+    AstraDevToolsModel* model,
+    const std::string& panel_id,
+    bool visible) {
+  VLOG(1) << "Astra DevTools: Panel " << panel_id
+          << " visible: " << (visible ? "true" : "false");
+  if (toolbar_) {
+    toolbar_->UpdateFromModel();
+  }
+  RebuildSidebarTabs();
+}
+
+void AstraDevToolsIntegration::OnPanelsReordered(AstraDevToolsModel* model) {
+  if (toolbar_) {
+    toolbar_->UpdateFromModel();
+  }
+  RebuildSidebarTabs();
+}
+
+void AstraDevToolsIntegration::OnDockStateChanged(
+    AstraDevToolsModel* model, AstraDevToolsDockState state) {
+  if (toolbar_) {
+    toolbar_->SetDockState(state);
+  }
+}
+
+void AstraDevToolsIntegration::OnDevToolsModelShutdown(
+    AstraDevToolsModel* model) {
+  // Model is shutting down — nothing to do since integration owns the model.
+}
+
+// =========================================================================
 // Sidebar tabs
 // =========================================================================
 
@@ -691,7 +822,6 @@ void AstraDevToolsIntegration::RebuildSidebarTabs() {
   }
 
   // The scroll view is the second child (index 1).
-  // index 0 = header label, index 1 = scroll view.
   auto* scroll_view =
       static_cast<views::ScrollView*>(sidebar_view_->children()[1]);
   if (!scroll_view || !scroll_view->contents()) {
@@ -702,8 +832,9 @@ void AstraDevToolsIntegration::RebuildSidebarTabs() {
   sidebar_tabs_.clear();
   tabs_container->RemoveAllChildViews();
 
-  auto panels = model_->GetVisiblePanels();
-  const std::string& active_id = model_->active_panel_id();
+  // Use deepened panel system if available.
+  auto panels = model_->GetPanels();
+  const std::string& active_id = model_->GetActivePanel();
 
   bool dark_theme =
       model_->GetEffectiveTheme() == AstraDevToolsTheme::kDark;
@@ -711,24 +842,28 @@ void AstraDevToolsIntegration::RebuildSidebarTabs() {
   SkColor active_bg = dark_theme ? kDarkActiveTabBg : kLightActiveTabBg;
 
   for (const auto& panel : panels) {
+    if (!panel.is_visible || !panel.is_enabled) {
+      continue;
+    }
+
     auto* tab = tabs_container->AddChildView(
         std::make_unique<views::LabelButton>(
             base::BindRepeating(
                 &AstraDevToolsIntegration::SwitchToPanel,
-                base::Unretained(this), panel.id),
-            base::UTF8ToUTF16(panel.title)));
+                base::Unretained(this), panel.panel_id),
+            panel.title));
     tab->SetMinSize(gfx::Size(0, kSidebarTabHeight));
     tab->SetHorizontalAlignment(gfx::ALIGN_LEFT);
     tab->SetBorder(views::CreateEmptyBorder(
         gfx::Insets::VH(0, 12)));
     tab->SetFocusForPlatform();
-    tab->SetTooltipText(base::UTF8ToUTF16(panel.title));
+    tab->SetTooltipText(panel.title);
 
     tab->SetTextColor(views::Button::STATE_NORMAL, text_color);
     tab->SetTextColor(views::Button::STATE_HOVERED, text_color);
     tab->SetTextColor(views::Button::STATE_PRESSED, text_color);
 
-    if (panel.id == active_id) {
+    if (panel.panel_id == active_id) {
       tab->SetBackground(views::CreateSolidBackground(active_bg));
     }
 
@@ -747,42 +882,23 @@ void AstraDevToolsIntegration::UpdateActivePanelView() {
     return;
   }
 
-  const std::string& active_id = model_->active_panel_id();
+  const std::string& active_id = model_->GetActivePanel();
 
-  // For now, only the workspace panel is implemented.
-  // Other panels show a placeholder.
-  if (active_id == "workspace") {
+  // Check if workspace panel is active.
+  const auto* workspace_panel_info =
+      model_->GetPanelByType(AstraDevToolsPanelType::kWorkspacePanel);
+
+  if (workspace_panel_info && active_id == workspace_panel_info->panel_id) {
     // Ensure the panel exists.
-    if (!workspace_panel_) {
-      EnsureWorkspacePanel();
-    }
+    EnsureWorkspacePanel();
 
     if (workspace_panel_) {
-      // Clear container and add the workspace panel.
       panel_container_->RemoveAllChildViews();
-      // Transfer ownership to the container.
       panel_container_->AddChildView(std::move(workspace_panel_));
-      // workspace_panel_ is now null.
-      // We need to get the raw pointer back for future access...
-      // Let's just find it in the children.
-      if (panel_container_->children().size() > 0) {
-        // Store the raw pointer back.
-        // But we have unique_ptr in the header...
-        // Hmm.
-
-        // Actually, let's use a different pattern.
-        // Let me restore the unique_ptr by releasing from the container.
-        // No, that's wrong.
-
-        // Let's just not use the unique_ptr after this.  We'll access
-        // the panel via the container's children or store a raw_ptr.
-
-        // For the overlay skeleton, this is fine.  Tests that need
-        // access can use the container children or the integration's
-        // accessor which will do a lookup.
-      }
+      // workspace_panel_ is now null after move.
+      // We'll access via the panel_container_'s children.
     }
-  } else {
+  } else if (!active_id.empty()) {
     // Show a placeholder for unimplemented panels.
     panel_container_->RemoveAllChildViews();
 
@@ -821,7 +937,7 @@ void AstraDevToolsIntegration::RefreshAll() {
 void AstraDevToolsIntegration::InstallForTesting() {
   // Ensure components are created so tests can access them.
   toolbar();
-  workspace_panel();
+  EnsureWorkspacePanel();
 
   VLOG(1) << "Astra DevTools: Integration installed (test mode)";
 }

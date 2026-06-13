@@ -1,9 +1,12 @@
 #include "astra/ui/views/sidebar/astra_sidebar_stack_header_view.h"
 
 #include "astra/ui/color/astra_color_ids.h"
+#include "astra/ui/views/sidebar/astra_sidebar_stack_view.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "skia/include/core/SkColor.h"
+#include "ui/accessibility/ax_enums.mojom.h"
+#include "ui/accessibility/ax_node_data.h"
 #include "ui/color/color_id.h"
 #include "ui/color/color_provider.h"
 #include "ui/events/event.h"
@@ -22,17 +25,23 @@ namespace {
 // Chromium subsystem: ui::ColorProvider (ui/color/color_provider.h)
 // Astra owner: UI Color System (astra/ui/color/astra_color_ids.h)
 constexpr ui::ColorId kStackHeaderTextColorId = kColorAstraSidebarItemText;
-constexpr ui::ColorId kStackHeaderActiveBgColorId =
+constexpr ui::ColorId kStackHeaderSelectedBgColorId =
     kColorAstraSidebarItemSelectedBackground;
 constexpr ui::ColorId kStackHeaderHoverBgColorId =
     kColorAstraSidebarItemHoverBackground;
+constexpr ui::ColorId kStackHeaderDragHoverBgColorId =
+    kColorAstraSidebarItemHoverBackground;
 
-// TODO(astra): Add Astra-specific child count badge color IDs to
+// TODO(astra): Add Astra-specific tab count badge color IDs to
 // astra_color_ids.h. For now, reuse Chromium's prominent button colors.
-constexpr ui::ColorId kChildCountBadgeBgColor =
+constexpr ui::ColorId kTabCountBadgeBgColor =
     ui::kColorButtonBackgroundProminent;
-constexpr ui::ColorId kChildCountBadgeTextColor =
+constexpr ui::ColorId kTabCountBadgeTextColor =
     ui::kColorButtonForegroundProminent;
+
+// Unread indicator color.
+// TODO(astra): Add to astra_color_ids.h.
+constexpr SkColor kUnreadIndicatorColor = SK_ColorRED;
 
 }  // namespace
 
@@ -50,8 +59,9 @@ AstraSidebarStackHeaderView::AstraSidebarStackHeaderView(
 
   // Expand/collapse arrow button on the leading edge.
   expand_button_ = AddChildView(std::make_unique<views::ImageButton>(
-      base::BindRepeating(&AstraSidebarStackHeaderView::OnExpandButtonClicked,
-                          base::Unretained(this))));
+      base::BindRepeating(
+          &AstraSidebarStackHeaderView::OnExpandButtonClicked,
+          base::Unretained(this))));
   expand_button_->SetImageHorizontalAlignment(views::ImageButton::ALIGN_CENTER);
   expand_button_->SetImageVerticalAlignment(views::ImageButton::ALIGN_MIDDLE);
   expand_button_->SetFocusBehavior(views::View::FocusBehavior::NEVER);
@@ -63,15 +73,29 @@ AstraSidebarStackHeaderView::AstraSidebarStackHeaderView(
   title_label_->SetAutoColorReadabilityEnabled(false);
   title_label_->SetElideBehavior(gfx::ELIDE_MIDDLE);
 
-  // Child count badge on the trailing edge.
-  child_count_label_ = AddChildView(std::make_unique<views::Label>());
-  child_count_label_->SetHorizontalAlignment(gfx::ALIGN_CENTER);
-  child_count_label_->SetAutoColorReadabilityEnabled(false);
-  child_count_label_->SetVisible(false);
-  child_count_label_->SetPaintToLayer();
-  child_count_label_->layer()->SetFillsBoundsOpaquely(false);
-  child_count_label_->layer()->SetRoundedCornerRadius(
-      gfx::RoundedCornersF(kChildCountBadgeCornerRadius));
+  // Unread indicator dot.
+  unread_indicator_ = AddChildView(std::make_unique<views::View>());
+  unread_indicator_->SetPaintToLayer();
+  unread_indicator_->layer()->SetFillsBoundsOpaquely(true);
+  unread_indicator_->layer()->SetColor(kUnreadIndicatorColor);
+  unread_indicator_->SetVisible(false);
+
+  // Pin indicator icon.
+  // TODO(astra): Use a real pin vector icon.
+  //   Chromium resources: pin icon in ui/resources/vector_icons/
+  pin_indicator_ = AddChildView(std::make_unique<views::ImageView>());
+  pin_indicator_->SetVisible(false);
+  pin_indicator_->SetTooltipText(u"Pinned stack");
+
+  // Tab count badge on the trailing edge.
+  tab_count_label_ = AddChildView(std::make_unique<views::Label>());
+  tab_count_label_->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  tab_count_label_->SetAutoColorReadabilityEnabled(false);
+  tab_count_label_->SetVisible(false);
+  tab_count_label_->SetPaintToLayer();
+  tab_count_label_->layer()->SetFillsBoundsOpaquely(false);
+  tab_count_label_->layer()->SetRoundedCornerRadius(
+      gfx::RoundedCornersF(kTabCountBadgeCornerRadius));
 
   // Menu button for stack actions (rename, delete, change color).
   menu_button_ = AddChildView(std::make_unique<views::ImageButton>(
@@ -81,16 +105,97 @@ AstraSidebarStackHeaderView::AstraSidebarStackHeaderView(
   menu_button_->SetImageVerticalAlignment(views::ImageButton::ALIGN_MIDDLE);
   menu_button_->SetFocusBehavior(views::View::FocusBehavior::NEVER);
   menu_button_->SetTooltipText(u"Stack actions");
-  menu_button_->SetVisible(false);  // Shown on hover.
+  menu_button_->SetVisible(show_menu_button_);
 }
 
 AstraSidebarStackHeaderView::~AstraSidebarStackHeaderView() = default;
 
-void AstraSidebarStackHeaderView::SetTitle(const std::u16string& title) {
+// =========================================================================
+// Stack info
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetStackInfo(const AstraStackInfo& info) {
+  stack_id_ = info.stack_id;
+  color_ = info.color;
+  tab_count_ = info.tab_count;
+  is_expanded_ = info.is_expanded;
+  is_pinned_ = info.is_pinned;
+  has_unread_ = info.has_unread;
+
+  // Update hex string for legacy getter.
+  // TODO(astra): Remove when legacy accent_color() is removed.
+  char hex_buf[8];
+  base::snprintf(hex_buf, sizeof(hex_buf), "#%02X%02X%02X",
+                 SkColorGetR(info.color),
+                 SkColorGetG(info.color),
+                 SkColorGetB(info.color));
+  accent_color_hex_ = hex_buf;
+
+  // Update all visual elements.
   if (title_label_) {
-    title_label_->SetText(title);
+    title_label_->SetText(info.name);
+  }
+  UpdateExpandArrowVisuals();
+  UpdateTabCountBadge();
+  UpdateAccentColorBar();
+  UpdateUnreadIndicator();
+  UpdatePinIndicator();
+  UpdateBackgroundColor();
+  SchedulePaint();
+}
+
+// =========================================================================
+// Name
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetName(const std::u16string& name) {
+  if (title_label_) {
+    title_label_->SetText(name);
   }
 }
+
+std::u16string AstraSidebarStackHeaderView::GetName() const {
+  if (title_label_) {
+    return title_label_->GetText();
+  }
+  return std::u16string();
+}
+
+// =========================================================================
+// Color
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetColor(SkColor color) {
+  if (color_ == color) {
+    return;
+  }
+  color_ = color;
+  UpdateAccentColorBar();
+
+  // Update hex string for legacy getter.
+  char hex_buf[8];
+  base::snprintf(hex_buf, sizeof(hex_buf), "#%02X%02X%02X",
+                 SkColorGetR(color),
+                 SkColorGetG(color),
+                 SkColorGetB(color));
+  accent_color_hex_ = hex_buf;
+}
+
+// =========================================================================
+// Tab count
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetTabCount(int count) {
+  if (tab_count_ == count) {
+    return;
+  }
+  tab_count_ = count;
+  UpdateTabCountBadge();
+}
+
+// =========================================================================
+// Expansion
+// =========================================================================
 
 void AstraSidebarStackHeaderView::SetExpanded(bool expanded) {
   if (is_expanded_ == expanded) {
@@ -101,29 +206,143 @@ void AstraSidebarStackHeaderView::SetExpanded(bool expanded) {
   SchedulePaint();
 }
 
-void AstraSidebarStackHeaderView::SetActive(bool active) {
-  if (is_active_ == active) {
+// =========================================================================
+// Selection
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetSelected(bool selected) {
+  if (is_selected_ == selected) {
     return;
   }
-  is_active_ = active;
-  OnThemeChanged();
+  is_selected_ = selected;
+  UpdateBackgroundColor();
 }
 
-void AstraSidebarStackHeaderView::SetChildCount(size_t count) {
-  if (child_count_ == count) {
+// =========================================================================
+// Pinned
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetPinned(bool pinned) {
+  if (is_pinned_ == pinned) {
     return;
   }
-  child_count_ = count;
-  UpdateChildCountBadge();
+  is_pinned_ = pinned;
+  UpdatePinIndicator();
+  InvalidateLayout();
 }
 
-void AstraSidebarStackHeaderView::SetAccentColor(
-    const std::string& color_hex) {
-  if (accent_color_ == color_hex) {
+// =========================================================================
+// Chevron
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetShowChevron(bool show) {
+  if (show_chevron_ == show) {
     return;
   }
-  accent_color_ = color_hex;
-  UpdateAccentColorBar();
+  show_chevron_ = show;
+  if (expand_button_) {
+    expand_button_->SetVisible(show);
+  }
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Tab count display
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetShowTabCount(bool show) {
+  if (show_tab_count_ == show) {
+    return;
+  }
+  show_tab_count_ = show;
+  UpdateTabCountBadge();
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Color indicator
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetShowColorIndicator(bool show) {
+  if (show_color_indicator_ == show) {
+    return;
+  }
+  show_color_indicator_ = show;
+  if (accent_color_bar_) {
+    accent_color_bar_->SetVisible(show);
+  }
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Menu button
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetShowMenuButton(bool show) {
+  if (show_menu_button_ == show) {
+    return;
+  }
+  show_menu_button_ = show;
+  if (menu_button_) {
+    menu_button_->SetVisible(show);
+  }
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Unread
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetHasUnread(bool has_unread) {
+  if (has_unread_ == has_unread) {
+    return;
+  }
+  has_unread_ = has_unread;
+  UpdateUnreadIndicator();
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Compact mode
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetCompact(bool compact) {
+  if (is_compact_ == compact) {
+    return;
+  }
+  is_compact_ = compact;
+  // TODO(astra): Adjust font size for compact mode.
+  InvalidateLayout();
+}
+
+// =========================================================================
+// Drag hovered
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetDragHovered(bool hovered) {
+  if (is_drag_hovered_ == hovered) {
+    return;
+  }
+  is_drag_hovered_ = hovered;
+  UpdateBackgroundColor();
+}
+
+// =========================================================================
+// Legacy / compatibility
+// =========================================================================
+
+void AstraSidebarStackHeaderView::SetAccentColor(const std::string& color_hex) {
+  accent_color_hex_ = color_hex;
+  SkColor color = ParseHexColor(color_hex);
+  SetColor(color);
+}
+
+// =========================================================================
+// Layout
+// =========================================================================
+
+int AstraSidebarStackHeaderView::GetHeaderHeight() const {
+  return is_compact_ ? kStackHeaderCompactHeight : kStackHeaderHeight;
 }
 
 gfx::Size AstraSidebarStackHeaderView::CalculatePreferredSize(
@@ -133,7 +352,7 @@ gfx::Size AstraSidebarStackHeaderView::CalculatePreferredSize(
   if (available_size.width().is_bounded()) {
     width = available_size.width().value();
   }
-  return gfx::Size(width, kStackHeaderHeight);
+  return gfx::Size(width, GetHeaderHeight());
 }
 
 void AstraSidebarStackHeaderView::Layout() {
@@ -141,23 +360,33 @@ void AstraSidebarStackHeaderView::Layout() {
 
   int x = kStackHeaderHorizontalPadding;
   int y_center = height() / 2;
+  int header_height = GetHeaderHeight();
 
   // Color accent bar on the far left edge.
-  if (accent_color_bar_) {
-    int bar_y = (height() - kStackHeaderHeight) / 2 + 4;
-    int bar_height = kStackHeaderHeight - 8;
+  if (accent_color_bar_ && accent_color_bar_->GetVisible()) {
+    int bar_y = (height() - header_height) / 2 + 4;
+    int bar_height = header_height - 8;
     accent_color_bar_->SetBounds(2, bar_y, kAccentColorBarWidth, bar_height);
   }
 
   // Expand arrow on the left.
-  if (expand_button_) {
+  if (expand_button_ && expand_button_->GetVisible()) {
     int arrow_y = y_center - kExpandArrowSize / 2;
     expand_button_->SetBounds(x, arrow_y, kExpandArrowSize, kExpandArrowSize);
     x += kExpandArrowSize + kStackHeaderIconSpacing;
   }
 
-  // Menu button on the right (shown on hover).
+  // Pin indicator (after expand arrow).
+  if (pin_indicator_ && pin_indicator_->GetVisible()) {
+    int pin_y = y_center - kPinIndicatorSize / 2;
+    pin_indicator_->SetBounds(x, pin_y, kPinIndicatorSize, kPinIndicatorSize);
+    x += kPinIndicatorSize + kStackHeaderIconSpacing;
+  }
+
+  // Right edge tracking for trailing elements.
   int right_x = width() - kStackHeaderHorizontalPadding;
+
+  // Menu button on the right.
   if (menu_button_ && menu_button_->GetVisible()) {
     right_x -= kMenuButtonSize;
     int btn_y = y_center - kMenuButtonSize / 2;
@@ -165,18 +394,27 @@ void AstraSidebarStackHeaderView::Layout() {
     right_x -= kStackHeaderIconSpacing;
   }
 
-  // Child count badge on the right (before menu button).
-  if (child_count_label_ && child_count_label_->GetVisible()) {
+  // Tab count badge on the right (before menu button).
+  if (tab_count_label_ && tab_count_label_->GetVisible()) {
     // Measure the badge text to get the width.
-    int badge_width = kChildCountBadgeMinWidth;
-    gfx::Size text_size = child_count_label_->GetPreferredSize();
+    int badge_width = kTabCountBadgeMinWidth;
+    gfx::Size text_size = tab_count_label_->GetPreferredSize();
     badge_width = std::max(badge_width, text_size.width() + 8);
 
     right_x -= badge_width;
-    int badge_y = y_center - kChildCountBadgeHeight / 2;
-    child_count_label_->SetBounds(right_x, badge_y, badge_width,
-                                  kChildCountBadgeHeight);
-    right_x -= kChildCountBadgeSpacing;
+    int badge_y = y_center - kTabCountBadgeHeight / 2;
+    tab_count_label_->SetBounds(right_x, badge_y, badge_width,
+                                 kTabCountBadgeHeight);
+    right_x -= kTabCountBadgeSpacing;
+  }
+
+  // Unread indicator (before tab count badge).
+  if (unread_indicator_ && unread_indicator_->GetVisible()) {
+    right_x -= kUnreadIndicatorSize;
+    int dot_y = y_center - kUnreadIndicatorSize / 2;
+    unread_indicator_->SetBounds(right_x, dot_y, kUnreadIndicatorSize,
+                                  kUnreadIndicatorSize);
+    right_x -= kStackHeaderIconSpacing;
   }
 
   // Title fills the remaining space.
@@ -186,6 +424,10 @@ void AstraSidebarStackHeaderView::Layout() {
     title_label_->SetBounds(x, 0, title_width, height());
   }
 }
+
+// =========================================================================
+// Theme
+// =========================================================================
 
 void AstraSidebarStackHeaderView::OnThemeChanged() {
   views::View::OnThemeChanged();
@@ -201,30 +443,24 @@ void AstraSidebarStackHeaderView::OnThemeChanged() {
         color_provider->GetColor(kStackHeaderTextColorId));
   }
 
-  // Update child count badge colors.
-  if (child_count_label_) {
-    child_count_label_->SetEnabledColor(
-        color_provider->GetColor(kChildCountBadgeTextColor));
-    if (child_count_label_->layer()) {
-      child_count_label_->layer()->SetColor(
-          color_provider->GetColor(kChildCountBadgeBgColor));
+  // Update tab count badge colors.
+  if (tab_count_label_) {
+    tab_count_label_->SetEnabledColor(
+        color_provider->GetColor(kTabCountBadgeTextColor));
+    if (tab_count_label_->layer()) {
+      tab_count_label_->layer()->SetColor(
+          color_provider->GetColor(kTabCountBadgeBgColor));
     }
   }
 
-  // Update background color based on active/hover state.
-  SkColor bg_color = SK_ColorTRANSPARENT;
-  if (is_active_) {
-    bg_color = color_provider->GetColor(kStackHeaderActiveBgColorId);
-  } else if (is_hovered_) {
-    bg_color = color_provider->GetColor(kStackHeaderHoverBgColorId);
-  }
-  if (layer()) {
-    layer()->SetColor(bg_color);
-  }
-
+  UpdateBackgroundColor();
   UpdateExpandArrowVisuals();
   UpdateAccentColorBar();
 }
+
+// =========================================================================
+// Mouse events
+// =========================================================================
 
 bool AstraSidebarStackHeaderView::OnMousePressed(
     const ui::MouseEvent& event) {
@@ -247,22 +483,41 @@ bool AstraSidebarStackHeaderView::OnMousePressed(
 void AstraSidebarStackHeaderView::OnMouseEntered(
     const ui::MouseEvent& event) {
   is_hovered_ = true;
-  if (menu_button_) {
+  // Show menu button on hover if it's not always shown.
+  if (menu_button_ && !show_menu_button_) {
     menu_button_->SetVisible(true);
   }
-  OnThemeChanged();
+  UpdateBackgroundColor();
   views::View::OnMouseEntered(event);
 }
 
 void AstraSidebarStackHeaderView::OnMouseExited(
     const ui::MouseEvent& event) {
   is_hovered_ = false;
-  if (menu_button_) {
+  // Hide menu button on exit if it's not always shown.
+  if (menu_button_ && !show_menu_button_) {
     menu_button_->SetVisible(false);
   }
-  OnThemeChanged();
+  UpdateBackgroundColor();
   views::View::OnMouseExited(event);
 }
+
+// =========================================================================
+// Accessibility
+// =========================================================================
+
+void AstraSidebarStackHeaderView::GetAccessibleNodeData(
+    ui::AXNodeData* node_data) {
+  views::View::GetAccessibleNodeData(node_data);
+  node_data->role = ax::mojom::Role::kListItem;
+  if (title_label_) {
+    node_data->SetName(title_label_->GetText());
+  }
+}
+
+// =========================================================================
+// Button handlers
+// =========================================================================
 
 void AstraSidebarStackHeaderView::OnExpandButtonClicked() {
   if (delegate_ && !stack_id_.empty()) {
@@ -277,14 +532,19 @@ void AstraSidebarStackHeaderView::OnMenuButtonClicked() {
   }
 }
 
+// =========================================================================
+// Visual updates
+// =========================================================================
+
 void AstraSidebarStackHeaderView::UpdateExpandArrowVisuals() {
   if (!expand_button_) {
     return;
   }
 
   // TODO(astra): Use real Chromium vector icons for the expand/collapse
-  // arrow.  For now, we use a simple text symbol as a visual placeholder
-  // so the layout and state machine work correctly.
+  // arrow.  For now, we use the tooltip text and click handling to convey
+  // state; the visual icon will be wired up when building against the full
+  // Chromium tree with vector icon support.
   //
   // Chromium resources:
   //   - kTreeViewExpandedIcon / kTreeViewCollapsedIcon
@@ -295,22 +555,24 @@ void AstraSidebarStackHeaderView::UpdateExpandArrowVisuals() {
   //
   // Chromium owner: views::TreeView (ui/views/controls/tree/tree_view.h)
 
-  // For the skeleton implementation, we rely on the tooltip text and
-  // click handling to convey state; the visual icon will be wired up
-  // when building against the full Chromium tree with vector icon support.
+  // Update tooltip.
+  if (is_expanded_) {
+    expand_button_->SetTooltipText(u"Collapse stack");
+  } else {
+    expand_button_->SetTooltipText(u"Expand stack");
+  }
 }
 
-void AstraSidebarStackHeaderView::UpdateChildCountBadge() {
-  if (!child_count_label_) {
+void AstraSidebarStackHeaderView::UpdateTabCountBadge() {
+  if (!tab_count_label_) {
     return;
   }
 
-  if (child_count_ > 0) {
-    child_count_label_->SetText(
-        base::NumberToString16(static_cast<int>(child_count_)));
-    child_count_label_->SetVisible(true);
+  if (show_tab_count_ && tab_count_ > 0) {
+    tab_count_label_->SetText(base::NumberToString16(tab_count_));
+    tab_count_label_->SetVisible(true);
   } else {
-    child_count_label_->SetVisible(false);
+    tab_count_label_->SetVisible(false);
   }
 
   InvalidateLayout();
@@ -320,13 +582,45 @@ void AstraSidebarStackHeaderView::UpdateAccentColorBar() {
   if (!accent_color_bar_ || !accent_color_bar_->layer()) {
     return;
   }
-
-  SkColor color = ParseHexColor(accent_color_);
-  accent_color_bar_->layer()->SetColor(color);
+  accent_color_bar_->layer()->SetColor(color_);
 }
 
-SkColor AstraSidebarStackHeaderView::ParseHexColor(
-    const std::string& hex) {
+void AstraSidebarStackHeaderView::UpdateUnreadIndicator() {
+  if (!unread_indicator_) {
+    return;
+  }
+  unread_indicator_->SetVisible(has_unread_);
+}
+
+void AstraSidebarStackHeaderView::UpdatePinIndicator() {
+  if (!pin_indicator_) {
+    return;
+  }
+  pin_indicator_->SetVisible(is_pinned_);
+}
+
+void AstraSidebarStackHeaderView::UpdateBackgroundColor() {
+  const auto* color_provider = GetColorProvider();
+  if (!color_provider || !layer()) {
+    return;
+  }
+
+  SkColor bg_color = SK_ColorTRANSPARENT;
+  if (is_selected_) {
+    bg_color = color_provider->GetColor(kStackHeaderSelectedBgColorId);
+  } else if (is_drag_hovered_) {
+    bg_color = color_provider->GetColor(kStackHeaderDragHoverBgColorId);
+  } else if (is_hovered_) {
+    bg_color = color_provider->GetColor(kStackHeaderHoverBgColorId);
+  }
+  layer()->SetColor(bg_color);
+}
+
+// =========================================================================
+// Static helpers
+// =========================================================================
+
+SkColor AstraSidebarStackHeaderView::ParseHexColor(const std::string& hex) {
   // Parse a hex color string like "#RRGGBB" or "RRGGBB".
   // Returns SK_ColorGRAY on failure (safe default).
   //

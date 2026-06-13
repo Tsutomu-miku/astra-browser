@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/time/time.h"
 #include "ui/views/view.h"
@@ -88,6 +89,16 @@ class AstraRecentlyClosedItemView : public AstraSidebarItemView {
     delegate_ = delegate;
   }
 
+  // Get the string ID of this item.
+  const std::string& GetId() const { return item_id_; }
+
+  // Set the string ID of this item.
+  void SetId(const std::string& id) { item_id_ = id; }
+
+  // Set the callback for click handling.
+  using ClickCallback = base::RepeatingClosure;
+  void set_callback(ClickCallback callback) { click_callback_ = std::move(callback); }
+
   int entry_id() const { return entry_id_; }
 
   // -- views::View --------------------------------------------------------
@@ -123,6 +134,7 @@ class AstraRecentlyClosedItemView : public AstraSidebarItemView {
   void HandleMiddleClick();
 
   // Data projected from TabRestoreService.
+  std::string item_id_;
   GURL url_;
   base::Time close_time_;
   int entry_id_;
@@ -131,6 +143,9 @@ class AstraRecentlyClosedItemView : public AstraSidebarItemView {
 
   // Action delegate. Not owned.
   raw_ptr<AstraRecentlyClosedItemDelegate> delegate_ = nullptr;
+
+  // Simple click callback (alternate to delegate).
+  ClickCallback click_callback_;
 };
 
 }  // namespace astra

@@ -7,7 +7,10 @@
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
+#include "base/time/time.h"
 #include "components/keyed_service/core/keyed_service.h"
+#include "third_party/skia/include/core/SkColor.h"
+#include "ui/gfx/image/image_skia.h"
 
 class PrefService;
 class Profile;
@@ -54,6 +57,26 @@ enum class AstraExtensionCategory {
 };
 
 // =========================================================================
+// AstraExtensionState — extension presentation state
+// =========================================================================
+//
+// Presentation-facing state of an extension. Mirrors a subset of
+// extensions::Extension::State and extensions::UnloadedExtensionReason.
+// Used by the UI layer to determine visual styling (opacity, badges, etc.).
+//
+// Chromium owner: extensions::Extension::State
+//   (extensions/common/extension.h)
+// Chromium owner: extensions::UnloadedExtensionReason
+//   (extensions/browser/unloaded_extension_reason.h)
+enum class AstraExtensionState {
+  kEnabled,      // Extension is enabled and functioning normally
+  kDisabled,     // Extension is disabled by user or policy
+  kBlocked,      // Extension is blocked (e.g., by safe browsing)
+  kError,        // Extension has encountered an error
+  kUninstalled,  // Extension has been uninstalled (transient state)
+};
+
+// =========================================================================
 // AstraExtensionInfo — projected extension data
 // =========================================================================
 //
@@ -64,16 +87,28 @@ enum class AstraExtensionCategory {
 // Chromium's Extension and ExtensionAction state. The truth source is
 // always Chromium's ExtensionRegistry and ExtensionAction system.
 struct AstraExtensionInfo {
-  std::string id;           // Extension ID (from extensions::Extension)
-  std::u16string name;      // Extension display name
-  std::u16string description;  // Short description (from manifest)
-  std::string version;      // Extension version string
-  bool enabled = false;     // Whether the extension is currently enabled
+  std::string extension_id;     // Extension ID (from extensions::Extension)
+  std::u16string name;          // Extension display name
+  std::u16string description;   // Short description (from manifest)
+  std::string version;          // Extension version string
+  gfx::ImageSkia icon;          // Extension icon image
+  bool has_icon = false;        // Whether a custom icon is available
+  AstraExtensionState state = AstraExtensionState::kEnabled;
+  bool is_action = false;       // Whether this is a browser/page action
+  bool is_pinned = false;       // Whether pinned to the sidebar
+  bool has_popup = false;       // Whether the extension has a popup
+  bool has_options_page = false;  // Whether the extension has options
+  std::vector<std::string> permissions;  // Permission names for display
+  base::Time install_time;      // When the extension was installed
+  base::Time last_updated;      // When the extension was last updated
+
+  // Legacy fields (kept for backward compatibility).
+  // TODO(astra): Remove legacy bool enabled once all callers use state.
+  bool enabled = false;         // Whether the extension is currently enabled
   bool has_browser_action = false;  // Whether the extension has an action
   bool has_page_action = false;     // Whether the extension has a page action
-  bool has_options_page = false;    // Whether the extension has options
-  std::string popup_url;    // Popup URL from the action manifest, if any
-  std::string icon_url;     // Icon URL (for UI presentation)
+  std::string popup_url;        // Popup URL from the action manifest, if any
+  std::string icon_url;         // Icon URL (for UI presentation)
   AstraExtensionCategory category = AstraExtensionCategory::kOther;
 };
 

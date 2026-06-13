@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/prefs/pref_service.h"
@@ -12,57 +13,77 @@ namespace astra {
 
 namespace {
 
-// Helper to get default action data by ID.
-AstraDecorationAction MakeDefaultAction(const std::string& id,
-                                        int position) {
-  AstraDecorationAction action;
-  action.id = id;
-  action.position = position;
-  action.is_visible = true;
+// Helper to create a default decoration item for a given type.
+AstraOmniboxDecorationItem MakeDefaultDecoration(AstraOmniboxDecorationType type,
+                                                  int order_index) {
+  AstraOmniboxDecorationItem item;
+  item.type = type;
+  item.is_visible = true;
+  item.is_active = false;
+  item.order_index = order_index;
+  item.has_bubble = false;
+  item.badge_color = SK_ColorTRANSPARENT;
 
-  if (id == AstraOmniboxDecorationModel::kActionWorkspace) {
-    action.label = u"Workspace";
-    action.icon = "workspace";
-    action.tooltip = u"Switch workspace";
-    action.shortcut = u"⌘⇧W";
-  } else if (id == AstraOmniboxDecorationModel::kActionFocusMode) {
-    action.label = u"Focus";
-    action.icon = "focus_mode";
-    action.tooltip = u"Toggle focus mode";
-    action.shortcut = u"⌘⇧F";
-  } else if (id == AstraOmniboxDecorationModel::kActionScreenshot) {
-    action.label = u"Screenshot";
-    action.icon = "screenshot";
-    action.tooltip = u"Take screenshot";
-    action.shortcut = u"⌘⇧S";
-  } else if (id == AstraOmniboxDecorationModel::kActionNote) {
-    action.label = u"Note";
-    action.icon = "note";
-    action.tooltip = u"Quick note";
-    action.shortcut = u"⌘⇧N";
-  } else if (id == AstraOmniboxDecorationModel::kActionSplitView) {
-    action.label = u"Split";
-    action.icon = "split_view";
-    action.tooltip = u"Toggle split view";
-    action.shortcut = u"⌘⇧\\\\";
-  } else if (id == AstraOmniboxDecorationModel::kActionReadingList) {
-    action.label = u"Reading";
-    action.icon = "reading_list";
-    action.tooltip = u"Add to reading list";
-    action.shortcut = u"⌘⇧D";
-  } else if (id == AstraOmniboxDecorationModel::kActionTranslate) {
-    action.label = u"Translate";
-    action.icon = "translate";
-    action.tooltip = u"Translate page";
-    action.shortcut = u"⌘⇧T";
-  } else if (id == AstraOmniboxDecorationModel::kActionShare) {
-    action.label = u"Share";
-    action.icon = "share";
-    action.tooltip = u"Share page";
-    action.shortcut = u"⌘⇧E";
+  switch (type) {
+    case AstraOmniboxDecorationType::kWorkspaceIndicator:
+      item.icon = "workspace";
+      item.tooltip = u"Current workspace";
+      item.accessibility_label = u"Workspace indicator";
+      item.has_bubble = true;
+      break;
+    case AstraOmniboxDecorationType::kFocusModeBadge:
+      item.icon = "focus_mode";
+      item.tooltip = u"Focus mode is active";
+      item.accessibility_label = u"Focus mode badge";
+      break;
+    case AstraOmniboxDecorationType::kTabStackIndicator:
+      item.icon = "tab_stack";
+      item.tooltip = u"Tab stack";
+      item.accessibility_label = u"Tab stack indicator";
+      item.has_bubble = true;
+      break;
+    case AstraOmniboxDecorationType::kReadingListBadge:
+      item.icon = "reading_list";
+      item.tooltip = u"Add to reading list";
+      item.accessibility_label = u"Reading list button";
+      break;
+    case AstraOmniboxDecorationType::kNoteBadge:
+      item.icon = "note";
+      item.tooltip = u"Add note";
+      item.accessibility_label = u"Note button";
+      item.has_bubble = true;
+      break;
+    case AstraOmniboxDecorationType::kFavoriteStar:
+      item.icon = "star";
+      item.tooltip = u"Bookmark this page";
+      item.accessibility_label = u"Bookmark star";
+      break;
+    case AstraOmniboxDecorationType::kSidebarToggle:
+      item.icon = "sidebar";
+      item.tooltip = u"Toggle sidebar";
+      item.accessibility_label = u"Sidebar toggle";
+      break;
+    case AstraOmniboxDecorationType::kSplitViewToggle:
+      item.icon = "split_view";
+      item.tooltip = u"Toggle split view";
+      item.accessibility_label = u"Split view button";
+      break;
+    case AstraOmniboxDecorationType::kTranslateButton:
+      item.icon = "translate";
+      item.tooltip = u"Translate page";
+      item.accessibility_label = u"Translate button";
+      break;
+    case AstraOmniboxDecorationType::kAstraActionButton:
+      item.icon = "astra_action";
+      item.tooltip = u"Astra action";
+      item.accessibility_label = u"Astra action button";
+      item.has_bubble = true;
+      break;
+    case AstraOmniboxDecorationType::kNone:
+      break;
   }
 
-  return action;
+  return item;
 }
 
 }  // namespace
@@ -72,439 +93,757 @@ AstraDecorationAction MakeDefaultAction(const std::string& id,
 // =========================================================================
 
 AstraOmniboxDecorationModel::AstraOmniboxDecorationModel() {
-  InitializeDefaultActions();
+  InitializeDefaultDecorations();
 }
 
-AstraOmniboxDecorationModel::~AstraOmniboxDecorationModel() = default;
+AstraOmniboxDecorationModel::~AstraOmniboxDecorationModel() {
+  NotifyShutdown();
+}
 
 // =========================================================================
-// Default action order
+// Default decoration order
 // =========================================================================
 
-std::vector<std::string> AstraOmniboxDecorationModel::GetDefaultActionOrder() {
+std::vector<AstraOmniboxDecorationType>
+AstraOmniboxDecorationModel::GetDefaultDecorationOrder() {
   return {
-      kActionWorkspace, kActionFocusMode,  kActionScreenshot, kActionNote,
-      kActionSplitView, kActionReadingList, kActionTranslate,  kActionShare,
+      AstraOmniboxDecorationType::kWorkspaceIndicator,
+      AstraOmniboxDecorationType::kFocusModeBadge,
+      AstraOmniboxDecorationType::kTabStackIndicator,
+      AstraOmniboxDecorationType::kReadingListBadge,
+      AstraOmniboxDecorationType::kNoteBadge,
+      AstraOmniboxDecorationType::kFavoriteStar,
+      AstraOmniboxDecorationType::kSidebarToggle,
+      AstraOmniboxDecorationType::kSplitViewToggle,
+      AstraOmniboxDecorationType::kTranslateButton,
+      AstraOmniboxDecorationType::kAstraActionButton,
   };
 }
 
-void AstraOmniboxDecorationModel::InitializeDefaultActions() {
-  actions_.clear();
-  auto order = GetDefaultActionOrder();
+void AstraOmniboxDecorationModel::InitializeDefaultDecorations() {
+  decorations_.clear();
+  auto order = GetDefaultDecorationOrder();
   for (size_t i = 0; i < order.size(); ++i) {
-    actions_.push_back(MakeDefaultAction(order[i], static_cast<int>(i)));
+    decorations_.push_back(MakeDefaultDecoration(order[i], static_cast<int>(i)));
   }
 }
 
 // =========================================================================
-// Action management
+// Decoration item access
 // =========================================================================
 
-bool AstraOmniboxDecorationModel::AddAction(
-    const AstraDecorationAction& action) {
-  if (HasAction(action.id)) {
-    return false;
-  }
-  actions_.push_back(action);
-  // Ensure position is set properly.
-  actions_.back().position = static_cast<int>(actions_.size() - 1);
-
-  for (auto& observer : observers_) {
-    observer.OnActionAdded(action.id);
-  }
-  return true;
+const std::vector<AstraOmniboxDecorationItem>&
+AstraOmniboxDecorationModel::GetDecorations() const {
+  return decorations_;
 }
 
-bool AstraOmniboxDecorationModel::RemoveAction(const std::string& action_id) {
-  int index = FindActionIndex(action_id);
-  if (index < 0) {
-    return false;
-  }
-  actions_.erase(actions_.begin() + index);
-  // Recompute positions.
-  for (size_t i = 0; i < actions_.size(); ++i) {
-    actions_[i].position = static_cast<int>(i);
-  }
-
-  for (auto& observer : observers_) {
-    observer.OnActionRemoved(action_id);
-  }
-  return true;
+int AstraOmniboxDecorationModel::GetDecorationCount() const {
+  return static_cast<int>(decorations_.size());
 }
 
-bool AstraOmniboxDecorationModel::SetActionVisible(
-    const std::string& action_id,
-    bool visible) {
-  int index = FindActionIndex(action_id);
-  if (index < 0) {
-    return false;
+const AstraOmniboxDecorationItem*
+AstraOmniboxDecorationModel::GetDecorationAt(int index) const {
+  if (index < 0 || index >= static_cast<int>(decorations_.size())) {
+    return nullptr;
   }
-  if (actions_[index].is_visible == visible) {
-    return true;  // No change, but success.
-  }
-  actions_[index].is_visible = visible;
-
-  for (auto& observer : observers_) {
-    observer.OnActionVisibilityChanged(action_id, visible);
-  }
-  return true;
+  return &decorations_[static_cast<size_t>(index)];
 }
 
-bool AstraOmniboxDecorationModel::HasAction(
-    const std::string& action_id) const {
-  return FindActionIndex(action_id) >= 0;
-}
-
-const AstraDecorationAction* AstraOmniboxDecorationModel::GetAction(
-    const std::string& action_id) const {
-  int index = FindActionIndex(action_id);
+const AstraOmniboxDecorationItem*
+AstraOmniboxDecorationModel::GetDecorationByType(
+    AstraOmniboxDecorationType type) const {
+  int index = FindDecorationIndex(type);
   if (index < 0) {
     return nullptr;
   }
-  return &actions_[index];
+  return &decorations_[static_cast<size_t>(index)];
 }
 
-std::vector<AstraDecorationAction>
-AstraOmniboxDecorationModel::GetVisibleActions() const {
-  std::vector<AstraDecorationAction> visible;
-  for (const auto& action : actions_) {
-    if (action.is_visible) {
-      visible.push_back(action);
-    }
-  }
-  return visible;
-}
-
-size_t AstraOmniboxDecorationModel::GetVisibleActionCount() const {
-  size_t count = 0;
-  for (const auto& action : actions_) {
-    if (action.is_visible) {
-      ++count;
-    }
-  }
-  return count;
-}
-
-int AstraOmniboxDecorationModel::FindActionIndex(
-    const std::string& action_id) const {
-  for (size_t i = 0; i < actions_.size(); ++i) {
-    if (actions_[i].id == action_id) {
+int AstraOmniboxDecorationModel::FindDecorationIndex(
+    AstraOmniboxDecorationType type) const {
+  for (size_t i = 0; i < decorations_.size(); ++i) {
+    if (decorations_[i].type == type) {
       return static_cast<int>(i);
     }
   }
   return -1;
 }
 
-// =========================================================================
-// Action ordering
-// =========================================================================
-
-bool AstraOmniboxDecorationModel::ReorderAction(size_t from_index,
-                                                size_t to_index) {
-  if (from_index >= actions_.size() || to_index >= actions_.size()) {
-    return false;
+AstraOmniboxDecorationItem* AstraOmniboxDecorationModel::GetMutableDecoration(
+    AstraOmniboxDecorationType type) {
+  int index = FindDecorationIndex(type);
+  if (index < 0) {
+    return nullptr;
   }
-  if (from_index == to_index) {
-    return true;  // No-op success.
-  }
-
-  AstraDecorationAction action = std::move(actions_[from_index]);
-  actions_.erase(actions_.begin() + from_index);
-  actions_.insert(actions_.begin() + to_index, std::move(action));
-
-  // Update position values.
-  for (size_t i = 0; i < actions_.size(); ++i) {
-    actions_[i].position = static_cast<int>(i);
-  }
-
-  for (auto& observer : observers_) {
-    observer.OnActionOrderChanged();
-  }
-  return true;
+  return &decorations_[static_cast<size_t>(index)];
 }
 
-bool AstraOmniboxDecorationModel::MoveActionTo(const std::string& action_id,
-                                               size_t index) {
-  int from = FindActionIndex(action_id);
-  if (from < 0) {
-    return false;
+// =========================================================================
+// Decoration visibility
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetDecorationVisible(
+    AstraOmniboxDecorationType type,
+    bool visible) {
+  AstraOmniboxDecorationItem* item = GetMutableDecoration(type);
+  if (!item) {
+    return;
   }
-  return ReorderAction(static_cast<size_t>(from), index);
+  if (item->is_visible == visible) {
+    return;
+  }
+  item->is_visible = visible;
+  NotifyVisibilityChanged(type, visible);
 }
 
-void AstraOmniboxDecorationModel::ResetActionOrder() {
-  InitializeDefaultActions();
+bool AstraOmniboxDecorationModel::IsDecorationVisible(
+    AstraOmniboxDecorationType type) const {
+  const AstraOmniboxDecorationItem* item = GetDecorationByType(type);
+  return item ? item->is_visible : false;
+}
+
+// =========================================================================
+// Decoration active state
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetDecorationActive(
+    AstraOmniboxDecorationType type,
+    bool active) {
+  AstraOmniboxDecorationItem* item = GetMutableDecoration(type);
+  if (!item) {
+    return;
+  }
+  if (item->is_active == active) {
+    return;
+  }
+  item->is_active = active;
+  NotifyActiveChanged(type, active);
+}
+
+bool AstraOmniboxDecorationModel::IsDecorationActive(
+    AstraOmniboxDecorationType type) const {
+  const AstraOmniboxDecorationItem* item = GetDecorationByType(type);
+  return item ? item->is_active : false;
+}
+
+// =========================================================================
+// Decoration tooltip
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetDecorationTooltip(
+    AstraOmniboxDecorationType type,
+    const std::u16string& tooltip) {
+  AstraOmniboxDecorationItem* item = GetMutableDecoration(type);
+  if (!item) {
+    return;
+  }
+  if (item->tooltip == tooltip) {
+    return;
+  }
+  item->tooltip = tooltip;
+}
+
+// =========================================================================
+// Decoration badges
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetDecorationBadge(
+    AstraOmniboxDecorationType type,
+    const std::u16string& badge_text,
+    SkColor color) {
+  AstraOmniboxDecorationItem* item = GetMutableDecoration(type);
+  if (!item) {
+    return;
+  }
+  if (item->badge_text == badge_text && item->badge_color == color) {
+    return;
+  }
+  item->badge_text = badge_text;
+  item->badge_color = color;
+  NotifyBadgeChanged(type);
+}
+
+void AstraOmniboxDecorationModel::ClearDecorationBadge(
+    AstraOmniboxDecorationType type) {
+  SetDecorationBadge(type, std::u16string(), SK_ColorTRANSPARENT);
+}
+
+// =========================================================================
+// Decoration ordering
+// =========================================================================
+
+void AstraOmniboxDecorationModel::ReorderDecorations(
+    const std::vector<AstraOmniboxDecorationType>& order) {
+  if (order.empty()) {
+    return;
+  }
+
+  std::vector<AstraOmniboxDecorationItem> new_order;
+  std::vector<bool> used(decorations_.size(), false);
+
+  // First, add items in the specified order.
+  for (auto type : order) {
+    int index = FindDecorationIndex(type);
+    if (index >= 0 && !used[static_cast<size_t>(index)]) {
+      new_order.push_back(decorations_[static_cast<size_t>(index)]);
+      used[static_cast<size_t>(index)] = true;
+    }
+  }
+
+  // Then add remaining items in their original order.
+  for (size_t i = 0; i < decorations_.size(); ++i) {
+    if (!used[i]) {
+      new_order.push_back(decorations_[i]);
+    }
+  }
+
+  // Update order_index values.
+  for (size_t i = 0; i < new_order.size(); ++i) {
+    new_order[i].order_index = static_cast<int>(i);
+  }
+
+  decorations_ = std::move(new_order);
+  NotifyReordered();
+}
+
+std::vector<AstraOmniboxDecorationType>
+AstraOmniboxDecorationModel::GetDecorationOrder() const {
+  std::vector<AstraOmniboxDecorationType> order;
+  order.reserve(decorations_.size());
+  for (const auto& item : decorations_) {
+    order.push_back(item.type);
+  }
+  return order;
+}
+
+void AstraOmniboxDecorationModel::ResetDecorationOrder() {
+  InitializeDefaultDecorations();
   // Re-apply individual visibility settings.
-  SyncActionVisibilityFromSettings();
+  SetDecorationVisible(AstraOmniboxDecorationType::kWorkspaceIndicator,
+                       show_workspace_indicator_);
+  SetDecorationVisible(AstraOmniboxDecorationType::kFocusModeBadge,
+                       show_focus_mode_badge_);
+  SetDecorationVisible(AstraOmniboxDecorationType::kTabStackIndicator,
+                       show_tab_stack_indicator_);
+  SetDecorationVisible(AstraOmniboxDecorationType::kReadingListBadge,
+                       show_reading_list_button_);
+  SetDecorationVisible(AstraOmniboxDecorationType::kNoteBadge,
+                       show_note_button_);
+  SetDecorationVisible(AstraOmniboxDecorationType::kFavoriteStar,
+                       show_favorite_star_);
+  SetDecorationVisible(AstraOmniboxDecorationType::kSidebarToggle,
+                       show_sidebar_toggle_);
+  SetDecorationVisible(AstraOmniboxDecorationType::kSplitViewToggle,
+                       show_split_view_button_);
+  SetDecorationVisible(AstraOmniboxDecorationType::kTranslateButton,
+                       show_translate_button_);
 
-  for (auto& observer : observers_) {
-    observer.OnActionOrderChanged();
-  }
+  NotifyReordered();
 }
 
 // =========================================================================
-// Omnibox state
+// Decoration execution
 // =========================================================================
 
-void AstraOmniboxDecorationModel::SetOmniboxFocused(bool focused) {
-  if (omnibox_focused_ == focused) {
+void AstraOmniboxDecorationModel::ExecuteDecoration(
+    AstraOmniboxDecorationType type) {
+  if (GetDecorationByType(type) == nullptr) {
     return;
   }
-  omnibox_focused_ = focused;
+  NotifyExecuted(type);
+}
 
-  for (auto& observer : observers_) {
-    observer.OnOmniboxFocusChanged(focused);
+// =========================================================================
+// Bubble management
+// =========================================================================
+
+void AstraOmniboxDecorationModel::ShowDecorationBubble(
+    AstraOmniboxDecorationType type) {
+  if (type == AstraOmniboxDecorationType::kNone) {
+    return;
+  }
+  const AstraOmniboxDecorationItem* item = GetDecorationByType(type);
+  if (!item || !item->has_bubble) {
+    return;
+  }
+  if (open_bubble_type_ == type) {
+    return;  // Already open.
+  }
+  // Hide the currently open bubble first, if any.
+  if (open_bubble_type_ != AstraOmniboxDecorationType::kNone) {
+    AstraOmniboxDecorationType old_type = open_bubble_type_;
+    open_bubble_type_ = AstraOmniboxDecorationType::kNone;
+    NotifyBubbleHidden(old_type);
+  }
+  open_bubble_type_ = type;
+  NotifyBubbleShown(type);
+}
+
+void AstraOmniboxDecorationModel::HideDecorationBubble(
+    AstraOmniboxDecorationType type) {
+  if (open_bubble_type_ != type) {
+    return;
+  }
+  open_bubble_type_ = AstraOmniboxDecorationType::kNone;
+  NotifyBubbleHidden(type);
+}
+
+AstraOmniboxDecorationType AstraOmniboxDecorationModel::GetOpenBubbleType()
+    const {
+  return open_bubble_type_;
+}
+
+void AstraOmniboxDecorationModel::HideAllBubbles() {
+  if (open_bubble_type_ == AstraOmniboxDecorationType::kNone) {
+    return;
+  }
+  AstraOmniboxDecorationType old_type = open_bubble_type_;
+  open_bubble_type_ = AstraOmniboxDecorationType::kNone;
+  NotifyBubbleHidden(old_type);
+}
+
+// =========================================================================
+// Workspace decoration state
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetCurrentWorkspaceName(
+    const std::u16string& name) {
+  if (workspace_name_ == name) {
+    return;
+  }
+  workspace_name_ = name;
+
+  // Update the workspace decoration tooltip.
+  AstraOmniboxDecorationItem* item = GetMutableDecoration(
+      AstraOmniboxDecorationType::kWorkspaceIndicator);
+  if (item && !name.empty()) {
+    item->tooltip = name;
+  }
+
+  NotifyWorkspaceChanged(name);
+}
+
+const std::u16string& AstraOmniboxDecorationModel::GetCurrentWorkspaceName()
+    const {
+  return workspace_name_;
+}
+
+void AstraOmniboxDecorationModel::SetWorkspaceColor(SkColor color) {
+  workspace_color_ = color;
+}
+
+SkColor AstraOmniboxDecorationModel::GetWorkspaceColor() const {
+  return workspace_color_;
+}
+
+void AstraOmniboxDecorationModel::SetWorkspaceBadgeCount(int count) {
+  if (workspace_badge_count_ == count) {
+    return;
+  }
+  workspace_badge_count_ = count;
+  if (count > 0) {
+    SetDecorationBadge(AstraOmniboxDecorationType::kWorkspaceIndicator,
+                       base::NumberToString16(count),
+                       SK_ColorRED);
+  } else {
+    ClearDecorationBadge(AstraOmniboxDecorationType::kWorkspaceIndicator);
   }
 }
 
-void AstraOmniboxDecorationModel::SetSecurityLevel(AstraSecurityLevel level) {
-  if (security_level_ == level) {
+int AstraOmniboxDecorationModel::GetWorkspaceBadgeCount() const {
+  return workspace_badge_count_;
+}
+
+void AstraOmniboxDecorationModel::SetShowWorkspaceIndicator(bool show) {
+  if (show_workspace_indicator_ == show) {
     return;
   }
-  security_level_ = level;
+  show_workspace_indicator_ = show;
+  SetDecorationVisible(AstraOmniboxDecorationType::kWorkspaceIndicator, show);
+}
 
-  for (auto& observer : observers_) {
-    observer.OnSecurityStateChanged(level);
+bool AstraOmniboxDecorationModel::GetShowWorkspaceIndicator() const {
+  return show_workspace_indicator_;
+}
+
+// =========================================================================
+// Focus mode decoration state
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetFocusModeActive(bool active) {
+  if (focus_mode_active_ == active) {
+    return;
   }
+  focus_mode_active_ = active;
+  SetDecorationActive(AstraOmniboxDecorationType::kFocusModeBadge, active);
+  NotifyFocusModeChanged(active);
+}
+
+bool AstraOmniboxDecorationModel::IsFocusModeActive() const {
+  return focus_mode_active_;
+}
+
+void AstraOmniboxDecorationModel::SetFocusModeTimeRemaining(
+    base::TimeDelta remaining) {
+  focus_mode_time_remaining_ = remaining;
+}
+
+base::TimeDelta AstraOmniboxDecorationModel::GetFocusModeTimeRemaining()
+    const {
+  return focus_mode_time_remaining_;
+}
+
+void AstraOmniboxDecorationModel::SetShowFocusModeBadge(bool show) {
+  if (show_focus_mode_badge_ == show) {
+    return;
+  }
+  show_focus_mode_badge_ = show;
+  SetDecorationVisible(AstraOmniboxDecorationType::kFocusModeBadge, show);
+}
+
+bool AstraOmniboxDecorationModel::GetShowFocusModeBadge() const {
+  return show_focus_mode_badge_;
+}
+
+void AstraOmniboxDecorationModel::SetFocusModeColor(SkColor color) {
+  focus_mode_color_ = color;
+}
+
+SkColor AstraOmniboxDecorationModel::GetFocusModeColor() const {
+  return focus_mode_color_;
+}
+
+// =========================================================================
+// Tab stack decoration state
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetTabStackName(const std::u16string& name) {
+  tab_stack_name_ = name;
+
+  // Update the tab stack decoration tooltip.
+  AstraOmniboxDecorationItem* item = GetMutableDecoration(
+      AstraOmniboxDecorationType::kTabStackIndicator);
+  if (item && !name.empty()) {
+    item->tooltip = name;
+  }
+}
+
+const std::u16string& AstraOmniboxDecorationModel::GetTabStackName() const {
+  return tab_stack_name_;
+}
+
+void AstraOmniboxDecorationModel::SetTabStackColor(SkColor color) {
+  tab_stack_color_ = color;
+}
+
+SkColor AstraOmniboxDecorationModel::GetTabStackColor() const {
+  return tab_stack_color_;
+}
+
+void AstraOmniboxDecorationModel::SetTabStackTabCount(int count) {
+  if (tab_stack_tab_count_ == count) {
+    return;
+  }
+  tab_stack_tab_count_ = count;
+  if (count > 0) {
+    SetDecorationBadge(AstraOmniboxDecorationType::kTabStackIndicator,
+                       base::NumberToString16(count),
+                       tab_stack_color_);
+  } else {
+    ClearDecorationBadge(AstraOmniboxDecorationType::kTabStackIndicator);
+  }
+}
+
+int AstraOmniboxDecorationModel::GetTabStackTabCount() const {
+  return tab_stack_tab_count_;
+}
+
+void AstraOmniboxDecorationModel::SetShowTabStackIndicator(bool show) {
+  if (show_tab_stack_indicator_ == show) {
+    return;
+  }
+  show_tab_stack_indicator_ = show;
+  SetDecorationVisible(AstraOmniboxDecorationType::kTabStackIndicator, show);
+}
+
+bool AstraOmniboxDecorationModel::GetShowTabStackIndicator() const {
+  return show_tab_stack_indicator_;
+}
+
+// =========================================================================
+// Reading list decoration state
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetIsInReadingList(bool in_list) {
+  if (is_in_reading_list_ == in_list) {
+    return;
+  }
+  is_in_reading_list_ = in_list;
+  SetDecorationActive(AstraOmniboxDecorationType::kReadingListBadge, in_list);
+}
+
+bool AstraOmniboxDecorationModel::IsInReadingList() const {
+  return is_in_reading_list_;
+}
+
+void AstraOmniboxDecorationModel::SetShowReadingListButton(bool show) {
+  if (show_reading_list_button_ == show) {
+    return;
+  }
+  show_reading_list_button_ = show;
+  SetDecorationVisible(AstraOmniboxDecorationType::kReadingListBadge, show);
+}
+
+bool AstraOmniboxDecorationModel::GetShowReadingListButton() const {
+  return show_reading_list_button_;
+}
+
+// =========================================================================
+// Note decoration state
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetHasNote(bool has_note) {
+  if (has_note_ == has_note) {
+    return;
+  }
+  has_note_ = has_note;
+  SetDecorationActive(AstraOmniboxDecorationType::kNoteBadge, has_note);
+}
+
+bool AstraOmniboxDecorationModel::HasNote() const {
+  return has_note_;
+}
+
+void AstraOmniboxDecorationModel::SetNotePreview(
+    const std::u16string& preview) {
+  note_preview_ = preview;
+}
+
+const std::u16string& AstraOmniboxDecorationModel::GetNotePreview() const {
+  return note_preview_;
+}
+
+void AstraOmniboxDecorationModel::SetShowNoteButton(bool show) {
+  if (show_note_button_ == show) {
+    return;
+  }
+  show_note_button_ = show;
+  SetDecorationVisible(AstraOmniboxDecorationType::kNoteBadge, show);
+}
+
+bool AstraOmniboxDecorationModel::GetShowNoteButton() const {
+  return show_note_button_;
+}
+
+// =========================================================================
+// Favorite decoration state
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetIsFavorited(bool favorited) {
+  if (is_favorited_ == favorited) {
+    return;
+  }
+  is_favorited_ = favorited;
+  SetDecorationActive(AstraOmniboxDecorationType::kFavoriteStar, favorited);
+}
+
+bool AstraOmniboxDecorationModel::IsFavorited() const {
+  return is_favorited_;
+}
+
+void AstraOmniboxDecorationModel::SetShowFavoriteStar(bool show) {
+  if (show_favorite_star_ == show) {
+    return;
+  }
+  show_favorite_star_ = show;
+  SetDecorationVisible(AstraOmniboxDecorationType::kFavoriteStar, show);
+}
+
+bool AstraOmniboxDecorationModel::GetShowFavoriteStar() const {
+  return show_favorite_star_;
+}
+
+// =========================================================================
+// Sidebar decoration state
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetSidebarOpen(bool open) {
+  if (sidebar_open_ == open) {
+    return;
+  }
+  sidebar_open_ = open;
+  SetDecorationActive(AstraOmniboxDecorationType::kSidebarToggle, open);
+}
+
+bool AstraOmniboxDecorationModel::IsSidebarOpen() const {
+  return sidebar_open_;
+}
+
+void AstraOmniboxDecorationModel::SetShowSidebarToggle(bool show) {
+  if (show_sidebar_toggle_ == show) {
+    return;
+  }
+  show_sidebar_toggle_ = show;
+  SetDecorationVisible(AstraOmniboxDecorationType::kSidebarToggle, show);
+}
+
+bool AstraOmniboxDecorationModel::GetShowSidebarToggle() const {
+  return show_sidebar_toggle_;
+}
+
+// =========================================================================
+// Split view decoration state
+// =========================================================================
+
+void AstraOmniboxDecorationModel::SetSplitViewActive(bool active) {
+  if (split_view_active_ == active) {
+    return;
+  }
+  split_view_active_ = active;
+  SetDecorationActive(AstraOmniboxDecorationType::kSplitViewToggle, active);
+}
+
+bool AstraOmniboxDecorationModel::IsSplitViewActive() const {
+  return split_view_active_;
+}
+
+void AstraOmniboxDecorationModel::SetShowSplitViewButton(bool show) {
+  if (show_split_view_button_ == show) {
+    return;
+  }
+  show_split_view_button_ = show;
+  SetDecorationVisible(AstraOmniboxDecorationType::kSplitViewToggle, show);
+}
+
+bool AstraOmniboxDecorationModel::GetShowSplitViewButton() const {
+  return show_split_view_button_;
 }
 
 // =========================================================================
 // Presentation settings
 // =========================================================================
 
-void AstraOmniboxDecorationModel::SetShowDecoration(bool show) {
-  if (show_decoration_ == show) {
-    return;
-  }
-  show_decoration_ = show;
-  NotifySettingsChanged();
+void AstraOmniboxDecorationModel::SetShowBadgesOnHoverOnly(bool show) {
+  show_badges_on_hover_only_ = show;
 }
 
-void AstraOmniboxDecorationModel::SetPosition(AstraDecorationPosition pos) {
-  if (position_ == pos) {
-    return;
-  }
-  position_ = pos;
-  NotifySettingsChanged();
+bool AstraOmniboxDecorationModel::GetShowBadgesOnHoverOnly() const {
+  return show_badges_on_hover_only_;
 }
 
-void AstraOmniboxDecorationModel::SetMaxVisibleActions(int max) {
-  int clamped = ClampMaxVisibleActions(max);
-  if (max_visible_actions_ == clamped) {
-    return;
-  }
-  max_visible_actions_ = clamped;
-  NotifySettingsChanged();
+void AstraOmniboxDecorationModel::SetCompactMode(bool compact) {
+  compact_mode_ = compact;
 }
 
-void AstraOmniboxDecorationModel::SetShowLabels(bool show) {
-  if (show_labels_ == show) {
-    return;
-  }
-  show_labels_ = show;
-  NotifySettingsChanged();
+bool AstraOmniboxDecorationModel::GetCompactMode() const {
+  return compact_mode_;
 }
 
-void AstraOmniboxDecorationModel::SetIconSize(AstraDecorationIconSize size) {
-  if (icon_size_ == size) {
-    return;
-  }
-  icon_size_ = size;
-  NotifySettingsChanged();
+void AstraOmniboxDecorationModel::SetAnimationEnabled(bool enabled) {
+  animation_enabled_ = enabled;
 }
 
-void AstraOmniboxDecorationModel::SetButtonStyle(
-    AstraDecorationButtonStyle style) {
-  if (button_style_ == style) {
-    return;
-  }
-  button_style_ = style;
-  NotifySettingsChanged();
+bool AstraOmniboxDecorationModel::GetAnimationEnabled() const {
+  return animation_enabled_;
 }
 
-void AstraOmniboxDecorationModel::SetShowOnFocusOnly(bool show) {
-  if (show_on_focus_only_ == show) {
-    return;
-  }
-  show_on_focus_only_ = show;
-  NotifySettingsChanged();
+void AstraOmniboxDecorationModel::SetDecorationIconSize(int size_px) {
+  int clamped = ClampIconSize(size_px);
+  decoration_icon_size_ = clamped;
 }
 
-void AstraOmniboxDecorationModel::SetShowWorkspace(bool show) {
-  if (show_workspace_ == show) {
-    return;
-  }
-  show_workspace_ = show;
-  SetActionVisible(kActionWorkspace, show);
+int AstraOmniboxDecorationModel::GetDecorationIconSize() const {
+  return decoration_icon_size_;
 }
 
-void AstraOmniboxDecorationModel::SetShowFocusMode(bool show) {
-  if (show_focus_mode_ == show) {
-    return;
-  }
-  show_focus_mode_ = show;
-  SetActionVisible(kActionFocusMode, show);
-}
-
-void AstraOmniboxDecorationModel::SetShowScreenshot(bool show) {
-  if (show_screenshot_ == show) {
-    return;
-  }
-  show_screenshot_ = show;
-  SetActionVisible(kActionScreenshot, show);
-}
-
-void AstraOmniboxDecorationModel::SetShowNote(bool show) {
-  if (show_note_ == show) {
-    return;
-  }
-  show_note_ = show;
-  SetActionVisible(kActionNote, show);
-}
-
-void AstraOmniboxDecorationModel::SetShowSplitView(bool show) {
-  if (show_split_view_ == show) {
-    return;
-  }
-  show_split_view_ = show;
-  SetActionVisible(kActionSplitView, show);
-}
-
-void AstraOmniboxDecorationModel::SetShowReadingList(bool show) {
-  if (show_reading_list_ == show) {
-    return;
-  }
-  show_reading_list_ = show;
-  SetActionVisible(kActionReadingList, show);
-}
-
-void AstraOmniboxDecorationModel::SetShowTranslate(bool show) {
-  if (show_translate_ == show) {
-    return;
-  }
-  show_translate_ = show;
-  SetActionVisible(kActionTranslate, show);
-}
-
-void AstraOmniboxDecorationModel::SetShowShare(bool show) {
-  if (show_share_ == show) {
-    return;
-  }
-  show_share_ = show;
-  SetActionVisible(kActionShare, show);
-}
-
-void AstraOmniboxDecorationModel::SetShowOverflowMenu(bool show) {
-  if (show_overflow_menu_ == show) {
-    return;
-  }
-  show_overflow_menu_ = show;
-  NotifySettingsChanged();
-}
-
-void AstraOmniboxDecorationModel::SetHoverExpansion(bool enabled) {
-  if (hover_expansion_ == enabled) {
-    return;
-  }
-  hover_expansion_ = enabled;
-  NotifySettingsChanged();
-}
-
-void AstraOmniboxDecorationModel::SyncActionVisibilityFromSettings() {
-  SetActionVisible(kActionWorkspace, show_workspace_);
-  SetActionVisible(kActionFocusMode, show_focus_mode_);
-  SetActionVisible(kActionScreenshot, show_screenshot_);
-  SetActionVisible(kActionNote, show_note_);
-  SetActionVisible(kActionSplitView, show_split_view_);
-  SetActionVisible(kActionReadingList, show_reading_list_);
-  SetActionVisible(kActionTranslate, show_translate_);
-  SetActionVisible(kActionShare, show_share_);
-}
-
-void AstraOmniboxDecorationModel::NotifySettingsChanged() {
-  for (auto& observer : observers_) {
-    observer.OnDecorationSettingsChanged();
-  }
+int AstraOmniboxDecorationModel::ClampIconSize(int size) {
+  return std::clamp(size, kMinIconSize, kMaxIconSize);
 }
 
 // =========================================================================
-// Utility methods
+// Observers
 // =========================================================================
 
-std::u16string AstraOmniboxDecorationModel::FormatActionLabel(
-    const std::u16string& label,
-    size_t max_length) {
-  if (label.size() <= max_length) {
-    return label;
-  }
-  return label.substr(0, max_length) + u"\u2026";  // Ellipsis
+void AstraOmniboxDecorationModel::AddObserver(
+    AstraOmniboxDecorationObserver* observer) {
+  observers_.AddObserver(observer);
 }
 
-int AstraOmniboxDecorationModel::ClampMaxVisibleActions(int value) {
-  return std::clamp(value, kMinVisibleActions, kMaxVisibleActions);
-}
-
-int AstraOmniboxDecorationModel::GetIconSizeDp(AstraDecorationIconSize size) {
-  switch (size) {
-    case AstraDecorationIconSize::kSmall:
-      return 16;
-    case AstraDecorationIconSize::kMedium:
-      return 20;
-    case AstraDecorationIconSize::kLarge:
-      return 24;
-  }
-  return 20;  // Default fallback.
+void AstraOmniboxDecorationModel::RemoveObserver(
+    AstraOmniboxDecorationObserver* observer) {
+  observers_.RemoveObserver(observer);
 }
 
 // =========================================================================
-// Bulk operations
+// Observer notification helpers
 // =========================================================================
 
-void AstraOmniboxDecorationModel::SetBulkVisibility(
-    const std::vector<std::string>& action_ids,
+void AstraOmniboxDecorationModel::NotifyVisibilityChanged(
+    AstraOmniboxDecorationType type,
     bool visible) {
-  for (const auto& id : action_ids) {
-    SetActionVisible(id, visible);
+  for (auto& observer : observers_) {
+    observer.OnDecorationVisibilityChanged(this, type, visible);
   }
 }
 
-void AstraOmniboxDecorationModel::ShowAllDefaultActions() {
-  show_workspace_ = true;
-  show_focus_mode_ = true;
-  show_screenshot_ = true;
-  show_note_ = true;
-  show_split_view_ = true;
-  show_reading_list_ = true;
-  show_translate_ = true;
-  show_share_ = true;
-
-  for (auto& action : actions_) {
-    if (!action.is_visible) {
-      action.is_visible = true;
-      for (auto& observer : observers_) {
-        observer.OnActionVisibilityChanged(action.id, true);
-      }
-    }
+void AstraOmniboxDecorationModel::NotifyActiveChanged(
+    AstraOmniboxDecorationType type,
+    bool active) {
+  for (auto& observer : observers_) {
+    observer.OnDecorationActiveChanged(this, type, active);
   }
 }
 
-void AstraOmniboxDecorationModel::HideAllActions() {
-  show_workspace_ = false;
-  show_focus_mode_ = false;
-  show_screenshot_ = false;
-  show_note_ = false;
-  show_split_view_ = false;
-  show_reading_list_ = false;
-  show_translate_ = false;
-  show_share_ = false;
+void AstraOmniboxDecorationModel::NotifyBadgeChanged(
+    AstraOmniboxDecorationType type) {
+  for (auto& observer : observers_) {
+    observer.OnDecorationBadgeChanged(this, type);
+  }
+}
 
-  for (auto& action : actions_) {
-    if (action.is_visible) {
-      action.is_visible = false;
-      for (auto& observer : observers_) {
-        observer.OnActionVisibilityChanged(action.id, false);
-      }
-    }
+void AstraOmniboxDecorationModel::NotifyReordered() {
+  for (auto& observer : observers_) {
+    observer.OnDecorationsReordered(this);
+  }
+}
+
+void AstraOmniboxDecorationModel::NotifyExecuted(
+    AstraOmniboxDecorationType type) {
+  for (auto& observer : observers_) {
+    observer.OnDecorationExecuted(this, type);
+  }
+}
+
+void AstraOmniboxDecorationModel::NotifyBubbleShown(
+    AstraOmniboxDecorationType type) {
+  for (auto& observer : observers_) {
+    observer.OnBubbleShown(this, type);
+  }
+}
+
+void AstraOmniboxDecorationModel::NotifyBubbleHidden(
+    AstraOmniboxDecorationType type) {
+  for (auto& observer : observers_) {
+    observer.OnBubbleHidden(this, type);
+  }
+}
+
+void AstraOmniboxDecorationModel::NotifyWorkspaceChanged(
+    const std::u16string& name) {
+  for (auto& observer : observers_) {
+    observer.OnWorkspaceChanged(this, name);
+  }
+}
+
+void AstraOmniboxDecorationModel::NotifyFocusModeChanged(bool active) {
+  for (auto& observer : observers_) {
+    observer.OnFocusModeChanged(this, active);
+  }
+}
+
+void AstraOmniboxDecorationModel::NotifyShutdown() {
+  for (auto& observer : observers_) {
+    observer.OnOmniboxDecorationModelShutdown(this);
   }
 }
 
@@ -517,43 +856,9 @@ void AstraOmniboxDecorationModel::LoadFromPrefs(PrefService* prefs) {
     return;
   }
 
-  using namespace prefs;
-
-  show_decoration_ = prefs->GetBoolean(kPrefOmniboxDecorationShowDecoration);
-
-  std::string pos = prefs->GetString(kPrefOmniboxDecorationPosition);
-  position_ = (pos == "right") ? AstraDecorationPosition::kTrailing
-                               : AstraDecorationPosition::kLeading;
-
-  max_visible_actions_ = ClampMaxVisibleActions(
-      prefs->GetInteger(kPrefOmniboxDecorationMaxVisibleActions));
-
-  show_labels_ = prefs->GetBoolean(kPrefOmniboxDecorationShowLabels);
-
-  int icon_size_val = prefs->GetInteger(kPrefOmniboxDecorationIconSize);
-  icon_size_ = static_cast<AstraDecorationIconSize>(
-      std::clamp(icon_size_val, 0, 2));
-
-  int style_val = prefs->GetInteger(kPrefOmniboxDecorationButtonStyle);
-  button_style_ = static_cast<AstraDecorationButtonStyle>(
-      std::clamp(style_val, 0, 2));
-
-  show_on_focus_only_ = prefs->GetBoolean(kPrefOmniboxDecorationShowOnFocusOnly);
-  show_workspace_ = prefs->GetBoolean(kPrefOmniboxDecorationShowWorkspace);
-  show_focus_mode_ = prefs->GetBoolean(kPrefOmniboxDecorationShowFocusMode);
-  show_screenshot_ = prefs->GetBoolean(kPrefOmniboxDecorationShowScreenshot);
-  show_note_ = prefs->GetBoolean(kPrefOmniboxDecorationShowNote);
-  show_split_view_ = prefs->GetBoolean(kPrefOmniboxDecorationShowSplitView);
-  show_reading_list_ = prefs->GetBoolean(kPrefOmniboxDecorationShowReadingList);
-  show_translate_ = prefs->GetBoolean(kPrefOmniboxDecorationShowTranslate);
-  show_share_ = prefs->GetBoolean(kPrefOmniboxDecorationShowShare);
-  show_overflow_menu_ = prefs->GetBoolean(kPrefOmniboxDecorationOverflowMenu);
-  hover_expansion_ = prefs->GetBoolean(kPrefOmniboxDecorationHoverExpansion);
-
-  // Sync visibility flags to action state.
-  SyncActionVisibilityFromSettings();
-
-  NotifySettingsChanged();
+  // TODO(astra): Load individual settings from PrefService once prefs
+  // are registered in AstraPrefs.
+  // For now, settings use their default values.
 }
 
 void AstraOmniboxDecorationModel::SaveToPrefs(PrefService* prefs) const {
@@ -561,44 +866,8 @@ void AstraOmniboxDecorationModel::SaveToPrefs(PrefService* prefs) const {
     return;
   }
 
-  using namespace prefs;
-
-  prefs->SetBoolean(kPrefOmniboxDecorationShowDecoration, show_decoration_);
-  prefs->SetString(kPrefOmniboxDecorationPosition,
-                   position_ == AstraDecorationPosition::kLeading ? "left"
-                                                                  : "right");
-  prefs->SetInteger(kPrefOmniboxDecorationMaxVisibleActions,
-                    max_visible_actions_);
-  prefs->SetBoolean(kPrefOmniboxDecorationShowLabels, show_labels_);
-  prefs->SetInteger(kPrefOmniboxDecorationIconSize,
-                    static_cast<int>(icon_size_));
-  prefs->SetInteger(kPrefOmniboxDecorationButtonStyle,
-                    static_cast<int>(button_style_));
-  prefs->SetBoolean(kPrefOmniboxDecorationShowOnFocusOnly, show_on_focus_only_);
-  prefs->SetBoolean(kPrefOmniboxDecorationShowWorkspace, show_workspace_);
-  prefs->SetBoolean(kPrefOmniboxDecorationShowFocusMode, show_focus_mode_);
-  prefs->SetBoolean(kPrefOmniboxDecorationShowScreenshot, show_screenshot_);
-  prefs->SetBoolean(kPrefOmniboxDecorationShowNote, show_note_);
-  prefs->SetBoolean(kPrefOmniboxDecorationShowSplitView, show_split_view_);
-  prefs->SetBoolean(kPrefOmniboxDecorationShowReadingList, show_reading_list_);
-  prefs->SetBoolean(kPrefOmniboxDecorationShowTranslate, show_translate_);
-  prefs->SetBoolean(kPrefOmniboxDecorationShowShare, show_share_);
-  prefs->SetBoolean(kPrefOmniboxDecorationOverflowMenu, show_overflow_menu_);
-  prefs->SetBoolean(kPrefOmniboxDecorationHoverExpansion, hover_expansion_);
-}
-
-// =========================================================================
-// Observers
-// =========================================================================
-
-void AstraOmniboxDecorationModel::AddObserver(
-    AstraOmniboxDecorationModelObserver* observer) {
-  observers_.AddObserver(observer);
-}
-
-void AstraOmniboxDecorationModel::RemoveObserver(
-    AstraOmniboxDecorationModelObserver* observer) {
-  observers_.RemoveObserver(observer);
+  // TODO(astra): Save individual settings to PrefService once prefs
+  // are registered in AstraPrefs.
 }
 
 }  // namespace astra

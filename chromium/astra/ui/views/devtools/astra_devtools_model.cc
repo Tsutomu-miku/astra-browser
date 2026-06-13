@@ -1,8 +1,10 @@
 #include "astra/ui/views/devtools/astra_devtools_model.h"
 
 #include <algorithm>
+#include <string>
 
 #include "base/logging.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "astra/browser/astra_prefs.h"
 #include "components/prefs/pref_service.h"
@@ -11,7 +13,33 @@ namespace astra {
 
 namespace {
 
-// Helper: convert dock position enum to/from string for prefs.
+// Helper: convert dock state enum to/from string for prefs.
+const char* DockStateToString(AstraDevToolsDockState state) {
+  switch (state) {
+    case AstraDevToolsDockState::kDockedBottom:
+      return "bottom";
+    case AstraDevToolsDockState::kDockedLeft:
+      return "left";
+    case AstraDevToolsDockState::kDockedRight:
+      return "right";
+    case AstraDevToolsDockState::kUndocked:
+      return "undocked";
+    case AstraDevToolsDockState::kMinimized:
+      return "minimized";
+  }
+  return "bottom";
+}
+
+AstraDevToolsDockState StringToDockState(const std::string& str) {
+  if (str == "bottom") return AstraDevToolsDockState::kDockedBottom;
+  if (str == "left") return AstraDevToolsDockState::kDockedLeft;
+  if (str == "right") return AstraDevToolsDockState::kDockedRight;
+  if (str == "undocked") return AstraDevToolsDockState::kUndocked;
+  if (str == "minimized") return AstraDevToolsDockState::kMinimized;
+  return AstraDevToolsDockState::kDockedBottom;  // default
+}
+
+// Helper: convert legacy dock position to/from string.
 const char* DockPositionToString(AstraDevToolsDockPosition position) {
   switch (position) {
     case AstraDevToolsDockPosition::kUndocked:
@@ -30,7 +58,7 @@ AstraDevToolsDockPosition StringToDockPosition(const std::string& str) {
   if (str == "undocked") return AstraDevToolsDockPosition::kUndocked;
   if (str == "left") return AstraDevToolsDockPosition::kLeft;
   if (str == "right") return AstraDevToolsDockPosition::kRight;
-  return AstraDevToolsDockPosition::kBottom;  // default
+  return AstraDevToolsDockPosition::kBottom;
 }
 
 const char* ThemeToString(AstraDevToolsTheme theme) {
@@ -48,7 +76,7 @@ const char* ThemeToString(AstraDevToolsTheme theme) {
 AstraDevToolsTheme StringToTheme(const std::string& str) {
   if (str == "light") return AstraDevToolsTheme::kLight;
   if (str == "dark") return AstraDevToolsTheme::kDark;
-  return AstraDevToolsTheme::kSystem;  // default
+  return AstraDevToolsTheme::kSystem;
 }
 
 const char* PanelPositionToString(AstraDevToolsPanelPosition position) {
@@ -66,10 +94,10 @@ const char* PanelPositionToString(AstraDevToolsPanelPosition position) {
 AstraDevToolsPanelPosition StringToPanelPosition(const std::string& str) {
   if (str == "left") return AstraDevToolsPanelPosition::kLeft;
   if (str == "bottom") return AstraDevToolsPanelPosition::kBottom;
-  return AstraDevToolsPanelPosition::kRight;  // default
+  return AstraDevToolsPanelPosition::kRight;
 }
 
-// Panel state dictionary keys.
+// Panel state dictionary keys (legacy).
 constexpr char kPanelIdKey[] = "id";
 constexpr char kPanelTitleKey[] = "title";
 constexpr char kPanelIconKey[] = "icon";
@@ -77,10 +105,110 @@ constexpr char kPanelVisibleKey[] = "visible";
 constexpr char kPanelPinnedKey[] = "pinned";
 constexpr char kPanelPositionKey[] = "position";
 
+// Deepened panel info dictionary keys.
+constexpr char kPanelInfoIdKey[] = "panel_id";
+constexpr char kPanelInfoTypeKey[] = "type";
+constexpr char kPanelInfoTitleKey[] = "title";
+constexpr char kPanelInfoIconKey[] = "icon_name";
+constexpr char kPanelInfoEnabledKey[] = "is_enabled";
+constexpr char kPanelInfoVisibleKey[] = "is_visible";
+constexpr char kPanelInfoOrderKey[] = "order_index";
+constexpr char kPanelInfoDefaultKey[] = "is_default";
+constexpr char kPanelInfoDescriptionKey[] = "description";
+
 }  // namespace
 
 // =========================================================================
-// Static helpers: default panels
+// Static helpers: default deepened panels
+// =========================================================================
+
+// static
+std::vector<AstraDevToolsPanelInfo> AstraDevToolsModel::GetDefaultPanels() {
+  std::vector<AstraDevToolsPanelInfo> panels;
+
+  // Workspace panel — primary Astra product panel.
+  AstraDevToolsPanelInfo workspace;
+  workspace.panel_id = "workspace-panel";
+  workspace.type = AstraDevToolsPanelType::kWorkspacePanel;
+  workspace.title = u"Workspace";
+  workspace.icon_name = "workspace";
+  workspace.is_enabled = true;
+  workspace.is_visible = true;
+  workspace.order_index = 0;
+  workspace.is_default = true;
+  workspace.description = u"Manage workspaces, tabs, and window layout";
+  panels.push_back(workspace);
+
+  // Tab Stack panel — tab stack management.
+  AstraDevToolsPanelInfo tab_stack;
+  tab_stack.panel_id = "tab-stack-panel";
+  tab_stack.type = AstraDevToolsPanelType::kTabStackPanel;
+  tab_stack.title = u"Tab Stack";
+  tab_stack.icon_name = "tab_stack";
+  tab_stack.is_enabled = true;
+  tab_stack.is_visible = true;
+  tab_stack.order_index = 1;
+  tab_stack.is_default = true;
+  tab_stack.description = u"View and manage tab stacks and groups";
+  panels.push_back(tab_stack);
+
+  // Notes panel — note-taking.
+  AstraDevToolsPanelInfo notes;
+  notes.panel_id = "notes-panel";
+  notes.type = AstraDevToolsPanelType::kNotesPanel;
+  notes.title = u"Notes";
+  notes.icon_name = "notes";
+  notes.is_enabled = true;
+  notes.is_visible = true;
+  notes.order_index = 2;
+  notes.is_default = true;
+  notes.description = u"Take notes while inspecting pages";
+  panels.push_back(notes);
+
+  // Performance panel — performance insights.
+  AstraDevToolsPanelInfo performance;
+  performance.panel_id = "performance-panel";
+  performance.type = AstraDevToolsPanelType::kPerformancePanel;
+  performance.title = u"Performance";
+  performance.icon_name = "performance";
+  performance.is_enabled = true;
+  performance.is_visible = true;
+  performance.order_index = 3;
+  performance.is_default = true;
+  performance.description = u"Performance insights and profiling";
+  panels.push_back(performance);
+
+  // Accessibility panel — accessibility tools.
+  AstraDevToolsPanelInfo accessibility;
+  accessibility.panel_id = "accessibility-panel";
+  accessibility.type = AstraDevToolsPanelType::kAccessibilityPanel;
+  accessibility.title = u"Accessibility";
+  accessibility.icon_name = "accessibility";
+  accessibility.is_enabled = true;
+  accessibility.is_visible = true;
+  accessibility.order_index = 4;
+  accessibility.is_default = true;
+  accessibility.description = u"Accessibility auditing and tools";
+  panels.push_back(accessibility);
+
+  // A11y Tree panel — accessibility tree view.
+  AstraDevToolsPanelInfo a11y_tree;
+  a11y_tree.panel_id = "a11y-tree-panel";
+  a11y_tree.type = AstraDevToolsPanelType::kA11yTreePanel;
+  a11y_tree.title = u"A11y Tree";
+  a11y_tree.icon_name = "a11y_tree";
+  a11y_tree.is_enabled = true;
+  a11y_tree.is_visible = true;
+  a11y_tree.order_index = 5;
+  a11y_tree.is_default = true;
+  a11y_tree.description = u"Accessibility tree inspector view";
+  panels.push_back(a11y_tree);
+
+  return panels;
+}
+
+// =========================================================================
+// Static helpers: default legacy panels
 // =========================================================================
 
 // static
@@ -88,7 +216,6 @@ std::vector<AstraDevToolsPanel> AstraDevToolsModel::GetDefaultPanels() {
   std::vector<AstraDevToolsPanel> panels;
 
   // Default panel ordering — pinned panels first, then regular ones.
-  // Position indices are assigned sequentially.
 
   AstraDevToolsPanel workspace;
   workspace.id = "workspace";
@@ -153,39 +280,459 @@ std::vector<AstraDevToolsPanel> AstraDevToolsModel::GetDefaultPanels() {
 
 AstraDevToolsModel::AstraDevToolsModel(PrefService* pref_service)
     : pref_service_(pref_service) {
-  // Start with default panels.
+  // Initialize deepened panel system with defaults.
+  panel_infos_ = GetDefaultPanels();
+
+  // Set first visible panel as active.
+  auto default_panels = GetDefaultPanels();
+  if (!default_panels.empty()) {
+    for (const auto& p : default_panels) {
+      if (p.is_visible && p.is_enabled) {
+        active_panel_id_ = p.panel_id;
+        break;
+      }
+    }
+  }
+
+  // Initialize legacy panel system with defaults.
   panels_ = GetDefaultPanels();
+
+  // Set first visible legacy panel as active.
+  auto visible_legacy = GetVisiblePanels();
+  if (!visible_legacy.empty()) {
+    legacy_active_panel_id_ = visible_legacy.front().id;
+  }
 
   // Load from prefs if available.
   if (pref_service_) {
     LoadFromPrefs();
-  } else {
-    // No pref service — use defaults and set first visible panel as active.
-    auto visible = GetVisiblePanels();
-    if (!visible.empty()) {
-      active_panel_id_ = visible.front().id;
-    }
   }
 }
 
-AstraDevToolsModel::~AstraDevToolsModel() = default;
+AstraDevToolsModel::~AstraDevToolsModel() {
+  NotifyDevToolsModelShutdown();
+}
 
 // =========================================================================
-// Observer management
+// Deepened panel API — queries
 // =========================================================================
 
-void AstraDevToolsModel::AddObserver(
-    AstraDevToolsModelObserver* observer) {
+std::vector<AstraDevToolsPanelInfo> AstraDevToolsModel::GetPanels() const {
+  std::vector<AstraDevToolsPanelInfo> result = panel_infos_;
+  std::sort(result.begin(), result.end(),
+            [](const AstraDevToolsPanelInfo& a, const AstraDevToolsPanelInfo& b) {
+              return a.order_index < b.order_index;
+            });
+  return result;
+}
+
+size_t AstraDevToolsModel::GetPanelCount() const {
+  return panel_infos_.size();
+}
+
+const AstraDevToolsPanelInfo* AstraDevToolsModel::GetPanel(
+    const std::string& panel_id) const {
+  int index = FindPanelInfoIndex(panel_id);
+  if (index < 0) {
+    return nullptr;
+  }
+  return &panel_infos_[static_cast<size_t>(index)];
+}
+
+const AstraDevToolsPanelInfo* AstraDevToolsModel::GetPanelByType(
+    AstraDevToolsPanelType type) const {
+  return FindPanelInfoByType(type);
+}
+
+bool AstraDevToolsModel::IsPanelEnabled(const std::string& panel_id) const {
+  const auto* panel = GetPanel(panel_id);
+  if (!panel) {
+    return false;
+  }
+  return panel->is_enabled;
+}
+
+bool AstraDevToolsModel::IsPanelVisible(const std::string& panel_id) const {
+  const auto* panel = GetPanel(panel_id);
+  if (!panel) {
+    return false;
+  }
+  return panel->is_visible;
+}
+
+std::string AstraDevToolsModel::GetActivePanel() const {
+  return active_panel_id_;
+}
+
+// =========================================================================
+// Deepened panel API — mutations
+// =========================================================================
+
+bool AstraDevToolsModel::SetPanelEnabled(const std::string& panel_id,
+                                         bool enabled) {
+  int index = FindPanelInfoIndex(panel_id);
+  if (index < 0) {
+    return false;
+  }
+
+  if (panel_infos_[index].is_enabled == enabled) {
+    return true;  // No change.
+  }
+
+  panel_infos_[index].is_enabled = enabled;
+
+  // If disabling the active panel, switch to another.
+  if (!enabled && active_panel_id_ == panel_id) {
+    // Find the next visible+enabled panel.
+    for (const auto& p : GetPanels()) {
+      if (p.panel_id != panel_id && p.is_visible && p.is_enabled) {
+        active_panel_id_ = p.panel_id;
+        NotifyPanelActivated(active_panel_id_);
+        break;
+      }
+    }
+    // If no other panel is available, clear active.
+    if (active_panel_id_ == panel_id) {
+      active_panel_id_.clear();
+      NotifyPanelActivated(std::string());
+    }
+  }
+
+  NotifyPanelEnabledChanged(panel_id, enabled);
+  return true;
+}
+
+bool AstraDevToolsModel::SetPanelVisible(const std::string& panel_id,
+                                         bool visible) {
+  int index = FindPanelInfoIndex(panel_id);
+  if (index < 0) {
+    return false;
+  }
+
+  if (panel_infos_[index].is_visible == visible) {
+    return true;  // No change.
+  }
+
+  panel_infos_[index].is_visible = visible;
+
+  // If hiding the active panel, switch to another.
+  if (!visible && active_panel_id_ == panel_id) {
+    for (const auto& p : GetPanels()) {
+      if (p.panel_id != panel_id && p.is_visible && p.is_enabled) {
+        active_panel_id_ = p.panel_id;
+        NotifyPanelActivated(active_panel_id_);
+        break;
+      }
+    }
+    if (active_panel_id_ == panel_id) {
+      active_panel_id_.clear();
+      NotifyPanelActivated(std::string());
+    }
+  }
+
+  NotifyPanelVisibilityChanged(panel_id, visible);
+  return true;
+}
+
+bool AstraDevToolsModel::SetActivePanel(const std::string& panel_id) {
+  if (active_panel_id_ == panel_id) {
+    return true;
+  }
+
+  const auto* panel = GetPanel(panel_id);
+  if (!panel || !panel->is_visible || !panel->is_enabled) {
+    return false;
+  }
+
+  active_panel_id_ = panel_id;
+  NotifyPanelActivated(active_panel_id_);
+  return true;
+}
+
+void AstraDevToolsModel::ReorderPanels(
+    const std::vector<std::string>& panel_ids_in_order) {
+  // Assign order indices based on the provided list.
+  int order = 0;
+  for (const auto& id : panel_ids_in_order) {
+    int index = FindPanelInfoIndex(id);
+    if (index >= 0) {
+      panel_infos_[index].order_index = order++;
+    }
+  }
+
+  // Place remaining panels at the end, preserving their relative order.
+  std::vector<AstraDevToolsPanelInfo> remaining;
+  for (const auto& panel : panel_infos_) {
+    bool found = false;
+    for (const auto& id : panel_ids_in_order) {
+      if (panel.panel_id == id) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      remaining.push_back(panel);
+    }
+  }
+  std::sort(remaining.begin(), remaining.end(),
+            [](const AstraDevToolsPanelInfo& a, const AstraDevToolsPanelInfo& b) {
+              return a.order_index < b.order_index;
+            });
+  for (auto& panel : remaining) {
+    int index = FindPanelInfoIndex(panel.panel_id);
+    if (index >= 0) {
+      panel_infos_[index].order_index = order++;
+    }
+  }
+
+  RenormalizePanelOrder();
+  NotifyPanelsReordered();
+}
+
+void AstraDevToolsModel::ResetPanelsToDefaults() {
+  panel_infos_ = GetDefaultPanels();
+
+  // Set active panel to first visible/enabled default.
+  active_panel_id_.clear();
+  for (const auto& p : panel_infos_) {
+    if (p.is_visible && p.is_enabled) {
+      active_panel_id_ = p.panel_id;
+      break;
+    }
+  }
+
+  NotifyPanelsReordered();
+  if (!active_panel_id_.empty()) {
+    NotifyPanelActivated(active_panel_id_);
+  }
+}
+
+bool AstraDevToolsModel::ShowAstraPanel(AstraDevToolsPanelType type) {
+  const auto* panel = GetPanelByType(type);
+  if (!panel) {
+    return false;
+  }
+
+  // Open DevTools if not already open.
+  if (!devtools_open_) {
+    SetDevToolsOpen(true);
+  }
+
+  // Ensure the panel is visible and enabled.
+  if (!panel->is_visible) {
+    SetPanelVisible(panel->panel_id, true);
+  }
+  if (!panel->is_enabled) {
+    SetPanelEnabled(panel->panel_id, true);
+  }
+
+  // Activate the panel.
+  return SetActivePanel(panel->panel_id);
+}
+
+// =========================================================================
+// DevTools state
+// =========================================================================
+
+bool AstraDevToolsModel::IsDevToolsOpen() const {
+  return devtools_open_;
+}
+
+void AstraDevToolsModel::SetDevToolsOpen(bool open) {
+  if (devtools_open_ == open) {
+    return;
+  }
+  devtools_open_ = open;
+
+  if (open) {
+    NotifyDevToolsOpened();
+  } else {
+    NotifyDevToolsClosed();
+  }
+}
+
+AstraDevToolsDockState AstraDevToolsModel::GetDockState() const {
+  return dock_state_;
+}
+
+void AstraDevToolsModel::SetDockState(AstraDevToolsDockState state) {
+  if (dock_state_ == state) {
+    return;
+  }
+  dock_state_ = state;
+
+  // Persist to prefs if available.
+  if (pref_service_) {
+    pref_service_->SetString(kPrefDefaultDockState, DockStateToString(state));
+  }
+
+  NotifyDockStateChanged(dock_state_);
+}
+
+double AstraDevToolsModel::GetZoomLevel() const {
+  return zoom_level_;
+}
+
+void AstraDevToolsModel::SetZoomLevel(double level) {
+  double clamped = std::clamp(level, kMinZoomLevel, kMaxZoomLevel);
+  if (zoom_level_ == clamped) {
+    return;
+  }
+  zoom_level_ = clamped;
+
+  // TODO(astra): Persist zoom level to prefs.
+  //   Chromium owner: chrome/browser/devtools/devtools_window.h
+  //   DevTools stores zoom level in its own preferences.
+}
+
+bool AstraDevToolsModel::IsDocked() const {
+  return dock_state_ == AstraDevToolsDockState::kDockedBottom ||
+         dock_state_ == AstraDevToolsDockState::kDockedLeft ||
+         dock_state_ == AstraDevToolsDockState::kDockedRight;
+}
+
+void AstraDevToolsModel::ToggleDockSide() {
+  // Cycle through dock sides: bottom -> left -> right -> undocked -> bottom
+  switch (dock_state_) {
+    case AstraDevToolsDockState::kDockedBottom:
+      SetDockState(AstraDevToolsDockState::kDockedLeft);
+      break;
+    case AstraDevToolsDockState::kDockedLeft:
+      SetDockState(AstraDevToolsDockState::kDockedRight);
+      break;
+    case AstraDevToolsDockState::kDockedRight:
+      SetDockState(AstraDevToolsDockState::kUndocked);
+      break;
+    case AstraDevToolsDockState::kUndocked:
+      SetDockState(AstraDevToolsDockState::kDockedBottom);
+      break;
+    case AstraDevToolsDockState::kMinimized:
+      // From minimized, go to bottom dock.
+      SetDockState(AstraDevToolsDockState::kDockedBottom);
+      break;
+  }
+}
+
+// =========================================================================
+// Deepened observer management
+// =========================================================================
+
+void AstraDevToolsModel::AddObserver(AstraDevToolsObserver* observer) {
   observers_.AddObserver(observer);
 }
 
-void AstraDevToolsModel::RemoveObserver(
-    AstraDevToolsModelObserver* observer) {
+void AstraDevToolsModel::RemoveObserver(AstraDevToolsObserver* observer) {
   observers_.RemoveObserver(observer);
 }
 
 // =========================================================================
-// Panel management — queries
+// Deepened panel helpers
+// =========================================================================
+
+int AstraDevToolsModel::FindPanelInfoIndex(
+    const std::string& panel_id) const {
+  for (size_t i = 0; i < panel_infos_.size(); ++i) {
+    if (panel_infos_[i].panel_id == panel_id) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+AstraDevToolsPanelInfo* AstraDevToolsModel::FindPanelInfoByType(
+    AstraDevToolsPanelType type) {
+  for (auto& panel : panel_infos_) {
+    if (panel.type == type) {
+      return &panel;
+    }
+  }
+  return nullptr;
+}
+
+const AstraDevToolsPanelInfo* AstraDevToolsModel::FindPanelInfoByType(
+    AstraDevToolsPanelType type) const {
+  for (const auto& panel : panel_infos_) {
+    if (panel.type == type) {
+      return &panel;
+    }
+  }
+  return nullptr;
+}
+
+void AstraDevToolsModel::RenormalizePanelOrder() {
+  std::sort(panel_infos_.begin(), panel_infos_.end(),
+            [](const AstraDevToolsPanelInfo& a, const AstraDevToolsPanelInfo& b) {
+              return a.order_index < b.order_index;
+            });
+  for (size_t i = 0; i < panel_infos_.size(); ++i) {
+    panel_infos_[i].order_index = static_cast<int>(i);
+  }
+}
+
+void AstraDevToolsModel::NotifyPanelActivated(const std::string& panel_id) {
+  for (auto& observer : observers_) {
+    observer.OnPanelActivated(this, panel_id);
+  }
+}
+
+void AstraDevToolsModel::NotifyPanelEnabledChanged(
+    const std::string& panel_id, bool enabled) {
+  for (auto& observer : observers_) {
+    observer.OnPanelEnabledChanged(this, panel_id, enabled);
+  }
+}
+
+void AstraDevToolsModel::NotifyPanelVisibilityChanged(
+    const std::string& panel_id, bool visible) {
+  for (auto& observer : observers_) {
+    observer.OnPanelVisibilityChanged(this, panel_id, visible);
+  }
+}
+
+void AstraDevToolsModel::NotifyPanelsReordered() {
+  for (auto& observer : observers_) {
+    observer.OnPanelsReordered(this);
+  }
+}
+
+void AstraDevToolsModel::NotifyDockStateChanged(AstraDevToolsDockState state) {
+  for (auto& observer : observers_) {
+    observer.OnDockStateChanged(this, state);
+  }
+}
+
+void AstraDevToolsModel::NotifyDevToolsOpened() {
+  for (auto& observer : observers_) {
+    observer.OnDevToolsOpened(this);
+  }
+}
+
+void AstraDevToolsModel::NotifyDevToolsClosed() {
+  for (auto& observer : observers_) {
+    observer.OnDevToolsClosed(this);
+  }
+}
+
+void AstraDevToolsModel::NotifyDevToolsModelShutdown() {
+  for (auto& observer : observers_) {
+    observer.OnDevToolsModelShutdown(this);
+  }
+}
+
+// =========================================================================
+// Legacy observer management
+// =========================================================================
+
+void AstraDevToolsModel::AddObserver(AstraDevToolsModelObserver* observer) {
+  legacy_observers_.AddObserver(observer);
+}
+
+void AstraDevToolsModel::RemoveObserver(AstraDevToolsModelObserver* observer) {
+  legacy_observers_.RemoveObserver(observer);
+}
+
+// =========================================================================
+// Legacy panel management — queries
 // =========================================================================
 
 std::vector<AstraDevToolsPanel> AstraDevToolsModel::GetAllPanels() const {
@@ -231,8 +778,20 @@ size_t AstraDevToolsModel::visible_panel_count() const {
   return count;
 }
 
+size_t AstraDevToolsModel::panel_count() const {
+  return panels_.size();
+}
+
+bool AstraDevToolsModel::empty() const {
+  return panels_.empty();
+}
+
+const std::string& AstraDevToolsModel::active_panel_id() const {
+  return legacy_active_panel_id_;
+}
+
 // =========================================================================
-// Panel management — mutations
+// Legacy panel management — mutations
 // =========================================================================
 
 bool AstraDevToolsModel::AddPanel(const AstraDevToolsPanel& panel) {
@@ -243,7 +802,6 @@ bool AstraDevToolsModel::AddPanel(const AstraDevToolsPanel& panel) {
     return false;
   }
 
-  // Clamp position to valid range.
   size_t position = std::min(panel.position, panels_.size());
 
   AstraDevToolsPanel new_panel = panel;
@@ -271,23 +829,21 @@ bool AstraDevToolsModel::RemovePanel(const std::string& panel_id) {
   size_t removed_position = it->position;
   panels_.erase(it);
 
-  // If we removed the active panel, clear it.
-  if (active_panel_id_ == panel_id) {
-    active_panel_id_.clear();
-    // Try to activate the next visible panel.
+  // If we removed the active panel, clear it and try to activate another.
+  if (legacy_active_panel_id_ == panel_id) {
+    legacy_active_panel_id_.clear();
     auto visible = GetVisiblePanels();
     if (!visible.empty()) {
-      // Find a panel near the removed position.
       for (const auto& p : visible) {
         if (p.position >= removed_position ||
             p.position == visible.back().position) {
-          active_panel_id_ = p.id;
+          legacy_active_panel_id_ = p.id;
           break;
         }
       }
     }
-    for (auto& observer : observers_) {
-      observer.OnActivePanelChanged(active_panel_id_);
+    for (auto& observer : legacy_observers_) {
+      observer.OnActivePanelChanged(legacy_active_panel_id_);
     }
   }
 
@@ -296,9 +852,8 @@ bool AstraDevToolsModel::RemovePanel(const std::string& panel_id) {
   return true;
 }
 
-bool AstraDevToolsModel::SetPanelVisible(
-    const std::string& panel_id,
-    bool visible) {
+bool AstraDevToolsModel::SetPanelVisible(const std::string& panel_id,
+                                         bool visible) {
   auto it = FindPanel(panel_id);
   if (it == panels_.end()) {
     return false;
@@ -310,26 +865,26 @@ bool AstraDevToolsModel::SetPanelVisible(
   it->is_visible = visible;
 
   if (visible) {
-    for (auto& observer : observers_) {
+    for (auto& observer : legacy_observers_) {
       observer.OnPanelOpened(panel_id);
     }
   } else {
-    // If we're hiding the active panel, activate another one.
-    if (active_panel_id_ == panel_id) {
+    // If hiding the active panel, activate another one.
+    if (legacy_active_panel_id_ == panel_id) {
       auto visible_panels = GetVisiblePanels();
       if (!visible_panels.empty()) {
-        active_panel_id_ = visible_panels.front().id;
-        for (auto& observer : observers_) {
-          observer.OnActivePanelChanged(active_panel_id_);
+        legacy_active_panel_id_ = visible_panels.front().id;
+        for (auto& observer : legacy_observers_) {
+          observer.OnActivePanelChanged(legacy_active_panel_id_);
         }
       } else {
-        active_panel_id_.clear();
-        for (auto& observer : observers_) {
+        legacy_active_panel_id_.clear();
+        for (auto& observer : legacy_observers_) {
           observer.OnActivePanelChanged(std::string());
         }
       }
     }
-    for (auto& observer : observers_) {
+    for (auto& observer : legacy_observers_) {
       observer.OnPanelClosed(panel_id);
     }
   }
@@ -338,9 +893,8 @@ bool AstraDevToolsModel::SetPanelVisible(
   return true;
 }
 
-bool AstraDevToolsModel::SetPanelPinned(
-    const std::string& panel_id,
-    bool pinned) {
+bool AstraDevToolsModel::SetPanelPinned(const std::string& panel_id,
+                                        bool pinned) {
   auto it = FindPanel(panel_id);
   if (it == panels_.end()) {
     return false;
@@ -350,17 +904,12 @@ bool AstraDevToolsModel::SetPanelPinned(
   }
 
   it->is_pinned = pinned;
-  // TODO(astra): Reorder panels so pinned ones come first.
-  //   For now, we just update the flag and let position stay the same.
-  //   A future improvement would sort: pinned panels first, by position;
-  //   then unpinned panels, by position.
   NotifyPanelOrderChanged();
   return true;
 }
 
-bool AstraDevToolsModel::ReorderPanel(
-    const std::string& panel_id,
-    size_t new_position) {
+bool AstraDevToolsModel::ReorderPanel(const std::string& panel_id,
+                                      size_t new_position) {
   auto it = FindPanel(panel_id);
   if (it == panels_.end()) {
     return false;
@@ -376,7 +925,6 @@ bool AstraDevToolsModel::ReorderPanel(
 
   // Shift other panels to make room.
   if (clamped_position > old_position) {
-    // Moving later: shift panels between old+1 and new down by 1.
     for (auto& panel : panels_) {
       if (&panel != &(*it) &&
           panel.position > old_position &&
@@ -385,7 +933,6 @@ bool AstraDevToolsModel::ReorderPanel(
       }
     }
   } else {
-    // Moving earlier: shift panels between new and old-1 up by 1.
     for (auto& panel : panels_) {
       if (&panel != &(*it) &&
           panel.position >= clamped_position &&
@@ -406,7 +953,7 @@ bool AstraDevToolsModel::MovePanelEarlier(const std::string& panel_id) {
     return false;
   }
   if (it->position == 0) {
-    return false;  // Already at the beginning.
+    return false;
   }
   return ReorderPanel(panel_id, it->position - 1);
 }
@@ -417,7 +964,7 @@ bool AstraDevToolsModel::MovePanelLater(const std::string& panel_id) {
     return false;
   }
   if (it->position >= panels_.size() - 1) {
-    return false;  // Already at the end.
+    return false;
   }
   return ReorderPanel(panel_id, it->position + 1);
 }
@@ -428,32 +975,27 @@ void AstraDevToolsModel::ResetPanelsToDefaults() {
   // Set active panel based on preferences.
   if (remember_last_panel() && !last_active_panel().empty() &&
       HasPanel(last_active_panel())) {
-    active_panel_id_ = last_active_panel();
+    legacy_active_panel_id_ = last_active_panel();
   } else if (!default_active_panel().empty() &&
              HasPanel(default_active_panel())) {
-    active_panel_id_ = default_active_panel();
+    legacy_active_panel_id_ = default_active_panel();
   } else {
-    // Default to the first visible panel.
     auto visible = GetVisiblePanels();
     if (!visible.empty()) {
-      active_panel_id_ = visible.front().id;
+      legacy_active_panel_id_ = visible.front().id;
     }
   }
 
   NotifyPanelOrderChanged();
-  if (!active_panel_id_.empty()) {
-    for (auto& observer : observers_) {
-      observer.OnActivePanelChanged(active_panel_id_);
+  if (!legacy_active_panel_id_.empty()) {
+    for (auto& observer : legacy_observers_) {
+      observer.OnActivePanelChanged(legacy_active_panel_id_);
     }
   }
 }
 
-// =========================================================================
-// Active panel
-// =========================================================================
-
 bool AstraDevToolsModel::SetActivePanel(const std::string& panel_id) {
-  if (panel_id == active_panel_id_) {
+  if (legacy_active_panel_id_ == panel_id) {
     return true;
   }
 
@@ -462,14 +1004,14 @@ bool AstraDevToolsModel::SetActivePanel(const std::string& panel_id) {
     return false;
   }
 
-  active_panel_id_ = panel_id;
+  legacy_active_panel_id_ = panel_id;
 
   if (remember_last_panel()) {
     SetLastActivePanel(panel_id);
   }
 
-  for (auto& observer : observers_) {
-    observer.OnActivePanelChanged(active_panel_id_);
+  for (auto& observer : legacy_observers_) {
+    observer.OnActivePanelChanged(legacy_active_panel_id_);
   }
   return true;
 }
@@ -480,10 +1022,9 @@ void AstraDevToolsModel::ActivateNextPanel() {
     return;
   }
 
-  // Find current index.
   size_t current_index = 0;
   for (size_t i = 0; i < visible.size(); ++i) {
-    if (visible[i].id == active_panel_id_) {
+    if (visible[i].id == legacy_active_panel_id_) {
       current_index = i;
       break;
     }
@@ -499,10 +1040,9 @@ void AstraDevToolsModel::ActivatePreviousPanel() {
     return;
   }
 
-  // Find current index.
   size_t current_index = 0;
   for (size_t i = 0; i < visible.size(); ++i) {
-    if (visible[i].id == active_panel_id_) {
+    if (visible[i].id == legacy_active_panel_id_) {
       current_index = i;
       break;
     }
@@ -514,7 +1054,7 @@ void AstraDevToolsModel::ActivatePreviousPanel() {
 }
 
 // =========================================================================
-// Presentation settings
+// Legacy presentation settings
 // =========================================================================
 
 bool AstraDevToolsModel::show_astra_panels() const {
@@ -737,28 +1277,28 @@ void AstraDevToolsModel::SetLastActivePanel(const std::string& panel_id) {
     return;
   }
   pref_service_->SetString(prefs::kPrefDevToolsLastActivePanel, panel_id);
-  // Note: this doesn't trigger OnDevToolsSettingsChanged since it's
-  // an automatic side-effect of panel switching, not a user setting change.
 }
 
 // =========================================================================
-// Dock position
+// Legacy dock position
 // =========================================================================
 
-void AstraDevToolsModel::SetDockPosition(
-    AstraDevToolsDockPosition position) {
+AstraDevToolsDockPosition AstraDevToolsModel::dock_position() const {
+  return dock_position_;
+}
+
+void AstraDevToolsModel::SetDockPosition(AstraDevToolsDockPosition position) {
   if (dock_position_ == position) {
     return;
   }
   dock_position_ = position;
 
-  // Persist to prefs if available.
   if (pref_service_) {
     pref_service_->SetString(prefs::kPrefDevToolsDefaultDockState,
                              DockPositionToString(position));
   }
 
-  for (auto& observer : observers_) {
+  for (auto& observer : legacy_observers_) {
     observer.OnDockPositionChanged(dock_position_);
   }
 }
@@ -781,8 +1321,12 @@ void AstraDevToolsModel::CycleDockPosition() {
 }
 
 // =========================================================================
-// Theme
+// Legacy theme
 // =========================================================================
+
+AstraDevToolsTheme AstraDevToolsModel::theme() const {
+  return theme_;
+}
 
 void AstraDevToolsModel::SetTheme(AstraDevToolsTheme theme) {
   if (theme_ == theme) {
@@ -790,7 +1334,7 @@ void AstraDevToolsModel::SetTheme(AstraDevToolsTheme theme) {
   }
   theme_ = theme;
 
-  for (auto& observer : observers_) {
+  for (auto& observer : legacy_observers_) {
     observer.OnThemeChanged(theme_);
   }
 }
@@ -802,12 +1346,11 @@ AstraDevToolsTheme AstraDevToolsModel::GetEffectiveTheme() const {
   // TODO(astra): Query NativeTheme for system dark/light setting.
   //   For now, default to dark (matches DevTools default).
   //   Chromium owner: ui/native_theme/native_theme.h
-  //   Pattern: NativeTheme::GetInstance()->ShouldUseDarkColors()
   return AstraDevToolsTheme::kDark;
 }
 
 // =========================================================================
-// Persistence — LoadFromPrefs / SaveToPrefs
+// Legacy persistence
 // =========================================================================
 
 void AstraDevToolsModel::LoadFromPrefs() {
@@ -815,15 +1358,15 @@ void AstraDevToolsModel::LoadFromPrefs() {
     return;
   }
 
-  // Load dock position.
+  // Load legacy dock position.
   dock_position_ = StringToDockPosition(
       pref_service_->GetString(prefs::kPrefDevToolsDefaultDockState));
 
-  // Load theme.
+  // Load legacy theme.
   theme_ = StringToTheme(
       pref_service_->GetString(prefs::kPrefDevToolsTheme));
 
-  // Load panels from prefs if they exist.
+  // Load legacy panels from prefs if they exist.
   const base::Value::List& panel_list =
       pref_service_->GetList(prefs::kPrefDevToolsPanelList);
   if (!panel_list.empty()) {
@@ -852,24 +1395,22 @@ void AstraDevToolsModel::LoadFromPrefs() {
     }
     RenormalizePositions();
   } else {
-    // No persisted panels — use defaults.
     panels_ = GetDefaultPanels();
   }
 
-  // Set active panel.
+  // Set active panel (legacy).
   if (remember_last_panel() && !last_active_panel().empty() &&
       HasPanel(last_active_panel()) &&
       GetPanelById(last_active_panel())->is_visible) {
-    active_panel_id_ = last_active_panel();
+    legacy_active_panel_id_ = last_active_panel();
   } else if (!default_active_panel().empty() &&
              HasPanel(default_active_panel()) &&
              GetPanelById(default_active_panel())->is_visible) {
-    active_panel_id_ = default_active_panel();
+    legacy_active_panel_id_ = default_active_panel();
   } else {
-    // Default to first visible panel.
     auto visible = GetVisiblePanels();
     if (!visible.empty()) {
-      active_panel_id_ = visible.front().id;
+      legacy_active_panel_id_ = visible.front().id;
     }
   }
 }
@@ -896,7 +1437,7 @@ void AstraDevToolsModel::SaveToPrefs() const {
 }
 
 // =========================================================================
-// Private helpers
+// Legacy private helpers
 // =========================================================================
 
 std::vector<AstraDevToolsPanel>::iterator
@@ -927,14 +1468,14 @@ void AstraDevToolsModel::RenormalizePositions() {
 
 void AstraDevToolsModel::NotifySettingsChanged() {
   SaveToPrefs();
-  for (auto& observer : observers_) {
+  for (auto& observer : legacy_observers_) {
     observer.OnDevToolsSettingsChanged();
   }
 }
 
 void AstraDevToolsModel::NotifyPanelOrderChanged() {
   SaveToPrefs();
-  for (auto& observer : observers_) {
+  for (auto& observer : legacy_observers_) {
     observer.OnPanelOrderChanged();
   }
 }
