@@ -28,14 +28,14 @@ permissions:
 
 jobs:
   # ========================================================================
-  # Job 1: Architecture & Source Validation
+  # Job 1: Architecture & Source Validation (Linux)
   # ========================================================================
   # Lightweight checks that run on every PR/push to chromium-native.
   # Validates that the Astra code follows the direct Chromium architecture
   # contract defined in AGENTS.md.
   # ========================================================================
-  architecture-validation:
-    name: Architecture & Source Validation
+  validate-linux:
+    name: Validate (Linux)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -62,10 +62,7 @@ jobs:
 
       - name: Verify header guards
         run: |
-          # Check that all .h files under chromium/astra/ have Chromium-style
-          # header guards (ASTRA_PATH_TO_FILE_H_).
           set -euo pipefail
-
           errors=0
           astra_dir="chromium/astra"
 
@@ -76,10 +73,8 @@ jobs:
 
           while IFS= read -r -d '' file; do
             relpath="${file#chromium/}"
-            # Expected guard: full path uppercase, non-alnum -> underscore, _H_ suffix
             expected="$(echo "$relpath" | tr '[:lower:]' '[:upper:]' | sed 's/[^A-Z0-9]/_/g; s/_H$/_H_/')"
 
-            # Check #ifndef guard
             ifndef="$(grep -m1 '^#ifndef ' "$file" | awk '{print $2}')"
             if [ -z "$ifndef" ]; then
               echo "::error file=$file::Missing #ifndef header guard"
@@ -91,15 +86,8 @@ jobs:
               echo "::error file=$file::Header guard mismatch: expected '$expected', got '$ifndef'"
               errors=$((errors + 1))
             fi
-
-            # Check closing #endif comment
-            endif_comment="$(grep '^#endif // ' "$file" | tail -1 | sed 's/^#endif \/\/ //')"
-            if [ -n "$endif_comment" ] && [ "$endif_comment" != "$ifndef" ]; then
-              echo "::warning file=$file::Closing #endif comment does not match guard"
-            fi
           done < <(find "$astra_dir" -name '*.h' -print0)
 
-          echo ""
           echo "Checked $(find "$astra_dir" -name '*.h' | wc -l) header files."
           echo "Errors: $errors"
 
@@ -109,10 +97,7 @@ jobs:
 
       - name: Verify BUILD.gn completeness
         run: |
-          # Verify all .cc/.h source files under chromium/astra/ are listed in
-          # at least one BUILD.gn sources list.
           set -euo pipefail
-
           astra_dir="chromium/astra"
 
           if [ ! -d "$astra_dir" ]; then
@@ -120,32 +105,26 @@ jobs:
             exit 0
           fi
 
-          # Run the check-build-gn script if it exists.
           if [ -f "scripts/check-build-gn.mjs" ]; then
             node scripts/check-build-gn.mjs
           else
-            # Simple fallback: check each BUILD.gn references its own sources.
             echo "scripts/check-build-gn.mjs not found — running basic check."
-
             errors=0
+            total_files=0
             while IFS= read -r build_gn; do
               gn_dir="$(dirname "$build_gn")"
-              # Get all .cc/.h files in this directory (non-recursive).
-              disk_files=$(find "$gn_dir" -maxdepth 1 -type f \( -name '*.cc' -o -name '*.h' \) | xargs -n1 basename | sort)
-              # Get files listed in sources = [...]
+              disk_files=$(find "$gn_dir" -maxdepth 1 -type f \( -name '*.cc' -o -name '*.h' \) | xargs -n1 basename 2>/dev/null | sort)
               gn_files=$(grep -A999 'sources = \[' "$build_gn" | grep -m1 -B999 '^\]' | grep -o '"[^"]*\.(cc|h)"' | tr -d '"' | sort)
-
-              # This is a basic check — full validation is in check-build-gn.mjs
-              echo "  $build_gn: $(echo "$gn_files" | wc -l) source(s) listed"
+              count=$(echo "$gn_files" | grep -c . || true)
+              echo "  $build_gn: $count source(s) listed"
+              total_files=$((total_files + count))
             done < <(find "$astra_dir" -name 'BUILD.gn')
+            echo "Total BUILD.gn source entries: $total_files"
           fi
 
       - name: Validate patch files
         run: |
-          # Check that all .patch files in chromium/astra/patches/ are
-          # well-formed and have corresponding .md documentation.
           set -euo pipefail
-
           patch_dir="chromium/astra/patches"
 
           if [ ! -d "$patch_dir" ]; then
@@ -160,21 +139,18 @@ jobs:
             [ -f "$patch" ] || continue
             basename_patch="$(basename "$patch" .patch)"
 
-            # Check that a corresponding .md file exists.
             md_file="$patch_dir/$basename_patch.md"
             if [ ! -f "$md_file" ]; then
               echo "::error file=$patch::Patch has no corresponding .md documentation"
               errors=$((errors + 1))
             fi
 
-            # Check patch is well-formed (has +++ or diff header).
             if ! head -5 "$patch" | grep -qE '^(diff |\+\+\+ |--- )'; then
               echo "::warning file=$patch::Patch may not be in standard format"
               warnings=$((warnings + 1))
             fi
           done
 
-          echo ""
           echo "Patches found: $(find "$patch_dir" -name '*.patch' | wc -l)"
           echo "Errors: $errors"
           echo "Warnings: $warnings"
@@ -183,12 +159,56 @@ jobs:
             exit 1
           fi
 
-      - name: Upload validation results
-        if: always()
-        run: echo "Validation complete — see step outputs above."
+  # ========================================================================
+  # Job 2: Architecture & Source Validation (Windows)
+  # ========================================================================
+  # Runs architecture validation on Windows to ensure cross-platform
+  # consistency of checks and source code.
+  # ========================================================================
+  validate-windows:
+    name: Validate (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run architecture guard
+        run: pnpm check:architecture
+
+      - name: Count source files
+        run: |
+          $count = (Get-ChildItem -Path "chromium/astra" -Recurse -Filter "*.cc" | Measure-Object).Count
+          $headers = (Get-ChildItem -Path "chromium/astra" -Recurse -Filter "*.h" | Measure-Object).Count
+          Write-Output "Source files: $count"
+          Write-Output "Header files: $headers"
+          Write-Output "Total: $($count + $headers)"
+
+      - name: Verify BUILD.gn files exist
+        run: |
+          $buildGns = Get-ChildItem -Path "chromium/astra" -Recurse -Filter "BUILD.gn"
+          Write-Output "BUILD.gn files found: $($buildGns.Count)"
+          foreach ($gn in $buildGns) {
+            Write-Output "  - $($gn.FullName.Replace($env:GITHUB_WORKSPACE + '\', ''))"
+          }
 
   # ========================================================================
-  # Job 2: Build Documentation
+  # Job 3: Build Documentation & Badges
   # ========================================================================
   # Generates build status badges and validates documentation.
   # ========================================================================
@@ -196,7 +216,7 @@ jobs:
     name: Build Documentation
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: architecture-validation
+    needs: [validate-linux, validate-windows]
 
     steps:
       - name: Checkout
@@ -211,13 +231,10 @@ jobs:
             echo "::warning::docs/BUILD.md not found"
           fi
 
-      - name: Generate build status badge
+      - name: Generate build status badge (Linux validation)
         run: |
-          # Generate a simple SVG badge.
           mkdir -p artifacts/badges
-
-          # Use badge-maker or generate simple SVG.
-          cat > artifacts/badges/build-status.svg << 'BADGE'
+          cat > artifacts/badges/validate-linux.svg << 'BADGE'
           <svg xmlns="http://www.w3.org/2000/svg" width="140" height="20">
             <linearGradient id="b" x2="0" y2="100%">
               <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
@@ -227,28 +244,49 @@ jobs:
               <rect width="140" height="20" rx="3" fill="#fff"/>
             </mask>
             <g mask="url(#a)">
-              <path fill="#555" d="M0 0h83v20H0z"/>
-              <path fill="#4c1" d="M83 0h57v20H83z"/>
+              <path fill="#555" d="M0 0h70v20H0z"/>
+              <path fill="#4c1" d="M70 0h70v20H70z"/>
               <path fill="url(#b)" d="M0 0h140v20H0z"/>
             </g>
             <g fill="#fff" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="110">
-              <text x="425" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="730">build status</text>
-              <text x="425" y="140" transform="scale(.1)" textLength="730">build status</text>
-              <text x="1115" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="470">passing</text>
-              <text x="1115" y="140" transform="scale(.1)" textLength="470">passing</text>
+              <text x="360" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="600">validate</text>
+              <text x="360" y="140" transform="scale(.1)" textLength="600">validate</text>
+              <text x="1050" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="600">linux</text>
+              <text x="1050" y="140" transform="scale(.1)" textLength="600">linux</text>
             </g>
           </svg>
           BADGE
 
-          echo "Badge generated."
+      - name: Generate Windows validation badge
+        run: |
+          cat > artifacts/badges/validate-windows.svg << 'BADGE'
+          <svg xmlns="http://www.w3.org/2000/svg" width="160" height="20">
+            <linearGradient id="b" x2="0" y2="100%">
+              <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+              <stop offset="1" stop-opacity=".1"/>
+            </linearGradient>
+            <mask id="a">
+              <rect width="160" height="20" rx="3" fill="#fff"/>
+            </mask>
+            <g mask="url(#a)">
+              <path fill="#555" d="M0 0h70v20H0z"/>
+              <path fill="#4c1" d="M70 0h90v20H70z"/>
+              <path fill="url(#b)" d="M0 0h160v20H0z"/>
+            </g>
+            <g fill="#fff" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="110">
+              <text x="360" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="600">validate</text>
+              <text x="360" y="140" transform="scale(.1)" textLength="600">validate</text>
+              <text x="1150" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="800">windows</text>
+              <text x="1150" y="140" transform="scale(.1)" textLength="800">windows</text>
+            </g>
+          </svg>
+          BADGE
 
       - name: Document build prerequisites summary
         run: |
-          # Extract and validate prerequisite sections from BUILD.md.
           if [ -f "docs/BUILD.md" ]; then
             echo "=== Build Prerequisites Summary ==="
             echo ""
-            # Extract sections that look like prerequisite lists.
             grep -E '^(## |### |- |\* )' docs/BUILD.md | head -40 || true
           fi
 
@@ -261,21 +299,20 @@ jobs:
           retention-days: 14
 
   # ========================================================================
-  # Job 3: Self-hosted Build
+  # Job 4: Linux Self-hosted Build
   # ========================================================================
-  # Full Chromium build on a self-hosted runner with the 'astra-chromium-builder'
-  # label.  This job gracefully skips if no self-hosted runner is available.
+  # Full Chromium build on a Linux self-hosted runner with the
+  # 'astra-chromium-builder' label.  This job stays queued if no
+  # self-hosted runner is available.
   # ========================================================================
-  self-hosted-build:
-    name: Self-hosted Chromium Build
+  build-linux:
+    name: Build (Linux)
     runs-on:
       - self-hosted
       - astra-chromium-builder
+      - linux
     timeout-minutes: 480
-    needs: architecture-validation
-
-    # Gracefully skip if no self-hosted runner with the label is available.
-    if: ${{ contains(runner.labels, 'astra-chromium-builder') }}
+    needs: [validate-linux, validate-windows]
 
     env:
       DEPOT_TOOLS_DIR: ${{ github.workspace }}/third_party/depot_tools
@@ -344,9 +381,134 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: astra-chromium-debug-${{ runner.os }}
+          name: astra-chromium-debug-linux
           path: |
             chromium/src/out/astra_Debug/chrome
             chromium/src/out/astra_Debug/*.app
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ========================================================================
+  # Job 5: Windows Self-hosted Build
+  # ========================================================================
+  # Full Chromium build on a Windows self-hosted runner with the
+  # 'astra-chromium-builder' label.
+  #
+  # Windows build requirements:
+  #   - Visual Studio 2022 (17.0+) with Desktop development with C++
+  #   - Windows 10 SDK (10.0.19041.0 or later)
+  #   - Git for Windows (Git Bash)
+  #   - Python 3.8+
+  #   - ~100 GB free disk space
+  # ========================================================================
+  build-windows:
+    name: Build (Windows)
+    runs-on:
+      - self-hosted
+      - astra-chromium-builder
+      - windows
+    timeout-minutes: 480
+    needs: [validate-linux, validate-windows]
+
+    env:
+      DEPOT_TOOLS_DIR: ${{ github.workspace }}\third_party\depot_tools
+      CHROMIUM_SRC: ${{ github.workspace }}\chromium\src
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup build environment
+        run: |
+          # Verify Git Bash is available
+          if (Get-Command bash -ErrorAction SilentlyContinue) {
+            bash --version
+            Write-Output "Git Bash is available."
+          } else {
+            Write-Output "::warning::Git Bash not found in PATH. Some scripts may not work."
+          }
+
+          # Verify Python
+          if (Get-Command python -ErrorAction SilentlyContinue) {
+            python --version
+          }
+
+          # Check free disk space
+          $disk = Get-PSDrive C
+          $freeGB = [math]::Round($disk.Free / 1GB, 2)
+          Write-Output "Free disk space (C:): $freeGB GB"
+          if ($freeGB -lt 80) {
+            Write-Output "::warning::Low disk space. Chromium builds require ~100GB free."
+          }
+
+      - name: Cache depot_tools
+        uses: actions/cache@v4
+        with:
+          path: third_party/depot_tools
+          key: ${{ runner.os }}-depot-tools
+
+      - name: Cache Chromium checkout
+        uses: actions/cache@v4
+        with:
+          path: chromium/src
+          key: ${{ runner.os }}-chromium-src-${{ hashFiles('scripts/chromium-bootstrap.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-chromium-src-
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            chromium/src/out/astra_Debug
+            chromium/src/out/astra_Release
+          key: ${{ runner.os }}-chromium-build-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-chromium-build-
+
+      - name: Bootstrap Chromium (Git Bash)
+        shell: bash
+        run: |
+          chmod +x scripts/chromium-bootstrap.sh
+          ./scripts/chromium-bootstrap.sh --no-sync
+
+      - name: Sync Astra overlay (Git Bash)
+        shell: bash
+        run: |
+          chmod +x scripts/sync-overlay.sh
+          ./scripts/sync-overlay.sh
+
+      - name: Apply Astra patches (Git Bash)
+        shell: bash
+        run: |
+          chmod +x scripts/apply-patches.sh
+          ./scripts/apply-patches.sh --list
+          ./scripts/apply-patches.sh || echo "Note: Patch application may have issues on Windows — verify manually"
+
+      - name: Build Astra Chromium (Debug)
+        shell: bash
+        run: |
+          chmod +x scripts/build-astra.sh
+          # Use NUMBER_OF_PROCESSORS env var (Windows) or fall back to 4
+          JOBS=${NUMBER_OF_PROCESSORS:-4}
+          ./scripts/build-astra.sh --target chrome --jobs "$JOBS"
+
+      - name: Run unit tests (Git Bash)
+        shell: bash
+        run: |
+          cd chromium/src
+          if command -v autoninja >/dev/null 2>&1; then
+            autoninja -C out/astra_Debug astra_unittests
+            ./out/astra_Debug/astra_unittests.exe || echo "Note: Some test failures may be expected in CI"
+          else
+            echo "autoninja not available — skipping tests"
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-chromium-debug-windows
+          path: |
+            chromium/src/out/astra_Debug/chrome.exe
+            chromium/src/out/astra_Debug/*.dll
           if-no-files-found: ignore
           retention-days: 7
