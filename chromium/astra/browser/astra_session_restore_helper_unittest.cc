@@ -103,6 +103,15 @@ class SessionRestoreHelperTest : public testing::Test {
     dict.Set(kMetaKeySplitViewRatio, 0.6);
     dict.Set(kMetaKeySplitViewOrientation,
              static_cast<int>(SplitViewOrientation::kHorizontal));
+    dict.Set(kMetaKeyTabUniqueId,
+             "(1234567890ABCDEF,1234567890ABCDEF)");
+    dict.Set(kMetaKeySourceWorkspaceId, "source-workspace");
+    dict.Set(kMetaKeyTabColor, 0xFFFF0000);  // ARGB red
+    dict.Set(kMetaKeyReadLater, true);
+    dict.Set(kMetaKeyIsSnoozed, true);
+    dict.Set(kMetaKeySnoozeTime, 1337000000000000.0);
+    dict.Set(kMetaKeyIsHibernatedTab, false);
+    dict.Set(kMetaKeyCreatedTime, 1335000000000000.0);
     return dict;
   }
 

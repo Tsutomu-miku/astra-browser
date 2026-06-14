@@ -74,6 +74,48 @@ base::Value::Dict ExtractAstraMetadataFromWebContents(
     }
   }
 
+  // -- Tab identity ---------------------------------------------------------
+
+  if (!features->tab_unique_id().is_empty()) {
+    metadata.Set(kMetaKeyTabUniqueId,
+                 features->tab_unique_id().ToString());
+  }
+
+  if (!features->source_workspace_id().empty()) {
+    metadata.Set(kMetaKeySourceWorkspaceId,
+                 features->source_workspace_id());
+  }
+
+  if (features->has_tab_color()) {
+    metadata.Set(kMetaKeyTabColor,
+                 static_cast<int>(features->tab_color()));
+  }
+
+  // -- Astra-native tab states ----------------------------------------------
+
+  if (features->read_later()) {
+    metadata.Set(kMetaKeyReadLater, true);
+  }
+
+  if (features->is_snoozed()) {
+    metadata.Set(kMetaKeyIsSnoozed, true);
+    if (!features->snooze_time().is_null()) {
+      double time_us = static_cast<double>(
+          features->snooze_time().ToDeltaSinceWindowsEpoch().InMicroseconds());
+      metadata.Set(kMetaKeySnoozeTime, time_us);
+    }
+  }
+
+  if (features->is_hibernated()) {
+    metadata.Set(kMetaKeyIsHibernatedTab, true);
+  }
+
+  if (!features->created_time().is_null()) {
+    double time_us = static_cast<double>(
+        features->created_time().ToDeltaSinceWindowsEpoch().InMicroseconds());
+    metadata.Set(kMetaKeyCreatedTime, time_us);
+  }
+
   return metadata;
 }
 
@@ -207,6 +249,82 @@ void ApplyAstraMetadataToWebContents(const base::Value::Dict& metadata,
       *pip_width > 0 && *pip_height > 0) {
     features->set_pip_window_size(gfx::Size(*pip_width, *pip_height));
   }
+
+  // -- Tab identity ---------------------------------------------------------
+
+  if (const std::string* unique_id_str =
+          metadata.FindString(kMetaKeyTabUniqueId)) {
+    base::UnguessableToken token =
+        base::UnguessableToken::Deserialize(0, 0);
+    // Try to parse the string representation.
+    // TODO(astra): Use base::UnguessableToken::CreateFromString when available,
+    // or a proper deserialization method.  For now, we accept the string as-is
+    // and store it; the tab_unique_id setter on AstraTabFeatures takes a
+    // base::UnguessableToken.
+    //
+    // For session restore round-trip correctness, we serialize with ToString()
+    // and deserialize here.  UnguessableToken string format is
+    // "(%016llX,%016llX)" (high, low in hex).
+    if (!unique_id_str->empty()) {
+      // Simple parsing: try to extract high and low from the string format.
+      uint64_t high = 0, low = 0;
+      if (sscanf(unique_id_str->c_str(), "(%llX,%llX)",
+                 (unsigned long long*)&high,
+                 (unsigned long long*)&low) == 2) {
+        token = base::UnguessableToken::Deserialize(high, low);
+      }
+    }
+    if (!token.is_empty()) {
+      features->set_tab_unique_id(token);
+    }
+  }
+
+  if (const std::string* source_ws =
+          metadata.FindString(kMetaKeySourceWorkspaceId)) {
+    features->set_source_workspace_id(*source_ws);
+  }
+
+  if (std::optional<int> color_int = metadata.FindInt(kMetaKeyTabColor)) {
+    if (*color_int != 0) {
+      features->set_tab_color(static_cast<SkColor>(*color_int));
+    }
+  }
+
+  // -- Astra-native tab states ----------------------------------------------
+
+  if (std::optional<bool> read_later = metadata.FindBool(kMetaKeyReadLater)) {
+    features->set_read_later(*read_later);
+  }
+
+  if (std::optional<bool> is_snoozed = metadata.FindBool(kMetaKeyIsSnoozed)) {
+    if (*is_snoozed) {
+      if (auto v = metadata.FindDouble(kMetaKeySnoozeTime)) {
+        base::Time snooze_time = base::Time::FromDeltaSinceWindowsEpoch(
+            base::Microseconds(static_cast<int64_t>(*v)));
+        features->SnoozeUntil(snooze_time);
+      } else {
+        // Snoozed but no time set — use a default far-future time.
+        // TODO(astra): Handle this edge case more gracefully.
+      }
+    } else {
+      features->CancelSnooze();
+    }
+  }
+
+  if (std::optional<bool> is_hibernated =
+          metadata.FindBool(kMetaKeyIsHibernatedTab)) {
+    if (*is_hibernated) {
+      features->Hibernate();
+    } else {
+      features->Wake();
+    }
+  }
+
+  if (auto v = metadata.FindDouble(kMetaKeyCreatedTime)) {
+    base::Time created_time = base::Time::FromDeltaSinceWindowsEpoch(
+        base::Microseconds(static_cast<int64_t>(*v)));
+    features->set_created_time(created_time);
+  }
 }
 
 bool HasAstraMetadata(const base::Value::Dict& metadata) {
@@ -332,6 +450,34 @@ base::Value::Dict CloneAstraTabMetadata(const base::Value::Dict& metadata) {
     result.Set(kMetaKeyDiscardCount, *v);
   }
 
+  // Tab identity
+  if (const std::string* v = metadata.FindString(kMetaKeyTabUniqueId)) {
+    result.Set(kMetaKeyTabUniqueId, *v);
+  }
+  if (const std::string* v = metadata.FindString(kMetaKeySourceWorkspaceId)) {
+    result.Set(kMetaKeySourceWorkspaceId, *v);
+  }
+  if (std::optional<int> v = metadata.FindInt(kMetaKeyTabColor)) {
+    result.Set(kMetaKeyTabColor, *v);
+  }
+
+  // Astra-native tab states
+  if (std::optional<bool> v = metadata.FindBool(kMetaKeyReadLater)) {
+    result.Set(kMetaKeyReadLater, *v);
+  }
+  if (std::optional<bool> v = metadata.FindBool(kMetaKeyIsSnoozed)) {
+    result.Set(kMetaKeyIsSnoozed, *v);
+  }
+  if (std::optional<double> v = metadata.FindDouble(kMetaKeySnoozeTime)) {
+    result.Set(kMetaKeySnoozeTime, *v);
+  }
+  if (std::optional<bool> v = metadata.FindBool(kMetaKeyIsHibernatedTab)) {
+    result.Set(kMetaKeyIsHibernatedTab, *v);
+  }
+  if (std::optional<double> v = metadata.FindDouble(kMetaKeyCreatedTime)) {
+    result.Set(kMetaKeyCreatedTime, *v);
+  }
+
   return result;
 }
 
@@ -372,6 +518,14 @@ size_t GetAstraTabMetadataFieldCount(const base::Value::Dict& metadata) {
     kMetaKeyIsInReadingList,
     kMetaKeyLastActiveTime,
     kMetaKeyDiscardCount,
+    kMetaKeyTabUniqueId,
+    kMetaKeySourceWorkspaceId,
+    kMetaKeyTabColor,
+    kMetaKeyReadLater,
+    kMetaKeyIsSnoozed,
+    kMetaKeySnoozeTime,
+    kMetaKeyIsHibernatedTab,
+    kMetaKeyCreatedTime,
   };
 
   for (const char* key : kTabKeys) {
@@ -443,6 +597,26 @@ void NormalizeAstraTabMetadata(base::Value::Dict& metadata) {
   // Discard count: default to 0
   if (!metadata.contains(kMetaKeyDiscardCount)) {
     metadata.Set(kMetaKeyDiscardCount, 0);
+  }
+
+  // Tab color: default to 0 (no color)
+  if (!metadata.contains(kMetaKeyTabColor)) {
+    metadata.Set(kMetaKeyTabColor, 0);
+  }
+
+  // Read later: default to false
+  if (!metadata.contains(kMetaKeyReadLater)) {
+    metadata.Set(kMetaKeyReadLater, false);
+  }
+
+  // Snooze: default to not snoozed
+  if (!metadata.contains(kMetaKeyIsSnoozed)) {
+    metadata.Set(kMetaKeyIsSnoozed, false);
+  }
+
+  // Hibernation: default to not hibernated
+  if (!metadata.contains(kMetaKeyIsHibernatedTab)) {
+    metadata.Set(kMetaKeyIsHibernatedTab, false);
   }
 }
 
@@ -888,6 +1062,54 @@ bool ValidateAstraTabMetadata(const base::Value::Dict& metadata) {
     }
   }
 
+  // -- Tab identity --------------------------------------------------------
+
+  if (metadata.contains(kMetaKeyTabUniqueId) &&
+      !metadata.FindString(kMetaKeyTabUniqueId)) {
+    return false;
+  }
+
+  if (metadata.contains(kMetaKeySourceWorkspaceId) &&
+      !metadata.FindString(kMetaKeySourceWorkspaceId)) {
+    return false;
+  }
+
+  if (metadata.contains(kMetaKeyTabColor)) {
+    std::optional<int> val = metadata.FindInt(kMetaKeyTabColor);
+    if (!val.has_value() || *val < 0) {
+      return false;
+    }
+  }
+
+  // -- Astra-native tab states ---------------------------------------------
+
+  if (metadata.contains(kMetaKeyReadLater) &&
+      !metadata.FindBool(kMetaKeyReadLater)) {
+    return false;
+  }
+
+  if (metadata.contains(kMetaKeyIsSnoozed) &&
+      !metadata.FindBool(kMetaKeyIsSnoozed)) {
+    return false;
+  }
+
+  if (metadata.contains(kMetaKeySnoozeTime)) {
+    if (!metadata.FindDouble(kMetaKeySnoozeTime)) {
+      return false;
+    }
+  }
+
+  if (metadata.contains(kMetaKeyIsHibernatedTab) &&
+      !metadata.FindBool(kMetaKeyIsHibernatedTab)) {
+    return false;
+  }
+
+  if (metadata.contains(kMetaKeyCreatedTime)) {
+    if (!metadata.FindDouble(kMetaKeyCreatedTime)) {
+      return false;
+    }
+  }
+
   // Unknown keys are allowed (forward compatibility with newer versions).
   return true;
 }
@@ -1074,6 +1296,37 @@ base::Value::Dict AstraTabSessionMetadata::ToDict() const {
     dict.Set(kMetaKeyDiscardCount, discard_count);
   }
 
+  // -- Tab identity ---------------------------------------------------------
+
+  if (!tab_unique_id.empty()) {
+    dict.Set(kMetaKeyTabUniqueId, tab_unique_id);
+  }
+  if (!source_workspace_id.empty()) {
+    dict.Set(kMetaKeySourceWorkspaceId, source_workspace_id);
+  }
+  if (tab_color != 0) {
+    dict.Set(kMetaKeyTabColor, static_cast<int>(tab_color));
+  }
+
+  // -- Astra-native tab states ----------------------------------------------
+
+  dict.Set(kMetaKeyReadLater, read_later);
+
+  dict.Set(kMetaKeyIsSnoozed, is_snoozed);
+  if (!snooze_time.is_null()) {
+    double time_us = static_cast<double>(
+        snooze_time.ToDeltaSinceWindowsEpoch().InMicroseconds());
+    dict.Set(kMetaKeySnoozeTime, time_us);
+  }
+
+  dict.Set(kMetaKeyIsHibernatedTab, is_hibernated);
+
+  if (!created_time.is_null()) {
+    double time_us = static_cast<double>(
+        created_time.ToDeltaSinceWindowsEpoch().InMicroseconds());
+    dict.Set(kMetaKeyCreatedTime, time_us);
+  }
+
   return dict;
 }
 
@@ -1164,6 +1417,41 @@ bool AstraTabSessionMetadata::FromDict(const base::Value::Dict& dict) {
     discard_count = std::max(0, *v);
   }
 
+  // -- Tab identity ---------------------------------------------------------
+
+  if (const std::string* v = dict.FindString(kMetaKeyTabUniqueId)) {
+    tab_unique_id = *v;
+  }
+  if (const std::string* v = dict.FindString(kMetaKeySourceWorkspaceId)) {
+    source_workspace_id = *v;
+  }
+  if (auto v = dict.FindInt(kMetaKeyTabColor)) {
+    tab_color = static_cast<uint32_t>(std::max(0, *v));
+  }
+
+  // -- Astra-native tab states ----------------------------------------------
+
+  if (auto v = dict.FindBool(kMetaKeyReadLater)) {
+    read_later = *v;
+  }
+
+  if (auto v = dict.FindBool(kMetaKeyIsSnoozed)) {
+    is_snoozed = *v;
+  }
+  if (auto v = dict.FindDouble(kMetaKeySnoozeTime)) {
+    snooze_time = base::Time::FromDeltaSinceWindowsEpoch(
+        base::Microseconds(static_cast<int64_t>(*v)));
+  }
+
+  if (auto v = dict.FindBool(kMetaKeyIsHibernatedTab)) {
+    is_hibernated = *v;
+  }
+
+  if (auto v = dict.FindDouble(kMetaKeyCreatedTime)) {
+    created_time = base::Time::FromDeltaSinceWindowsEpoch(
+        base::Microseconds(static_cast<int64_t>(*v)));
+  }
+
   return true;
 }
 
@@ -1174,6 +1462,7 @@ bool AstraTabSessionMetadata::Validate() const {
   if (pip_window_width < 0) return false;
   if (pip_window_height < 0) return false;
   if (discard_count < 0) return false;
+  if (is_snoozed && snooze_time.is_null()) return false;
   return true;
 }
 
@@ -1220,6 +1509,30 @@ void AstraTabSessionMetadata::MergeFrom(const AstraTabSessionMetadata& other) {
     last_active_time = other.last_active_time;
   }
   discard_count = other.discard_count;
+
+  // -- Tab identity ---------------------------------------------------------
+
+  if (!other.tab_unique_id.empty()) {
+    tab_unique_id = other.tab_unique_id;
+  }
+  if (!other.source_workspace_id.empty()) {
+    source_workspace_id = other.source_workspace_id;
+  }
+  if (other.tab_color != 0) {
+    tab_color = other.tab_color;
+  }
+
+  // -- Astra-native tab states ----------------------------------------------
+
+  read_later = other.read_later;
+  is_snoozed = other.is_snoozed;
+  if (!other.snooze_time.is_null()) {
+    snooze_time = other.snooze_time;
+  }
+  is_hibernated = other.is_hibernated;
+  if (!other.created_time.is_null()) {
+    created_time = other.created_time;
+  }
 }
 
 size_t AstraTabSessionMetadata::EstimateSizeBytes() const {
@@ -1233,6 +1546,8 @@ size_t AstraTabSessionMetadata::EstimateSizeBytes() const {
   size += note_id.capacity();
   size += note_preview.capacity();
   size += glance_source_tab_id.capacity();
+  size += tab_unique_id.capacity();
+  size += source_workspace_id.capacity();
   return size;
 }
 
